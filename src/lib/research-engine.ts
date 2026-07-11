@@ -53,7 +53,7 @@ export function resolveConfig(
     standard: { numSubQueries: 4, maxLinksPerQuery: 5 },
     deep: { numSubQueries: 6, maxLinksPerQuery: 10 },
     advanced: {
-      numSubQueries: envInt("NUM_SUB_QUERIES", 8, 2, 12),
+      numSubQueries: envInt("NUM_SUB_QUERIES", 8, 2, 15),
       maxLinksPerQuery: envInt("MAX_LINKS_PER_QUERY", 25, 3, 30),
     },
   };
@@ -104,6 +104,102 @@ function setStatus(job: ResearchJob, status: ResearchStatus) {
 
 // ---------- Stage 1: Decomposition ----------
 
+// Max length of a single sub-question (in chars). Web search engines have
+// URL length limits (~4094 chars), and very long queries also dilute
+// relevance. We keep sub-questions focused and web-search-friendly.
+const MAX_SUBQUESTION_CHARS = 280;
+
+function truncateQuestion(q: string): string {
+  const trimmed = q.trim().replace(/\s+/g, " ");
+  if (trimmed.length <= MAX_SUBQUESTION_CHARS) return trimmed;
+  // Try to cut at the last sentence boundary within the limit.
+  const slice = trimmed.slice(0, MAX_SUBQUESTION_CHARS);
+  const lastStop = Math.max(
+    slice.lastIndexOf(". "),
+    slice.lastIndexOf("? "),
+    slice.lastIndexOf("! "),
+    slice.lastIndexOf("; ")
+  );
+  if (lastStop > 80) return slice.slice(0, lastStop + 1).trim();
+  return slice.trim() + "…";
+}
+
+// Robust JSON extraction from LLM output (handles code fences, preamble, etc.).
+function extractQuestionsJson(text: string): string[] {
+  if (!text) return [];
+  // 1) Try direct parse.
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
+    if (Array.isArray(parsed)) return parsed.map(String);
+  } catch {
+    /* fall through */
+  }
+  // 2) Try to find a JSON object/array inside the text.
+  const jsonMatch = text.match(/\{[\s\S]*"questions"[\s\S]*\}/);
+  if (jsonMatch) {
+    try {
+      const parsed = JSON.parse(jsonMatch[0]);
+      if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
+    } catch {
+      /* fall through */
+    }
+  }
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    try {
+      const parsed = JSON.parse(arrayMatch[0]);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      /* fall through */
+    }
+  }
+  // 3) Markdown code fence extraction.
+  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  if (fenceMatch) {
+    try {
+      const parsed = JSON.parse(fenceMatch[1].trim());
+      if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch {
+      /* fall through */
+    }
+  }
+  // 4) Plain-text fallback: lines ending with "?" or numbered items.
+  const lines = text
+    .split(/\n+/)
+    .map((l) => l.replace(/^\s*(\d+[\.\)]|-|\*|\+)\s*/, "").trim())
+    .filter((l) => l.length > 8 && l.length < 600);
+  const questions = lines.filter((l) => l.endsWith("?"));
+  if (questions.length > 0) return questions;
+  // 5) If we have at least 2 numbered short lines, use them.
+  if (lines.length >= 2) return lines;
+  return [];
+}
+
+// Heuristic fallback: when the LLM fails entirely, slice the giant prompt
+// into topical chunks based on markdown headings or paragraph boundaries.
+function heuristicDecompose(query: string, numSubQueries: number): string[] {
+  // Try to split by markdown numbered headings (e.g., "1. ", "2. ").
+  const headingSplit = query.split(/\n\s*(?:\d+[\.\)]\s+|#{1,6}\s+)/);
+  if (headingSplit.length >= 2) {
+    return headingSplit
+      .map((s) => truncateQuestion(s.replace(/\n+/g, " ").trim()))
+      .filter((s) => s.length > 20)
+      .slice(0, numSubQueries);
+  }
+  // Fallback: split by double newlines (paragraphs).
+  const paraSplit = query.split(/\n\s*\n/).filter((p) => p.trim().length > 30);
+  if (paraSplit.length >= 2) {
+    return paraSplit
+      .map((p) => truncateQuestion(p.replace(/\n+/g, " ").trim()))
+      .filter((s) => s.length > 20)
+      .slice(0, numSubQueries);
+  }
+  // Last resort: the whole query, truncated to be search-friendly.
+  return [truncateQuestion(query)];
+}
+
 async function decompose(
   job: ResearchJob,
   config: ResearchConfig
@@ -112,49 +208,110 @@ async function decompose(
   log(job, "info", "decomposing", `Decomposing query into ${config.numSubQueries} sub-questions...`);
 
   const llm = await getLLM();
+
+  // Detect if this is a "giant" prompt and adapt accordingly.
+  const queryLen = config.query.length;
+  const isGiant = queryLen > 4000;
+  const isMega = queryLen > 15000;
+
+  if (isGiant) {
+    log(
+      job,
+      "info",
+      "decomposing",
+      `Large prompt detected (${queryLen.toLocaleString()} chars). Using enhanced decomposition strategy.`
+    );
+  }
+  if (isMega) {
+    log(
+      job,
+      "info",
+      "decomposing",
+      `Mega prompt detected. Allocating extra token budget for thorough decomposition.`
+    );
+  }
+
   const sys: LLMMessage = {
     role: "system",
     content:
-      "You are a senior research strategist. Your task is to break a complex research query into a set of focused, diverse, and non-redundant sub-questions that together will fully cover the topic. Each sub-question should be specific enough to be answerable via web search, and collectively they should explore different facets: definitions, mechanisms, evidence, comparisons, recent developments, controversies, and practical implications.",
+      "You are a senior research strategist and domain expert. Your task is to break a complex research query into a set of focused, diverse, and non-redundant sub-questions that together will fully cover the topic. Each sub-question should be specific enough to be answerable via web search, and collectively they should explore different facets: definitions, mechanisms, evidence, comparisons, recent developments, controversies, and practical implications.\n\nWhen the user provides a long, detailed research brief, treat it as a rich source of context: identify every distinct topic, requirement, angle, and constraint it mentions, and ensure your sub-questions collectively cover ALL of them. Do not collapse multiple distinct topics into one question. Prefer more specific sub-questions over vague ones.\n\nCRITICAL: Each sub-question MUST be a concise, self-contained web search query of at most 250 characters. Do NOT paste long briefs into the sub-questions. Distill each topic to its essence.",
   };
   const user: LLMMessage = {
     role: "user",
-    content: `Research query: "${config.query}"
+    content: `Research query / brief:
+"""
+${config.query}
+"""
 
-Generate exactly ${config.numSubQueries} sub-questions that, when researched thoroughly, will enable writing a comprehensive long-form report on this topic.
+Generate exactly ${config.numSubQueries} sub-questions that, when researched thoroughly, will enable writing a comprehensive long-form report covering EVERY aspect mentioned in the brief above.
 
-Respond as a JSON object with this exact shape (no markdown, no commentary):
+Rules for each sub-question:
+- Must be a concise web search query (max 250 characters).
+- Must be self-contained (no references to "the above" or "section 3").
+- Must target a specific, searchable facet of the topic.
+
+Return ONLY a JSON object with this exact shape (no markdown fences, no preamble, no commentary):
 {"questions": ["...", "...", ...]}`,
   };
 
-  const result = await llm.fast({
-    messages: [sys, user],
-    maxTokens: 1200,
-    temperature: 0.5,
-    json: true,
-  });
+  // Scale the output token budget with prompt size so we don't truncate
+  // the generated questions on mega prompts.
+  const maxTokens = isMega ? 4000 : isGiant ? 2500 : 1500;
 
-  let questions: string[] = [];
+  let rawQuestions: string[] = [];
+  let llmError: string | null = null;
+
   try {
-    const parsed = JSON.parse(result.content) as { questions?: string[] };
-    if (Array.isArray(parsed.questions)) {
-      questions = parsed.questions
-        .map((q) => String(q).trim())
-        .filter((q) => q.length > 0)
-        .slice(0, config.numSubQueries);
+    const result = await llm.smart({
+      messages: [sys, user],
+      maxTokens,
+      temperature: 0.5,
+      json: true,
+    });
+    rawQuestions = extractQuestionsJson(result.content);
+    if (rawQuestions.length === 0) {
+      llmError = `LLM returned no parseable questions. Raw output preview: ${result.content.slice(0, 200)}`;
     }
-  } catch {
-    // Fallback: try to extract questions from plain text.
-    const lines = result.content
-      .split(/\n+/)
-      .map((l) => l.replace(/^\s*(\d+[\.\)]|-|\*)\s*/, "").trim())
-      .filter((l) => l.length > 5 && l.endsWith("?"));
-    questions = lines.slice(0, config.numSubQueries);
+  } catch (err) {
+    llmError = err instanceof Error ? err.message : String(err);
+    log(job, "warn", "decomposing", `LLM decomposition call failed: ${llmError}`);
   }
 
-  // Final fallback if LLM gave nothing usable.
+  // Normalize + truncate every sub-question to keep it search-friendly.
+  let questions = rawQuestions
+    .map((q) => truncateQuestion(q))
+    .filter((q) => q.length > 0)
+    .slice(0, config.numSubQueries);
+
+  // If the LLM gave us nothing usable, fall back to heuristic decomposition
+  // of the original prompt. This guarantees the pipeline can still run.
   if (questions.length === 0) {
-    questions = [config.query];
+    log(
+      job,
+      "warn",
+      "decomposing",
+      `LLM decomposition yielded no usable questions. Falling back to heuristic decomposition.${llmError ? " (" + llmError + ")" : ""}`
+    );
+    questions = heuristicDecompose(config.query, config.numSubQueries);
+  }
+
+  // If we still only have 1 question but asked for more, expand via heuristics.
+  if (questions.length < Math.min(3, config.numSubQueries)) {
+    const extra = heuristicDecompose(config.query, config.numSubQueries);
+    const seen = new Set(questions.map((q) => q.toLowerCase().slice(0, 60)));
+    for (const q of extra) {
+      const key = q.toLowerCase().slice(0, 60);
+      if (!seen.has(key)) {
+        questions.push(q);
+        seen.add(key);
+      }
+      if (questions.length >= config.numSubQueries) break;
+    }
+  }
+
+  // Final safety: ensure at least one question.
+  if (questions.length === 0) {
+    questions = [truncateQuestion(config.query) || config.query.slice(0, 280)];
   }
 
   // Initialize sub-query records.
@@ -194,18 +351,32 @@ async function processSubQuery(
 ): Promise<void> {
   sq.status = "searching";
   sq.startedAt = Date.now();
-  log(job, "info", "searching", `Searching: "${sq.question}"`);
+
+  // Defensive: ensure the search query is within a safe length for the
+  // web_search API (which has URL length limits). 400 chars is well under
+  // the ~4094-char HTTP request-line limit.
+  const searchQuery =
+    sq.question.length > 400 ? truncateQuestion(sq.question) : sq.question;
+  if (searchQuery !== sq.question) {
+    log(
+      job,
+      "warn",
+      "searching",
+      `Sub-question was truncated for web search: "${searchQuery}"`
+    );
+  }
+  log(job, "info", "searching", `Searching: "${searchQuery}"`);
 
   // 2) Web search.
   let results: SearchResultItem[] = [];
   try {
-    results = await searchWeb(sq.question, config.maxLinksPerQuery, config.retriever);
+    results = await searchWeb(searchQuery, config.maxLinksPerQuery, config.retriever);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     sq.status = "failed";
     sq.error = msg;
     sq.finishedAt = Date.now();
-    log(job, "error", "searching", `Search failed for "${sq.question}": ${msg}`);
+    log(job, "error", "searching", `Search failed for "${searchQuery}": ${msg}`);
     return;
   }
 

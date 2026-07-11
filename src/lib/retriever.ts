@@ -27,25 +27,58 @@ async function getZAI() {
 
 // ---------- Z.AI web_search ----------
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+function isRetryableSearchError(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return (
+    m.includes("429") ||
+    m.includes("rate limit") ||
+    m.includes("too many requests") ||
+    m.includes("503") ||
+    m.includes("service unavailable") ||
+    m.includes("timeout") ||
+    m.includes("temporarily") ||
+    m.includes("overloaded")
+  );
+}
+
 async function zaiSearch(
   query: string,
-  num: number
+  num: number,
+  retries = 5
 ): Promise<SearchResultItem[]> {
-  const zai = await getZAI();
-  const results = await zai.functions.invoke("web_search", {
-    query,
-    num: Math.min(Math.max(num, 1), 30),
-  });
-  if (!Array.isArray(results)) return [];
-  return results.map((r: SearchResultItem, i: number) => ({
-    url: r.url,
-    name: r.name,
-    snippet: r.snippet,
-    host_name: r.host_name,
-    rank: r.rank ?? i + 1,
-    date: r.date ?? "",
-    favicon: r.favicon ?? "",
-  }));
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const zai = await getZAI();
+      const results = await zai.functions.invoke("web_search", {
+        query,
+        num: Math.min(Math.max(num, 1), 30),
+      });
+      if (!Array.isArray(results)) return [];
+      return results.map((r: SearchResultItem, i: number) => ({
+        url: r.url,
+        name: r.name,
+        snippet: r.snippet,
+        host_name: r.host_name,
+        rank: r.rank ?? i + 1,
+        date: r.date ?? "",
+        favicon: r.favicon ?? "",
+      }));
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      if (attempt < retries && isRetryableSearchError(msg)) {
+        // Exponential backoff: 4s, 8s, 16s, 32s, 64s
+        const delayMs = 4000 * Math.pow(2, attempt);
+        await sleep(delayMs);
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastErr;
 }
 
 // ---------- Tavily ----------

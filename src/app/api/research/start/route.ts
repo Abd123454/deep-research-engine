@@ -28,9 +28,16 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (query.length > 2000) {
+    // Allow very large prompts (giant research briefs, multi-paragraph
+    // instructions, RFPs, etc.). 100k chars ≈ ~25k tokens, well within
+    // modern LLM context windows (Llama 3.1/3.3 = 128k context).
+    const MAX_QUERY_CHARS = 100_000;
+    if (query.length > MAX_QUERY_CHARS) {
       return NextResponse.json(
-        { ok: false, error: "Query too long (max 2000 chars)." },
+        {
+          ok: false,
+          error: `Query too long (max ${MAX_QUERY_CHARS.toLocaleString()} chars). Received ${query.length.toLocaleString()}.`,
+        },
         { status: 400 }
       );
     }

@@ -105,6 +105,8 @@ function fmtTime(ms: number): string {
 
 // ---------- main component ----------
 
+const MAX_QUERY_CHARS = 100_000;
+
 export function DeepResearch() {
   const [query, setQuery] = React.useState("");
   const [depth, setDepth] = React.useState<"standard" | "deep" | "advanced">("advanced");
@@ -112,6 +114,27 @@ export function DeepResearch() {
   const [maxLinks, setMaxLinks] = React.useState(25);
   const [reportTokens, setReportTokens] = React.useState(8000);
   const [showSettings, setShowSettings] = React.useState(false);
+
+  const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // Auto-grow the textarea to fit large prompts (up to a cap).
+  React.useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    const newHeight = Math.min(Math.max(el.scrollHeight, 160), 640);
+    el.style.height = `${newHeight}px`;
+  }, [query]);
+
+  const charCount = query.length;
+  const charPct = Math.min(100, (charCount / MAX_QUERY_CHARS) * 100);
+  const isOverLimit = charCount > MAX_QUERY_CHARS;
+  const isGiant = charCount > 4000;
+  const isMega = charCount > 15000;
+
+  function fmtNum(n: number): string {
+    return n.toLocaleString();
+  }
 
   const [job, setJob] = React.useState<ResearchJob | null>(null);
   const [starting, setStarting] = React.useState(false);
@@ -180,29 +203,44 @@ export function DeepResearch() {
 
   async function pollJob(id: string) {
     let interval = 1500;
+    let consecutive404 = 0;
     while (!stopPollingRef.current) {
       try {
         const res = await fetch(`/api/research/status/${id}`, { cache: "no-store" });
-        if (!res.ok) {
-          throw new Error(`Status fetch failed (${res.status})`);
-        }
-        const data = (await res.json()) as { ok: boolean; job?: ResearchJob };
-        if (data.ok && data.job) {
-          setJob(data.job);
-          if (data.job.status === "completed" || data.job.status === "failed") {
+        if (res.status === 404) {
+          consecutive404++;
+          // Job may have been evicted from the in-memory store (TTL/capacity).
+          // After a few consecutive 404s, give up gracefully.
+          if (consecutive404 >= 3) {
             setPolling(false);
-            if (data.job.status === "completed") {
-              toast.success("Deep research completed!", {
-                description: `Read ${data.job.stats.totalPagesRead} pages in ${fmtTime(
-                  data.job.stats.elapsedMs
-                )}.`,
-              });
-            } else {
-              toast.error("Research failed", {
-                description: data.job.error || "Unknown error",
-              });
-            }
+            toast.error("Research job was evicted from memory", {
+              description:
+                "The job ran for too long and was cleaned up. Try again with a smaller scope or shallower depth.",
+            });
             return;
+          }
+        } else if (!res.ok) {
+          throw new Error(`Status fetch failed (${res.status})`);
+        } else {
+          consecutive404 = 0;
+          const data = (await res.json()) as { ok: boolean; job?: ResearchJob };
+          if (data.ok && data.job) {
+            setJob(data.job);
+            if (data.job.status === "completed" || data.job.status === "failed") {
+              setPolling(false);
+              if (data.job.status === "completed") {
+                toast.success("Deep research completed!", {
+                  description: `Read ${data.job.stats.totalPagesRead} pages in ${fmtTime(
+                    data.job.stats.elapsedMs
+                  )}.`,
+                });
+              } else {
+                toast.error("Research failed", {
+                  description: data.job.error || "Unknown error",
+                });
+              }
+              return;
+            }
           }
         }
       } catch (err) {
@@ -314,24 +352,90 @@ export function DeepResearch() {
             <Card className="shadow-sm">
               <CardContent className="p-5 sm:p-6 space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="query" className="text-sm font-medium">
-                    Research Query
-                  </Label>
+                  <div className="flex items-center justify-between gap-2">
+                    <Label htmlFor="query" className="text-sm font-medium">
+                      Research Query / Brief
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      {isGiant && (
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "text-[10px] gap-1",
+                            isMega
+                              ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
+                          )}
+                        >
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {isMega ? "Mega prompt" : "Large prompt"}
+                        </Badge>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setQuery("");
+                        }}
+                          disabled={!query}
+                          className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40"
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  </div>
                   <Textarea
                     id="query"
+                    ref={textareaRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder="e.g. What are the latest breakthroughs in solid-state battery technology and when will they reach mass production?"
-                    className="min-h-[110px] resize-y text-base"
+                    placeholder={
+                      "Write your research question OR paste a giant research brief.\n\n" +
+                      "Tip: you can paste up to 100,000 characters (≈25,000 tokens) of detailed instructions, multi-section requirements, RFPs, or context. The engine will detect large prompts and adapt its decomposition strategy to cover every aspect."
+                    }
+                    className="resize-y text-base leading-relaxed font-mono min-h-[160px]"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         startResearch();
                       }
                     }}
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Press <kbd className="px-1.5 py-0.5 rounded border bg-muted text-[10px]">⌘/Ctrl + Enter</kbd> to start.
-                  </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-xs text-muted-foreground">
+                      Press <kbd className="px-1.5 py-0.5 rounded border bg-muted text-[10px]">⌘/Ctrl + Enter</kbd> to start. Paste long briefs freely.
+                    </p>
+                    <div className="flex items-center gap-2 min-w-[140px] justify-end">
+                      <div className="w-20 h-1 rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full transition-all",
+                            isOverLimit
+                              ? "bg-destructive"
+                              : isMega
+                                ? "bg-fuchsia-500"
+                                : isGiant
+                                  ? "bg-amber-500"
+                                  : "bg-emerald-500"
+                          )}
+                          style={{ width: `${charPct}%` }}
+                        />
+                      </div>
+                      <span
+                        className={cn(
+                          "text-[11px] font-mono tabular-nums",
+                          isOverLimit
+                            ? "text-destructive font-semibold"
+                            : "text-muted-foreground"
+                        )}
+                      >
+                        {fmtNum(charCount)} / {fmtNum(MAX_QUERY_CHARS)}
+                      </span>
+                    </div>
+                  </div>
+                  {isOverLimit && (
+                    <p className="text-xs text-destructive">
+                      Query exceeds the {fmtNum(MAX_QUERY_CHARS)} character limit. Please shorten it.
+                    </p>
+                  )}
                 </div>
 
                 {/* Quick examples */}
@@ -390,11 +494,11 @@ export function DeepResearch() {
                         <Input
                           type="number"
                           min={2}
-                          max={12}
+                          max={15}
                           value={numSubQueries}
                           onChange={(e) =>
                             setNumSubQueries(
-                              Math.min(12, Math.max(2, parseInt(e.target.value) || 2))
+                              Math.min(15, Math.max(2, parseInt(e.target.value) || 2))
                             )
                           }
                           className="h-9"
@@ -435,17 +539,26 @@ export function DeepResearch() {
                         />
                       </div>
                     </div>
-                    <p className="text-xs text-muted-foreground mt-3">
-                      💡 <strong>Advanced</strong> uses ~8 sub-queries × 25 links =
-                      up to 200 pages read. Slower but far more comprehensive.
-                    </p>
+                    <div className="text-xs text-muted-foreground mt-3 space-y-1">
+                      <p>
+                        💡 <strong>Advanced</strong> uses ~{numSubQueries} sub-queries × {maxLinks} links =
+                        up to {numSubQueries * maxLinks} pages read.
+                      </p>
+                      <p>
+                        📝 <strong>Giant prompts</strong> (4K+ chars) automatically get enhanced decomposition
+                        with more output tokens; <strong>mega prompts</strong> (15K+) get the highest budget.
+                      </p>
+                      <p>
+                        📊 Final report cap: ~{fmtNum(reportTokens)} tokens. Raise it for even longer reports.
+                      </p>
+                    </div>
                   </CollapsibleContent>
                 </Collapsible>
 
                 <div className="flex flex-col sm:flex-row gap-2 pt-1">
                   <Button
                     onClick={startResearch}
-                    disabled={starting || !query.trim()}
+                    disabled={starting || !query.trim() || isOverLimit}
                     className="flex-1 h-11 text-base"
                     size="lg"
                   >
