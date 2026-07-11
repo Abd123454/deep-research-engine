@@ -185,6 +185,7 @@ export function DeepResearch() {
           retriever: string;
           smartModels?: string[];
           fastModel?: string;
+          searchEngines?: string[];
         };
       };
       if (!res.ok || !data.ok || !data.id) {
@@ -192,8 +193,9 @@ export function DeepResearch() {
       }
       const modelCount = data.config?.smartModels?.length || 1;
       const primaryModel = data.config?.smartModels?.[0] || "default";
+      const engineCount = data.config?.searchEngines?.length || 1;
       toast.success("Deep research started", {
-        description: `${data.config?.llmProvider?.toUpperCase()} · ${modelCount} models (primary: ${primaryModel})`,
+        description: `${data.config?.llmProvider?.toUpperCase()} · ${modelCount} LLMs · ${engineCount} search engines`,
       });
       setPolling(true);
       pollJob(data.id);
@@ -330,7 +332,7 @@ export function DeepResearch() {
               className="hidden sm:inline-flex gap-1 rounded-full px-2.5"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-brand-gradient" />
-              NVIDIA · 6 models
+              NVIDIA 6 LLMs · Tavily+2
             </Badge>
             <ThemeToggle />
           </div>

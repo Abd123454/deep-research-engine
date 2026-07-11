@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
         llmProvider: getLLMProvider(),
         smartModels: getSmartModels(),
         fastModel: getFastModel(),
+        searchEngines: ["tavily", "zai", "duckduckgo"],
       },
       retriever: getRetriever(),
     });
