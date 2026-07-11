@@ -69,22 +69,26 @@ export function resolveConfig(
       enableMultiRound: boolean;
     }
   > = {
+    // Standard: FAST. ~2-3 minutes. Single round, 3 sub-queries × 4 links = 12 pages.
     standard: {
-      numSubQueries: 4,
-      maxLinksPerQuery: 5,
-      numGapQueries: 2,
+      numSubQueries: 3,
+      maxLinksPerQuery: 4,
+      numGapQueries: 0,
       enableMultiRound: false,
     },
+    // Deep: BALANCED. ~5-7 minutes. Multi-round, 5 sub-queries × 8 links = 40 pages.
     deep: {
-      numSubQueries: 6,
-      maxLinksPerQuery: 10,
-      numGapQueries: 3,
+      numSubQueries: 5,
+      maxLinksPerQuery: 8,
+      numGapQueries: 2,
       enableMultiRound: true,
     },
+    // Advanced: THOROUGH. ~10-15 minutes. Multi-round, 7 sub-queries × 15 links = 105 pages.
+    // (Reduced from 8×25=200 to keep it under 15 min.)
     advanced: {
-      numSubQueries: envInt("NUM_SUB_QUERIES", 8, 2, 15),
-      maxLinksPerQuery: envInt("MAX_LINKS_PER_QUERY", 25, 3, 30),
-      numGapQueries: envInt("NUM_GAP_QUERIES", 4, 1, 8),
+      numSubQueries: envInt("NUM_SUB_QUERIES", 7, 2, 12),
+      maxLinksPerQuery: envInt("MAX_LINKS_PER_QUERY", 15, 3, 25),
+      numGapQueries: envInt("NUM_GAP_QUERIES", 3, 0, 6),
       enableMultiRound: true,
     },
   };
@@ -599,46 +603,47 @@ async function extractFindings(
   }
   if (current.length > 0) batches.push(current);
 
-  const batchFindings: string[] = [];
-  for (let bi = 0; bi < batches.length; bi++) {
-    const batch = batches[bi];
-    const context = batch
-      .map((p, i) => {
-        const snippet = p.text.slice(0, 3500).trim();
-        return `### Source ${i + 1}\nURL: ${p.url}\nTitle: ${p.title}\n\n${snippet}`;
-      })
-      .join("\n\n---\n\n");
+  // Process ALL batches IN PARALLEL (was sequential — big speedup for multi-batch extracts).
+  const batchResults = await Promise.all(
+    batches.map(async (batch, bi) => {
+      const context = batch
+        .map((p, i) => {
+          const snippet = p.text.slice(0, 3000).trim();
+          return `### Source ${i + 1}\nURL: ${p.url}\nTitle: ${p.title}\n\n${snippet}`;
+        })
+        .join("\n\n---\n\n");
 
-    const sys: LLMMessage = {
-      role: "system",
-      content:
-        "You are a meticulous research analyst. Extract factual, citable findings from the provided sources that are directly relevant to the research question. Preserve specific numbers, dates, names, and claims. For each finding, include the source URL. Be concise but information-dense. Do not invent information not present in the sources.",
-    };
-    const user: LLMMessage = {
-      role: "user",
-      content: `Research question: "${question}"
+      const sys: LLMMessage = {
+        role: "system",
+        content:
+          "You are a meticulous research analyst. Extract factual, citable findings from the provided sources that are directly relevant to the research question. Preserve specific numbers, dates, names, and claims. For each finding, include the source URL. Be concise but information-dense. Do not invent information not present in the sources.",
+      };
+      const user: LLMMessage = {
+        role: "user",
+        content: `Research question: "${question}"
 
 Sources:
 ${context}
 
 Extract the key findings as a markdown list. Each item should start with "- " and end with the source URL in parentheses, e.g.:
 - <finding with specific facts> (https://...)`,
-    };
+      };
 
-    try {
-      const result = await llm.smart({
-        messages: [sys, user],
-        maxTokens: 1500,
-        temperature: 0.2,
-      });
-      batchFindings.push(result.content);
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      batchFindings.push(`_(Extraction failed for batch ${bi + 1}: ${msg})_`);
-    }
-  }
+      try {
+        const result = await llm.smart({
+          messages: [sys, user],
+          maxTokens: 1200,
+          temperature: 0.2,
+        });
+        return result.content;
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return `_(Extraction failed for batch ${bi + 1}: ${msg})_`;
+      }
+    })
+  );
 
-  return batchFindings.join("\n\n");
+  return batchResults.join("\n\n");
 }
 
 // ---------- Stage 4: Gap Analysis (the key differentiator) ----------
@@ -843,25 +848,32 @@ export async function runResearch(jobId: string): Promise<void> {
     // Stage 2: Decompose (round 1).
     const round1SubQueries = await decompose(job, job.config, 1, job.config.numSubQueries);
 
-    // Stages 3-5: Process each round-1 sub-query.
-    for (let i = 0; i < round1SubQueries.length; i++) {
-      const sq = round1SubQueries[i];
-      log(
-        job,
-        "info",
-        "searching",
-        `Round 1 — processing sub-question ${i + 1}/${round1SubQueries.length}: "${sq.question}"`
-      );
-      try {
-        await processSubQuery(job, sq, job.config);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        sq.status = "failed";
-        sq.error = msg;
-        sq.finishedAt = Date.now();
-        log(job, "error", "searching", `Sub-question failed: "${sq.question}" — ${msg}`);
-      }
-    }
+    // Stages 3-5: Process ALL round-1 sub-queries IN PARALLEL (massive speedup).
+    // Each sub-query runs search → read → extract independently.
+    log(
+      job,
+      "info",
+      "searching",
+      `Round 1 — processing ${round1SubQueries.length} sub-questions in parallel...`
+    );
+    await Promise.all(
+      round1SubQueries.map((sq, i) => {
+        log(
+          job,
+          "info",
+          "searching",
+          `Round 1 — started sub-question ${i + 1}/${round1SubQueries.length}: "${sq.question}"`
+        );
+        return processSubQuery(job, sq, job.config).catch((err) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          sq.status = "failed";
+          sq.error = msg;
+          sq.finishedAt = Date.now();
+          log(job, "error", "searching", `Sub-question failed: "${sq.question}" — ${msg}`);
+        });
+      })
+    );
+    log(job, "success", "searching", `Round 1 complete — all ${round1SubQueries.length} sub-questions processed.`);
     job.stats.roundsCompleted = 1;
 
     // Stage 4 + 5: Gap analysis + Round 2 (only if multi-round is enabled).
@@ -893,25 +905,31 @@ export async function runResearch(jobId: string): Promise<void> {
             log(job, "info", "decomposing", `  Q${i + 1} [R2]. ${sq.question}`)
           );
 
-          // Process round-2 sub-queries.
-          for (let i = 0; i < round2SubQueries.length; i++) {
-            const sq = round2SubQueries[i];
-            log(
-              job,
-              "info",
-              "searching",
-              `Round 2 — processing gap-fill ${i + 1}/${round2SubQueries.length}: "${sq.question}"`
-            );
-            try {
-              await processSubQuery(job, sq, job.config);
-            } catch (err) {
-              const msg = err instanceof Error ? err.message : String(err);
-              sq.status = "failed";
-              sq.error = msg;
-              sq.finishedAt = Date.now();
-              log(job, "error", "searching", `Gap-fill failed: "${sq.question}" — ${msg}`);
-            }
-          }
+          // Process round-2 sub-queries IN PARALLEL.
+          log(
+            job,
+            "info",
+            "searching",
+            `Round 2 — processing ${round2SubQueries.length} gap-fills in parallel...`
+          );
+          await Promise.all(
+            round2SubQueries.map((sq, i) => {
+              log(
+                job,
+                "info",
+                "searching",
+                `Round 2 — started gap-fill ${i + 1}/${round2SubQueries.length}: "${sq.question}"`
+              );
+              return processSubQuery(job, sq, job.config).catch((err) => {
+                const msg = err instanceof Error ? err.message : String(err);
+                sq.status = "failed";
+                sq.error = msg;
+                sq.finishedAt = Date.now();
+                log(job, "error", "searching", `Gap-fill failed: "${sq.question}" — ${msg}`);
+              });
+            })
+          );
+          log(job, "success", "searching", `Round 2 complete.`);
           job.stats.roundsCompleted = 2;
         } else {
           log(job, "info", "analyzing_gaps", "No follow-up questions generated; skipping round 2.");

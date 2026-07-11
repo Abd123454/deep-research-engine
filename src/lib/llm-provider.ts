@@ -132,7 +132,7 @@ function shouldSkipModel(msg: string): boolean {
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
-  retries = 3
+  retries = 1
 ): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -141,11 +141,9 @@ async function withRetry<T>(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      // Only retry on rate-limit / transient errors.
+      // Only retry once on rate-limit errors; the fallback chain handles the rest.
       if (attempt < retries && isRetryableLLMError(msg)) {
-        // Exponential backoff: 2s, 4s, 8s
-        const delayMs = 2000 * Math.pow(2, attempt);
-        await sleep(delayMs);
+        await sleep(1000); // short 1s backoff, only once
         continue;
       }
       break;
@@ -283,7 +281,7 @@ async function nvidiaCompleteWithFallback(
       const result = await withRetry(
         () => nvidiaCompleteSingle(opts, model),
         `nvidia:${model}`,
-        2 // fewer retries per model since we have fallback
+        1 // only 1 retry per model — the fallback chain handles the rest
       );
       // Log fallback usage if not the first model.
       if (i > 0) {
@@ -296,14 +294,9 @@ async function nvidiaCompleteWithFallback(
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
-        `[llm-provider] Model "${model}" failed: ${msg.slice(0, 150)}. Trying next model...`
+        `[llm-provider] Model "${model}" failed: ${msg.slice(0, 120)}. → next model`
       );
-      // If this is a hard error (404/400/500), the loop continues to the next model.
-      // If it's a retryable error that exhausted retries, also continue.
-      // Small delay before trying the next model to avoid hammering.
-      if (i < models.length - 1) {
-        await sleep(500);
-      }
+      // No delay between models — we want speed. The fallback is instant.
     }
   }
 

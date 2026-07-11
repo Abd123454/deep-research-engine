@@ -63,16 +63,22 @@ function isRetryableSearchError(msg: string): boolean {
 async function zaiSearch(
   query: string,
   num: number,
-  retries = 3
+  retries = 1
 ): Promise<SearchResultItem[]> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const zai = await getZAI();
-      const results = await zai.functions.invoke("web_search", {
-        query,
-        num: Math.min(Math.max(num, 1), 30),
-      });
+      // Race against a hard 10s timeout.
+      const results = (await Promise.race([
+        zai.functions.invoke("web_search", {
+          query,
+          num: Math.min(Math.max(num, 1), 30),
+        }),
+        sleep(10000).then(() => {
+          throw new Error("Z.AI web_search timeout (10s)");
+        }),
+      ])) as SearchResultItem[];
       if (!Array.isArray(results)) return [];
       return results.map((r: SearchResultItem, i: number) => ({
         url: r.url,
@@ -87,9 +93,7 @@ async function zaiSearch(
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
       if (attempt < retries && isRetryableSearchError(msg)) {
-        // Exponential backoff: 3s, 6s, 12s
-        const delayMs = 3000 * Math.pow(2, attempt);
-        await sleep(delayMs);
+        await sleep(1500); // short backoff
         continue;
       }
       break;
@@ -305,12 +309,9 @@ export async function searchWeb(
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
-        `[retriever] Engine "${engine}" failed: ${msg.slice(0, 150)}${i < chain.length - 1 ? " → trying next engine..." : " (no more engines)"}`
+        `[retriever] Engine "${engine}" failed: ${msg.slice(0, 120)}${i < chain.length - 1 ? " → next engine" : " (no more engines)"}`
       );
-      if (i < chain.length - 1) {
-        // Small delay before trying the next engine.
-        await sleep(800);
-      }
+      // No delay between engines — we want speed. The next engine is tried instantly.
     }
   }
 
