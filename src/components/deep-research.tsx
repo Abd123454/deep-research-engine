@@ -11,10 +11,9 @@ import {
   Check,
   ChevronDown,
   ChevronRight,
-  Brain,
+  Sparkles,
   Globe,
   BookOpen,
-  Sparkles,
   Download,
   AlertCircle,
   CheckCircle2,
@@ -23,11 +22,19 @@ import {
   Hash,
   Layers,
   RefreshCw,
+  Brain,
+  ListTree,
+  GitBranch,
+  Target,
+  ArrowRight,
+  Lightbulb,
+  FileSearch,
+  Quote,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -44,12 +51,6 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
@@ -59,40 +60,39 @@ import type {
   ResearchStatus,
   SubQuery,
   LogEntry,
+  ResearchPlan,
 } from "@/lib/types";
 
-// ---------- helpers ----------
+// ---------- stage metadata ----------
 
-const STAGE_META: Record<
-  ResearchStatus,
-  { label: string; icon: React.ElementType; color: string }
-> = {
-  queued: { label: "Queued", icon: Clock, color: "text-muted-foreground" },
-  decomposing: { label: "Decomposing Query", icon: Brain, color: "text-amber-500" },
-  searching: { label: "Searching the Web", icon: Search, color: "text-sky-500" },
-  reading: { label: "Reading Pages", icon: BookOpen, color: "text-violet-500" },
-  extracting: { label: "Extracting Findings", icon: Sparkles, color: "text-fuchsia-500" },
-  synthesizing: { label: "Writing Report", icon: FileText, color: "text-emerald-500" },
-  completed: { label: "Completed", icon: CheckCircle2, color: "text-emerald-600" },
-  failed: { label: "Failed", icon: AlertCircle, color: "text-destructive" },
-};
-
-const STAGE_ORDER: ResearchStatus[] = [
-  "decomposing",
-  "searching",
-  "reading",
-  "extracting",
-  "synthesizing",
-  "completed",
+const STAGES: {
+  key: ResearchStatus;
+  label: string;
+  icon: React.ElementType;
+  hint: string;
+}[] = [
+  { key: "planning", label: "Planning", icon: ListTree, hint: "Creating a research outline" },
+  { key: "decomposing", label: "Decomposing", icon: GitBranch, hint: "Breaking into sub-questions" },
+  { key: "searching", label: "Searching", icon: Globe, hint: "Searching the web" },
+  { key: "reading", label: "Reading", icon: BookOpen, hint: "Reading pages" },
+  { key: "extracting", label: "Extracting", icon: Sparkles, hint: "Extracting findings" },
+  { key: "analyzing_gaps", label: "Gap analysis", icon: Target, hint: "Finding knowledge gaps" },
+  { key: "synthesizing", label: "Writing", icon: FileText, hint: "Writing the report" },
 ];
+
+const STAGE_ORDER: ResearchStatus[] = STAGES.map((s) => s.key);
+
+function stageMeta(status: ResearchStatus) {
+  return STAGES.find((s) => s.key === status);
+}
 
 function stageProgress(status: ResearchStatus): number {
   if (status === "failed") return 100;
   if (status === "queued") return 0;
+  if (status === "completed") return 100;
   const idx = STAGE_ORDER.indexOf(status);
   if (idx < 0) return 0;
-  // Each stage = ~16.6% (6 stages). Add half a stage so it feels live.
-  return Math.min(100, Math.round(((idx + 0.5) / STAGE_ORDER.length) * 100));
+  return Math.min(99, Math.round(((idx + 0.5) / STAGE_ORDER.length) * 100));
 }
 
 function fmtTime(ms: number): string {
@@ -101,6 +101,10 @@ function fmtTime(ms: number): string {
   const m = Math.floor(ms / 60_000);
   const s = Math.floor((ms % 60_000) / 1000);
   return `${m}m ${s}s`;
+}
+
+function fmtNum(n: number): string {
+  return n.toLocaleString();
 }
 
 // ---------- main component ----------
@@ -115,14 +119,20 @@ export function DeepResearch() {
   const [reportTokens, setReportTokens] = React.useState(8000);
   const [showSettings, setShowSettings] = React.useState(false);
 
+  const [job, setJob] = React.useState<ResearchJob | null>(null);
+  const [starting, setStarting] = React.useState(false);
+  const [polling, setPolling] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+  const [logsOpen, setLogsOpen] = React.useState(false);
+
+  const stopPollingRef = React.useRef(false);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
-  // Auto-grow the textarea to fit large prompts (up to a cap).
   React.useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    const newHeight = Math.min(Math.max(el.scrollHeight, 160), 640);
+    const newHeight = Math.min(Math.max(el.scrollHeight, 120), 560);
     el.style.height = `${newHeight}px`;
   }, [query]);
 
@@ -132,19 +142,6 @@ export function DeepResearch() {
   const isGiant = charCount > 4000;
   const isMega = charCount > 15000;
 
-  function fmtNum(n: number): string {
-    return n.toLocaleString();
-  }
-
-  const [job, setJob] = React.useState<ResearchJob | null>(null);
-  const [starting, setStarting] = React.useState(false);
-  const [polling, setPolling] = React.useState(false);
-  const [copied, setCopied] = React.useState(false);
-  const [logsOpen, setLogsOpen] = React.useState(false);
-
-  const stopPollingRef = React.useRef(false);
-
-  // Apply depth presets.
   function applyDepth(d: "standard" | "deep" | "advanced") {
     setDepth(d);
     if (d === "standard") {
@@ -188,7 +185,7 @@ export function DeepResearch() {
       if (!res.ok || !data.ok || !data.id) {
         throw new Error(data.error || "Failed to start research.");
       }
-      toast.success("Research started!", {
+      toast.success("Deep research started", {
         description: `LLM: ${data.config?.llmProvider} · Retriever: ${data.config?.retriever}`,
       });
       setPolling(true);
@@ -209,13 +206,10 @@ export function DeepResearch() {
         const res = await fetch(`/api/research/status/${id}`, { cache: "no-store" });
         if (res.status === 404) {
           consecutive404++;
-          // Job may have been evicted from the in-memory store (TTL/capacity).
-          // After a few consecutive 404s, give up gracefully.
           if (consecutive404 >= 3) {
             setPolling(false);
             toast.error("Research job was evicted from memory", {
-              description:
-                "The job ran for too long and was cleaned up. Try again with a smaller scope or shallower depth.",
+              description: "Try again with a smaller scope.",
             });
             return;
           }
@@ -230,9 +224,7 @@ export function DeepResearch() {
               setPolling(false);
               if (data.job.status === "completed") {
                 toast.success("Deep research completed!", {
-                  description: `Read ${data.job.stats.totalPagesRead} pages in ${fmtTime(
-                    data.job.stats.elapsedMs
-                  )}.`,
+                  description: `${data.job.stats.totalPagesRead} pages · ${data.job.stats.roundsCompleted} rounds · ${fmtTime(data.job.stats.elapsedMs)}`,
                 });
               } else {
                 toast.error("Research failed", {
@@ -244,11 +236,9 @@ export function DeepResearch() {
           }
         }
       } catch (err) {
-        // Network blips: keep polling but slow down.
         console.error("poll error", err);
       }
       await new Promise((r) => setTimeout(r, interval));
-      // Adaptive polling: speed up during active stages, slow down when idle.
       interval = 1500;
     }
     setPolling(false);
@@ -285,38 +275,55 @@ export function DeepResearch() {
     URL.revokeObjectURL(url);
   }
 
-  const isRunning =
-    job &&
-    job.status !== "completed" &&
-    job.status !== "failed";
+  const isRunning = job && job.status !== "completed" && job.status !== "failed";
 
   const examples = [
-    "What are the latest breakthroughs in solid-state battery technology and their commercialization timeline?",
-    "Compare the architectural differences and performance trade-offs between RISC-V and ARM processors.",
-    "What is the current state of quantum error correction and when might fault-tolerant quantum computers arrive?",
-    "How do large language model agents work, and what are the main agentic frameworks in 2025?",
+    {
+      icon: Lightbulb,
+      text: "What are the latest breakthroughs in solid-state battery technology and their commercialization timeline?",
+    },
+    {
+      icon: FileSearch,
+      text: "Compare the architectural differences and performance trade-offs between RISC-V and ARM processors.",
+    },
+    {
+      icon: Brain,
+      text: "What is the current state of quantum error correction and when might fault-tolerant quantum computers arrive?",
+    },
+    {
+      icon: Layers,
+      text: "How do large language model agents work, and what are the main agentic frameworks in 2025?",
+    },
   ];
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+      {/* ---------- Aurora background ---------- */}
+      <div className="pointer-events-none fixed inset-0 aurora-bg" aria-hidden />
+
       {/* ---------- Header ---------- */}
-      <header className="sticky top-0 z-40 border-b bg-background/80 backdrop-blur-md">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-sm">
-              <Brain className="h-5 w-5" />
+      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient shadow-lg shadow-primary/20">
+              <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-base font-semibold leading-tight">Deep Research</h1>
-              <p className="text-xs text-muted-foreground leading-tight">
-                AI-Powered Deep Search Engine
+              <h1 className="text-[15px] font-semibold leading-tight tracking-tight">
+                Deep Research
+              </h1>
+              <p className="text-[11px] text-muted-foreground leading-tight">
+                Multi-round · Plan-driven · Source-cited
               </p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="hidden sm:inline-flex">
-              <Sparkles className="h-3 w-3 mr-1" />
-              Z.AI + NVIDIA Ready
+            <Badge
+              variant="secondary"
+              className="hidden sm:inline-flex gap-1 rounded-full px-2.5"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-gradient" />
+              Outperforms single-pass tools
             </Badge>
             <ThemeToggle />
           </div>
@@ -324,574 +331,603 @@ export function DeepResearch() {
       </header>
 
       {/* ---------- Main ---------- */}
-      <main className="flex-1 mx-auto w-full max-w-6xl px-4 sm:px-6 py-6 sm:py-10">
-        {!job && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-6"
-          >
-            {/* Hero */}
-            <div className="text-center max-w-3xl mx-auto pt-4 pb-2">
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                Ask once. Get a{" "}
-                <span className="bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  comprehensive report
-                </span>
-                .
-              </h2>
-              <p className="mt-3 text-muted-foreground text-base sm:text-lg">
-                This engine decomposes your question into focused sub-queries,
-                searches the web, reads dozens of pages, extracts findings, and
-                writes a long-form report with citations.
-              </p>
-            </div>
+      <main className="relative flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
+        <AnimatePresence mode="wait">
+          {!job ? (
+            <motion.div
+              key="input"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="space-y-6"
+            >
+              {/* ---------- Gemini-style greeting ---------- */}
+              <div className="text-center max-w-2xl mx-auto pt-6 sm:pt-10 pb-2">
+                <motion.h2
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.05 }}
+                  className="text-3xl sm:text-5xl font-semibold tracking-tight"
+                >
+                  <span className="text-brand-gradient">Hello</span> there
+                </motion.h2>
+                <motion.p
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.12 }}
+                  className="mt-3 text-muted-foreground text-base sm:text-lg"
+                >
+                  What should we research deeply today?
+                </motion.p>
+              </div>
 
-            {/* Input */}
-            <Card className="shadow-sm">
-              <CardContent className="p-5 sm:p-6 space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="query" className="text-sm font-medium">
-                      Research Query / Brief
-                    </Label>
-                    <div className="flex items-center gap-2">
-                      {isGiant && (
-                        <Badge
-                          variant="secondary"
-                          className={cn(
-                            "text-[10px] gap-1",
-                            isMega
-                              ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300"
-                              : "bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300"
-                          )}
-                        >
-                          <Sparkles className="h-2.5 w-2.5" />
-                          {isMega ? "Mega prompt" : "Large prompt"}
-                        </Badge>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setQuery("");
-                        }}
-                          disabled={!query}
-                          className="text-[11px] text-muted-foreground hover:text-foreground disabled:opacity-40"
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  </div>
+              {/* ---------- Gemini-style input card ---------- */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.18 }}
+                className="mx-auto max-w-3xl"
+              >
+                <div className="relative rounded-3xl border border-border/80 bg-card/95 backdrop-blur-sm shadow-xl shadow-primary/5 transition-all focus-within:shadow-2xl focus-within:shadow-primary/10 focus-within:border-primary/40">
                   <Textarea
-                    id="query"
                     ref={textareaRef}
                     value={query}
                     onChange={(e) => setQuery(e.target.value)}
-                    placeholder={
-                      "Write your research question OR paste a giant research brief.\n\n" +
-                      "Tip: you can paste up to 100,000 characters (≈25,000 tokens) of detailed instructions, multi-section requirements, RFPs, or context. The engine will detect large prompts and adapt its decomposition strategy to cover every aspect."
-                    }
-                    className="resize-y text-base leading-relaxed font-mono min-h-[160px]"
+                    placeholder="Ask anything — or paste a giant research brief (up to 100K chars). I'll plan, search, read, find gaps, and write a comprehensive report."
+                    className="min-h-[120px] resize-none border-0 bg-transparent px-5 pt-5 pb-2 text-[15px] leading-relaxed focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70"
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                         startResearch();
                       }
                     }}
                   />
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="text-xs text-muted-foreground">
-                      Press <kbd className="px-1.5 py-0.5 rounded border bg-muted text-[10px]">⌘/Ctrl + Enter</kbd> to start. Paste long briefs freely.
-                    </p>
-                    <div className="flex items-center gap-2 min-w-[140px] justify-end">
-                      <div className="w-20 h-1 rounded-full bg-muted overflow-hidden">
-                        <div
+
+                  {/* Bottom bar: counter + settings + send */}
+                  <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setShowSettings((v) => !v)}
+                        className={cn(
+                          "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                          showSettings
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        {depth}
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", showSettings && "rotate-180")} />
+                      </button>
+                      {isGiant && (
+                        <Badge
+                          variant="secondary"
                           className={cn(
-                            "h-full transition-all",
-                            isOverLimit
-                              ? "bg-destructive"
-                              : isMega
-                                ? "bg-fuchsia-500"
-                                : isGiant
-                                  ? "bg-amber-500"
-                                  : "bg-emerald-500"
+                            "rounded-full text-[10px] gap-1 px-2 py-0.5",
+                            isMega
+                              ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300"
+                              : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
                           )}
-                          style={{ width: `${charPct}%` }}
-                        />
-                      </div>
+                        >
+                          <Sparkles className="h-2.5 w-2.5" />
+                          {isMega ? "Mega" : "Large"}
+                        </Badge>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <span
                         className={cn(
-                          "text-[11px] font-mono tabular-nums",
-                          isOverLimit
-                            ? "text-destructive font-semibold"
-                            : "text-muted-foreground"
+                          "text-[10px] font-mono tabular-nums hidden sm:block",
+                          isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground/70"
                         )}
                       >
                         {fmtNum(charCount)} / {fmtNum(MAX_QUERY_CHARS)}
                       </span>
+                      <Button
+                        onClick={startResearch}
+                        disabled={starting || !query.trim() || isOverLimit}
+                        size="icon"
+                        className="h-9 w-9 rounded-full bg-brand-gradient hover:opacity-90 shadow-md shadow-primary/20 border-0"
+                        aria-label="Start deep research"
+                      >
+                        {starting ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ArrowRight className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
                   </div>
-                  {isOverLimit && (
-                    <p className="text-xs text-destructive">
-                      Query exceeds the {fmtNum(MAX_QUERY_CHARS)} character limit. Please shorten it.
+
+                  {/* Settings drawer (inline, collapsible) */}
+                  <AnimatePresence>
+                    {showSettings && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden border-t border-border/60"
+                      >
+                        <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] text-muted-foreground">Depth</Label>
+                            <Select
+                              value={depth}
+                              onValueChange={(v) =>
+                                applyDepth(v as "standard" | "deep" | "advanced")
+                              }
+                            >
+                              <SelectTrigger className="h-8 text-xs rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="standard">Standard</SelectItem>
+                                <SelectItem value="deep">Deep</SelectItem>
+                                <SelectItem value="advanced">Advanced</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] text-muted-foreground">
+                              Sub-queries: {numSubQueries}
+                            </Label>
+                            <Input
+                              type="number"
+                              min={2}
+                              max={15}
+                              value={numSubQueries}
+                              onChange={(e) =>
+                                setNumSubQueries(
+                                  Math.min(15, Math.max(2, parseInt(e.target.value) || 2))
+                                )
+                              }
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] text-muted-foreground">
+                              Links / query: {maxLinks}
+                            </Label>
+                            <Input
+                              type="number"
+                              min={3}
+                              max={30}
+                              value={maxLinks}
+                              onChange={(e) =>
+                                setMaxLinks(
+                                  Math.min(30, Math.max(3, parseInt(e.target.value) || 3))
+                                )
+                              }
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[11px] text-muted-foreground">
+                              Report tokens
+                            </Label>
+                            <Input
+                              type="number"
+                              min={1000}
+                              max={32000}
+                              step={1000}
+                              value={reportTokens}
+                              onChange={(e) =>
+                                setReportTokens(
+                                  Math.min(32000, Math.max(1000, parseInt(e.target.value) || 1000))
+                                )
+                              }
+                              className="h-8 text-xs rounded-lg"
+                            />
+                          </div>
+                        </div>
+                        <div className="px-4 pb-3 -mt-1 space-y-1">
+                          <p className="text-[11px] text-muted-foreground">
+                            <strong>Advanced</strong>: {numSubQueries} sub-queries × {maxLinks} links
+                            {" "}+ gap analysis → round 2. Up to {numSubQueries * maxLinks + 4 * maxLinks} pages.
+                          </p>
+                          <p className="text-[11px] text-muted-foreground">
+                            <strong>Multi-round</strong> is enabled on Deep & Advanced —
+                            the agent reviews round-1 findings, identifies gaps, and runs a second research round.
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {isOverLimit && (
+                  <p className="text-xs text-destructive mt-2 text-center">
+                    Query exceeds the {fmtNum(MAX_QUERY_CHARS)} character limit.
+                  </p>
+                )}
+              </motion.div>
+
+              {/* ---------- Suggestion chips (Gemini-style) ---------- */}
+              <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.28 }}
+                className="mx-auto max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-2.5"
+              >
+                {examples.map((ex, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setQuery(ex.text)}
+                    className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-primary/40 hover:bg-accent/50 hover:shadow-md hover:shadow-primary/5"
+                  >
+                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-brand-gradient group-hover:text-white">
+                      <ex.icon className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-[13px] leading-snug text-muted-foreground group-hover:text-foreground">
+                      {ex.text}
+                    </span>
+                  </button>
+                ))}
+              </motion.div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="results"
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="space-y-5"
+            >
+              {/* ---------- Status header ---------- */}
+              <Card className="overflow-hidden border-border/70 shadow-lg shadow-primary/5">
+                <CardContent className="p-0">
+                  {/* Top: query + progress */}
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1.5">
+                          {isRunning ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          ) : job.status === "completed" ? (
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                          ) : (
+                            <AlertCircle className="h-3.5 w-3.5 text-destructive" />
+                          )}
+                          <span className="text-xs font-medium">
+                            {job.status === "completed"
+                              ? "Research complete"
+                              : job.status === "failed"
+                                ? "Research failed"
+                                : stageMeta(job.status)?.label || job.status}
+                          </span>
+                          <Badge variant="outline" className="text-[10px] rounded-full">
+                            {job.config.depth}
+                          </Badge>
+                          {job.stats.roundsCompleted > 0 && (
+                            <Badge variant="outline" className="text-[10px] rounded-full gap-1">
+                              <GitBranch className="h-2.5 w-2.5" />
+                              {job.stats.roundsCompleted} rounds
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          <span className="font-medium text-foreground">Query:</span> {job.query}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={reset}
+                        className="gap-1.5 shrink-0 rounded-full"
+                      >
+                        <RefreshCw className="h-3 w-3" />
+                        New
+                      </Button>
+                    </div>
+
+                    {/* Progress bar */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">
+                          {isRunning ? stageMeta(job.status)?.hint : "Done"}
+                        </span>
+                        <span className="font-mono tabular-nums">{stageProgress(job.status)}%</span>
+                      </div>
+                      <div className="relative h-1.5 rounded-full bg-muted overflow-hidden">
+                        <motion.div
+                          className={cn(
+                            "absolute inset-y-0 left-0 rounded-full",
+                            job.status === "failed"
+                              ? "bg-destructive"
+                              : "bg-brand-gradient"
+                          )}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${stageProgress(job.status)}%` }}
+                          transition={{ duration: 0.5, ease: "easeOut" }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Stage chips */}
+                    <div className="flex flex-wrap gap-1.5">
+                      {STAGES.map((s) => {
+                        const active = job.status === s.key;
+                        const passed = STAGE_ORDER.indexOf(job.status) > STAGE_ORDER.indexOf(s.key);
+                        const done = job.status === "completed" || passed;
+                        return (
+                          <div
+                            key={s.key}
+                            className={cn(
+                              "flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+                              active
+                                ? "bg-primary/15 text-primary"
+                                : done
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                  : "bg-muted text-muted-foreground/60"
+                            )}
+                          >
+                            {active ? (
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            ) : done ? (
+                              <Check className="h-2.5 w-2.5" />
+                            ) : (
+                              <s.icon className="h-2.5 w-2.5" />
+                            )}
+                            {s.label}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+                      <StatPill icon={GitBranch} label="Sub-queries" value={`${job.stats.subQueriesCompleted}/${job.subQueries.length}`} />
+                      <StatPill icon={Link2} label="Pages found" value={fmtNum(job.stats.totalPagesFound)} />
+                      <StatPill icon={BookOpen} label="Pages read" value={`${job.stats.totalPagesSucceeded}/${job.stats.totalPagesRead}`} />
+                      <StatPill icon={Clock} label="Elapsed" value={fmtTime(job.stats.elapsedMs || Date.now() - (job.startedAt || Date.now()))} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ---------- Research plan (Gemini-style) ---------- */}
+              {job.plan && job.plan.sections.length > 0 && (
+                <Card className="border-border/70 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
+                        <ListTree className="h-3.5 w-3.5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold leading-tight">Research plan</h3>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          The agent created this outline before researching
+                        </p>
+                      </div>
+                    </div>
+                    <h4 className="text-base font-semibold text-brand-gradient mb-1">
+                      {job.plan.title}
+                    </h4>
+                    {job.plan.summary && (
+                      <p className="text-xs text-muted-foreground mb-3 leading-relaxed">
+                        {job.plan.summary}
+                      </p>
+                    )}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {job.plan.sections.map((s, i) => (
+                        <div
+                          key={s.id}
+                          className="flex items-start gap-2 rounded-lg border border-border/50 bg-muted/30 px-3 py-2"
+                        >
+                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-[10px] font-bold text-white">
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium leading-snug">{s.title}</p>
+                            {s.description && (
+                              <p className="text-[10px] text-muted-foreground leading-snug mt-0.5">
+                                {s.description}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ---------- Gap analysis ---------- */}
+              {job.gapAnalysis && (
+                <Card className="border-amber-500/30 bg-amber-500/5 shadow-sm">
+                  <CardContent className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/20">
+                        <Target className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-semibold leading-tight">Gap analysis</h3>
+                        <p className="text-[11px] text-muted-foreground leading-tight">
+                          Round-1 review → identified knowledge gaps → triggered round 2
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs leading-relaxed text-foreground/80">
+                      {job.gapAnalysis}
                     </p>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* ---------- Two-column: sub-queries + sources ---------- */}
+              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+                {/* Sub-queries */}
+                <div className="lg:col-span-3 space-y-4">
+                  {/* Report */}
+                  {job.report ? (
+                    <Card className="border-border/70 shadow-sm">
+                      <CardContent className="p-0">
+                        <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/60">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4 text-primary" />
+                            <h3 className="text-sm font-semibold">Final report</h3>
+                          </div>
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={copyReport}
+                              className="h-7 gap-1 text-xs"
+                            >
+                              {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
+                              Copy
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={downloadReport}
+                              className="h-7 gap-1 text-xs"
+                            >
+                              <Download className="h-3 w-3" />
+                              .md
+                            </Button>
+                          </div>
+                        </div>
+                        <article className="px-5 py-4 prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-l-primary prose-blockquote:not-italic">
+                          <ReactMarkdown>{job.report}</ReactMarkdown>
+                        </article>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="border-border/70 shadow-sm">
+                      <CardContent className="p-5">
+                        <div className="flex items-center gap-2 mb-3">
+                          <Sparkles className="h-4 w-4 text-primary" />
+                          <h3 className="text-sm font-semibold">Live activity</h3>
+                        </div>
+                        <LiveActivity logs={job.logs} />
+                      </CardContent>
+                    </Card>
                   )}
                 </div>
 
-                {/* Quick examples */}
-                <div className="flex flex-wrap gap-2">
-                  {examples.map((ex, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setQuery(ex)}
-                      className="text-xs px-3 py-1.5 rounded-full border bg-muted/40 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground text-left max-w-full truncate"
-                      title={ex}
-                    >
-                      {ex.length > 60 ? ex.slice(0, 60) + "…" : ex}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Settings */}
-                <Collapsible open={showSettings} onOpenChange={setShowSettings}>
-                  <div className="flex items-center justify-between">
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" size="sm" className="gap-1.5">
-                        {showSettings ? (
-                          <ChevronDown className="h-4 w-4" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4" />
+                {/* Right: sub-queries + sources */}
+                <div className="lg:col-span-2 space-y-4">
+                  <Card className="border-border/70 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <GitBranch className="h-3.5 w-3.5 text-primary" />
+                        <h3 className="text-xs font-semibold uppercase tracking-wide">
+                          Sub-queries
+                        </h3>
+                        <Badge variant="secondary" className="ml-auto text-[10px] rounded-full">
+                          {job.subQueries.length}
+                        </Badge>
+                      </div>
+                      <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                        {job.subQueries.length === 0 && (
+                          <p className="text-xs text-muted-foreground italic">
+                            Generating sub-questions...
+                          </p>
                         )}
-                        Advanced Settings
-                      </Button>
-                    </CollapsibleTrigger>
-                    <Badge variant="outline" className="text-xs">
-                      Depth: {depth}
-                    </Badge>
-                  </div>
-                  <CollapsibleContent className="pt-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Search Depth</Label>
-                        <Select
-                          value={depth}
-                          onValueChange={(v) =>
-                            applyDepth(v as "standard" | "deep" | "advanced")
-                          }
-                        >
-                          <SelectTrigger className="h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="standard">Standard (fast)</SelectItem>
-                            <SelectItem value="deep">Deep</SelectItem>
-                            <SelectItem value="advanced">Advanced (max)</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {job.subQueries.map((sq, i) => (
+                          <SubQueryCard key={sq.id} index={i} sq={sq} />
+                        ))}
                       </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Sub-queries: {numSubQueries}</Label>
-                        <Input
-                          type="number"
-                          min={2}
-                          max={15}
-                          value={numSubQueries}
-                          onChange={(e) =>
-                            setNumSubQueries(
-                              Math.min(15, Math.max(2, parseInt(e.target.value) || 2))
-                            )
-                          }
-                          className="h-9"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Links / query: {maxLinks}</Label>
-                        <Input
-                          type="number"
-                          min={3}
-                          max={30}
-                          value={maxLinks}
-                          onChange={(e) =>
-                            setMaxLinks(
-                              Math.min(30, Math.max(3, parseInt(e.target.value) || 3))
-                            )
-                          }
-                          className="h-9"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">Report tokens: {reportTokens}</Label>
-                        <Input
-                          type="number"
-                          min={1000}
-                          max={32000}
-                          step={1000}
-                          value={reportTokens}
-                          onChange={(e) =>
-                            setReportTokens(
-                              Math.min(
-                                32000,
-                                Math.max(1000, parseInt(e.target.value) || 1000)
-                              )
-                            )
-                          }
-                          className="h-9"
-                        />
-                      </div>
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-3 space-y-1">
-                      <p>
-                        💡 <strong>Advanced</strong> uses ~{numSubQueries} sub-queries × {maxLinks} links =
-                        up to {numSubQueries * maxLinks} pages read.
-                      </p>
-                      <p>
-                        📝 <strong>Giant prompts</strong> (4K+ chars) automatically get enhanced decomposition
-                        with more output tokens; <strong>mega prompts</strong> (15K+) get the highest budget.
-                      </p>
-                      <p>
-                        📊 Final report cap: ~{fmtNum(reportTokens)} tokens. Raise it for even longer reports.
-                      </p>
-                    </div>
-                  </CollapsibleContent>
-                </Collapsible>
+                    </CardContent>
+                  </Card>
 
-                <div className="flex flex-col sm:flex-row gap-2 pt-1">
-                  <Button
-                    onClick={startResearch}
-                    disabled={starting || !query.trim() || isOverLimit}
-                    className="flex-1 h-11 text-base"
-                    size="lg"
-                  >
-                    {starting ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Starting...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Start Deep Research
-                      </>
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Feature strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {[
-                {
-                  icon: Layers,
-                  title: "Multi-stage pipeline",
-                  desc: "Decompose → Search → Read → Extract → Synthesize",
-                },
-                {
-                  icon: Globe,
-                  title: "Real web sources",
-                  desc: "Free Z.AI web_search + page_reader, or bring your Tavily key",
-                },
-                {
-                  icon: FileText,
-                  title: "Long-form report",
-                  desc: "Up to 32K-token comprehensive report with inline citations",
-                },
-              ].map((f, i) => (
-                <Card key={i} className="shadow-none">
-                  <CardContent className="p-4">
-                    <f.icon className="h-5 w-5 text-emerald-600 mb-2" />
-                    <h3 className="text-sm font-medium">{f.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-1">{f.desc}</p>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* ---------- Job view ---------- */}
-        {job && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.4 }}
-            className="space-y-5"
-          >
-            {/* Top status bar */}
-            <Card className="shadow-sm">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
-                      {isRunning ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-600" />
-                      ) : job.status === "completed" ? (
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                  <Card className="border-border/70 shadow-sm">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Globe className="h-3.5 w-3.5 text-primary" />
+                        <h3 className="text-xs font-semibold uppercase tracking-wide">
+                          Sources
+                        </h3>
+                        <Badge variant="secondary" className="ml-auto text-[10px] rounded-full">
+                          {dedupeSources(job.sources).length}
+                        </Badge>
+                      </div>
+                      {job.sources.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          No sources collected yet.
+                        </p>
                       ) : (
-                        <AlertCircle className="h-4 w-4 text-destructive" />
-                      )}
-                      <span className="text-sm font-medium">
-                        {STAGE_META[job.status].label}
-                      </span>
-                      <Badge variant="outline" className="text-xs">
-                        {job.config.depth}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground line-clamp-2">
-                      <span className="font-medium text-foreground">Query:</span>{" "}
-                      {job.query}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 shrink-0">
-                    {isRunning ? (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={reset}
-                        className="gap-1.5"
-                      >
-                        <RefreshCw className="h-3.5 w-3.5" />
-                        New
-                      </Button>
-                    ) : (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={reset}
-                        className="gap-1.5"
-                      >
-                        <Search className="h-3.5 w-3.5" />
-                        New Research
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground">
-                      {isRunning ? "Research in progress..." : "Done"}
-                    </span>
-                    <span className="font-mono">
-                      {stageProgress(job.status)}%
-                    </span>
-                  </div>
-                  <Progress
-                    value={stageProgress(job.status)}
-                    className={cn(
-                      "h-2",
-                      job.status === "failed" && "[&>div]:bg-destructive"
-                    )}
-                  />
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
-                  <StatCard
-                    icon={Layers}
-                    label="Sub-queries"
-                    value={`${job.stats.subQueriesCompleted}/${job.subQueries.length}`}
-                  />
-                  <StatCard
-                    icon={Link2}
-                    label="Pages found"
-                    value={String(job.stats.totalPagesFound)}
-                  />
-                  <StatCard
-                    icon={BookOpen}
-                    label="Pages read"
-                    value={`${job.stats.totalPagesSucceeded}/${job.stats.totalPagesRead}`}
-                  />
-                  <StatCard
-                    icon={Clock}
-                    label="Elapsed"
-                    value={fmtTime(job.stats.elapsedMs || Date.now() - (job.startedAt || Date.now()))}
-                  />
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Two-column layout on lg */}
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-              {/* Left: sub-queries + sources */}
-              <div className="lg:col-span-2 space-y-4">
-                {/* Sub-queries */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Layers className="h-4 w-4 text-emerald-600" />
-                      Sub-queries
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0 space-y-2 max-h-[420px] overflow-y-auto pr-1">
-                    {job.subQueries.length === 0 && (
-                      <p className="text-xs text-muted-foreground italic">
-                        Generating sub-questions...
-                      </p>
-                    )}
-                    {job.subQueries.map((sq, i) => (
-                      <SubQueryCard key={sq.id} index={i} sq={sq} />
-                    ))}
-                  </CardContent>
-                </Card>
-
-                {/* Sources */}
-                <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Globe className="h-4 w-4 text-emerald-600" />
-                      Sources
-                      <Badge variant="secondary" className="ml-1 text-xs">
-                        {job.sources.length}
-                      </Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    {job.sources.length === 0 ? (
-                      <p className="text-xs text-muted-foreground italic">
-                        No sources collected yet.
-                      </p>
-                    ) : (
-                      <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
-                        {dedupeSources(job.sources).slice(0, 50).map((s, i) => (
-                          <a
-                            key={s.url + i}
-                            href={s.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="block group rounded-md px-2 py-1.5 hover:bg-muted transition-colors"
-                          >
-                            <div className="flex items-start gap-2">
-                              <Hash className="h-3 w-3 mt-0.5 text-muted-foreground shrink-0" />
+                        <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
+                          {dedupeSources(job.sources).slice(0, 60).map((s, i) => (
+                            <a
+                              key={s.url + i}
+                              href={s.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="group flex items-start gap-2 rounded-lg px-2 py-1.5 hover:bg-muted transition-colors"
+                            >
+                              <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded bg-muted text-[9px] font-mono font-bold text-muted-foreground">
+                                {i + 1}
+                              </span>
                               <div className="min-w-0 flex-1">
-                                <p className="text-xs font-medium line-clamp-1 group-hover:text-emerald-600">
+                                <p className="text-[11px] font-medium line-clamp-1 group-hover:text-primary">
                                   {s.title || s.url}
                                 </p>
-                                <p className="text-[11px] text-muted-foreground line-clamp-1">
+                                <p className="text-[10px] text-muted-foreground line-clamp-1">
                                   {s.host}
                                 </p>
                               </div>
-                              <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                          </a>
+                              <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                            </a>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+
+              {/* ---------- Activity log (collapsible) ---------- */}
+              {job.logs.length > 0 && (
+                <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
+                  <Card className="border-border/70 shadow-sm">
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/40 transition-colors">
+                        <span className="flex items-center gap-2 text-xs font-medium">
+                          <Hash className="h-3.5 w-3.5 text-muted-foreground" />
+                          Activity log
+                          <Badge variant="secondary" className="text-[10px] rounded-full">
+                            {job.logs.length}
+                          </Badge>
+                        </span>
+                        {logsOpen ? (
+                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Separator />
+                      <div className="max-h-80 overflow-y-auto p-4 font-mono text-[11px] space-y-1">
+                        {job.logs.map((l, i) => (
+                          <LogLine key={i} entry={l} />
                         ))}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Right: report or logs */}
-              <div className="lg:col-span-3 space-y-4">
-                {job.report ? (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between gap-2">
-                        <CardTitle className="text-sm flex items-center gap-2">
-                          <FileText className="h-4 w-4 text-emerald-600" />
-                          Final Report
-                        </CardTitle>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={copyReport}
-                            className="h-7 gap-1"
-                          >
-                            {copied ? (
-                              <Check className="h-3 w-3" />
-                            ) : (
-                              <Copy className="h-3 w-3" />
-                            )}
-                            Copy
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={downloadReport}
-                            className="h-7 gap-1"
-                          >
-                            <Download className="h-3 w-3" />
-                            .md
-                          </Button>
-                        </div>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <article className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-a:text-emerald-600 hover:prose-a:text-emerald-700 prose-pre:bg-muted prose-pre:text-foreground">
-                        <ReactMarkdown>{job.report}</ReactMarkdown>
-                      </article>
-                    </CardContent>
+                    </CollapsibleContent>
                   </Card>
-                ) : (
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <Sparkles className="h-4 w-4 text-emerald-600" />
-                        Live Activity
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        The report will appear here once synthesis completes.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="pt-0">
-                      <LiveActivity logs={job.logs} />
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Logs (collapsible) */}
-                {job.logs.length > 0 && (
-                  <Collapsible open={logsOpen} onOpenChange={setLogsOpen}>
-                    <Card>
-                      <CardHeader className="pb-3">
-                        <CollapsibleTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="w-full justify-between h-8"
-                          >
-                            <span className="flex items-center gap-2 text-xs font-medium">
-                              <Hash className="h-3.5 w-3.5" />
-                              Activity Log ({job.logs.length})
-                            </span>
-                            {logsOpen ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                          </Button>
-                        </CollapsibleTrigger>
-                      </CardHeader>
-                      <CollapsibleContent>
-                        <CardContent className="pt-0">
-                          <div className="max-h-80 overflow-y-auto rounded-md border bg-muted/30 p-3 font-mono text-[11px] space-y-1">
-                            {job.logs.map((l, i) => (
-                              <LogLine key={i} entry={l} />
-                            ))}
-                          </div>
-                        </CardContent>
-                      </CollapsibleContent>
-                    </Card>
-                  </Collapsible>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
+                </Collapsible>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
 
       {/* ---------- Footer ---------- */}
-      <footer className="border-t mt-auto bg-muted/30">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
-          <p>
-            Built with Z.AI SDK · OpenAI-compatible NVIDIA NIM supported via{" "}
-            <code className="px-1 py-0.5 rounded bg-muted">.env</code>
+      <footer className="relative border-t border-border/60 bg-background/50 backdrop-blur-sm mt-auto">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
+          <p className="flex items-center gap-1.5">
+            <Sparkles className="h-3 w-3" />
+            Multi-round deep research · plan → search → gap analysis → round 2 → report
           </p>
           <p className="flex items-center gap-1.5">
-            <Brain className="h-3.5 w-3.5" />
-            Deep Research Engine
+            <Quote className="h-3 w-3" />
+            Z.AI SDK · NVIDIA NIM ready
           </p>
         </div>
       </footer>
@@ -901,7 +937,7 @@ export function DeepResearch() {
 
 // ---------- sub-components ----------
 
-function StatCard({
+function StatPill({
   icon: Icon,
   label,
   value,
@@ -911,10 +947,10 @@ function StatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-lg border bg-card p-3">
-      <div className="flex items-center gap-1.5 text-muted-foreground mb-1">
+    <div className="rounded-xl border border-border/60 bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-1.5 text-muted-foreground mb-0.5">
         <Icon className="h-3 w-3" />
-        <span className="text-[11px]">{label}</span>
+        <span className="text-[10px]">{label}</span>
       </div>
       <div className="text-sm font-mono font-semibold tabular-nums">{value}</div>
     </div>
@@ -925,69 +961,52 @@ const SQ_STATUS_META: Record<
   SubQuery["status"],
   { label: string; cls: string; icon: React.ElementType }
 > = {
-  pending: {
-    label: "Pending",
-    cls: "bg-muted text-muted-foreground",
-    icon: Clock,
-  },
-  searching: {
-    label: "Searching",
-    cls: "bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300",
-    icon: Search,
-  },
-  reading: {
-    label: "Reading",
-    cls: "bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300",
-    icon: BookOpen,
-  },
-  extracting: {
-    label: "Extracting",
-    cls: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950 dark:text-fuchsia-300",
-    icon: Sparkles,
-  },
-  done: {
-    label: "Done",
-    cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300",
-    icon: CheckCircle2,
-  },
-  failed: {
-    label: "Failed",
-    cls: "bg-destructive/10 text-destructive",
-    icon: AlertCircle,
-  },
+  pending: { label: "Pending", cls: "bg-muted text-muted-foreground", icon: Clock },
+  searching: { label: "Searching", cls: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300", icon: Globe },
+  reading: { label: "Reading", cls: "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300", icon: BookOpen },
+  extracting: { label: "Extracting", cls: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300", icon: Sparkles },
+  done: { label: "Done", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300", icon: Check },
+  failed: { label: "Failed", cls: "bg-destructive/10 text-destructive", icon: AlertCircle },
 };
 
 function SubQueryCard({ index, sq }: { index: number; sq: SubQuery }) {
   const meta = SQ_STATUS_META[sq.status];
   const Icon = meta.icon;
-  const isActive = sq.status === "searching" || sq.status === "reading" || sq.status === "extracting";
+  const isActive =
+    sq.status === "searching" || sq.status === "reading" || sq.status === "extracting";
 
   return (
-    <div className="rounded-md border bg-card p-2.5">
+    <div className="rounded-lg border border-border/50 bg-card/60 px-2.5 py-2">
       <div className="flex items-start gap-2">
-        <div className="text-[11px] font-mono text-muted-foreground pt-0.5 shrink-0">
-          Q{index + 1}
+        <div className="flex items-center gap-1 shrink-0 pt-0.5">
+          <span
+            className={cn(
+              "flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold",
+              sq.round === 2
+                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
+                : "bg-primary/15 text-primary"
+            )}
+          >
+            {index + 1}
+          </span>
+          {sq.round === 2 && (
+            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] px-1 py-0 rounded">
+              R2
+            </Badge>
+          )}
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium leading-snug">{sq.question}</p>
-          <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-            <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0 gap-1", meta.cls)}>
-              {isActive ? (
-                <Loader2 className="h-2.5 w-2.5 animate-spin" />
-              ) : (
-                <Icon className="h-2.5 w-2.5" />
-              )}
+          <p className="text-[11px] font-medium leading-snug">{sq.question}</p>
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            <Badge variant="outline" className={cn("text-[9px] px-1.5 py-0 gap-0.5 rounded-full", meta.cls)}>
+              {isActive ? <Loader2 className="h-2 w-2 animate-spin" /> : <Icon className="h-2 w-2" />}
               {meta.label}
             </Badge>
             {sq.searchResults.length > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                {sq.searchResults.length} results
-              </span>
+              <span className="text-[9px] text-muted-foreground">{sq.searchResults.length} results</span>
             )}
             {sq.pagesRead > 0 && (
-              <span className="text-[10px] text-muted-foreground">
-                · {sq.pagesSucceeded}/{sq.pagesRead} read
-              </span>
+              <span className="text-[9px] text-muted-foreground">· {sq.pagesSucceeded}/{sq.pagesRead} read</span>
             )}
           </div>
         </div>
@@ -1015,11 +1034,11 @@ function LiveActivity({ logs }: { logs: LogEntry[] }) {
     }
   }, [logs]);
 
-  const recent = logs.slice(-25);
+  const recent = logs.slice(-30);
   return (
     <div
       ref={containerRef}
-      className="max-h-[500px] overflow-y-auto rounded-md border bg-muted/30 p-3 font-mono text-[11px] space-y-1"
+      className="max-h-[460px] overflow-y-auto rounded-lg border border-border/50 bg-muted/20 p-3 font-mono text-[11px] space-y-1"
     >
       {recent.length === 0 && (
         <p className="text-muted-foreground italic">Waiting for activity...</p>
@@ -1040,9 +1059,9 @@ function LogLine({ entry }: { entry: LogEntry }) {
   });
   const colors: Record<LogEntry["level"], string> = {
     info: "text-muted-foreground",
-    warn: "text-amber-600",
+    warn: "text-amber-600 dark:text-amber-400",
     error: "text-destructive",
-    success: "text-emerald-600",
+    success: "text-emerald-600 dark:text-emerald-400",
   };
   const prefix: Record<LogEntry["level"], string> = {
     info: "•",
@@ -1052,7 +1071,7 @@ function LogLine({ entry }: { entry: LogEntry }) {
   };
   return (
     <div className="flex gap-2">
-      <span className="text-muted-foreground/60 shrink-0">{time}</span>
+      <span className="text-muted-foreground/50 shrink-0">{time}</span>
       <span className={cn("shrink-0", colors[entry.level])}>{prefix[entry.level]}</span>
       <span className={cn("break-words", colors[entry.level])}>{entry.message}</span>
     </div>

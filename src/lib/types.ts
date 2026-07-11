@@ -1,11 +1,20 @@
 // Deep Research Engine - Core Types
+//
+// The pipeline is designed to surpass single-round research tools by adding:
+//   1. A research PLAN (structured outline generated up-front, Gemini-style).
+//   2. GAP ANALYSIS after round 1 — the agent reviews findings and identifies
+//      what's missing, then generates follow-up questions.
+//   3. A SECOND RESEARCH ROUND to fill the gaps.
+//   4. Final SYNTHESIS that follows the plan's outline.
 
 export type ResearchStatus =
   | "queued"
+  | "planning"
   | "decomposing"
   | "searching"
   | "reading"
   | "extracting"
+  | "analyzing_gaps"
   | "synthesizing"
   | "completed"
   | "failed";
@@ -17,6 +26,8 @@ export type SubQueryStatus =
   | "extracting"
   | "done"
   | "failed";
+
+export type SubQueryRound = 1 | 2;
 
 export type SearchDepth = "standard" | "deep" | "advanced";
 
@@ -33,6 +44,23 @@ export interface ResearchConfig {
   reportMaxTokens: number;
   retriever: RetrieverType;
   llmProvider: LLMProvider;
+  // Multi-round research (the key differentiator vs. single-round tools).
+  enableMultiRound: boolean;
+  // How many gap-filling sub-queries to generate in round 2.
+  numGapQueries: number;
+}
+
+// A planned section of the final report (Gemini-style research plan).
+export interface PlanSection {
+  id: string;
+  title: string;
+  description: string;
+}
+
+export interface ResearchPlan {
+  title: string;
+  summary: string;
+  sections: PlanSection[];
 }
 
 export interface SearchResultItem {
@@ -62,6 +90,7 @@ export interface Source {
   host: string;
   snippet: string;
   subQueryId: string;
+  round: SubQueryRound;
   publishedTime?: string;
   excerpt?: string;
   tokensUsed?: number;
@@ -72,6 +101,9 @@ export interface SubQuery {
   id: string;
   question: string;
   status: SubQueryStatus;
+  round: SubQueryRound;
+  // For round-2 sub-queries, the gap they're meant to fill.
+  rationale?: string;
   searchResults: SearchResultItem[];
   pagesRead: number;
   pagesSucceeded: number;
@@ -95,6 +127,7 @@ export interface ResearchStats {
   totalTokensUsed: number;
   elapsedMs: number;
   subQueriesCompleted: number;
+  roundsCompleted: number;
 }
 
 export interface ResearchJob {
@@ -106,6 +139,8 @@ export interface ResearchJob {
   startedAt?: number;
   finishedAt?: number;
   config: ResearchConfig;
+  plan: ResearchPlan | null;
+  gapAnalysis: string | null;
   subQueries: SubQuery[];
   sources: Source[];
   report: string | null;
