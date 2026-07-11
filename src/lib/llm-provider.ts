@@ -1,10 +1,12 @@
-// LLM Provider abstraction.
+// LLM Provider abstraction with multi-model fallback chain.
 //
 // Supports two backends:
 //   1. "zai"     -> built-in z-ai-web-dev-sdk (FREE, no key needed in this env)
-//   2. "nvidia"  -> NVIDIA NIM (OpenAI-compatible endpoint)
+//   2. "nvidia"  -> NVIDIA NIM (OpenAI-compatible endpoint) with 6-model fallback
 //
-// Configuration is read from environment variables (see .env).
+// The NVIDIA backend reads SMART_LLM_MODELS (comma-separated list) and tries
+// each model in order until one succeeds. This provides resilience against
+// individual model outages, rate limits, or timeouts.
 
 import ZAI from "z-ai-web-dev-sdk";
 import type { LLMProvider } from "./types";
@@ -45,8 +47,27 @@ export function getLLMProvider(): LLMProvider {
   return v === "nvidia" ? "nvidia" : "zai";
 }
 
+// Parse a comma-separated model list from env. Returns at least one model.
+function getModelList(key: string, fallback: string): string[] {
+  const raw = env(key, fallback);
+  const models = raw
+    .split(",")
+    .map((m) => m.trim())
+    .filter((m) => m.length > 0);
+  return models.length > 0 ? models : [fallback];
+}
+
+// The 6 smart models (fallback chain). Tries each in order.
+export function getSmartModels(): string[] {
+  return getModelList(
+    "SMART_LLM_MODELS",
+    "mistralai/mistral-large-3-675b-instruct-2512,deepseek-ai/deepseek-v4-pro,mistralai/mistral-nemotron,meta/llama-3.1-70b-instruct,minimaxai/minimax-m3,mistralai/mistral-small-4-119b-2603"
+  );
+}
+
+// Backward-compatible single model (first in the chain).
 export function getSmartModel(): string {
-  return env("SMART_LLM", "nvidia/llama-3.1-nemotron-70b-instruct");
+  return getSmartModels()[0];
 }
 
 export function getFastModel(): string {
@@ -85,10 +106,33 @@ function isRetryableLLMError(msg: string): boolean {
   );
 }
 
+// Should we skip to the next model in the fallback chain (vs. retry)?
+function shouldSkipModel(msg: string): boolean {
+  const m = msg.toLowerCase();
+  // 404 = model not available, 401/403 = auth issue, 400 = bad request,
+  // 500 = server error. For these, try the next model immediately.
+  return (
+    m.includes("404") ||
+    m.includes("not found") ||
+    m.includes("401") ||
+    m.includes("unauthorized") ||
+    m.includes("403") ||
+    m.includes("forbidden") ||
+    m.includes("400") ||
+    m.includes("bad request") ||
+    m.includes("500") ||
+    m.includes("internal server error") ||
+    m.includes("502") ||
+    m.includes("bad gateway") ||
+    m.includes("504") ||
+    m.includes("gateway timeout")
+  );
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
-  retries = 4
+  retries = 3
 ): Promise<T> {
   let lastErr: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
@@ -97,9 +141,10 @@ async function withRetry<T>(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
+      // Only retry on rate-limit / transient errors.
       if (attempt < retries && isRetryableLLMError(msg)) {
-        // Exponential backoff: 3s, 6s, 12s, 24s
-        const delayMs = 3000 * Math.pow(2, attempt);
+        // Exponential backoff: 2s, 4s, 8s
+        const delayMs = 2000 * Math.pow(2, attempt);
         await sleep(delayMs);
         continue;
       }
@@ -146,66 +191,139 @@ async function zaiComplete(
   }, "zaiComplete");
 }
 
-// ---------- NVIDIA NIM backend (OpenAI-compatible) ----------
+// ---------- NVIDIA NIM backend (OpenAI-compatible) with fallback chain ----------
 
-async function nvidiaComplete(
+interface NvidiaResponse {
+  choices?: {
+    message?: {
+      content?: string | null;
+      reasoning?: string | null;
+      reasoning_content?: string | null;
+    };
+  }[];
+  usage?: { total_tokens?: number };
+}
+
+async function nvidiaCompleteSingle(
   opts: LLMCompletionOptions,
   model: string
 ): Promise<LLMCompletionResult> {
-  return withRetry(async () => {
-    const apiKey = env("NVIDIA_API_KEY");
-    if (!apiKey) {
-      throw new Error(
-        "NVIDIA_API_KEY is not set. Add your NVIDIA key to .env to use NVIDIA models."
+  const apiKey = env("NVIDIA_API_KEY");
+  if (!apiKey) {
+    throw new Error(
+      "NVIDIA_API_KEY is not set. Add your NVIDIA key to .env to use NVIDIA models."
+    );
+  }
+  const baseUrl = getNvidiaBaseUrl();
+
+  const body: Record<string, unknown> = {
+    model,
+    messages: opts.messages,
+    temperature: opts.temperature ?? 0.4,
+    max_tokens: opts.maxTokens ?? 2048,
+    top_p: 0.9,
+    stream: false,
+  };
+  if (opts.json) {
+    body.response_format = { type: "json_object" };
+  }
+
+  const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      Accept: "application/json",
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `NVIDIA NIM request failed (${res.status} ${res.statusText}): ${text.slice(
+        0,
+        300
+      )}`
+    );
+  }
+
+  const data = (await res.json()) as NvidiaResponse;
+  const msg = data.choices?.[0]?.message;
+
+  // Some reasoning models (e.g., gpt-oss, nemotron-super) return content=null
+  // and put the actual output in `reasoning_content` or `reasoning`. Handle both.
+  let content = msg?.content ?? "";
+  if (!content && (msg?.reasoning_content || msg?.reasoning)) {
+    content = msg.reasoning_content || msg.reasoning || "";
+  }
+
+  return {
+    content,
+    tokensUsed: data.usage?.total_tokens,
+    model,
+    provider: "nvidia" as const,
+  };
+}
+
+// Try each model in the fallback chain. For retryable errors (429/503/timeout),
+// retry with backoff. For hard errors (404/400/500), skip to the next model.
+async function nvidiaCompleteWithFallback(
+  opts: LLMCompletionOptions,
+  models: string[]
+): Promise<LLMCompletionResult> {
+  let lastErr: unknown;
+  const tried: string[] = [];
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    tried.push(model);
+    try {
+      const result = await withRetry(
+        () => nvidiaCompleteSingle(opts, model),
+        `nvidia:${model}`,
+        2 // fewer retries per model since we have fallback
       );
-    }
-    const baseUrl = getNvidiaBaseUrl();
-
-    const body: Record<string, unknown> = {
-      model,
-      messages: opts.messages,
-      temperature: opts.temperature ?? 0.4,
-      max_tokens: opts.maxTokens ?? 2048,
-      top_p: 0.9,
-      stream: false,
-    };
-    if (opts.json) {
-      body.response_format = { type: "json_object" };
-    }
-
-    const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
-    const res = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${apiKey}`,
-        Accept: "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(
-        `NVIDIA NIM request failed (${res.status} ${res.statusText}): ${text.slice(
-          0,
-          500
-        )}`
+      // Log fallback usage if not the first model.
+      if (i > 0) {
+        console.log(
+          `[llm-provider] SMART_LLM fallback: "${model}" succeeded after ${i} previous model(s) failed.`
+        );
+      }
+      return result;
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(
+        `[llm-provider] Model "${model}" failed: ${msg.slice(0, 150)}. Trying next model...`
       );
+      // If this is a hard error (404/400/500), the loop continues to the next model.
+      // If it's a retryable error that exhausted retries, also continue.
+      // Small delay before trying the next model to avoid hammering.
+      if (i < models.length - 1) {
+        await sleep(500);
+      }
     }
+  }
 
-    const data = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
-      usage?: { total_tokens?: number };
-    };
-    const content = data.choices?.[0]?.message?.content ?? "";
-    return {
-      content,
-      tokensUsed: data.usage?.total_tokens,
-      model,
-      provider: "nvidia" as const,
-    };
-  }, "nvidiaComplete");
+  // All models failed.
+  const triedStr = tried.join(", ");
+  const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  throw new Error(
+    `All ${models.length} NVIDIA models failed. Tried: ${triedStr}. Last error: ${msg}`
+  );
+}
+
+// Fast model: single model (no fallback needed — it's just for quick tasks).
+async function nvidiaFast(
+  opts: LLMCompletionOptions
+): Promise<LLMCompletionResult> {
+  return withRetry(
+    () => nvidiaCompleteSingle(opts, getFastModel()),
+    `nvidia-fast:${getFastModel()}`,
+    3
+  );
 }
 
 // ---------- Public API ----------
@@ -214,24 +332,28 @@ export interface LLMProviderApi {
   fast(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
   smart(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
   provider: LLMProvider;
+  // The list of smart models in the fallback chain (for display).
+  smartModels: string[];
 }
 
 export async function getLLM(): Promise<LLMProviderApi> {
   const provider = getLLMProvider();
   const fastModel = getFastModel();
-  const smartModel = getSmartModel();
+  const smartModels = getSmartModels();
 
   if (provider === "nvidia") {
     return {
       provider: "nvidia",
-      fast: (opts) => nvidiaComplete(opts, fastModel),
-      smart: (opts) => nvidiaComplete(opts, smartModel),
+      smartModels,
+      fast: nvidiaFast,
+      smart: (opts) => nvidiaCompleteWithFallback(opts, smartModels),
     };
   }
 
   // Z.AI backend (default, free).
   return {
     provider: "zai",
+    smartModels: ["zai-built-in"],
     fast: zaiComplete,
     smart: zaiComplete,
   };

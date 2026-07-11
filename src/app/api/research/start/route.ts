@@ -4,7 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createJob } from "@/lib/research-store";
 import { resolveConfig, runResearch } from "@/lib/research-engine";
-import { getLLMProvider } from "@/lib/llm-provider";
+import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
 import type { SearchDepth } from "@/lib/types";
 
@@ -69,6 +69,8 @@ export async function POST(req: NextRequest) {
         reportMaxTokens: config.reportMaxTokens,
         retriever: config.retriever,
         llmProvider: getLLMProvider(),
+        smartModels: getSmartModels(),
+        fastModel: getFastModel(),
       },
       retriever: getRetriever(),
     });
