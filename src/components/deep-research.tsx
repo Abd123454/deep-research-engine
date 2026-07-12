@@ -17,14 +17,23 @@ import {
 } from "@/lib/research-ui-utils";
 import { ResearchInput } from "@/components/research/ResearchInput";
 import { ResearchStatus } from "@/components/research/ResearchStatus";
-import { ResearchPlan } from "@/components/research/ResearchPlan";
+import { ResearchPlan as ResearchPlanCard } from "@/components/research/ResearchPlan";
 import { GapAnalysis } from "@/components/research/GapAnalysis";
 import { SubQueryList } from "@/components/research/SubQueryList";
 import { SourcesList } from "@/components/research/SourcesList";
 import { ReportViewer, LiveActivity } from "@/components/research/ReportViewer";
 import { ActivityLog } from "@/components/research/ActivityLog";
+import { PlanPreview, PlanPreviewLoading } from "@/components/research/PlanPreview";
+import type { ResearchPlan } from "@/lib/types";
 
 const MAX_QUERY_CHARS = 100_000;
+
+// The UI has 4 phases:
+//   "idle"         → user is typing/editing the query
+//   "planning"     → generating the research plan (API call in flight)
+//   "plan_preview" → plan generated, user reviews/edits it
+//   "researching"  → full pipeline running (plan → search → ... → report)
+type UIPhase = "idle" | "planning" | "plan_preview" | "researching";
 
 export function DeepResearch() {
   // ---------- Input state ----------
@@ -34,6 +43,10 @@ export function DeepResearch() {
   const [maxLinks, setMaxLinks] = React.useState(25);
   const [reportTokens, setReportTokens] = React.useState(8000);
   const [showSettings, setShowSettings] = React.useState(false);
+
+  // ---------- Phase + plan state ----------
+  const [phase, setPhase] = React.useState<UIPhase>("idle");
+  const [draftPlan, setDraftPlan] = React.useState<ResearchPlan | null>(null);
 
   // ---------- Job state ----------
   const [job, setJob] = React.useState<ResearchJob | null>(null);
@@ -75,14 +88,51 @@ export function DeepResearch() {
     }
   }
 
-  // ---------- Start research ----------
+  // ---------- Generate plan (Phase: idle → planning → plan_preview) ----------
   async function startResearch() {
     if (!query.trim()) {
       toast.error("Please enter a research query.");
       return;
     }
     setStarting(true);
+    setPhase("planning");
+    setDraftPlan(null);
+    try {
+      const res = await fetch("/api/research/plan", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: query.trim(),
+          depth,
+          numSubQueries,
+          maxLinksPerQuery: maxLinks,
+          reportMaxTokens: reportTokens,
+        }),
+      });
+      const data = (await res.json()) as {
+        ok: boolean;
+        plan?: ResearchPlan;
+        error?: string;
+      };
+      if (!res.ok || !data.ok || !data.plan) {
+        throw new Error(data.error || "Failed to generate plan.");
+      }
+      setDraftPlan(data.plan);
+      setPhase("plan_preview");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      toast.error("Failed to generate plan", { description: msg });
+      setPhase("idle");
+    } finally {
+      setStarting(false);
+    }
+  }
+
+  // ---------- Start full research with approved plan ----------
+  async function startFullResearch(approvedPlan: ResearchPlan) {
+    setStarting(true);
     setJob(null);
+    setPhase("researching");
     stopPollingRef.current = false;
     try {
       const res = await fetch("/api/research/start", {
@@ -94,6 +144,7 @@ export function DeepResearch() {
           numSubQueries,
           maxLinksPerQuery: maxLinks,
           reportMaxTokens: reportTokens,
+          plan: approvedPlan,
         }),
       });
       const data = (await res.json()) as {
@@ -110,9 +161,15 @@ export function DeepResearch() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Failed to start research", { description: msg });
+      setPhase("plan_preview");
     } finally {
       setStarting(false);
     }
+  }
+
+  function cancelPlanPreview() {
+    setPhase("idle");
+    setDraftPlan(null);
   }
 
   // ---------- SSE streaming (with polling fallback) ----------
@@ -230,6 +287,8 @@ export function DeepResearch() {
     stopPollingRef.current = true;
     setPolling(false);
     setJob(null);
+    setPhase("idle");
+    setDraftPlan(null);
   }
 
   async function copyReport() {
@@ -294,7 +353,7 @@ export function DeepResearch() {
       {/* Main */}
       <main className="relative flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
         <AnimatePresence mode="wait">
-          {!job ? (
+          {phase === "idle" && (
             <ResearchInput
               key="input"
               query={query}
@@ -313,7 +372,20 @@ export function DeepResearch() {
               startResearch={startResearch}
               textareaRef={textareaRef}
             />
-          ) : (
+          )}
+
+          {phase === "planning" && <PlanPreviewLoading key="planning" />}
+
+          {phase === "plan_preview" && draftPlan && (
+            <PlanPreview
+              key="plan_preview"
+              plan={draftPlan}
+              onStart={startFullResearch}
+              onCancel={cancelPlanPreview}
+            />
+          )}
+
+          {phase === "researching" && job && (
             <motion.div
               key="results"
               initial={{ opacity: 0, y: 12 }}
@@ -327,7 +399,7 @@ export function DeepResearch() {
 
               {/* Research plan */}
               {job.plan && job.plan.sections.length > 0 && (
-                <ResearchPlan plan={job.plan} />
+                <ResearchPlanCard plan={job.plan} />
               )}
 
               {/* Gap analysis */}

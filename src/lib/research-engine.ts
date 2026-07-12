@@ -210,7 +210,7 @@ function heuristicDecompose(query: string, numSubQueries: number): string[] {
 
 // ---------- Stage 1: Planning (Gemini-style research outline) ----------
 
-async function generatePlan(
+export async function generatePlan(
   job: ResearchJob,
   config: ResearchConfig
 ): Promise<ResearchPlan> {
@@ -855,7 +855,13 @@ export async function runResearch(jobId: string): Promise<void> {
 
   try {
     // Stage 1: Plan.
-    await generatePlan(job, job.config);
+    // If the job already has a plan (from the "Plan Preview" step), skip
+    // generation — the user already approved/edited it.
+    if (job.plan && job.plan.sections.length > 0) {
+      log(job, "info", "planning", `Using pre-approved plan: "${job.plan.title}" (${job.plan.sections.length} sections)`);
+    } else {
+      await generatePlan(job, job.config);
+    }
 
     // Stage 2: Decompose (round 1).
     const round1SubQueries = await decompose(job, job.config, 1, job.config.numSubQueries);

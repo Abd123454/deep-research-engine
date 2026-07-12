@@ -26,6 +26,23 @@ const StartBodySchema = z.object({
   numSubQueries: z.number().int().min(2).max(12).optional(),
   maxLinksPerQuery: z.number().int().min(3).max(25).optional(),
   reportMaxTokens: z.number().int().min(1000).max(32000).optional(),
+  // Optional: a pre-approved/edited plan from the "Plan Preview" step.
+  // If provided, the engine skips generatePlan and uses this one.
+  plan: z
+    .object({
+      title: z.string(),
+      summary: z.string(),
+      sections: z
+        .array(
+          z.object({
+            id: z.string(),
+            title: z.string(),
+            description: z.string(),
+          })
+        )
+        .min(1),
+    })
+    .optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -75,6 +92,12 @@ export async function POST(req: NextRequest) {
     });
 
     const job = createJob(query, config, clientIP);
+
+    // If a pre-approved plan was provided (Plan Preview step), attach it
+    // so the engine skips plan generation.
+    if (body.plan) {
+      job.plan = body.plan;
+    }
 
     // Fire-and-forget the research pipeline. We do NOT await it here —
     // the client polls /api/research/status/[id] for progress.
