@@ -2,47 +2,64 @@
 // Starts a new deep research job. Runs asynchronously in the background.
 
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { createJob } from "@/lib/research-store";
 import { resolveConfig, runResearch } from "@/lib/research-engine";
 import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
-import type { SearchDepth } from "@/lib/types";
+import { checkStartRateLimit, getClientIP } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// Hard limit on query length (100k chars ≈ 25k tokens, within modern context windows).
+const MAX_QUERY_CHARS = 100_000;
+
+// Strict input validation with zod (previously parsed manually — allowed prompt
+// injection via invalid `depth` values and bypassing the numSubQueries/maxLinks caps).
+const StartBodySchema = z.object({
+  query: z.string().trim().min(1, "Query is required.").max(MAX_QUERY_CHARS),
+  depth: z.enum(["standard", "deep", "advanced"]).optional(),
+  numSubQueries: z.number().int().min(2).max(12).optional(),
+  maxLinksPerQuery: z.number().int().min(3).max(25).optional(),
+  reportMaxTokens: z.number().int().min(1000).max(32000).optional(),
+});
+
 export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json().catch(() => ({}))) as {
-      query?: string;
-      depth?: SearchDepth;
-      numSubQueries?: number;
-      maxLinksPerQuery?: number;
-      reportMaxTokens?: number;
-    };
-
-    const query = (body.query || "").trim();
-    if (!query) {
-      return NextResponse.json(
-        { ok: false, error: "Query is required." },
-        { status: 400 }
-      );
-    }
-    // Allow very large prompts (giant research briefs, multi-paragraph
-    // instructions, RFPs, etc.). 100k chars ≈ ~25k tokens, well within
-    // modern LLM context windows (Llama 3.1/3.3 = 128k context).
-    const MAX_QUERY_CHARS = 100_000;
-    if (query.length > MAX_QUERY_CHARS) {
+    const raw = await req.json().catch(() => ({}));
+    const parsed = StartBodySchema.safeParse(raw);
+    if (!parsed.success) {
+      const firstErr = parsed.error.issues[0];
       return NextResponse.json(
         {
           ok: false,
-          error: `Query too long (max ${MAX_QUERY_CHARS.toLocaleString()} chars). Received ${query.length.toLocaleString()}.`,
+          error: firstErr
+            ? `${firstErr.path.join(".") || "input"}: ${firstErr.message}`
+            : "Invalid request body.",
         },
         { status: 400 }
       );
     }
+    const body = parsed.data;
+    const query = body.query;
 
-    // Resolve config from env + optional client overrides.
+    // Rate limiting: protect free-tier API quotas from abuse.
+    const clientIP = getClientIP(req);
+    const rateLimit = checkStartRateLimit(clientIP);
+    if (!rateLimit.ok) {
+      return NextResponse.json(
+        { ok: false, error: rateLimit.reason },
+        {
+          status: 429,
+          headers: rateLimit.retryAfterSec
+            ? { "Retry-After": String(rateLimit.retryAfterSec) }
+            : undefined,
+        }
+      );
+    }
+
+    // Resolve config from env + validated client overrides.
     const config = resolveConfig(query, {
       depth: body.depth,
       numSubQueries: body.numSubQueries,
@@ -50,11 +67,11 @@ export async function POST(req: NextRequest) {
       reportMaxTokens: body.reportMaxTokens,
     });
 
-    const job = createJob(query, config);
+    const job = createJob(query, config, clientIP);
 
     // Fire-and-forget the research pipeline. We do NOT await it here —
     // the client polls /api/research/status/[id] for progress.
-    runResearch(job.id).catch((err) => {
+    runResearch(job.id).catch((err: unknown) => {
       console.error(`[research] runResearch(${job.id}) threw:`, err);
     });
 

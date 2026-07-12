@@ -69,3 +69,7 @@ worklog.md
 
 # OS files
 Thumbs.db
+
+# Tool results / uploads (internal)
+/tool-results/
+/upload/

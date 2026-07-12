@@ -17,6 +17,8 @@ import { searchWeb } from "./retriever";
 import { readPages } from "./page-reader";
 import { getRetriever } from "./retriever";
 import { getJob } from "./research-store";
+import { releaseConcurrency } from "./rate-limit";
+import { envInt, envStr } from "./env";
 import { randomUUID } from "crypto";
 import type {
   ResearchConfig,
@@ -26,32 +28,10 @@ import type {
   PlanSection,
   SubQuery,
   LogEntry,
-  Source,
   SearchResultItem,
   PageReadResult,
   SubQueryRound,
 } from "./types";
-
-function envInt(key: string, fallback: number, min = 1, max = 1000): number {
-  if (typeof process === "undefined") return fallback;
-  const raw = process.env?.[key];
-  if (!raw) return fallback;
-  const n = parseInt(raw, 10);
-  if (isNaN(n)) return fallback;
-  return Math.min(Math.max(n, min), max);
-}
-
-function envStr(key: string, fallback: string): string {
-  if (typeof process === "undefined") return fallback;
-  return (process.env?.[key] ?? fallback).trim() || fallback;
-}
-
-function envBool(key: string, fallback: boolean): boolean {
-  if (typeof process === "undefined") return fallback;
-  const raw = process.env?.[key];
-  if (!raw) return fallback;
-  return raw === "true" || raw === "1" || raw === "yes";
-}
 
 export function resolveConfig(
   query: string,
@@ -104,7 +84,7 @@ export function resolveConfig(
       overrides?.pageReadConcurrency ??
       envInt("PAGE_READ_CONCURRENCY", 4, 1, 8),
     reportMaxTokens:
-      overrides?.reportMaxTokens ?? envInt("REPORT_MAX_TOKENS", 8000, 1000, 32000),
+      overrides?.reportMaxTokens ?? envInt("REPORT_MAX_TOKENS", 6000, 1000, 32000),
     retriever: overrides?.retriever ?? getRetriever(),
     llmProvider:
       overrides?.llmProvider ??
@@ -711,7 +691,9 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
       const parsed = JSON.parse(result.content);
       if (typeof parsed.gaps === "string") gapAnalysis = parsed.gaps;
       if (Array.isArray(parsed.follow_ups)) {
-        followUps = parsed.follow_ups.map(String).map((q) => truncateQuestion(q)).filter((q) => q.length > 0);
+        followUps = parsed.follow_ups
+          .map((q: unknown) => truncateQuestion(String(q)))
+          .filter((q: string) => q.length > 0);
       }
     } catch {
       // Fallback: use the raw text as the gap analysis.
@@ -733,8 +715,8 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
     log(job, "info", "analyzing_gaps", `Gaps: ${gapAnalysis.slice(0, 200)}`);
   }
 
-  // Store the follow-ups on the job so round 2 can use them.
-  (job as ResearchJob & { _followUps?: string[] })._followUps = followUps;
+  // Store the follow-ups on the job (proper field, not a type-assertion hack).
+  job.round2FollowUps = followUps;
   return gapAnalysis;
 }
 
@@ -881,7 +863,7 @@ export async function runResearch(jobId: string): Promise<void> {
       try {
         await analyzeGaps(job, job.config);
 
-        const followUps = (job as ResearchJob & { _followUps?: string[] })._followUps || [];
+        const followUps = job.round2FollowUps;
         if (followUps.length > 0) {
           const round2Count = Math.min(followUps.length, job.config.numGapQueries);
           const round2Questions = followUps.slice(0, round2Count);
@@ -941,6 +923,18 @@ export async function runResearch(jobId: string): Promise<void> {
     }
 
     // Stage 6: Synthesize final report.
+    // Guard: if ALL sub-queries failed (no findings at all), fail the job
+    // rather than synthesizing a hallucinated report from an empty dossier.
+    const anyFindings = job.subQueries.some(
+      (sq) => sq.keyFindings && sq.keyFindings.length > 50
+    );
+    if (!anyFindings && job.subQueries.length > 0) {
+      throw new Error(
+        "All sub-queries failed to produce findings (every search/extract stage failed). " +
+          "Check API keys, quotas, and network connectivity, then retry."
+      );
+    }
+
     job.report = await synthesizeReport(job, job.config);
 
     setStatus(job, "completed");
@@ -957,5 +951,11 @@ export async function runResearch(jobId: string): Promise<void> {
     job.error = msg;
     setStatus(job, "failed");
     log(job, "error", "failed", `Research failed: ${msg}`);
+  } finally {
+    // Release the rate-limit concurrency slot for this client, whether the
+    // job succeeded or failed. This prevents permanent concurrency exhaustion.
+    if (job.clientIP) {
+      releaseConcurrency(job.clientIP);
+    }
   }
 }

@@ -20,22 +20,33 @@ async function getZAI() {
   return zaiInstance;
 }
 
-// Domains that are known to be slow (PDFs, gov sites, etc.) — skip them.
+// File extensions that are never useful as text content — skip them entirely
+// to avoid wasting requests on images/videos/archives that would fail htmlToText.
+const SKIP_EXTENSIONS = [
+  ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg", ".bmp", ".ico",
+  ".mp4", ".webm", ".mov", ".avi", ".mkv", ".mp3", ".wav", ".ogg", ".flac",
+  ".zip", ".tar", ".gz", ".rar", ".7z", ".bz2",
+  ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx",
+  ".exe", ".dmg", ".apk", ".deb", ".rpm", ".msi",
+  ".iso", ".img", ".bin",
+];
+
+// Domains that are known to be slow (gov sites, etc.) — skip them.
 const SLOW_DOMAINS = [
   "rdia.gov.sa",
-  ".pdf",
-  ".gov",
-  ".mil",
 ];
 
 function isLikelySlowUrl(url: string): boolean {
   const lower = url.toLowerCase();
-  // PDFs are almost always slow via JINA.
-  if (lower.endsWith(".pdf") || lower.includes(".pdf?") || lower.includes(".pdf#")) {
+  // Skip binary/media/archive files entirely — they can't yield text and waste requests.
+  if (SKIP_EXTENSIONS.some((ext) => lower.endsWith(ext) || lower.includes(ext + "?") || lower.includes(ext + "#"))) {
     return true;
   }
   return SLOW_DOMAINS.some((d) => lower.includes(d));
 }
+
+// Maximum acceptable response body size (10 MB). Prevents OOM from huge pages.
+const MAX_CONTENT_LENGTH = 10 * 1024 * 1024;
 
 // Convert HTML to readable plain text (best-effort, lightweight).
 function htmlToText(html: string): string {
@@ -180,6 +191,14 @@ async function readPageDirect(url: string): Promise<PageReadResult> {
     throw new Error(`Direct fetch failed (${res.status})`);
   }
 
+  // OOM protection: reject responses larger than 10 MB BEFORE reading the body.
+  const contentLength = parseInt(res.headers.get("content-length") || "0", 10);
+  if (contentLength > MAX_CONTENT_LENGTH) {
+    throw new Error(
+      `Response too large (${(contentLength / 1024 / 1024).toFixed(1)} MB > 10 MB limit)`
+    );
+  }
+
   const contentType = res.headers.get("content-type") || "";
   if (
     !contentType.includes("text/html") &&
@@ -189,7 +208,32 @@ async function readPageDirect(url: string): Promise<PageReadResult> {
     throw new Error(`Unsupported content-type: ${contentType}`);
   }
 
-  const html = await res.text();
+  // Read at most MAX_CONTENT_LENGTH bytes from the stream (defense in depth:
+  // even without a Content-Length header, we cap memory usage).
+  const reader = res.body?.getReader();
+  let html = "";
+  if (reader) {
+    const decoder = new TextDecoder("utf-8");
+    let bytesRead = 0;
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytesRead += value.byteLength;
+      if (bytesRead > MAX_CONTENT_LENGTH) {
+        await reader.cancel();
+        throw new Error(
+          `Response stream exceeded ${(MAX_CONTENT_LENGTH / 1024 / 1024).toFixed(0)} MB limit`
+        );
+      }
+      html += decoder.decode(value, { stream: true });
+    }
+    html += decoder.decode(); // flush
+  } else {
+    html = await res.text();
+    if (html.length > MAX_CONTENT_LENGTH) {
+      throw new Error("Response body exceeded 10 MB limit");
+    }
+  }
   const text = htmlToText(html).slice(0, MAX_TEXT_CHARS);
   if (text.length <= 100) throw new Error("Direct fetch yielded too little text");
 

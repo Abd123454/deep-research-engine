@@ -10,6 +10,7 @@
 
 import ZAI from "z-ai-web-dev-sdk";
 import type { LLMProvider } from "./types";
+import { env, envList } from "./env";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant";
@@ -33,11 +34,6 @@ export interface LLMCompletionResult {
 
 // ---------- Config from env ----------
 
-function env(key: string, fallback = ""): string {
-  if (typeof process === "undefined") return fallback;
-  return (process.env?.[key] ?? fallback).trim();
-}
-
 export function getLLMProvider(): LLMProvider {
   const v = env("LLM_PROVIDER", "zai").toLowerCase();
   // Auto-fallback to zai if NVIDIA selected but no key configured.
@@ -47,19 +43,9 @@ export function getLLMProvider(): LLMProvider {
   return v === "nvidia" ? "nvidia" : "zai";
 }
 
-// Parse a comma-separated model list from env. Returns at least one model.
-function getModelList(key: string, fallback: string): string[] {
-  const raw = env(key, fallback);
-  const models = raw
-    .split(",")
-    .map((m) => m.trim())
-    .filter((m) => m.length > 0);
-  return models.length > 0 ? models : [fallback];
-}
-
 // The 6 smart models (fallback chain). Tries each in order.
 export function getSmartModels(): string[] {
-  return getModelList(
+  return envList(
     "SMART_LLM_MODELS",
     "mistralai/mistral-large-3-675b-instruct-2512,deepseek-ai/deepseek-v4-pro,mistralai/mistral-nemotron,meta/llama-3.1-70b-instruct,minimaxai/minimax-m3,mistralai/mistral-small-4-119b-2603"
   );
@@ -107,27 +93,9 @@ function isRetryableLLMError(msg: string): boolean {
 }
 
 // Should we skip to the next model in the fallback chain (vs. retry)?
-function shouldSkipModel(msg: string): boolean {
-  const m = msg.toLowerCase();
-  // 404 = model not available, 401/403 = auth issue, 400 = bad request,
-  // 500 = server error. For these, try the next model immediately.
-  return (
-    m.includes("404") ||
-    m.includes("not found") ||
-    m.includes("401") ||
-    m.includes("unauthorized") ||
-    m.includes("403") ||
-    m.includes("forbidden") ||
-    m.includes("400") ||
-    m.includes("bad request") ||
-    m.includes("500") ||
-    m.includes("internal server error") ||
-    m.includes("502") ||
-    m.includes("bad gateway") ||
-    m.includes("504") ||
-    m.includes("gateway timeout")
-  );
-}
+// (shouldSkipModel was removed — the fallback loop now skips to the next model
+// on ANY error after exhausting retries, so a separate hard-error classifier
+// is no longer needed.)
 
 async function withRetry<T>(
   fn: () => Promise<T>,
@@ -331,7 +299,6 @@ export interface LLMProviderApi {
 
 export async function getLLM(): Promise<LLMProviderApi> {
   const provider = getLLMProvider();
-  const fastModel = getFastModel();
   const smartModels = getSmartModels();
 
   if (provider === "nvidia") {

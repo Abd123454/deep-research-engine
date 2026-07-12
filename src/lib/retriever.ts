@@ -13,18 +13,7 @@
 
 import ZAI from "z-ai-web-dev-sdk";
 import type { RetrieverType, SearchResultItem } from "./types";
-
-function env(key: string, fallback = ""): string {
-  if (typeof process === "undefined") return fallback;
-  return (process.env?.[key] ?? fallback).trim();
-}
-
-function envBool(key: string, fallback: boolean): boolean {
-  if (typeof process === "undefined") return fallback;
-  const raw = process.env?.[key];
-  if (!raw) return fallback;
-  return raw === "true" || raw === "1" || raw === "yes";
-}
+import { env, envBool } from "./env";
 
 export function getRetriever(): RetrieverType {
   const v = env("RETRIEVER", "tavily").toLowerCase() as RetrieverType;
@@ -169,7 +158,8 @@ function safeHost(url: string): string {
 
 async function duckduckgoSearch(
   query: string,
-  num: number
+  num: number,
+  retries = 1
 ): Promise<SearchResultItem[]> {
   const url = "https://html.duckduckgo.com/html/";
   const body = new URLSearchParams({
@@ -178,81 +168,93 @@ async function duckduckgoSearch(
     kl: "us-en",
   });
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      "User-Agent":
-        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml",
-      "Accept-Language": "en-US,en;q=0.9",
-    },
-    body: body.toString(),
-  });
-
-  if (!res.ok) {
-    throw new Error(`DuckDuckGo search failed (${res.status})`);
-  }
-
-  const html = await res.text();
-  const results: SearchResultItem[] = [];
-
-  // DuckDuckGo Lite HTML structure:
-  //   <a class="result__a" href="//duckduckgo.com/l/?uddg=<ENCODED_URL>">Title</a>
-  //   <a class="result__snippet">Snippet text</a>
-  // We extract the uddg= parameter which contains the real URL.
-
-  const linkRegex =
-    /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
-  const snippetRegex =
-    /class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
-
-  const links: { url: string; title: string }[] = [];
-  let match: RegExpExecArray | null;
-  while ((match = linkRegex.exec(html)) !== null) {
-    const rawUrl = match[1];
-    const titleHtml = match[2].replace(/<[^>]+>/g, "").trim();
-    // Decode the uddg= parameter
-    let realUrl = rawUrl;
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      if (rawUrl.includes("uddg=")) {
-        const uddgMatch = rawUrl.match(/uddg=([^&]+)/);
-        if (uddgMatch) {
-          realUrl = decodeURIComponent(uddgMatch[1]);
-        }
-      } else if (rawUrl.startsWith("//")) {
-        realUrl = "https:" + rawUrl;
-      } else if (rawUrl.startsWith("/")) {
-        continue; // internal DDG link, skip
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "User-Agent":
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          Accept: "text/html,application/xhtml+xml",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        body: body.toString(),
+        signal: AbortSignal.timeout(10000), // 10s hard timeout
+      });
+
+      if (!res.ok) {
+        throw new Error(`DuckDuckGo search failed (${res.status})`);
       }
-    } catch {
-      continue;
+
+      const html = await res.text();
+      const results: SearchResultItem[] = [];
+
+      // DuckDuckGo Lite HTML structure:
+      //   <a class="result__a" href="//duckduckgo.com/l/?uddg=<ENCODED_URL>">Title</a>
+      //   <a class="result__snippet">Snippet text</a>
+      // We extract the uddg= parameter which contains the real URL.
+
+      const linkRegex =
+        /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
+      const snippetRegex =
+        /class="result__snippet"[^>]*>([\s\S]*?)<\/a>/g;
+
+      const links: { url: string; title: string }[] = [];
+      let match: RegExpExecArray | null;
+      while ((match = linkRegex.exec(html)) !== null) {
+        const rawUrl = match[1];
+        const titleHtml = match[2].replace(/<[^>]+>/g, "").trim();
+        let realUrl = rawUrl;
+        try {
+          if (rawUrl.includes("uddg=")) {
+            const uddgMatch = rawUrl.match(/uddg=([^&]+)/);
+            if (uddgMatch) {
+              realUrl = decodeURIComponent(uddgMatch[1]);
+            }
+          } else if (rawUrl.startsWith("//")) {
+            realUrl = "https:" + rawUrl;
+          } else if (rawUrl.startsWith("/")) {
+            continue; // internal DDG link, skip
+          }
+        } catch {
+          continue;
+        }
+        if (realUrl && !realUrl.includes("duckduckgo.com")) {
+          links.push({ url: realUrl, title: titleHtml || realUrl });
+        }
+      }
+
+      const snippets: string[] = [];
+      while ((match = snippetRegex.exec(html)) !== null) {
+        const snippetText = match[1].replace(/<[^>]+>/g, "").trim();
+        snippets.push(snippetText);
+      }
+
+      const max = Math.min(num, 30, links.length);
+      for (let i = 0; i < max; i++) {
+        results.push({
+          url: links[i]!.url,
+          name: links[i]!.title,
+          snippet: snippets[i] || "",
+          host_name: safeHost(links[i]!.url),
+          rank: i + 1,
+          date: "",
+          favicon: "",
+        });
+      }
+
+      return results;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < retries) {
+        await sleep(1500);
+        continue;
+      }
     }
-    if (realUrl && !realUrl.includes("duckduckgo.com")) {
-      links.push({ url: realUrl, title: titleHtml || realUrl });
-    }
   }
-
-  const snippets: string[] = [];
-  while ((match = snippetRegex.exec(html)) !== null) {
-    const snippetText = match[1].replace(/<[^>]+>/g, "").trim();
-    snippets.push(snippetText);
-  }
-
-  const max = Math.min(num, 30, links.length);
-  for (let i = 0; i < max; i++) {
-    results.push({
-      url: links[i].url,
-      name: links[i].title,
-      snippet: snippets[i] || "",
-      host_name: safeHost(links[i].url),
-      rank: i + 1,
-      date: "",
-      favicon: "",
-    });
-  }
-
-  return results;
+  throw lastErr;
 }
 
 // ---------- Fallback chain orchestrator ----------

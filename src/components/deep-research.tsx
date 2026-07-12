@@ -210,7 +210,18 @@ export function DeepResearch() {
   async function pollJob(id: string) {
     let interval = 1500;
     let consecutive404 = 0;
+    // Hard cap: stop polling after 30 minutes regardless of state (prevents
+    // infinite polling if the job hangs in a non-terminal state).
+    const POLL_TIMEOUT_MS = 30 * 60 * 1000;
+    const pollStart = Date.now();
     while (!stopPollingRef.current) {
+      if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
+        setPolling(false);
+        toast.error("Research timed out", {
+          description: "Polling stopped after 30 minutes. The job may still be running server-side.",
+        });
+        return;
+      }
       try {
         const res = await fetch(`/api/research/status/${id}`, { cache: "no-store" });
         if (res.status === 404) {
@@ -285,6 +296,13 @@ export function DeepResearch() {
   }
 
   const isRunning = job && job.status !== "completed" && job.status !== "failed";
+
+  // Memoize the deduplicated sources list to avoid recomputing on every poll
+  // tick (the job object reference changes every 1.5s during research).
+  const dedupedSources = React.useMemo(
+    () => (job ? dedupeSources(job.sources) : []),
+    [job?.sources]
+  );
 
   const examples = [
     {
@@ -853,7 +871,7 @@ export function DeepResearch() {
                           Sources
                         </h3>
                         <Badge variant="secondary" className="ml-auto text-[10px] rounded-full">
-                          {dedupeSources(job.sources).length}
+                          {dedupedSources.length}
                         </Badge>
                       </div>
                       {job.sources.length === 0 ? (
@@ -862,7 +880,7 @@ export function DeepResearch() {
                         </p>
                       ) : (
                         <div className="space-y-1 max-h-[300px] overflow-y-auto pr-1">
-                          {dedupeSources(job.sources).slice(0, 60).map((s, i) => (
+                          {dedupedSources.slice(0, 60).map((s, i) => (
                             <a
                               key={s.url + i}
                               href={s.url}
