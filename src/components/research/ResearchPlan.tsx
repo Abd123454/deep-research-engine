@@ -22,7 +22,7 @@ export function ResearchPlan({ plan }: ResearchPlanProps) {
             </p>
           </div>
         </div>
-        <h4 className="text-base font-semibold text-brand-gradient mb-1">
+        <h4 className="text-base font-semibold text-primary mb-1">
           {plan.title}
         </h4>
         {plan.summary && (

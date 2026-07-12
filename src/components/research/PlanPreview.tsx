@@ -108,7 +108,7 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
               />
             </div>
           ) : (
-            <h4 className="text-base font-semibold text-brand-gradient">
+            <h4 className="text-base font-semibold text-primary">
               {plan.title}
             </h4>
           )}
