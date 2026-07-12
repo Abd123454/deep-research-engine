@@ -88,6 +88,8 @@ export async function POST(req: NextRequest) {
         roundsCompleted: 0,
       },
       cancelled: false,
+      reportStream: [],
+      reportStreaming: false,
     };
 
     const plan: ResearchPlan = await generatePlan(dummyJob, config);

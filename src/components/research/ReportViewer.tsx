@@ -15,16 +15,23 @@ interface ReportViewerProps {
   copied: boolean;
   onCopy: () => void;
   onDownload: () => void;
+  // If true, the report is being streamed token-by-token. Show a typing cursor.
+  streaming?: boolean;
 }
 
-export function ReportViewer({ report, copied, onCopy, onDownload }: ReportViewerProps) {
+export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: ReportViewerProps) {
   return (
     <Card className="border-border/70 shadow-sm">
       <CardContent className="p-0">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/60">
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
-            <h3 className="text-sm font-semibold">Final report</h3>
+            <h3 className="text-sm font-semibold">
+              {streaming ? "Writing report..." : "Final report"}
+            </h3>
+            {streaming && (
+              <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+            )}
           </div>
           <div className="flex gap-1">
             <Button
@@ -49,6 +56,9 @@ export function ReportViewer({ report, copied, onCopy, onDownload }: ReportViewe
         </div>
         <article className="px-5 py-4 prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-l-primary prose-blockquote:not-italic">
           <ReactMarkdown>{report}</ReactMarkdown>
+          {streaming && (
+            <span className="inline-block h-4 w-2 bg-primary animate-pulse align-text-bottom" />
+          )}
         </article>
       </CardContent>
     </Card>

@@ -74,6 +74,8 @@ export function DeepResearch() {
   const [starting, setStarting] = React.useState(false);
   const [polling, setPolling] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  // CHANGE 3: streaming report state.
+  const [streamingReport, setStreamingReport] = React.useState("");
   const [logsOpen, setLogsOpen] = React.useState(false);
   // CHANGE 2: expandable sections (collapsed by default).
   const [sourcesExpanded, setSourcesExpanded] = React.useState(false);
@@ -200,6 +202,8 @@ export function DeepResearch() {
         logs: [],
         error: null,
         cancelled: false,
+        reportStream: [],
+        reportStreaming: false,
         stats: {
           totalPagesFound: 0,
           totalPagesRead: 0,
@@ -335,6 +339,18 @@ export function DeepResearch() {
         }
       });
 
+      // CHANGE 3: listen for streaming report tokens.
+      es.addEventListener("report_token", (e: MessageEvent) => {
+        try {
+          const data = JSON.parse(e.data) as { tokens: string };
+          if (data.tokens) {
+            setStreamingReport((prev) => prev + data.tokens);
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+
       es.addEventListener("done", (e: MessageEvent) => {
         clearTimeout(watchdog);
         es?.close();
@@ -421,6 +437,7 @@ export function DeepResearch() {
     setPolling(false);
     setJob(null);
     setPhase("idle");
+    setStreamingReport("");
     currentJobIdRef.current = null;
   }
 
@@ -579,13 +596,21 @@ export function DeepResearch() {
               {/* Gap analysis */}
               {job.gapAnalysis && <GapAnalysis gapAnalysis={job.gapAnalysis} />}
 
-              {/* Report — HERO, full width (CHANGE 2: was in a 2-col grid) */}
+              {/* Report — HERO, full width. Streaming when available (CHANGE 3). */}
               {job.report ? (
                 <ReportViewer
                   report={job.report}
                   copied={copied}
                   onCopy={copyReport}
                   onDownload={downloadReport}
+                />
+              ) : streamingReport ? (
+                <ReportViewer
+                  report={streamingReport}
+                  copied={copied}
+                  onCopy={copyReport}
+                  onDownload={downloadReport}
+                  streaming
                 />
               ) : (
                 <div className="rounded-xl border bg-card p-5">

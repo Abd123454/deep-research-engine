@@ -818,12 +818,23 @@ ${sourcesBlock || "_(no sources available)_"}
 Write a comprehensive long-form Deep Research report answering the original query, following the report outline and synthesizing ALL the findings above (including gap-fill findings). Target length: roughly ${config.reportMaxTokens} tokens. Use Markdown. Include an executive summary, the sections from the outline, and inline citations to the source URLs. End with a "## Sources" section.`,
   };
 
+  // CHANGE 3: stream the report tokens via onToken callback.
+  // The tokens are pushed to job.reportStream, which the SSE endpoint
+  // reads and emits as "report_token" events to the client.
+  job.reportStreaming = true;
+  job.reportStream = [];
+
   const result = await llm.smart({
     messages: [sys, user],
     maxTokens: config.reportMaxTokens,
     temperature: 0.4,
+    stream: true,
+    onToken: (token: string) => {
+      job.reportStream.push(token);
+    },
   });
 
+  job.reportStreaming = false;
   log(job, "success", "synthesizing", `Report written (${result.content.length} chars).`);
   return result.content;
 }

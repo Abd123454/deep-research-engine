@@ -156,6 +156,11 @@ export interface ResearchJob {
   // before each major stage and throws if true. This is a cooperative cancel
   // (not AbortController) — simpler and sufficient for our pipeline.
   cancelled: boolean;
+  // Streaming report: tokens are pushed here as they arrive from the LLM.
+  // The SSE endpoint reads this buffer and emits "report_token" events.
+  reportStream: string[];
+  // True while the report is being streamed (synthesis stage).
+  reportStreaming: boolean;
 }
 
 // Public-facing shape (sent to the client). Strips large text fields if needed.

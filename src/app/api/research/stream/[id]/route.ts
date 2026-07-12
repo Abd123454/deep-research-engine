@@ -1,14 +1,15 @@
 // GET /api/research/stream/[id]
 // Server-Sent Events stream for a research job.
 //
-// Replaces polling (/api/research/status/[id]) for clients that support SSE.
-// The server pushes a JSON snapshot of the job every time it updates, plus a
-// final "completed" or "failed" event. This reduces network traffic by ~99%
-// (1 long-lived connection instead of 600 polls at 1.5s intervals).
+// Emits 3 types of events:
+//   1. "update" — full job snapshot (status, stats, sub-queries, etc.)
+//   2. "report_token" — a single token from the streaming report
+//   3. "done" — terminal state (completed/failed)
 //
 // Client usage:
 //   const es = new EventSource(`/api/research/stream/${id}`);
 //   es.addEventListener("update", (e) => setJob(JSON.parse(e.data)));
+//   es.addEventListener("report_token", (e) => appendToken(JSON.parse(e.data).token));
 //   es.addEventListener("done", () => es.close());
 
 import { NextRequest } from "next/server";
@@ -18,10 +19,7 @@ import { toPublicJob } from "@/lib/types";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-// How often to poll the in-memory store for changes (ms). The store is updated
-// synchronously by the research engine, so this is just a sampling interval.
 const SAMPLE_INTERVAL_MS = 800;
-// Hard cap on how long a single SSE connection stays open (30 min).
 const MAX_STREAM_DURATION_MS = 30 * 60 * 1000;
 
 export async function GET(
@@ -41,6 +39,7 @@ export async function GET(
   const stream = new ReadableStream({
     start(controller) {
       let lastUpdate = 0;
+      let lastStreamIndex = 0; // track how many report tokens we've sent
       let closed = false;
 
       const send = (event: string, data: unknown) => {
@@ -73,14 +72,29 @@ export async function GET(
           return;
         }
 
-        // Only push if the job actually changed (updatedAt bumped).
+        // Push status updates when the job changes.
         if (current.updatedAt !== lastUpdate) {
           lastUpdate = current.updatedAt;
           send("update", { ok: true, job: toPublicJob(current) });
         }
 
+        // CHANGE 3: push report tokens as they arrive.
+        if (current.reportStream.length > lastStreamIndex) {
+          const newTokens = current.reportStream.slice(lastStreamIndex);
+          lastStreamIndex = current.reportStream.length;
+          // Batch tokens into a single event to reduce SSE overhead.
+          // Individual tokens are too chatty (1000+ events for a 6K report).
+          send("report_token", { tokens: newTokens.join("") });
+        }
+
         // Terminal state — send final event and close.
         if (current.status === "completed" || current.status === "failed") {
+          // Flush any remaining tokens.
+          if (current.reportStream.length > lastStreamIndex) {
+            const newTokens = current.reportStream.slice(lastStreamIndex);
+            lastStreamIndex = current.reportStream.length;
+            send("report_token", { tokens: newTokens.join("") });
+          }
           send("done", {
             ok: true,
             status: current.status,
@@ -100,7 +114,6 @@ export async function GET(
         }
       }
 
-      // Clean up if the client disconnects.
       _req.signal.addEventListener("abort", () => {
         cleanup();
       });
@@ -112,7 +125,7 @@ export async function GET(
       "Content-Type": "text/event-stream; charset=utf-8",
       "Cache-Control": "no-cache, no-transform",
       Connection: "keep-alive",
-      "X-Accel-Buffering": "no", // disable proxy buffering (Caddy/Nginx)
+      "X-Accel-Buffering": "no",
     },
   });
 }

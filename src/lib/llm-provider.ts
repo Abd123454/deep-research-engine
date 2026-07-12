@@ -23,6 +23,10 @@ export interface LLMCompletionOptions {
   temperature?: number;
   // Hint that the model should produce structured JSON.
   json?: boolean;
+  // If true, return an async generator that yields tokens.
+  stream?: boolean;
+  // Called for each token when stream=true (alternative to generator).
+  onToken?: (token: string) => void;
 }
 
 export interface LLMCompletionResult {
@@ -188,7 +192,8 @@ async function nvidiaCompleteSingle(
     temperature: opts.temperature ?? 0.4,
     max_tokens: opts.maxTokens ?? 2048,
     top_p: 0.9,
-    stream: false,
+    // Use streaming if requested.
+    stream: opts.stream ?? false,
   };
   if (opts.json) {
     body.response_format = { type: "json_object" };
@@ -200,7 +205,7 @@ async function nvidiaCompleteSingle(
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
-      Accept: "application/json",
+      Accept: opts.stream ? "text/event-stream" : "application/json",
     },
     body: JSON.stringify(body),
   });
@@ -215,6 +220,52 @@ async function nvidiaCompleteSingle(
     );
   }
 
+  // --- Streaming path: parse SSE chunks, call onToken for each ---
+  if (opts.stream && res.body) {
+    let fullContent = "";
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = "";
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+
+      // SSE events are separated by \n\n
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || ""; // keep incomplete line in buffer
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith("data: ")) continue;
+        const payload = trimmed.slice(6);
+        if (payload === "[DONE]") continue;
+
+        try {
+          const chunk = JSON.parse(payload) as {
+            choices?: { delta?: { content?: string } }[];
+          };
+          const token = chunk.choices?.[0]?.delta?.content;
+          if (token) {
+            fullContent += token;
+            opts.onToken?.(token);
+          }
+        } catch {
+          // skip unparseable chunks
+        }
+      }
+    }
+
+    return {
+      content: fullContent,
+      tokensUsed: undefined, // streaming doesn't return usage
+      model,
+      provider: "nvidia" as const,
+    };
+  }
+
+  // --- Non-streaming path (unchanged) ---
   const data = (await res.json()) as NvidiaResponse;
   const msg = data.choices?.[0]?.message;
 

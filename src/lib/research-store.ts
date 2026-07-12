@@ -102,6 +102,8 @@ export function createJob(
     },
     clientIP,
     cancelled: false,
+    reportStream: [],
+    reportStreaming: false,
   };
   jobs.set(id, job);
   console.log(`[research-store] created job ${id}, store size now ${jobs.size}`);
