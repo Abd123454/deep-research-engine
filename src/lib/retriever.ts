@@ -161,10 +161,25 @@ async function duckduckgoSearch(
   num: number,
   retries = 1
 ): Promise<SearchResultItem[]> {
+  // Try the HTML scraping first (better results when it works), then fall
+  // back to the JSON Instant Answer API (limited but no CAPTCHA).
+  const htmlResults = await duckduckgoHtmlSearch(query, num, retries);
+  if (htmlResults.length > 0) return htmlResults;
+
+  // HTML scraping returned 0 (CAPTCHA or structure change) — try JSON API.
+  return duckduckgoJsonSearch(query, num);
+}
+
+// DuckDuckGo HTML scraping — returns real web URLs but may be blocked by CAPTCHA.
+async function duckduckgoHtmlSearch(
+  query: string,
+  num: number,
+  retries = 1
+): Promise<SearchResultItem[]> {
   const url = "https://html.duckduckgo.com/html/";
   const body = new URLSearchParams({
     q: query,
-    kp: "-2", // safe search off
+    kp: "-2",
     kl: "us-en",
   });
 
@@ -181,21 +196,19 @@ async function duckduckgoSearch(
           "Accept-Language": "en-US,en;q=0.9",
         },
         body: body.toString(),
-        signal: AbortSignal.timeout(10000), // 10s hard timeout
+        signal: AbortSignal.timeout(10000),
       });
 
-      if (!res.ok) {
-        throw new Error(`DuckDuckGo search failed (${res.status})`);
-      }
+      if (!res.ok) throw new Error(`DDG HTML failed (${res.status})`);
 
       const html = await res.text();
+
+      // Detect CAPTCHA / anomaly page (DDG blocks bots with an "anomaly modal").
+      if (html.includes("anomaly-modal") || html.includes("anomaly_modal")) {
+        throw new Error("DDG returned CAPTCHA/anomaly page");
+      }
+
       const results: SearchResultItem[] = [];
-
-      // DuckDuckGo Lite HTML structure:
-      //   <a class="result__a" href="//duckduckgo.com/l/?uddg=<ENCODED_URL>">Title</a>
-      //   <a class="result__snippet">Snippet text</a>
-      // We extract the uddg= parameter which contains the real URL.
-
       const linkRegex =
         /class="result__a"[^>]*href="([^"]+)"[^>]*>([\s\S]*?)<\/a>/g;
       const snippetRegex =
@@ -210,13 +223,11 @@ async function duckduckgoSearch(
         try {
           if (rawUrl.includes("uddg=")) {
             const uddgMatch = rawUrl.match(/uddg=([^&]+)/);
-            if (uddgMatch) {
-              realUrl = decodeURIComponent(uddgMatch[1]);
-            }
+            if (uddgMatch) realUrl = decodeURIComponent(uddgMatch[1]);
           } else if (rawUrl.startsWith("//")) {
             realUrl = "https:" + rawUrl;
           } else if (rawUrl.startsWith("/")) {
-            continue; // internal DDG link, skip
+            continue;
           }
         } catch {
           continue;
@@ -228,8 +239,7 @@ async function duckduckgoSearch(
 
       const snippets: string[] = [];
       while ((match = snippetRegex.exec(html)) !== null) {
-        const snippetText = match[1].replace(/<[^>]+>/g, "").trim();
-        snippets.push(snippetText);
+        snippets.push(match[1].replace(/<[^>]+>/g, "").trim());
       }
 
       const max = Math.min(num, 30, links.length);
@@ -244,7 +254,6 @@ async function duckduckgoSearch(
           favicon: "",
         });
       }
-
       return results;
     } catch (err) {
       lastErr = err;
@@ -254,7 +263,83 @@ async function duckduckgoSearch(
       }
     }
   }
-  throw lastErr;
+  // Return empty (not throw) so the caller can try the JSON API fallback.
+  return [];
+}
+
+// DuckDuckGo Instant Answer JSON API — limited results (mostly DDG internal
+// pages), but no CAPTCHA. Used as a last resort when HTML scraping fails.
+async function duckduckgoJsonSearch(
+  query: string,
+  num: number
+): Promise<SearchResultItem[]> {
+  const url = `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&kp=-2`;
+  const res = await fetch(url, {
+    headers: {
+      "User-Agent":
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!res.ok) throw new Error(`DDG JSON API failed (${res.status})`);
+
+  const data = (await res.json()) as {
+    RelatedTopics?: Array<
+      | { FirstURL?: string; Text?: string }
+      | { Topics?: Array<{ FirstURL?: string; Text?: string }> }
+    >;
+    AbstractURL?: string;
+    AbstractText?: string;
+    Heading?: string;
+  };
+
+  const results: SearchResultItem[] = [];
+
+  // Add the abstract if present.
+  if (data.AbstractURL && data.AbstractText) {
+    results.push({
+      url: data.AbstractURL,
+      name: data.Heading || data.AbstractText.slice(0, 80),
+      snippet: data.AbstractText.slice(0, 300),
+      host_name: safeHost(data.AbstractURL),
+      rank: 1,
+      date: "",
+      favicon: "",
+    });
+  }
+
+  // Flatten RelatedTopics (which can have nested Topics arrays).
+  for (const topic of data.RelatedTopics || []) {
+    if (results.length >= num) break;
+    if ("FirstURL" in topic && topic.FirstURL) {
+      results.push({
+        url: topic.FirstURL,
+        name: topic.Text?.slice(0, 120) || topic.FirstURL,
+        snippet: topic.Text || "",
+        host_name: safeHost(topic.FirstURL),
+        rank: results.length + 1,
+        date: "",
+        favicon: "",
+      });
+    } else if ("Topics" in topic && Array.isArray(topic.Topics)) {
+      for (const t of topic.Topics) {
+        if (results.length >= num) break;
+        if (t.FirstURL) {
+          results.push({
+            url: t.FirstURL,
+            name: t.Text?.slice(0, 120) || t.FirstURL,
+            snippet: t.Text || "",
+            host_name: safeHost(t.FirstURL),
+            rank: results.length + 1,
+            date: "",
+            favicon: "",
+          });
+        }
+      }
+    }
+  }
+
+  return results;
 }
 
 // ---------- Fallback chain orchestrator ----------
