@@ -823,6 +823,20 @@ export async function runResearch(jobId: string): Promise<void> {
   job.startedAt = Date.now();
   job.updatedAt = Date.now();
 
+  // Server-side hard timeout: abort the whole pipeline after 20 minutes so a
+  // stuck job cannot run forever (the client polling timeout is separate and
+  // only stops the *client* from waiting — the server keeps burning resources
+  // without this). 20 min > advanced depth (~15 min) to allow headroom.
+  const SERVER_TIMEOUT_MS = 20 * 60 * 1000;
+  const serverDeadline = job.startedAt + SERVER_TIMEOUT_MS;
+  const timeoutChecker = setInterval(() => {
+    if (Date.now() > serverDeadline && job.status !== "completed" && job.status !== "failed") {
+      job.error = `Server-side timeout: job exceeded ${SERVER_TIMEOUT_MS / 60000} minutes.`;
+      setStatus(job, "failed");
+      log(job, "error", "failed", job.error);
+    }
+  }, 30_000);
+
   try {
     // Stage 1: Plan.
     await generatePlan(job, job.config);
@@ -923,14 +937,23 @@ export async function runResearch(jobId: string): Promise<void> {
     }
 
     // Stage 6: Synthesize final report.
-    // Guard: if ALL sub-queries failed (no findings at all), fail the job
-    // rather than synthesizing a hallucinated report from an empty dossier.
-    const anyFindings = job.subQueries.some(
-      (sq) => sq.keyFindings && sq.keyFindings.length > 50
+    // Guard: fail the job if there is not enough real source material to
+    // synthesize from. Checking only "any findings" is insufficient — a single
+    // sub-query with 50 chars of findings would pass while 6 others failed,
+    // producing a near-empty hallucinated report. Instead we require both:
+    //   (a) at least one sub-query with substantive findings (>200 chars), AND
+    //   (b) at least one page successfully read across the whole job.
+    const substantiveFindings = job.subQueries.some(
+      (sq) => sq.keyFindings && sq.keyFindings.length > 200
     );
-    if (!anyFindings && job.subQueries.length > 0) {
+    const anyPagesRead = job.stats.totalPagesSucceeded > 0;
+    if (
+      job.subQueries.length > 0 &&
+      (!substantiveFindings || !anyPagesRead)
+    ) {
       throw new Error(
-        "All sub-queries failed to produce findings (every search/extract stage failed). " +
+        "Insufficient source material to synthesize a report " +
+          `(findings: ${substantiveFindings ? "yes" : "no"}, pages read: ${job.stats.totalPagesSucceeded}). ` +
           "Check API keys, quotas, and network connectivity, then retry."
       );
     }
@@ -952,6 +975,8 @@ export async function runResearch(jobId: string): Promise<void> {
     setStatus(job, "failed");
     log(job, "error", "failed", `Research failed: ${msg}`);
   } finally {
+    // Stop the server-side timeout checker (otherwise it leaks as a dangling timer).
+    clearInterval(timeoutChecker);
     // Release the rate-limit concurrency slot for this client, whether the
     // job succeeded or failed. This prevents permanent concurrency exhaustion.
     if (job.clientIP) {

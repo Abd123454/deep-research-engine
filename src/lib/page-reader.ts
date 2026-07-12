@@ -31,10 +31,11 @@ const SKIP_EXTENSIONS = [
   ".iso", ".img", ".bin",
 ];
 
-// Domains that are known to be slow (gov sites, etc.) — skip them.
-const SLOW_DOMAINS = [
-  "rdia.gov.sa",
-];
+// Domains that are individually known to hang — add sparingly. NOTE: we do NOT
+// blanket-skip .gov/.mil (that would systematically bias research away from
+// authoritative government sources). Only specific hosts that have been
+// observed to timeout are listed here.
+const SLOW_DOMAINS: string[] = [];
 
 function isLikelySlowUrl(url: string): boolean {
   const lower = url.toLowerCase();
