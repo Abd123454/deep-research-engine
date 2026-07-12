@@ -1,4 +1,9 @@
 import { defineConfig } from "vitest/config";
+import { config } from "dotenv";
+
+// Load .env + .env.local so smoke tests can access real API keys.
+config({ path: ".env.local" });
+config({ path: ".env" });
 
 export default defineConfig({
   test: {
