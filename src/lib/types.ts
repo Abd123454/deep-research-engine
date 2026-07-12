@@ -152,6 +152,10 @@ export interface ResearchJob {
   stats: ResearchStats;
   // Client IP for rate-limit bookkeeping (never serialized to the client).
   clientIP?: string;
+  // Cancellation flag. Set by /api/research/stop. The pipeline checks this
+  // before each major stage and throws if true. This is a cooperative cancel
+  // (not AbortController) — simpler and sufficient for our pipeline.
+  cancelled: boolean;
 }
 
 // Public-facing shape (sent to the client). Strips large text fields if needed.

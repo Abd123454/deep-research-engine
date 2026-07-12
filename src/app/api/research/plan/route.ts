@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
         subQueriesCompleted: 0,
         roundsCompleted: 0,
       },
+      cancelled: false,
     };
 
     const plan: ResearchPlan = await generatePlan(dummyJob, config);

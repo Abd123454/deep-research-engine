@@ -101,6 +101,7 @@ export function createJob(
       roundsCompleted: 0,
     },
     clientIP,
+    cancelled: false,
   };
   jobs.set(id, job);
   console.log(`[research-store] created job ${id}, store size now ${jobs.size}`);

@@ -163,6 +163,45 @@ export function DeepResearch() {
       }
       currentJobIdRef.current = startData.id;
       toast.success("Deep research started");
+      // Set an initial job object with the plan so the UI shows the plan
+      // card immediately — before the first SSE update arrives.
+      setJob({
+        id: startData.id,
+        query: query.trim(),
+        status: "planning",
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        config: {
+          query: query.trim(),
+          depth,
+          numSubQueries,
+          maxLinksPerQuery: maxLinks,
+          pageReadConcurrency: 4,
+          reportMaxTokens: reportTokens,
+          retriever: "tavily",
+          llmProvider: "nvidia",
+          enableMultiRound: depth !== "standard",
+          numGapQueries: depth === "advanced" ? 3 : depth === "deep" ? 2 : 0,
+        },
+        plan: planData.plan,
+        gapAnalysis: null,
+        round2FollowUps: [],
+        subQueries: [],
+        sources: [],
+        report: null,
+        logs: [],
+        error: null,
+        cancelled: false,
+        stats: {
+          totalPagesFound: 0,
+          totalPagesRead: 0,
+          totalPagesSucceeded: 0,
+          totalTokensUsed: 0,
+          elapsedMs: 0,
+          subQueriesCompleted: 0,
+          roundsCompleted: 0,
+        },
+      });
       setPolling(true);
       streamJob(startData.id);
     } catch (err) {

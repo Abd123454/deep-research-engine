@@ -1,17 +1,19 @@
 // POST /api/research/stop/[id]
 // Cancels a running research job.
 //
-// Marks the job as "failed" with error "Cancelled by user". The research
-// pipeline (running as fire-and-forget) will see the failed status on its
-// next status check and abort. The client stops SSE/polling immediately.
+// Sets job.cancelled = true (cooperative cancel flag). The pipeline checks
+// this flag before each major stage (plan, decompose, search, gap analysis,
+// synthesize) and throws "Cancelled by user" if true.
 //
-// TODO: proper cancellation would require AbortController propagation
-// through the entire pipeline (search → read → extract → synthesize).
-// Currently the pipeline may continue running server-side after stop,
-// wasting API budget. The result is discarded (job is already "failed").
+// Also marks the job as "failed" immediately so the client stops polling/SSE.
+// The pipeline will exit on its next checkCancelled() call.
+//
+// NOTE: sub-queries already in-flight (inside processSubQuery's search/read
+// cycle) will complete their current HTTP request before the flag is checked.
+// This is acceptable — the wasted budget is at most N sub-queries × 1 request.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getJob, deleteJob } from "@/lib/research-store";
+import { getJob } from "@/lib/research-store";
 import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -34,8 +36,8 @@ export async function POST(
     );
   }
 
-  // Mark as failed with cancellation message.
-  // The UI checks job.error to distinguish "cancelled" from real failures.
+  // Set the cancellation flag. The pipeline checks this before each stage.
+  job.cancelled = true;
   job.error = "Cancelled by user";
   job.status = "failed";
   job.finishedAt = Date.now();

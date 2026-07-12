@@ -854,9 +854,15 @@ export async function runResearch(jobId: string): Promise<void> {
   }, 30_000);
 
   try {
+    // Helper: throw if the user cancelled the job. Called before each stage.
+    const checkCancelled = () => {
+      if (job.cancelled) {
+        throw new Error("Cancelled by user");
+      }
+    };
+
     // Stage 1: Plan.
-    // If the job already has a plan (from the "Plan Preview" step), skip
-    // generation — the user already approved/edited it.
+    checkCancelled();
     if (job.plan && job.plan.sections.length > 0) {
       log(job, "info", "planning", `Using pre-approved plan: "${job.plan.title}" (${job.plan.sections.length} sections)`);
     } else {
@@ -864,10 +870,11 @@ export async function runResearch(jobId: string): Promise<void> {
     }
 
     // Stage 2: Decompose (round 1).
+    checkCancelled();
     const round1SubQueries = await decompose(job, job.config, 1, job.config.numSubQueries);
 
-    // Stages 3-5: Process ALL round-1 sub-queries IN PARALLEL (massive speedup).
-    // Each sub-query runs search → read → extract independently.
+    // Stages 3-5: Process ALL round-1 sub-queries IN PARALLEL.
+    checkCancelled();
     log(
       job,
       "info",
@@ -894,17 +901,18 @@ export async function runResearch(jobId: string): Promise<void> {
     log(job, "success", "searching", `Round 1 complete — all ${round1SubQueries.length} sub-questions processed.`);
     job.stats.roundsCompleted = 1;
 
-    // Stage 4 + 5: Gap analysis + Round 2 (only if multi-round is enabled).
+    // Stage 4 + 5: Gap analysis + Round 2.
+    checkCancelled();
     if (job.config.enableMultiRound && job.config.numGapQueries > 0) {
       try {
         await analyzeGaps(job, job.config);
 
         const followUps = job.round2FollowUps;
         if (followUps.length > 0) {
+          checkCancelled();
           const round2Count = Math.min(followUps.length, job.config.numGapQueries);
           const round2Questions = followUps.slice(0, round2Count);
 
-          // Create round-2 sub-queries directly from the follow-ups.
           const round2SubQueries: SubQuery[] = round2Questions.map((q) => ({
             id: randomUUID(),
             question: q,
@@ -923,7 +931,6 @@ export async function runResearch(jobId: string): Promise<void> {
             log(job, "info", "decomposing", `  Q${i + 1} [R2]. ${sq.question}`)
           );
 
-          // Process round-2 sub-queries IN PARALLEL.
           log(
             job,
             "info",
@@ -953,12 +960,15 @@ export async function runResearch(jobId: string): Promise<void> {
           log(job, "info", "analyzing_gaps", "No follow-up questions generated; skipping round 2.");
         }
       } catch (err) {
+        // Don't swallow cancellation errors.
+        if (err instanceof Error && err.message === "Cancelled by user") throw err;
         const msg = err instanceof Error ? err.message : String(err);
         log(job, "warn", "analyzing_gaps", `Multi-round phase skipped due to error: ${msg}`);
       }
     }
 
     // Stage 6: Synthesize final report.
+    checkCancelled();
     // Guard: fail the job if there is not enough real source material to
     // synthesize from. Checking only "any findings" is insufficient — a single
     // sub-query with 50 chars of findings would pass while 6 others failed,
@@ -993,9 +1003,17 @@ export async function runResearch(jobId: string): Promise<void> {
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    job.error = msg;
-    setStatus(job, "failed");
-    log(job, "error", "failed", `Research failed: ${msg}`);
+    // Don't overwrite the "Cancelled by user" error if the stop endpoint
+    // already set it. The cancelled flag is the source of truth.
+    if (job.cancelled) {
+      job.error = "Cancelled by user";
+      setStatus(job, "failed");
+      log(job, "info", "failed", "Research cancelled by user.");
+    } else {
+      job.error = msg;
+      setStatus(job, "failed");
+      log(job, "error", "failed", `Research failed: ${msg}`);
+    }
   } finally {
     // Stop the server-side timeout checker (otherwise it leaks as a dangling timer).
     clearInterval(timeoutChecker);
