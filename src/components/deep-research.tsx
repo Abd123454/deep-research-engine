@@ -12,6 +12,10 @@ import {
   Square,
   Pencil,
   X,
+  ChevronDown,
+  Globe,
+  GitBranch,
+  Hash,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +43,7 @@ import { GapAnalysis } from "@/components/research/GapAnalysis";
 import { SubQueryList } from "@/components/research/SubQueryList";
 import { SourcesList } from "@/components/research/SourcesList";
 import { ReportViewer, LiveActivity } from "@/components/research/ReportViewer";
-import { ActivityLog } from "@/components/research/ActivityLog";
+import { ActivityLogModal } from "@/components/research/ActivityLog";
 import { PlanPreviewLoading } from "@/components/research/PlanPreview";
 
 const MAX_QUERY_CHARS = 100_000;
@@ -71,6 +75,10 @@ export function DeepResearch() {
   const [polling, setPolling] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   const [logsOpen, setLogsOpen] = React.useState(false);
+  // CHANGE 2: expandable sections (collapsed by default).
+  const [sourcesExpanded, setSourcesExpanded] = React.useState(false);
+  const [subQueriesExpanded, setSubQueriesExpanded] = React.useState(false);
+  const [techDetailsOpen, setTechDetailsOpen] = React.useState(false);
 
   const stopPollingRef = React.useRef(false);
   const currentJobIdRef = React.useRef<string | null>(null);
@@ -571,34 +579,74 @@ export function DeepResearch() {
               {/* Gap analysis */}
               {job.gapAnalysis && <GapAnalysis gapAnalysis={job.gapAnalysis} />}
 
-              {/* Two-column: report/activity + sub-queries/sources */}
-              <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
-                <div className="lg:col-span-3 space-y-4">
-                  {job.report ? (
-                    <ReportViewer
-                      report={job.report}
-                      copied={copied}
-                      onCopy={copyReport}
-                      onDownload={downloadReport}
-                    />
-                  ) : (
-                    <div className="rounded-xl border bg-card p-5">
-                      <LiveActivity logs={job.logs} />
-                    </div>
-                  )}
+              {/* Report — HERO, full width (CHANGE 2: was in a 2-col grid) */}
+              {job.report ? (
+                <ReportViewer
+                  report={job.report}
+                  copied={copied}
+                  onCopy={copyReport}
+                  onDownload={downloadReport}
+                />
+              ) : (
+                <div className="rounded-xl border bg-card p-5">
+                  <LiveActivity logs={job.logs} />
                 </div>
+              )}
 
-                <div className="lg:col-span-2 space-y-4">
-                  <SubQueryList subQueries={job.subQueries} />
-                  <SourcesList sources={dedupedSources} />
-                </div>
+              {/* Expandable sections (CHANGE 2: collapsed by default) */}
+              <div className="flex flex-wrap gap-2 pt-1">
+                {dedupedSources.length > 0 && (
+                  <Collapsible open={sourcesExpanded} onOpenChange={setSourcesExpanded}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full">
+                        <Globe className="h-3 w-3" />
+                        Sources ({dedupedSources.length})
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", sourcesExpanded && "rotate-180")} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-3">
+                        <SourcesList sources={dedupedSources} />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {job.subQueries.length > 0 && (
+                  <Collapsible open={subQueriesExpanded} onOpenChange={setSubQueriesExpanded}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="outline" size="sm" className="gap-1.5 text-xs rounded-full">
+                        <GitBranch className="h-3 w-3" />
+                        Sub-queries ({job.subQueries.length})
+                        <ChevronDown className={cn("h-3 w-3 transition-transform", subQueriesExpanded && "rotate-180")} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="mt-3">
+                        <SubQueryList subQueries={job.subQueries} />
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                )}
+
+                {job.logs.length > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setTechDetailsOpen(true)}
+                    className="gap-1.5 text-xs rounded-full"
+                  >
+                    <Hash className="h-3 w-3" />
+                    Technical details ({job.logs.length})
+                  </Button>
+                )}
               </div>
 
-              {/* Activity log */}
-              <ActivityLog
+              {/* Activity log modal (CHANGE 2: was inline collapsible) */}
+              <ActivityLogModal
                 logs={job.logs}
-                open={logsOpen}
-                onOpenChange={setLogsOpen}
+                open={techDetailsOpen}
+                onOpenChange={setTechDetailsOpen}
               />
             </motion.div>
           )}
@@ -763,4 +811,3 @@ function EditPlanModal({
 // Need these imports for the modal.
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ChevronDown } from "lucide-react";

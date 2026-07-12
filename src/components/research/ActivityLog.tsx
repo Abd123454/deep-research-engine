@@ -1,54 +1,68 @@
 "use client";
 
 import * as React from "react";
-import { Hash, ChevronDown, ChevronRight } from "lucide-react";
+import { X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
+import { Button } from "@/components/ui/button";
 import type { LogEntry } from "@/lib/types";
 import { LogLine } from "./ReportViewer";
 
-interface ActivityLogProps {
+// CHANGE 2: ActivityLog is now a modal, not an inline collapsible.
+// Triggered by "Technical details" button in the main UI.
+
+interface ActivityLogModalProps {
   logs: LogEntry[];
   open: boolean;
   onOpenChange: (b: boolean) => void;
 }
 
-export function ActivityLog({ logs, open, onOpenChange }: ActivityLogProps) {
-  if (logs.length === 0) return null;
+export function ActivityLogModal({ logs, open, onOpenChange }: ActivityLogModalProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    }
+  }, [logs]);
+
+  if (!open) return null;
+
   return (
-    <Collapsible open={open} onOpenChange={onOpenChange}>
-      <Card className="border-border/70 shadow-sm">
-        <CollapsibleTrigger asChild>
-          <button className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/40 transition-colors">
-            <span className="flex items-center gap-2 text-xs font-medium">
-              <Hash className="h-3.5 w-3.5 text-muted-foreground" />
-              Activity log
-              <Badge variant="secondary" className="text-[10px] rounded-full">
-                {logs.length}
-              </Badge>
-            </span>
-            {open ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      onClick={() => onOpenChange(false)}
+    >
+      <Card
+        className="w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <CardContent className="p-0 flex flex-col max-h-[80vh]">
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-border/60 shrink-0">
+            <h3 className="text-sm font-semibold">Technical details</h3>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onOpenChange(false)}
+              className="h-7 w-7"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Logs */}
+          <div
+            ref={containerRef}
+            className="flex-1 overflow-y-auto p-4 font-mono text-[11px] space-y-1"
+          >
+            {logs.length === 0 && (
+              <p className="text-muted-foreground italic">No logs yet.</p>
             )}
-          </button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          <Separator />
-          <div className="max-h-80 overflow-y-auto p-4 font-mono text-[11px] space-y-1">
             {logs.map((l, i) => (
               <LogLine key={i} entry={l} />
             ))}
           </div>
-        </CollapsibleContent>
+        </CardContent>
       </Card>
-    </Collapsible>
+    </div>
   );
 }
