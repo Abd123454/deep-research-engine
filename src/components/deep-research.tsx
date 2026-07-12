@@ -2,13 +2,30 @@
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, Quote, RefreshCw, AlertCircle, CheckCircle2, Loader2 } from "lucide-react";
+import {
+  Sparkles,
+  Quote,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  Square,
+  Pencil,
+  X,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ResearchJob } from "@/lib/types";
+import type { ResearchPlan } from "@/lib/types";
 import {
   stageMeta,
   stageProgress,
@@ -23,17 +40,15 @@ import { SubQueryList } from "@/components/research/SubQueryList";
 import { SourcesList } from "@/components/research/SourcesList";
 import { ReportViewer, LiveActivity } from "@/components/research/ReportViewer";
 import { ActivityLog } from "@/components/research/ActivityLog";
-import { PlanPreview, PlanPreviewLoading } from "@/components/research/PlanPreview";
-import type { ResearchPlan } from "@/lib/types";
+import { PlanPreviewLoading } from "@/components/research/PlanPreview";
 
 const MAX_QUERY_CHARS = 100_000;
 
-// The UI has 4 phases:
-//   "idle"         → user is typing/editing the query
-//   "planning"     → generating the research plan (API call in flight)
-//   "plan_preview" → plan generated, user reviews/edits it
-//   "researching"  → full pipeline running (plan → search → ... → report)
-type UIPhase = "idle" | "planning" | "plan_preview" | "researching";
+// CHANGE 1: Auto-start flow.
+//   idle → planning → researching → done
+// No more "plan_preview" phase. After plan generation, research starts
+// immediately. User can Stop or Edit-restart during research.
+type UIPhase = "idle" | "planning" | "researching";
 
 export function DeepResearch() {
   // ---------- Input state ----------
@@ -46,7 +61,9 @@ export function DeepResearch() {
 
   // ---------- Phase + plan state ----------
   const [phase, setPhase] = React.useState<UIPhase>("idle");
-  const [draftPlan, setDraftPlan] = React.useState<ResearchPlan | null>(null);
+  const [planExpanded, setPlanExpanded] = React.useState(false);
+  const [editModalOpen, setEditModalOpen] = React.useState(false);
+  const [editPlan, setEditPlan] = React.useState<ResearchPlan | null>(null);
 
   // ---------- Job state ----------
   const [job, setJob] = React.useState<ResearchJob | null>(null);
@@ -56,6 +73,7 @@ export function DeepResearch() {
   const [logsOpen, setLogsOpen] = React.useState(false);
 
   const stopPollingRef = React.useRef(false);
+  const currentJobIdRef = React.useRef<string | null>(null);
   const textareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   // Auto-grow textarea.
@@ -67,6 +85,7 @@ export function DeepResearch() {
   }, [query]);
 
   const isRunning = job && job.status !== "completed" && job.status !== "failed";
+  const isCancelled = job?.status === "failed" && job?.error === "Cancelled by user";
 
   const dedupedSources = React.useMemo(
     () => (job ? dedupeSources(job.sources) : []),
@@ -88,7 +107,7 @@ export function DeepResearch() {
     }
   }
 
-  // ---------- Generate plan (Phase: idle → planning → plan_preview) ----------
+  // ---------- Auto-start: generate plan → immediately start research ----------
   async function startResearch() {
     if (!query.trim()) {
       toast.error("Please enter a research query.");
@@ -96,9 +115,11 @@ export function DeepResearch() {
     }
     setStarting(true);
     setPhase("planning");
-    setDraftPlan(null);
+    setJob(null);
+    stopPollingRef.current = false;
     try {
-      const res = await fetch("/api/research/plan", {
+      // Step 1: generate the plan.
+      const planRes = await fetch("/api/research/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -109,31 +130,96 @@ export function DeepResearch() {
           reportMaxTokens: reportTokens,
         }),
       });
-      const data = (await res.json()) as {
+      const planData = (await planRes.json()) as {
         ok: boolean;
         plan?: ResearchPlan;
         error?: string;
       };
-      if (!res.ok || !data.ok || !data.plan) {
-        throw new Error(data.error || "Failed to generate plan.");
+      if (!planRes.ok || !planData.ok || !planData.plan) {
+        throw new Error(planData.error || "Failed to generate plan.");
       }
-      setDraftPlan(data.plan);
-      setPhase("plan_preview");
+
+      // Step 2: immediately start research with the plan (no user confirmation).
+      setPhase("researching");
+      const startRes = await fetch("/api/research/start", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query: query.trim(),
+          depth,
+          numSubQueries,
+          maxLinksPerQuery: maxLinks,
+          reportMaxTokens: reportTokens,
+          plan: planData.plan,
+        }),
+      });
+      const startData = (await startRes.json()) as {
+        ok: boolean;
+        id?: string;
+        error?: string;
+      };
+      if (!startRes.ok || !startData.ok || !startData.id) {
+        throw new Error(startData.error || "Failed to start research.");
+      }
+      currentJobIdRef.current = startData.id;
+      toast.success("Deep research started");
+      setPolling(true);
+      streamJob(startData.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Failed to generate plan", { description: msg });
+      toast.error("Failed to start research", { description: msg });
       setPhase("idle");
     } finally {
       setStarting(false);
     }
   }
 
-  // ---------- Start full research with approved plan ----------
-  async function startFullResearch(approvedPlan: ResearchPlan) {
+  // ---------- Stop research ----------
+  async function stopResearch() {
+    const jobId = currentJobIdRef.current;
+    if (!jobId) return;
+    stopPollingRef.current = true;
+    setPolling(false);
+    try {
+      await fetch(`/api/research/stop/${jobId}`, { method: "POST" });
+      toast.info("Research cancelled");
+    } catch {
+      /* ignore — client-side stop is enough */
+    }
+    setPhase("idle");
+    setJob(null);
+    currentJobIdRef.current = null;
+  }
+
+  // ---------- Edit plan: open modal ----------
+  function openEditPlan() {
+    if (!job?.plan) return;
+    setEditPlan({ ...job.plan });
+    setEditModalOpen(true);
+  }
+
+  // ---------- Edit plan: save & restart ----------
+  async function saveEditedPlan(restartedPlan: ResearchPlan) {
+    setEditModalOpen(false);
+    setEditPlan(null);
+
+    // Stop current research.
+    const oldJobId = currentJobIdRef.current;
+    if (oldJobId) {
+      stopPollingRef.current = true;
+      setPolling(false);
+      try {
+        await fetch(`/api/research/stop/${oldJobId}`, { method: "POST" });
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // Start new research with edited plan.
     setStarting(true);
     setJob(null);
-    setPhase("researching");
     stopPollingRef.current = false;
+    setPhase("researching");
     try {
       const res = await fetch("/api/research/start", {
         method: "POST",
@@ -144,7 +230,7 @@ export function DeepResearch() {
           numSubQueries,
           maxLinksPerQuery: maxLinks,
           reportMaxTokens: reportTokens,
-          plan: approvedPlan,
+          plan: restartedPlan,
         }),
       });
       const data = (await res.json()) as {
@@ -153,23 +239,19 @@ export function DeepResearch() {
         error?: string;
       };
       if (!res.ok || !data.ok || !data.id) {
-        throw new Error(data.error || "Failed to start research.");
+        throw new Error(data.error || "Failed to restart research.");
       }
-      toast.success("Deep research started");
+      currentJobIdRef.current = data.id;
+      toast.success("Research restarted with edited plan");
       setPolling(true);
       streamJob(data.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      toast.error("Failed to start research", { description: msg });
-      setPhase("plan_preview");
+      toast.error("Failed to restart", { description: msg });
+      setPhase("idle");
     } finally {
       setStarting(false);
     }
-  }
-
-  function cancelPlanPreview() {
-    setPhase("idle");
-    setDraftPlan(null);
   }
 
   // ---------- SSE streaming (with polling fallback) ----------
@@ -214,6 +296,8 @@ export function DeepResearch() {
           const data = JSON.parse(e.data) as { status: string; error?: string };
           if (data.status === "completed") {
             toast.success("Deep research completed!");
+          } else if (data.error === "Cancelled by user") {
+            toast.info("Research cancelled");
           } else {
             toast.error("Research failed", { description: data.error || "Unknown" });
           }
@@ -266,6 +350,8 @@ export function DeepResearch() {
               setPolling(false);
               if (data.job.status === "completed") {
                 toast.success("Deep research completed!");
+              } else if (data.job.error === "Cancelled by user") {
+                toast.info("Research cancelled");
               } else {
                 toast.error("Research failed", { description: data.job.error || "Unknown" });
               }
@@ -288,7 +374,7 @@ export function DeepResearch() {
     setPolling(false);
     setJob(null);
     setPhase("idle");
-    setDraftPlan(null);
+    currentJobIdRef.current = null;
   }
 
   async function copyReport() {
@@ -376,15 +462,6 @@ export function DeepResearch() {
 
           {phase === "planning" && <PlanPreviewLoading key="planning" />}
 
-          {phase === "plan_preview" && draftPlan && (
-            <PlanPreview
-              key="plan_preview"
-              plan={draftPlan}
-              onStart={startFullResearch}
-              onCancel={cancelPlanPreview}
-            />
-          )}
-
           {phase === "researching" && job && (
             <motion.div
               key="results"
@@ -394,12 +471,62 @@ export function DeepResearch() {
               transition={{ duration: 0.35, ease: "easeOut" }}
               className="space-y-5"
             >
-              {/* Status header */}
-              <ResearchStatus job={job} isRunning={!!isRunning} onReset={reset} />
+              {/* Status header + action buttons */}
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex-1 min-w-0">
+                  <ResearchStatus job={job} isRunning={!!isRunning} onReset={reset} />
+                </div>
+                {isRunning && (
+                  <div className="flex gap-1.5 shrink-0">
+                    {job.plan && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={openEditPlan}
+                        className="gap-1.5 text-xs rounded-full"
+                      >
+                        <Pencil className="h-3 w-3" /> Edit plan
+                      </Button>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={stopResearch}
+                      className="gap-1.5 text-xs rounded-full text-destructive hover:text-destructive"
+                    >
+                      <Square className="h-3 w-3" /> Stop
+                    </Button>
+                  </div>
+                )}
+              </div>
 
-              {/* Research plan */}
+              {/* Collapsed plan card */}
               {job.plan && job.plan.sections.length > 0 && (
-                <ResearchPlanCard plan={job.plan} />
+                <Collapsible open={planExpanded} onOpenChange={setPlanExpanded}>
+                  <Card className="border-border/70 shadow-sm">
+                    <CollapsibleTrigger asChild>
+                      <button className="w-full flex items-center justify-between gap-2 px-5 py-3 hover:bg-muted/40 transition-colors">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                            Plan
+                          </span>
+                          <span className="text-sm font-medium truncate">
+                            {job.plan.title}
+                          </span>
+                          <Badge variant="secondary" className="text-[10px] rounded-full shrink-0">
+                            {job.plan.sections.length} sections
+                          </Badge>
+                        </div>
+                        <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", planExpanded && "rotate-180")} />
+                      </button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="px-5 pb-4">
+                        <ResearchPlanCard plan={job.plan} />
+                      </div>
+                    </CollapsibleContent>
+                  </Card>
+                </Collapsible>
               )}
 
               {/* Gap analysis */}
@@ -439,6 +566,19 @@ export function DeepResearch() {
         </AnimatePresence>
       </main>
 
+      {/* Edit plan modal */}
+      {editModalOpen && editPlan && (
+        <EditPlanModal
+          plan={editPlan}
+          setPlan={setEditPlan}
+          onSave={saveEditedPlan}
+          onCancel={() => {
+            setEditModalOpen(false);
+            setEditPlan(null);
+          }}
+        />
+      )}
+
       {/* Footer */}
       <footer className="relative border-t border-border/60 bg-background/50 backdrop-blur-sm mt-auto">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
@@ -455,3 +595,133 @@ export function DeepResearch() {
     </div>
   );
 }
+
+// ---------- Edit plan modal (inline, no dialog dependency) ----------
+
+function EditPlanModal({
+  plan,
+  setPlan,
+  onSave,
+  onCancel,
+}: {
+  plan: ResearchPlan;
+  setPlan: (p: ResearchPlan) => void;
+  onSave: (p: ResearchPlan) => void;
+  onCancel: () => void;
+}) {
+  const updateTitle = (title: string) => setPlan({ ...plan, title });
+  const updateSummary = (summary: string) => setPlan({ ...plan, summary });
+  const updateSection = (id: string, field: "title" | "description", value: string) =>
+    setPlan({
+      ...plan,
+      sections: plan.sections.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+    });
+  const removeSection = (id: string) =>
+    setPlan({ ...plan, sections: plan.sections.filter((s) => s.id !== id) });
+  const addSection = () => {
+    if (plan.sections.length >= 9) return;
+    setPlan({
+      ...plan,
+      sections: [
+        ...plan.sections,
+        { id: `s${Date.now()}`, title: "New section", description: "Describe what this section covers." },
+      ],
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <Card className="w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+        <CardContent className="p-5 space-y-4">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold">Edit research plan</h3>
+            <Button variant="ghost" size="icon" onClick={onCancel} className="h-7 w-7">
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Title */}
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Report title</Label>
+            <Input
+              value={plan.title}
+              onChange={(e) => updateTitle(e.target.value)}
+              className="text-sm font-semibold"
+            />
+          </div>
+
+          {/* Summary */}
+          <div className="space-y-1.5">
+            <Label className="text-[11px] text-muted-foreground">Summary</Label>
+            <textarea
+              value={plan.summary}
+              onChange={(e) => updateSummary(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-xs min-h-[60px] resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </div>
+
+          {/* Sections */}
+          <div className="space-y-2">
+            <Label className="text-[11px] text-muted-foreground">
+              Sections ({plan.sections.length}/9)
+            </Label>
+            {plan.sections.map((s, i) => (
+              <div key={s.id} className="flex items-start gap-2 rounded-lg border bg-muted/30 p-2">
+                <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-brand-gradient text-[10px] font-bold text-white mt-1">
+                  {i + 1}
+                </span>
+                <div className="flex-1 space-y-1.5 min-w-0">
+                  <Input
+                    value={s.title}
+                    onChange={(e) => updateSection(s.id, "title", e.target.value)}
+                    className="h-8 text-xs font-medium"
+                  />
+                  <textarea
+                    value={s.description}
+                    onChange={(e) => updateSection(s.id, "description", e.target.value)}
+                    className="w-full rounded-md border border-input bg-background px-2 py-1 text-[11px] min-h-[36px] resize-y focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                  <button
+                    onClick={() => removeSection(s.id)}
+                    className="text-[10px] text-destructive hover:underline"
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
+            ))}
+            {plan.sections.length < 9 && (
+              <button
+                onClick={addSection}
+                className="w-full rounded-md border border-dashed py-2 text-xs text-muted-foreground hover:bg-muted/40"
+              >
+                + Add section
+              </button>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button variant="ghost" size="sm" onClick={onCancel} className="text-xs">
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => onSave(plan)}
+              className="text-xs bg-brand-gradient hover:opacity-90 border-0 gap-1.5"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Save & restart
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Need these imports for the modal.
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ChevronDown } from "lucide-react";
