@@ -19,6 +19,11 @@ import { getRetriever } from "./retriever";
 import { getJob } from "./research-store";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt, envStr } from "./env";
+import {
+  checkPromptInjection,
+  wrapUserQuery,
+  getInjectionDefensePrompt,
+} from "./prompt-security";
 import { randomUUID } from "crypto";
 import type {
   ResearchConfig,
@@ -216,17 +221,27 @@ async function generatePlan(
   const queryLen = config.query.length;
   const isGiant = queryLen > 4000;
 
+  // Prompt-injection defense: wrap the user query in XML tags + warn the LLM.
+  const injectionCheck = checkPromptInjection(config.query);
+  if (injectionCheck.isSuspicious) {
+    log(
+      job,
+      "warn",
+      "planning",
+      `Possible prompt injection detected (matched: ${injectionCheck.matchedPatterns.join(", ")}). Query will be wrapped + LLM warned.`
+    );
+  }
+
   const sys: LLMMessage = {
     role: "system",
     content:
-      "You are a senior research director. Given a research query, you produce a clear, well-structured research plan: a working title, a one-paragraph summary of what the report will cover, and a list of thematic sections (each with a title and a one-sentence description). The sections should collectively cover the topic exhaustively and flow logically. For long briefs, ensure every distinct topic mentioned is represented as a section.",
+      "You are a senior research director. Given a research query, you produce a clear, well-structured research plan: a working title, a one-paragraph summary of what the report will cover, and a list of thematic sections (each with a title and a one-sentence description). The sections should collectively cover the topic exhaustively and flow logically. For long briefs, ensure every distinct topic mentioned is represented as a section." +
+      getInjectionDefensePrompt(),
   };
   const user: LLMMessage = {
     role: "user",
     content: `Research query / brief:
-"""
-${config.query}
-"""
+${wrapUserQuery(config.query)}
 
 Produce a research plan as JSON with this exact shape (no markdown, no preamble):
 {
@@ -774,13 +789,14 @@ Your report MUST:
 - Acknowledge uncertainty or conflicting evidence where present.
 - Avoid filler, fluff, and repetition. Every paragraph should add information.
 
-Do NOT fabricate sources or URLs. Only cite URLs that appear in the provided source list.`,
+Do NOT fabricate sources or URLs. Only cite URLs that appear in the provided source list.` +
+      getInjectionDefensePrompt(),
   };
 
   const user: LLMMessage = {
     role: "user",
     content: `# Original Research Query
-${config.query}
+${wrapUserQuery(config.query)}
 
 ${planOutline}
 

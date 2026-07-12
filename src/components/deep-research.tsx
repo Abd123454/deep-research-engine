@@ -198,7 +198,7 @@ export function DeepResearch() {
         description: `${data.config?.llmProvider?.toUpperCase()} · ${modelCount} LLMs · ${engineCount} search engines`,
       });
       setPolling(true);
-      pollJob(data.id);
+      streamJob(data.id);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       toast.error("Failed to start research", { description: msg });
@@ -207,19 +207,82 @@ export function DeepResearch() {
     }
   }
 
+  // Stream job updates via Server-Sent Events (SSE). Falls back to polling
+  // if SSE is unsupported or fails. SSE = 1 long-lived connection instead of
+  // ~600 polls at 1.5s intervals (99% less network traffic).
+  function streamJob(id: string) {
+    if (typeof window === "undefined" || typeof EventSource === "undefined") {
+      pollJob(id);
+      return;
+    }
+
+    let es: EventSource | null = null;
+    let fallbackStarted = false;
+
+    const startFallback = (reason: string) => {
+      if (fallbackStarted) return;
+      fallbackStarted = true;
+      console.warn(`[stream] SSE failed (${reason}), falling back to polling.`);
+      if (es) es.close();
+      pollJob(id);
+    };
+
+    const watchdog = setTimeout(() => {
+      if (!stopPollingRef.current) startFallback("no events in 30s");
+    }, 30_000);
+
+    try {
+      es = new EventSource(`/api/research/stream/${id}`);
+
+      es.addEventListener("update", (e: MessageEvent) => {
+        clearTimeout(watchdog);
+        try {
+          const data = JSON.parse(e.data) as { ok: boolean; job?: ResearchJob };
+          if (data.ok && data.job) setJob(data.job);
+        } catch {
+          /* ignore */
+        }
+      });
+
+      es.addEventListener("done", (e: MessageEvent) => {
+        clearTimeout(watchdog);
+        es?.close();
+        setPolling(false);
+        try {
+          const data = JSON.parse(e.data) as { status: string; error?: string };
+          if (data.status === "completed") {
+            toast.success("Deep research completed!");
+          } else {
+            toast.error("Research failed", { description: data.error || "Unknown" });
+          }
+        } catch {
+          /* ignore */
+        }
+      });
+
+      es.addEventListener("error", () => {
+        clearTimeout(watchdog);
+        if (stopPollingRef.current) return;
+        startFallback("connection error");
+      });
+
+      es.addEventListener("open", () => clearTimeout(watchdog));
+    } catch {
+      clearTimeout(watchdog);
+      startFallback("EventSource construction failed");
+    }
+  }
+
+  // Polling fallback for environments without SSE.
   async function pollJob(id: string) {
     let interval = 1500;
     let consecutive404 = 0;
-    // Hard cap: stop polling after 30 minutes regardless of state (prevents
-    // infinite polling if the job hangs in a non-terminal state).
     const POLL_TIMEOUT_MS = 30 * 60 * 1000;
     const pollStart = Date.now();
     while (!stopPollingRef.current) {
       if (Date.now() - pollStart > POLL_TIMEOUT_MS) {
         setPolling(false);
-        toast.error("Research timed out", {
-          description: "Polling stopped after 30 minutes. The job may still be running server-side.",
-        });
+        toast.error("Research timed out", { description: "30 min limit." });
         return;
       }
       try {
@@ -228,9 +291,7 @@ export function DeepResearch() {
           consecutive404++;
           if (consecutive404 >= 3) {
             setPolling(false);
-            toast.error("Research job was evicted from memory", {
-              description: "Try again with a smaller scope.",
-            });
+            toast.error("Research job was evicted from memory");
             return;
           }
         } else if (!res.ok) {
@@ -243,13 +304,9 @@ export function DeepResearch() {
             if (data.job.status === "completed" || data.job.status === "failed") {
               setPolling(false);
               if (data.job.status === "completed") {
-                toast.success("Deep research completed!", {
-                  description: `${data.job.stats.totalPagesRead} pages · ${data.job.stats.roundsCompleted} rounds · ${fmtTime(data.job.stats.elapsedMs)}`,
-                });
+                toast.success("Deep research completed!");
               } else {
-                toast.error("Research failed", {
-                  description: data.job.error || "Unknown error",
-                });
+                toast.error("Research failed", { description: data.job.error || "Unknown" });
               }
               return;
             }

@@ -1,12 +1,14 @@
 // In-memory research job store with TTL eviction.
 // Jobs are kept in process memory; sufficient for a single-instance deployment.
 //
+// FIXME: this whole module is a placeholder. For real production it needs to be
+// backed by Postgres (Prisma is available) or Redis. The globalThis Map trick
+// survives HMR in dev but NOT multi-instance or serverless deployments — every
+// restart wipes all in-flight jobs. See roadmap in SECURITY.md.
+//
 // NOTE: In Next.js dev mode with Turbopack, modules can be re-evaluated,
 // which would reset a module-level Map. To survive HMR and route-module
 // reloads, we stash the Map on `globalThis` so it persists across reloads.
-//
-// NOTE: This store is NOT suitable for multi-instance / serverless deployments.
-// For production, replace `JobStore` with a Postgres/Redis-backed implementation.
 
 import { randomUUID } from "crypto";
 import type { ResearchJob, ResearchConfig, ResearchStatus } from "./types";

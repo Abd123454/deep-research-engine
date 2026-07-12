@@ -7,8 +7,9 @@
 // This protects the NVIDIA/Tavily free-tier quotas from being exhausted by a
 // single abusive client. Uses a sliding-window counter in process memory.
 //
-// NOTE: For multi-instance deployments, replace this with Redis-backed rate
-// limiting (e.g., `rate-limiter-flexible` with Redis store).
+// TODO: replace with @upstash/ratelimit (Redis-backed) for multi-instance.
+// The current Map-based limiter resets on every process restart and doesn't
+// share state across instances behind a load balancer.
 
 interface RateBucket {
   starts: number[]; // timestamps of recent starts (sliding 60s window)

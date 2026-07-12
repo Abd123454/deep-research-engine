@@ -8,9 +8,12 @@ import { resolveConfig, runResearch } from "@/lib/research-engine";
 import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
 import { checkStartRateLimit, getClientIP } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// ... StartBodySchema unchanged ...
 
 // Hard limit on query length (100k chars ≈ 25k tokens, within modern context windows).
 const MAX_QUERY_CHARS = 100_000;
@@ -27,6 +30,10 @@ const StartBodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    // Auth check (no-op if AUTH_USERNAME/AUTH_PASSWORD are unset).
+    const authFail = requireAuth(req);
+    if (authFail) return authFail;
+
     const raw = await req.json().catch(() => ({}));
     const parsed = StartBodySchema.safeParse(raw);
     if (!parsed.success) {
