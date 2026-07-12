@@ -61,6 +61,8 @@ export async function POST(req: NextRequest) {
 
     // Create a DUMMY job (NOT stored in the in-memory store) just so
     // generatePlan can use it for logging/status. This avoids the job leak.
+    // TODO: this is a dummy job, not persisted. generatePlan should be
+    // refactored to not need a full job object (it only uses it for log/status).
     const dummyJob: ResearchJob = {
       id: `plan-only-${Date.now()}`,
       query,
