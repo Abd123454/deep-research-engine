@@ -1,57 +1,41 @@
 # Deep Research Engine
 
-A **self-hosted deep research engine** with multi-round gap analysis, triple-fallback resilience, and a Gemini-inspired UI. Runs entirely on free-tier APIs ($0/month).
+A **self-hosted deep research engine** with multi-round gap analysis, triple-fallback resilience, and a clean UI. Runs entirely on free-tier APIs ($0/month).
 
-> **Honest positioning:** This is not a Perplexity/ChatGPT Deep Research competitor. It's a self-hostable alternative in the same space as [GPT Researcher](https://github.com/assafelovic/gpt-researcher) — for people who want multi-round research on their own server, with their own API keys, at $0/month.
+## Why I built this
 
-![Next.js](https://img.shields.io/badge/Next.js-16-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![License](https://img.shields.io/badge/License-MIT-green)
+I was paying $20/month for Perplexity Pro just for deep research. I wanted something I could run on my own server, with no limits, that I could hack on. This is that thing.
+
+It's not as polished as Perplexity. It probably never will be. But it's mine, it's free, and it actually works for the kind of multi-hour research rabbit holes I fall into on weekends.
 
 ## What it does well
 
-### Multi-round research pipeline
-1. **Plan** — generates a structured outline (title + summary + 5-9 sections) before searching.
-2. **Decompose** — breaks the query into focused sub-questions.
-3. **Round 1** — for each sub-question (in parallel): search → read → extract findings.
-4. **Gap analysis** — reviews round-1 findings, identifies what's missing, generates follow-up questions.
-5. **Round 2** — processes gap-filling sub-questions (in parallel).
-6. **Synthesize** — writes a long-form report following the plan outline.
-
-### Triple-fallback resilience
-- **6-model NVIDIA LLM fallback chain** — if one model fails (429/500/timeout), the next is tried instantly.
-- **3-engine search fallback** — Tavily → Z.AI → DuckDuckGo.
-- **2-backend page reader fallback** — Z.AI page_reader → direct HTTP fetch.
-
-### Giant prompt support
-- Accepts up to **100,000 characters** of research briefs.
-- Auto-detects "Large prompt" (>4K chars) and "Mega prompt" (>15K chars).
-- Useful for pasting RFPs, detailed research briefs, or multi-section requirements.
-
-### Self-hostable
-- Dockerfile included (multi-stage, non-root user, Next.js standalone).
-- Your data never leaves your server.
-- No per-user subscription.
+- **Multi-round research pipeline** — plan → decompose → search → gap analysis → round 2 → synthesize. The gap analysis step is the differentiator: after round 1, it reviews what was found, identifies what's missing, and runs a second round to fill the gaps.
+- **Triple-fallback resilience** — 6 NVIDIA LLM models, 3 search engines (Tavily → Z.AI → DuckDuckGo), 2 page readers (Z.AI → direct fetch). If one fails, the next takes over.
+- **Giant prompt support** — paste up to 100,000 characters of research briefs, RFPs, or multi-section requirements.
+- **Plan preview** — generates a research outline before starting. You can edit it, then the engine uses your version.
+- **Self-hostable** — Dockerfile included. Your data stays on your server.
 
 ## What it does NOT do (honestly)
 
-- **No persistent storage.** Jobs are in-memory; a restart wipes everything. (TODO: Postgres backend.)
-- **No streaming report.** The report appears all at once after synthesis, not token-by-token. (TODO: SSE for LLM output.)
-- **No JS-rendered page reading.** SPA sites (React/Vue/Angular) return empty HTML. No Puppeteer/Playwright. (TODO.)
-- **No source quality scoring.** Uses search-engine order as-is. No domain authority / page rank.
-- **No citation verification.** The LLM may cite URLs that don't actually support the claim. No hallucination check.
-- **Basic auth only.** No OAuth. (TODO.)
-- **In-memory rate limiter.** Not suitable for multi-instance deployments. (TODO: Redis.)
-- **28 tests.** Low coverage. No e2e tests yet.
+- **No persistent storage.** Jobs are in-memory; a restart wipes everything. (Working on it.)
+- **No streaming report.** The report appears all at once after synthesis. (Working on it.)
+- **No JS-rendered page reading.** SPA sites return empty HTML. No Puppeteer/Playwright yet.
+- **No source quality scoring.** Uses search-engine order as-is.
+- **No citation verification.** The LLM may cite URLs that don't support the claim.
+- **Rate limiter is in-memory.** Won't work behind a load balancer. (Need Redis.)
+- **40 tests.** Low coverage. No e2e tests yet.
 
-If these gaps matter to you, this project isn't ready. Use [GPT Researcher](https://github.com/assafelovic/gpt-researcher) (more mature) or pay for Perplexity Pro.
+If these gaps matter to you, this project isn't ready. Use [GPT Researcher](https://github.com/assafelovic/gpt-researcher) or pay for Perplexity Pro.
+
+## Known Issues
+
+- DuckDuckGo fallback breaks sometimes (CAPTCHA). Use Tavily if you can.
+- The 10-minute wait for advanced research is real. No streaming yet.
+- `Promise.all` doesn't abort in-flight sub-queries on cancel. The stop button stops the next stage, not the current HTTP requests in flight.
+- DuckDuckGo JSON API returns mostly internal DDG pages, not real web results. It's a last resort.
 
 ## Quick Start
-
-### Prerequisites
-- Node.js 20+ / Bun
-- An NVIDIA API key (free at https://build.nvidia.com/)
-- (Optional) A Tavily API key (free at https://tavily.com/)
-
-### Installation
 
 ```bash
 git clone https://github.com/Abd123454/deep-research-engine.git
@@ -73,59 +57,27 @@ docker run -p 3000:3000 --env-file .env deep-research-engine
 
 ## Configuration
 
-All settings in `.env`. Key options:
-
 | Variable | Default | Description |
 |---|---|---|
 | `LLM_PROVIDER` | `nvidia` | `nvidia` or `zai` (free fallback) |
 | `SMART_LLM_MODELS` | 6 models | Comma-separated NVIDIA fallback chain |
 | `RETRIEVER` | `tavily` | `tavily`, `zai`, or `duckduckgo` |
 | `SEARCH_DEPTH` | `advanced` | `standard` (~2-3 min), `deep` (~5-7 min), `advanced` (~10-15 min) |
-| `NUM_SUB_QUERIES` | `7` | Sub-questions to generate (advanced) |
-| `MAX_LINKS_PER_QUERY` | `15` | Pages to read per sub-question |
 | `AUTH_USERNAME` / `AUTH_PASSWORD` | empty | Set both to enable HTTP Basic Auth |
-
-## Architecture
-
-```
-Next.js 16 UI (SSE) → API Routes → Research Engine (6-stage pipeline)
-                                       ↓
-                   ┌───────────────────┼───────────────────┐
-                   │                   │                   │
-              LLM Provider        Retriever          Page Reader
-              (6 NVIDIA models    (Tavily → Z.AI →   (Z.AI → direct
-               fallback chain)     DuckDuckGo)        fetch fallback)
-```
 
 ## Tech Stack
 
-- **Framework:** Next.js 16 (App Router, Turbopack)
-- **Language:** TypeScript 5 (strict mode)
-- **Styling:** Tailwind CSS 4 + shadcn/ui (New York)
-- **LLMs:** NVIDIA NIM (6-model fallback) + Z.AI SDK
-- **Search:** Tavily + Z.AI web_search + DuckDuckGo
-- **Tests:** Vitest (28 unit + integration tests)
-- **CI:** GitHub Actions (lint + tsc + test)
+- Next.js 16, TypeScript 5 (strict), Tailwind CSS 4, shadcn/ui
+- NVIDIA NIM (6-model fallback), Z.AI SDK, Tavily, DuckDuckGo
+- Vitest (40 tests), GitHub Actions CI, Docker
 
 ## Cost
 
-**$0/month** on free tiers:
-- NVIDIA NIM (free tier, 6 models)
-- Tavily (1000 free searches/month)
-- Z.AI SDK (free)
-- DuckDuckGo (free, unlimited)
-- Direct page fetch (free, unlimited)
+$0/month on free tiers.
 
-## Roadmap
+## Changelog
 
-- [ ] Postgres-backed job store (replace in-memory Map)
-- [ ] Streaming report (SSE for LLM token output)
-- [ ] Playwright for JS-rendered pages
-- [ ] Source quality scoring (domain authority + recency)
-- [ ] Citation verification (URL actually supports the claim)
-- [ ] Redis-backed rate limiter
-- [ ] OAuth (GitHub/Google)
-- [ ] 50+ tests + e2e (Playwright)
+See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
@@ -135,4 +87,3 @@ MIT — see [LICENSE](LICENSE).
 
 - UI design inspired by Gemini Deep Research.
 - Multi-round research pattern inspired by [GPT Researcher](https://github.com/assafelovic/gpt-researcher).
-- Built with the Z.ai Code development platform.

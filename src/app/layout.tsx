@@ -16,21 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deep Research — AI-Powered Deep Search Engine",
-  description:
-    "An open-source-style deep research engine that decomposes your question, reads dozens of web sources, and writes a comprehensive long-form report.",
-  keywords: [
-    "Deep Research",
-    "AI Research",
-    "GPT Researcher",
-    "Web Search",
-    "Long-form Report",
-    "NVIDIA NIM",
-  ],
-  authors: [{ name: "Z.ai" }],
-  icons: {
-    icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
-  },
+  title: "Deep Research Engine",
+  description: "Self-hosted deep research with multi-round gap analysis. Runs on free-tier APIs.",
+  keywords: ["deep research", "self-hosted", "open source", "NVIDIA NIM", "Tavily"],
+  authors: [{ name: "Abd" }],
 };
 
 export default function RootLayout({
