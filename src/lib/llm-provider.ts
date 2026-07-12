@@ -286,23 +286,49 @@ async function nvidiaCompleteSingle(
 
 // Try each model in the fallback chain. For retryable errors (429/503/timeout),
 // retry with backoff. For hard errors (404/400/500), skip to the next model.
+//
+// BUG 1 FIX: if streaming (opts.stream) and at least one token was already
+// emitted via onToken, do NOT fallback — the user has already seen partial
+// output. Emit the error instead. Fallback only happens before the first
+// token arrives.
 async function nvidiaCompleteWithFallback(
   opts: LLMCompletionOptions,
   models: string[]
 ): Promise<LLMCompletionResult> {
   let lastErr: unknown;
   const tried: string[] = [];
+  let tokensEmitted = false;
+
+  // Wrap onToken to track whether any tokens were emitted.
+  const originalOnToken = opts.onToken;
+  const wrappedOpts: LLMCompletionOptions = {
+    ...opts,
+    onToken: (token: string) => {
+      tokensEmitted = true;
+      originalOnToken?.(token);
+    },
+  };
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i];
     tried.push(model);
+
+    // If streaming and tokens were already emitted by a previous model,
+    // do NOT try the next model — the user has seen partial output.
+    if (opts.stream && tokensEmitted) {
+      throw new Error(
+        `Streaming failed mid-stream after ${model} emitted tokens. ` +
+          "Cannot fallback — partial report was already shown to the user. " +
+          `Last error: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`
+      );
+    }
+
     try {
       const result = await withRetry(
-        () => nvidiaCompleteSingle(opts, model),
+        () => nvidiaCompleteSingle(wrappedOpts, model),
         `nvidia:${model}`,
-        1 // only 1 retry per model — the fallback chain handles the rest
+        1
       );
-      // Log fallback usage if not the first model.
       if (i > 0) {
         console.log(
           `[llm-provider] SMART_LLM fallback: "${model}" succeeded after ${i} previous model(s) failed.`
@@ -311,11 +337,14 @@ async function nvidiaCompleteWithFallback(
       return result;
     } catch (err) {
       lastErr = err;
+      // If tokens were already emitted, don't fallback — throw immediately.
+      if (tokensEmitted) {
+        throw err;
+      }
       const msg = err instanceof Error ? err.message : String(err);
       console.warn(
         `[llm-provider] Model "${model}" failed: ${msg.slice(0, 120)}. → next model`
       );
-      // No delay between models — we want speed. The fallback is instant.
     }
   }
 

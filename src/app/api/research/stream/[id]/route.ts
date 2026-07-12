@@ -20,6 +20,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const SAMPLE_INTERVAL_MS = 800;
+const STREAMING_SAMPLE_INTERVAL_MS = 100; // faster polling during report streaming
 const MAX_STREAM_DURATION_MS = 30 * 60 * 1000;
 
 export async function GET(
@@ -56,8 +57,19 @@ export async function GET(
       // Send initial state immediately.
       send("update", { ok: true, job: toPublicJob(job) });
 
+      // DESIGN 2: if the client is reconnecting and the report has already
+      // been partially streamed, replay the full buffered content so the
+      // user doesn't lose what was already shown. This handles refresh/
+      // reconnect during synthesis.
+      if (job.reportStream.length > 0) {
+        send("report_token", { tokens: job.reportStream.join("") });
+        lastStreamIndex = job.reportStream.length;
+      }
+
       const startedAt = Date.now();
-      const interval = setInterval(() => {
+      let currentInterval: ReturnType<typeof setInterval> | null = null;
+
+      function tick() {
         if (closed) return;
         if (Date.now() - startedAt > MAX_STREAM_DURATION_MS) {
           send("error", { ok: false, error: "Stream timeout (30 min)." });
@@ -82,14 +94,20 @@ export async function GET(
         if (current.reportStream.length > lastStreamIndex) {
           const newTokens = current.reportStream.slice(lastStreamIndex);
           lastStreamIndex = current.reportStream.length;
-          // Batch tokens into a single event to reduce SSE overhead.
-          // Individual tokens are too chatty (1000+ events for a 6K report).
           send("report_token", { tokens: newTokens.join("") });
         }
 
-        // Terminal state — send final event and close.
+        // Adaptive interval: poll faster (100ms) while report is streaming,
+        // slower (800ms) otherwise.
+        const desiredInterval = current.reportStreaming
+          ? STREAMING_SAMPLE_INTERVAL_MS
+          : SAMPLE_INTERVAL_MS;
+
+        if (currentInterval) clearInterval(currentInterval);
+        currentInterval = setInterval(tick, desiredInterval);
+
+        // Terminal state.
         if (current.status === "completed" || current.status === "failed") {
-          // Flush any remaining tokens.
           if (current.reportStream.length > lastStreamIndex) {
             const newTokens = current.reportStream.slice(lastStreamIndex);
             lastStreamIndex = current.reportStream.length;
@@ -102,11 +120,14 @@ export async function GET(
           });
           cleanup();
         }
-      }, SAMPLE_INTERVAL_MS);
+      }
+
+      // Start the first tick immediately.
+      currentInterval = setInterval(tick, SAMPLE_INTERVAL_MS);
 
       function cleanup() {
         closed = true;
-        clearInterval(interval);
+        if (currentInterval) clearInterval(currentInterval);
         try {
           controller.close();
         } catch {
