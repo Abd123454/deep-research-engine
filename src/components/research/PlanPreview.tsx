@@ -37,18 +37,23 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
       ...p,
       sections: p.sections.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
     }));
+  // BUG FIX: cap at 9 sections (matches generatePlan's internal limit).
+  const MAX_SECTIONS = 9;
   const addSection = () =>
-    setPlan((p) => ({
-      ...p,
-      sections: [
-        ...p.sections,
-        {
-          id: `s${Date.now()}`,
-          title: "New section",
-          description: "Describe what this section covers.",
-        },
-      ],
-    }));
+    setPlan((p) => {
+      if (p.sections.length >= MAX_SECTIONS) return p;
+      return {
+        ...p,
+        sections: [
+          ...p.sections,
+          {
+            id: `s${Date.now()}`,
+            title: "New section",
+            description: "Describe what this section covers.",
+          },
+        ],
+      };
+    });
   const removeSection = (id: string) =>
     setPlan((p) => ({ ...p, sections: p.sections.filter((s) => s.id !== id) }));
 
@@ -172,7 +177,7 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
                 )}
               </div>
             ))}
-            {editing && (
+            {editing && plan.sections.length < MAX_SECTIONS && (
               <Button
                 variant="outline"
                 size="sm"

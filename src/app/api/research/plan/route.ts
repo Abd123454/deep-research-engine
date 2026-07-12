@@ -3,8 +3,11 @@
 // The client shows this plan to the user for approval/editing before
 // committing to a full research run.
 //
-// This is the "Plan Preview" step — it lets the user see and modify the
-// outline before any API budget is spent on search + LLM synthesis.
+// BUG FIX: previously this route called `createJob` which leaked a job into
+// the in-memory store every time the user clicked "Start" then "Cancel" (or
+// just closed the tab). After 30 cancels, the store would be full and reject
+// new jobs. Now we create a DUMMY job object (not stored) just to pass to
+// generatePlan (which needs it for logging/status). No store pollution.
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -12,8 +15,7 @@ import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider
 import { getRetriever } from "@/lib/retriever";
 import { requireAuth } from "@/lib/auth";
 import { generatePlan, resolveConfig } from "@/lib/research-engine";
-import { createJob } from "@/lib/research-store";
-import type { ResearchPlan } from "@/lib/types";
+import type { ResearchJob, ResearchPlan } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +32,6 @@ const PlanBodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // Auth check (no-op if AUTH_USERNAME/AUTH_PASSWORD are unset).
     const authFail = requireAuth(req);
     if (authFail) return authFail;
 
@@ -51,7 +52,6 @@ export async function POST(req: NextRequest) {
     const body = parsed.data;
     const query = body.query;
 
-    // Resolve config (same as /start, but we won't run the full pipeline).
     const config = resolveConfig(query, {
       depth: body.depth,
       numSubQueries: body.numSubQueries,
@@ -59,16 +59,38 @@ export async function POST(req: NextRequest) {
       reportMaxTokens: body.reportMaxTokens,
     });
 
-    // Create a job record (status: queued) so we have an ID to attach the
-    // plan to. The full pipeline won't run yet.
-    const job = createJob(query, config);
+    // Create a DUMMY job (NOT stored in the in-memory store) just so
+    // generatePlan can use it for logging/status. This avoids the job leak.
+    const dummyJob: ResearchJob = {
+      id: `plan-only-${Date.now()}`,
+      query,
+      status: "planning",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      config,
+      plan: null,
+      gapAnalysis: null,
+      round2FollowUps: [],
+      subQueries: [],
+      sources: [],
+      report: null,
+      logs: [],
+      error: null,
+      stats: {
+        totalPagesFound: 0,
+        totalPagesRead: 0,
+        totalPagesSucceeded: 0,
+        totalTokensUsed: 0,
+        elapsedMs: 0,
+        subQueriesCompleted: 0,
+        roundsCompleted: 0,
+      },
+    };
 
-    // Generate ONLY the plan.
-    const plan: ResearchPlan = await generatePlan(job, config);
+    const plan: ResearchPlan = await generatePlan(dummyJob, config);
 
     return NextResponse.json({
       ok: true,
-      jobId: job.id,
       plan,
       config: {
         depth: config.depth,

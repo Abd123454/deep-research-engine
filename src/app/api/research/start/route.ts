@@ -28,19 +28,22 @@ const StartBodySchema = z.object({
   reportMaxTokens: z.number().int().min(1000).max(32000).optional(),
   // Optional: a pre-approved/edited plan from the "Plan Preview" step.
   // If provided, the engine skips generatePlan and uses this one.
+  // BUG FIX: title/summary must be non-empty (z.string() accepts "").
+  // Sections capped at 9 (matches generatePlan's internal limit).
   plan: z
     .object({
-      title: z.string(),
-      summary: z.string(),
+      title: z.string().min(1, "Title cannot be empty."),
+      summary: z.string().min(1, "Summary cannot be empty."),
       sections: z
         .array(
           z.object({
             id: z.string(),
-            title: z.string(),
+            title: z.string().min(1, "Section title cannot be empty."),
             description: z.string(),
           })
         )
-        .min(1),
+        .min(1, "At least 1 section required.")
+        .max(9, "Maximum 9 sections allowed."),
     })
     .optional(),
 });
