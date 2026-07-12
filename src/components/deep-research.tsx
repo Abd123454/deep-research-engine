@@ -469,39 +469,21 @@ export function DeepResearch() {
   // ---------- Render ----------
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <div className="pointer-events-none fixed inset-0 aurora-bg" aria-hidden />
-
-      {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-xl bg-brand-gradient shadow-lg shadow-primary/20">
-              <Sparkles className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-semibold leading-tight tracking-tight">
-                Deep Research
-              </h1>
-              <p className="text-[11px] text-muted-foreground leading-tight">
-                Multi-round · Plan-driven · Source-cited
-              </p>
-            </div>
-          </div>
+      {/* Header — minimal like Gemini */}
+      <header className="sticky top-0 z-40 border-b border-border/40 bg-background">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <Badge
-              variant="secondary"
-              className="hidden sm:inline-flex gap-1 rounded-full px-2.5"
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-brand-gradient" />
-              NVIDIA 6 LLMs · Tavily+2
-            </Badge>
-            <ThemeToggle />
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
+            <span className="text-sm font-medium">Deep Research</span>
           </div>
+          <ThemeToggle />
         </div>
       </header>
 
       {/* Main */}
-      <main className="relative flex-1 mx-auto w-full max-w-5xl px-4 sm:px-6 py-6 sm:py-10">
+      <main className="relative flex-1 mx-auto w-full max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
         <AnimatePresence mode="wait">
           {phase === "idle" && (
             <ResearchInput
@@ -691,17 +673,10 @@ export function DeepResearch() {
         />
       )}
 
-      {/* Footer */}
-      <footer className="relative border-t border-border/60 bg-background/50 backdrop-blur-sm mt-auto">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-muted-foreground">
-          <p className="flex items-center gap-1.5">
-            <Sparkles className="h-3 w-3" />
-            Multi-round deep research · plan → search → gap analysis → round 2 → report
-          </p>
-          <p className="flex items-center gap-1.5">
-            <Quote className="h-3 w-3" />
-            Z.AI SDK · NVIDIA NIM ready
-          </p>
+      {/* Footer — minimal */}
+      <footer className="border-t border-border/40 mt-auto">
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 text-[11px] text-muted-foreground text-center">
+          Deep Research Engine · self-hosted, free, multi-round
         </div>
       </footer>
     </div>

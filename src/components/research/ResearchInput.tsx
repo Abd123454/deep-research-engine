@@ -96,40 +96,25 @@ export function ResearchInput({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="space-y-6"
     >
-      {/* ---------- Gemini-style greeting ---------- */}
-      <div className="text-center max-w-2xl mx-auto pt-6 sm:pt-10 pb-2">
-        <motion.h2
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.05 }}
-          className="text-3xl sm:text-5xl font-semibold tracking-tight"
-        >
-          <span className="text-brand-gradient">Hello</span> there
-        </motion.h2>
-        <motion.p
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.12 }}
-          className="mt-3 text-muted-foreground text-base sm:text-lg"
-        >
-          What should we research deeply today?
-        </motion.p>
+      {/* ---------- Greeting (simple, no gradient) ---------- */}
+      <div className="text-center max-w-2xl mx-auto pt-8 sm:pt-16 pb-3">
+        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+          Hello
+        </h2>
+        <p className="mt-2 text-muted-foreground text-base sm:text-lg">
+          What should we research today?
+        </p>
       </div>
 
-      {/* ---------- Gemini-style input card ---------- */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.18 }}
-        className="mx-auto max-w-3xl"
-      >
-        <div className="relative rounded-3xl border border-border/80 bg-card/95 backdrop-blur-sm shadow-xl shadow-primary/5 transition-all focus-within:shadow-2xl focus-within:shadow-primary/10 focus-within:border-primary/40">
+      {/* ---------- Input box (Gemini-style: gray bg, no border) ---------- */}
+      <div className="mx-auto max-w-3xl">
+        <div className="rounded-3xl bg-secondary shadow-sm transition-shadow focus-within:shadow-md">
           <Textarea
             ref={textareaRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Ask anything — or paste a giant research brief (up to 100K chars). I'll plan, search, read, find gaps, and write a comprehensive report."
-            className="min-h-[120px] resize-none border-0 bg-transparent px-5 pt-5 pb-2 text-[15px] leading-relaxed focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/70"
+            placeholder="Enter your research question or paste a brief..."
+            className="min-h-[100px] resize-none border-0 bg-transparent px-5 pt-4 pb-2 text-[15px] leading-relaxed focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 startResearch();
@@ -137,7 +122,7 @@ export function ResearchInput({
             }}
           />
 
-          {/* Bottom bar: counter + settings + send */}
+          {/* Bottom bar */}
           <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
             <div className="flex items-center gap-1.5">
               <button
@@ -174,7 +159,7 @@ export function ResearchInput({
               <span
                 className={cn(
                   "text-[10px] font-mono tabular-nums hidden sm:block",
-                  isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground/70"
+                  isOverLimit ? "text-destructive font-semibold" : "text-muted-foreground/50"
                 )}
               >
                 {fmtNum(charCount)} / {fmtNum(MAX_QUERY_CHARS)}
@@ -183,7 +168,7 @@ export function ResearchInput({
                 onClick={startResearch}
                 disabled={starting || !query.trim() || isOverLimit}
                 size="icon"
-                className="h-9 w-9 rounded-full bg-brand-gradient hover:opacity-90 shadow-md shadow-primary/20 border-0"
+                className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 border-0"
                 aria-label="Start deep research"
               >
                 {starting ? (
@@ -297,22 +282,17 @@ export function ResearchInput({
             Query exceeds the {fmtNum(MAX_QUERY_CHARS)} character limit.
           </p>
         )}
-      </motion.div>
+      </div>
 
-      {/* ---------- Suggestion chips (Gemini-style) ---------- */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.28 }}
-        className="mx-auto max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-2.5"
-      >
+      {/* Suggestion chips — simple, no animation */}
+      <div className="mx-auto max-w-3xl grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-2">
         {EXAMPLES.map((ex, i) => (
           <button
             key={i}
             onClick={() => setQuery(ex.text)}
-            className="group flex items-start gap-3 rounded-2xl border border-border/70 bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-primary/40 hover:bg-accent/50 hover:shadow-md hover:shadow-primary/5"
+            className="group flex items-start gap-3 rounded-2xl bg-secondary px-4 py-3 text-left transition-colors hover:bg-accent"
           >
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground transition-colors group-hover:bg-brand-gradient group-hover:text-white">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               <ex.icon className="h-3.5 w-3.5" />
             </div>
             <span className="text-[13px] leading-snug text-muted-foreground group-hover:text-foreground">
@@ -320,7 +300,7 @@ export function ResearchInput({
             </span>
           </button>
         ))}
-      </motion.div>
+      </div>
     </motion.div>
   );
 }
