@@ -57,7 +57,7 @@ export async function GET(
       // Send initial state immediately.
       send("update", { ok: true, job: toPublicJob(job) });
 
-      // DESIGN 2: if the client is reconnecting and the report has already
+      // if the client is reconnecting and the report has already
       // been partially streamed, replay the full buffered content so the
       // user doesn't lose what was already shown. This handles refresh/
       // reconnect during synthesis.
@@ -90,7 +90,7 @@ export async function GET(
           send("update", { ok: true, job: toPublicJob(current) });
         }
 
-        // CHANGE 3: push report tokens as they arrive.
+        // push report tokens as they arrive.
         if (current.reportStream.length > lastStreamIndex) {
           const newTokens = current.reportStream.slice(lastStreamIndex);
           lastStreamIndex = current.reportStream.length;

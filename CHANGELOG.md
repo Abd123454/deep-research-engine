@@ -45,7 +45,7 @@
 
 ### Added
 - Initial research pipeline: plan → decompose → search → read → extract → synthesize.
-- Gemini-inspired UI (gradient, dark mode, suggestion chips).
+- clean UI (gradient, dark mode, suggestion chips).
 - Giant prompt support (up to 100K chars).
 - NVIDIA NIM integration with OpenAI-compatible endpoint.
 - Tavily search integration.

@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { LogEntry } from "@/lib/types";
 import { LogLine } from "./ReportViewer";
 
-// CHANGE 2: ActivityLog is now a modal, not an inline collapsible.
+// modal version
 // Triggered by "Technical details" button in the main UI.
 
 interface ActivityLogModalProps {

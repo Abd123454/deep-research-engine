@@ -55,7 +55,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: 
           </div>
         </div>
         <article className="px-5 py-4 prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-l-primary prose-blockquote:not-italic">
-          {/* BUG 2 FIX: plain text while streaming (ReactMarkdown re-parses
+          {/* plain text while streaming parses
               the entire string on every token = browser freeze on long reports).
               Switch to ReactMarkdown only when streaming is done. */}
           {streaming ? (

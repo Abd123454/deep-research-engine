@@ -28,7 +28,7 @@ const StartBodySchema = z.object({
   reportMaxTokens: z.number().int().min(1000).max(32000).optional(),
   // Optional: a pre-approved/edited plan from the "Plan Preview" step.
   // If provided, the engine skips generatePlan and uses this one.
-  // BUG FIX: title/summary must be non-empty (z.string() accepts "").
+  // title/summary must be non-empty (z.string() accepts "").
   // Sections capped at 9 (matches generatePlan's internal limit).
   plan: z
     .object({

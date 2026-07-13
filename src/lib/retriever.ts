@@ -1,4 +1,4 @@
-// Retriever (search engine) adapters with multi-engine fallback chain.
+// search engine adapters
 //
 // Supports:
 //   - "tavily":     Tavily API (1000 free searches/month, recommended primary)

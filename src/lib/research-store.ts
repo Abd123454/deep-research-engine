@@ -1,22 +1,11 @@
-// In-memory research job store with TTL eviction.
-// Jobs are kept in process memory; sufficient for a single-instance deployment.
-//
-// FIXME: this whole module is a placeholder. For real production it needs to be
-// backed by Postgres (Prisma is available) or Redis. The globalThis Map trick
-// survives HMR in dev but NOT multi-instance or serverless deployments — every
-// restart wipes all in-flight jobs. See roadmap in SECURITY.md.
-//
-// NOTE: In Next.js dev mode with Turbopack, modules can be re-evaluated,
-// which would reset a module-level Map. To survive HMR and route-module
-// reloads, we stash the Map on `globalThis` so it persists across reloads.
+// in-memory job store. needs Postgres/Redis for production.
 
 import { randomUUID } from "crypto";
 import type { ResearchJob, ResearchConfig, ResearchStatus } from "./types";
 
 const MAX_JOBS = 30;
-const JOB_TTL_MS = 1000 * 60 * 60; // 1 hour
+const JOB_TTL_MS = 1000 * 60 * 60;
 
-// Active statuses — jobs in these states must NEVER be evicted (data loss).
 const ACTIVE_STATUSES: ReadonlySet<ResearchStatus> = new Set([
   "queued",
   "planning",
@@ -47,24 +36,19 @@ export function createJob(
 ): ResearchJob {
   const jobs = getStore();
 
-  // Evict expired jobs if we're at capacity.
   if (jobs.size >= MAX_JOBS) {
     const now = Date.now();
     for (const [id, job] of jobs) {
-      if (
-        now - job.updatedAt > JOB_TTL_MS &&
-        !ACTIVE_STATUSES.has(job.status)
-      ) {
+      if (now - job.updatedAt > JOB_TTL_MS && !ACTIVE_STATUSES.has(job.status)) {
         jobs.delete(id);
       }
     }
   }
-  // If still at capacity, drop oldest NON-ACTIVE job.
+
   if (jobs.size >= MAX_JOBS) {
     let oldestId: string | null = null;
     let oldestTs = Infinity;
     for (const [id, job] of jobs) {
-      // Never evict a job that's currently running.
       if (ACTIVE_STATUSES.has(job.status)) continue;
       if (job.updatedAt < oldestTs) {
         oldestTs = job.updatedAt;
@@ -91,6 +75,8 @@ export function createJob(
     report: null,
     logs: [],
     thoughts: [],
+    followUpQuestions: [],
+    clarifyingQuestions: [],
     error: null,
     stats: {
       totalPagesFound: 0,
@@ -105,23 +91,13 @@ export function createJob(
     cancelled: false,
     reportStream: [],
     reportStreaming: false,
-    followUpQuestions: [],
-    clarifyingQuestions: [],
   };
   jobs.set(id, job);
-  console.log(`[research-store] created job ${id}, store size now ${jobs.size}`);
   return job;
 }
 
 export function getJob(id: string): ResearchJob | undefined {
-  const jobs = getStore();
-  const job = jobs.get(id);
-  if (!job) {
-    console.log(
-      `[research-store] getJob(${id}) NOT FOUND. Store size: ${jobs.size}.`
-    );
-  }
-  return job;
+  return getStore().get(id);
 }
 
 export function listJobs(): ResearchJob[] {
@@ -133,4 +109,3 @@ export function listJobs(): ResearchJob[] {
 export function deleteJob(id: string): boolean {
   return getStore().delete(id);
 }
-

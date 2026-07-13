@@ -37,7 +37,7 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
       ...p,
       sections: p.sections.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
     }));
-  // BUG FIX: cap at 9 sections (matches generatePlan's internal limit).
+  // cap at 9
   const MAX_SECTIONS = 9;
   const addSection = () =>
     setPlan((p) => {

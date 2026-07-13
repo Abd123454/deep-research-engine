@@ -50,7 +50,7 @@ import { PlanPreviewLoading } from "@/components/research/PlanPreview";
 
 const MAX_QUERY_CHARS = 100_000;
 
-// CHANGE 1: Auto-start flow.
+// Auto-start flow.
 //   idle → planning → researching → done
 // No more "plan_preview" phase. After plan generation, research starts
 // immediately. User can Stop or Edit-restart during research.
@@ -71,10 +71,10 @@ export function DeepResearch() {
   const [starting, setStarting] = React.useState(false);
   const [polling, setPolling] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
-  // CHANGE 3: streaming report state.
+  // streaming report state.
   const [streamingReport, setStreamingReport] = React.useState("");
   const [logsOpen, setLogsOpen] = React.useState(false);
-  // CHANGE 2: expandable sections (collapsed by default).
+  // expandable sections (collapsed by default).
   const [sourcesExpanded, setSourcesExpanded] = React.useState(false);
   const [subQueriesExpanded, setSubQueriesExpanded] = React.useState(false);
   const [techDetailsOpen, setTechDetailsOpen] = React.useState(false);
@@ -312,7 +312,7 @@ export function DeepResearch() {
         }
       });
 
-      // CHANGE 3: listen for streaming report tokens.
+      // listen for streaming report tokens.
       es.addEventListener("report_token", (e: MessageEvent) => {
         try {
           const data = JSON.parse(e.data) as { tokens: string };
@@ -470,7 +470,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
   // ---------- Render ----------
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      {/* Header — minimal like Gemini */}
+      {/* header */}
       <header className="sticky top-0 z-40 border-b border-border/40 bg-background">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
@@ -569,7 +569,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
               {/* Gap analysis */}
               {job.gapAnalysis && <GapAnalysis gapAnalysis={job.gapAnalysis} />}
 
-              {/* Report — HERO, full width. Streaming when available (CHANGE 3). */}
+              {/* report */}
               {job.report ? (
                 <ReportViewer
                   report={job.report}
@@ -587,7 +587,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                 />
               ) : (
                 <div className="space-y-4">
-                  {/* GEMINI-INSPIRED: Thinking panel */}
+                  {/* thinking panel */}
                   {job.thoughts.length > 0 && (
                     <div className="rounded-xl bg-secondary p-5 space-y-3">
                       <div className="flex items-center gap-2">
@@ -612,7 +612,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                 </div>
               )}
 
-              {/* Expandable sections (CHANGE 2: collapsed by default) */}
+              {/* expandable sections */}
               <div className="flex flex-wrap gap-2 pt-1">
                 {dedupedSources.length > 0 && (
                   <Collapsible open={sourcesExpanded} onOpenChange={setSourcesExpanded}>
@@ -689,7 +689,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                 </div>
               )}
 
-              {/* Activity log modal (CHANGE 2: was inline collapsible) */}
+              {/* activity log modal */}
               <ActivityLogModal
                 logs={job.logs}
                 open={techDetailsOpen}

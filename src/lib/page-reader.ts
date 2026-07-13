@@ -1,4 +1,4 @@
-// Web page reader with multi-backend fallback — OPTIMIZED FOR SPEED.
+// page reader with fallback
 //
 // Primary: Z.AI page_reader (FREE, good content extraction).
 // Fallback: direct HTTP fetch (FREE, no key, no quota).
@@ -31,7 +31,7 @@ const SKIP_EXTENSIONS = [
   ".iso", ".img", ".bin",
 ];
 
-// Domains that are individually known to hang — add sparingly. NOTE: we do NOT
+// known-slow hosts. we do NOT
 // blanket-skip .gov/.mil (that would systematically bias research away from
 // authoritative government sources). Only specific hosts that have been
 // observed to timeout are listed here.

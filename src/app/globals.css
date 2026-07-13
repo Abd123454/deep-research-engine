@@ -58,7 +58,7 @@
   --card-foreground: oklch(0.18 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0 0);
-  /* Google Blue */
+  /* primary blue */
   --primary: oklch(0.55 0.2 255);
   --primary-foreground: oklch(1 0 0);
   /* Light gray for input boxes (like Gemini's #f0f4f9) */

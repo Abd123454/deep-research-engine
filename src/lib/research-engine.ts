@@ -2,7 +2,7 @@
 //
 // Multi-stage pipeline designed to surpass single-round deep research tools:
 //
-//   1. PLAN       — Generate a structured research outline (Gemini-style).
+//   1. PLAN       — structured outline
 //   2. DECOMPOSE  — Break the query into focused sub-questions.
 //   3. ROUND 1    — For each sub-question: search → read → extract findings.
 //   4. GAP ANALYSIS — Review round-1 findings, identify what's missing.
@@ -42,7 +42,7 @@ export function resolveConfig(
   query: string,
   overrides?: Partial<ResearchConfig>
 ): ResearchConfig {
-  // GEMINI-INSPIRED: the engine decides depth automatically based on query
+  // the engine decides depth automatically based on query
   // complexity. No user-facing settings. Short question = standard. Long
   // brief = advanced. The engine adapts.
   const queryLen = query.length;
@@ -115,7 +115,7 @@ function log(
   job.updatedAt = Date.now();
 }
 
-// GEMINI-INSPIRED: push a human-readable "thought" to the thinking panel.
+// push a human-readable "thought" to the thinking panel.
 // Unlike log() (technical), these are written for the user to read.
 function think(
   job: ResearchJob,
@@ -222,7 +222,7 @@ function heuristicDecompose(query: string, numSubQueries: number): string[] {
   return [truncateQuestion(query)];
 }
 
-// ---------- Stage 1: Planning (Gemini-style research outline) ----------
+// ---------- Stage 1: Planning ----------
 
 export async function generatePlan(
   job: ResearchJob,
@@ -392,7 +392,7 @@ async function decompose(
   const sys: LLMMessage = {
     role: "system",
     content:
-      "You are a senior research strategist and domain expert. Your task is to break a complex research query into focused, diverse, non-redundant sub-questions that together will fully cover the topic. Each sub-question must be specific enough to be answerable via web search.\n\nCRITICAL: Each sub-question MUST be a concise, self-contained web search query of at most 250 characters. Do NOT paste long briefs into the sub-questions. Distill each topic to its essence.",
+      "You are a senior research strategist and domain expert. Your task is to break a complex research query into focused, diverse, non-redundant sub-questions that together will fully cover the topic. Each sub-question must be specific enough to be answerable via web search.\n\nEach sub-question MUST be a concise, self-contained web search query of at most 250 characters. Do NOT paste long briefs into the sub-questions. Distill each topic to its essence.",
   };
   const user: LLMMessage = {
     role: "user",
@@ -844,7 +844,7 @@ ${sourcesBlock || "_(no sources available)_"}
 Write a comprehensive long-form Deep Research report answering the original query, following the report outline and synthesizing ALL the findings above (including gap-fill findings). Target length: roughly ${config.reportMaxTokens} tokens. Use Markdown. Include an executive summary, the sections from the outline, and inline citations to the source URLs. End with a "## Sources" section.`,
   };
 
-  // CHANGE 3: stream the report tokens via onToken callback.
+  // stream the report tokens via onToken callback.
   // The tokens are pushed to job.reportStream, which the SSE endpoint
   // reads and emits as "report_token" events to the client.
   job.reportStreaming = true;

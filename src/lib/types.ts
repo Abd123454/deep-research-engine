@@ -1,7 +1,7 @@
 // Deep Research Engine - Core Types
 //
 // The pipeline is designed to surpass single-round research tools by adding:
-//   1. A research PLAN (structured outline generated up-front, Gemini-style).
+//   1. A research PLAN (structured outline generated up-front).
 //   2. GAP ANALYSIS after round 1 — the agent reviews findings and identifies
 //      what's missing, then generates follow-up questions.
 //   3. A SECOND RESEARCH ROUND to fill the gaps.
@@ -50,7 +50,7 @@ export interface ResearchConfig {
   numGapQueries: number;
 }
 
-// A planned section of the final report (Gemini-style research plan).
+// a section of the research plan
 export interface PlanSection {
   id: string;
   title: string;
@@ -120,7 +120,7 @@ export interface LogEntry {
   message: string;
 }
 
-// GEMINI-INSPIRED: "Thinking" entries — human-readable thoughts the model
+//: "Thinking" entries — human-readable thoughts the model
 // produces during research. Unlike LogEntry (technical), these are meant
 // for the user to read: "I found that X... I want to explore Y next..."
 export interface ThoughtEntry {
@@ -159,7 +159,7 @@ export interface ResearchJob {
   sources: Source[];
   report: string | null;
   logs: LogEntry[];
-  // GEMINI-INSPIRED: human-readable thoughts shown in the "thinking panel"
+  //: human-readable thoughts shown in the "thinking panel"
   thoughts: ThoughtEntry[];
   error: string | null;
   stats: ResearchStats;

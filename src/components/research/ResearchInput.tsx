@@ -66,7 +66,7 @@ export function ResearchInput({
       transition={{ duration: 0.35, ease: "easeOut" }}
       className="space-y-6"
     >
-      {/* ---------- Greeting (simple, no gradient) ---------- */}
+      {/* greeting */}
       <div className="text-center max-w-2xl mx-auto pt-8 sm:pt-16 pb-3">
         <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
           Hello
@@ -76,7 +76,7 @@ export function ResearchInput({
         </p>
       </div>
 
-      {/* ---------- Input box (Gemini-style: gray bg, no border) ---------- */}
+      {/* input box */}
       <div className="mx-auto max-w-3xl">
         <div className="rounded-3xl bg-secondary shadow-sm transition-shadow focus-within:shadow-md">
           <Textarea
@@ -92,7 +92,7 @@ export function ResearchInput({
             }}
           />
 
-          {/* Bottom bar — Gemini-style: just the send button. No settings. */}
+          {/* bottom bar */}
           <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
             <div className="flex items-center gap-1.5">
               {isGiant && (

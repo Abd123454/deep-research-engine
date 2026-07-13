@@ -1,15 +1,9 @@
 // POST /api/research/stop/[id]
-// Cancels a running research job.
+// cancel a running job
 //
-// Sets job.cancelled = true (cooperative cancel flag). The pipeline checks
-// this flag before each major stage (plan, decompose, search, gap analysis,
-// synthesize) and throws "Cancelled by user" if true.
 //
-// Also marks the job as "failed" immediately so the client stops polling/SSE.
-// The pipeline will exit on its next checkCancelled() call.
 //
-// NOTE: sub-queries already in-flight (inside processSubQuery's search/read
-// cycle) will complete their current HTTP request before the flag is checked.
+// sub-queries already in-flight (inside processSubQuery's search/read
 // This is acceptable — the wasted budget is at most N sub-queries × 1 request.
 
 import { NextRequest, NextResponse } from "next/server";

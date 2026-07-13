@@ -3,11 +3,10 @@
 // The client shows this plan to the user for approval/editing before
 // committing to a full research run.
 //
-// BUG FIX: previously this route called `createJob` which leaked a job into
 // the in-memory store every time the user clicked "Start" then "Cancel" (or
 // just closed the tab). After 30 cancels, the store would be full and reject
 // new jobs. Now we create a DUMMY job object (not stored) just to pass to
-// generatePlan (which needs it for logging/status). No store pollution.
+// dummy job, not stored
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -61,7 +60,7 @@ export async function POST(req: NextRequest) {
 
     // Create a DUMMY job (NOT stored in the in-memory store) just so
     // generatePlan can use it for logging/status. This avoids the job leak.
-    // TODO: this is a dummy job, not persisted. generatePlan should be
+    // dummy job, not stored
     // refactored to not need a full job object (it only uses it for log/status).
     const dummyJob: ResearchJob = {
       id: `plan-only-${Date.now()}`,

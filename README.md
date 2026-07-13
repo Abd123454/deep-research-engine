@@ -85,5 +85,5 @@ MIT — see [LICENSE](LICENSE).
 
 ## Acknowledgments
 
-- UI design inspired by Gemini Deep Research.
+- UI design inspired by deep research tools.
 - Multi-round research pattern inspired by [GPT Researcher](https://github.com/assafelovic/gpt-researcher).

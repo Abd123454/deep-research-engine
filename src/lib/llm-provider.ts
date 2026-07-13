@@ -1,10 +1,5 @@
-// LLM Provider abstraction with multi-model fallback chain.
+// LLM provider with fallback
 //
-// Supports two backends:
-//   1. "zai"     -> built-in z-ai-web-dev-sdk (FREE, no key needed in this env)
-//   2. "nvidia"  -> NVIDIA NIM (OpenAI-compatible endpoint) with 6-model fallback
-//
-// The NVIDIA backend reads SMART_LLM_MODELS (comma-separated list) and tries
 // each model in order until one succeeds. This provides resilience against
 // individual model outages, rate limits, or timeouts.
 
@@ -287,7 +282,7 @@ async function nvidiaCompleteSingle(
 // Try each model in the fallback chain. For retryable errors (429/503/timeout),
 // retry with backoff. For hard errors (404/400/500), skip to the next model.
 //
-// BUG 1 FIX: if streaming (opts.stream) and at least one token was already
+// if streaming (opts.stream) and at least one token was already
 // emitted via onToken, do NOT fallback — the user has already seen partial
 // output. Emit the error instead. Fallback only happens before the first
 // token arrives.

@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 import type { ResearchJob, ResearchStatus as RStatus } from "@/lib/types";
 import { stageProgress, fmtTime } from "@/lib/research-ui-utils";
 
-// CHANGE 2: collapse internals.
-// Instead of 7 stage chips + 4 stat pills, we show:
+// simplified progress
+// simplified progress + 4 stat pills, we show:
 // - 3-state progress: Planning → Researching → Writing
 // - 1 status line: "Read 12 pages · 2 rounds · 5m 32s"
 
