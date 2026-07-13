@@ -546,9 +546,13 @@ async function processSubQuery(
   job.stats.totalPagesSucceeded += sq.pagesSucceeded;
   job.stats.totalTokensUsed += pages.reduce((sum, p) => sum + (p.tokensUsed || 0), 0);
 
+  // dedupe by URL — sometimes search engines return the same URL twice
+  const seenUrls = new Set<string>();
   for (let i = 0; i < pages.length; i++) {
     const p = pages[i];
     const r = results[i];
+    if (seenUrls.has(p.url)) continue;
+    seenUrls.add(p.url);
     job.sources.push({
       url: p.url,
       title: p.title || r?.name || p.url,
@@ -866,6 +870,30 @@ Write a comprehensive long-form Deep Research report answering the original quer
     `Report complete — ${result.content.length} characters with citations from ${job.sources.length} sources.`
   );
 
+  // self-critique pass: ask the LLM to review its own report for accuracy,
+  // clarity, and completeness. If it finds issues, rewrite.
+  let finalReport = result.content;
+  if (result.content.length > 500) {
+    try {
+      think(job, "synthesizing", "Reviewing the report for accuracy and completeness...");
+      const critiqueResult = await llm.smart({
+        messages: [
+          { role: "system", content: "You are a meticulous research editor. Review the report for factual errors, missing citations, unclear sections, and logical gaps. If the report is good, return it unchanged. If it needs fixes, return the improved version. Return ONLY the report markdown, no commentary." },
+          { role: "user", content: `Original query: ${config.query}\n\nReport to review:\n\n${result.content}` },
+        ],
+        maxTokens: config.reportMaxTokens,
+        temperature: 0.3,
+      });
+      if (critiqueResult.content.length > result.content.length * 0.7) {
+        finalReport = critiqueResult.content;
+        log(job, "success", "synthesizing", `Self-critique pass improved report (${finalReport.length} chars, was ${result.content.length})`);
+        think(job, "synthesizing", `Report reviewed and improved. Final version: ${finalReport.length} characters.`);
+      }
+    } catch (err) {
+      log(job, "warn", "synthesizing", `Self-critique pass failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   // Generate follow-up questions for the user.
   try {
     const fqSys: LLMMessage = {
@@ -885,7 +913,7 @@ Write a comprehensive long-form Deep Research report answering the original quer
     } catch { /* ignore parse errors */ }
   } catch { /* ignore — follow-ups are nice-to-have */ }
 
-  return result.content;
+  return finalReport;
 }
 
 // ---------- Orchestrator ----------
@@ -964,6 +992,30 @@ export async function runResearch(jobId: string): Promise<void> {
       job.config.enableMultiRound ? "Now I'll review what I found and identify knowledge gaps for a second research round." : "Now I'll synthesize everything into a comprehensive report."
     );
     job.stats.roundsCompleted = 1;
+
+    // adaptive refinement: if too many sub-queries failed (more than half),
+    // retry the failed ones with simplified queries before moving on.
+    const failedRound1 = round1SubQueries.filter(sq => sq.status === "failed");
+    if (failedRound1.length > round1SubQueries.length / 2 && round1SubQueries.length > 1) {
+      log(job, "warn", "searching", `${failedRound1.length}/${round1SubQueries.length} sub-queries failed. Retrying with simplified queries...`);
+      think(job, "searching",
+        `Too many sub-queries failed. I'll retry with shorter, simpler search queries.`
+      );
+      for (const sq of failedRound1) {
+        // simplify: take first 80 chars of the question
+        const simplified = sq.question.slice(0, 80).trim();
+        sq.question = simplified;
+        sq.status = "pending";
+        sq.error = undefined;
+        sq.searchResults = [];
+        sq.pagesRead = 0;
+        sq.pagesSucceeded = 0;
+        try {
+          await processSubQuery(job, sq, job.config);
+        } catch { /* ignore retry failures */ }
+      }
+      log(job, "info", "searching", `Adaptive retry complete. ${failedRound1.filter(sq => sq.status === "done").length}/${failedRound1.length} recovered.`);
+    }
 
     // Stage 4 + 5: Gap analysis + Round 2.
     checkCancelled();
