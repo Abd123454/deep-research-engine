@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Lightbulb,
   FileSearch,
@@ -10,20 +10,10 @@ import {
   Sparkles,
   ArrowRight,
   Loader2,
-  ChevronDown,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { fmtNum } from "@/lib/research-ui-utils";
 
@@ -51,16 +41,6 @@ const EXAMPLES = [
 interface ResearchInputProps {
   query: string;
   setQuery: (q: string) => void;
-  depth: "standard" | "deep" | "advanced";
-  applyDepth: (d: "standard" | "deep" | "advanced") => void;
-  numSubQueries: number;
-  setNumSubQueries: (n: number) => void;
-  maxLinks: number;
-  setMaxLinks: (n: number) => void;
-  reportTokens: number;
-  setReportTokens: (n: number) => void;
-  showSettings: boolean;
-  setShowSettings: (b: boolean) => void;
   starting: boolean;
   startResearch: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
@@ -69,16 +49,6 @@ interface ResearchInputProps {
 export function ResearchInput({
   query,
   setQuery,
-  depth,
-  applyDepth,
-  numSubQueries,
-  setNumSubQueries,
-  maxLinks,
-  setMaxLinks,
-  reportTokens,
-  setReportTokens,
-  showSettings,
-  setShowSettings,
   starting,
   startResearch,
   textareaRef,
@@ -122,23 +92,9 @@ export function ResearchInput({
             }}
           />
 
-          {/* Bottom bar */}
+          {/* Bottom bar — Gemini-style: just the send button. No settings. */}
           <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => setShowSettings(!showSettings)}
-                className={cn(
-                  "flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                  showSettings
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )}
-              >
-                <Layers className="h-3.5 w-3.5" />
-                {depth}
-                <ChevronDown className={cn("h-3 w-3 transition-transform", showSettings && "rotate-180")} />
-              </button>
               {isGiant && (
                 <Badge
                   variant="secondary"
@@ -179,102 +135,6 @@ export function ResearchInput({
               </Button>
             </div>
           </div>
-
-          {/* Settings drawer (inline, collapsible) */}
-          <AnimatePresence>
-            {showSettings && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden border-t border-border/60"
-              >
-                <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">Depth</Label>
-                    <Select
-                      value={depth}
-                      onValueChange={(v) =>
-                        applyDepth(v as "standard" | "deep" | "advanced")
-                      }
-                    >
-                      <SelectTrigger className="h-8 text-xs rounded-lg">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="standard">Standard</SelectItem>
-                        <SelectItem value="deep">Deep</SelectItem>
-                        <SelectItem value="advanced">Advanced</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
-                      Sub-queries: {numSubQueries}
-                    </Label>
-                    <Input
-                      type="number"
-                      min={2}
-                      max={15}
-                      value={numSubQueries}
-                      onChange={(e) =>
-                        setNumSubQueries(
-                          Math.min(15, Math.max(2, parseInt(e.target.value) || 2))
-                        )
-                      }
-                      className="h-8 text-xs rounded-lg"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
-                      Links / query: {maxLinks}
-                    </Label>
-                    <Input
-                      type="number"
-                      min={3}
-                      max={30}
-                      value={maxLinks}
-                      onChange={(e) =>
-                        setMaxLinks(
-                          Math.min(30, Math.max(3, parseInt(e.target.value) || 3))
-                        )
-                      }
-                      className="h-8 text-xs rounded-lg"
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-[11px] text-muted-foreground">
-                      Report tokens
-                    </Label>
-                    <Input
-                      type="number"
-                      min={1000}
-                      max={32000}
-                      step={1000}
-                      value={reportTokens}
-                      onChange={(e) =>
-                        setReportTokens(
-                          Math.min(32000, Math.max(1000, parseInt(e.target.value) || 1000))
-                        )
-                      }
-                      className="h-8 text-xs rounded-lg"
-                    />
-                  </div>
-                </div>
-                <div className="px-4 pb-3 -mt-1 space-y-1">
-                  <p className="text-[11px] text-muted-foreground">
-                    <strong>Advanced</strong>: {numSubQueries} sub-queries × {maxLinks} links
-                    {" "}+ gap analysis → round 2. Up to {numSubQueries * maxLinks + 4 * maxLinks} pages.
-                  </p>
-                  <p className="text-[11px] text-muted-foreground">
-                    <strong>Multi-round</strong> is enabled on Deep & Advanced —
-                    the agent reviews round-1 findings, identifies gaps, and runs a second research round.
-                  </p>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
 
         {isOverLimit && (

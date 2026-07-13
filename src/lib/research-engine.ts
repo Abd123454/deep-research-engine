@@ -42,8 +42,13 @@ export function resolveConfig(
   query: string,
   overrides?: Partial<ResearchConfig>
 ): ResearchConfig {
-  const depth = (overrides?.depth ||
-    (envStr("SEARCH_DEPTH", "advanced") as ResearchConfig["depth"])) as ResearchConfig["depth"];
+  // GEMINI-INSPIRED: the engine decides depth automatically based on query
+  // complexity. No user-facing settings. Short question = standard. Long
+  // brief = advanced. The engine adapts.
+  const queryLen = query.length;
+  const autoDepth: ResearchConfig["depth"] =
+    queryLen > 4000 ? "advanced" : queryLen > 500 ? "deep" : "standard";
+  const depth = (overrides?.depth || autoDepth) as ResearchConfig["depth"];
 
   const depthPresets: Record<
     ResearchConfig["depth"],
@@ -54,22 +59,18 @@ export function resolveConfig(
       enableMultiRound: boolean;
     }
   > = {
-    // Standard: FAST. ~2-3 minutes. Single round, 3 sub-queries × 4 links = 12 pages.
     standard: {
       numSubQueries: 3,
       maxLinksPerQuery: 4,
       numGapQueries: 0,
       enableMultiRound: false,
     },
-    // Deep: BALANCED. ~5-7 minutes. Multi-round, 5 sub-queries × 8 links = 40 pages.
     deep: {
       numSubQueries: 5,
       maxLinksPerQuery: 8,
       numGapQueries: 2,
       enableMultiRound: true,
     },
-    // Advanced: THOROUGH. ~10-15 minutes. Multi-round, 7 sub-queries × 15 links = 105 pages.
-    // (Reduced from 8×25=200 to keep it under 15 min.)
     advanced: {
       numSubQueries: envInt("NUM_SUB_QUERIES", 7, 2, 12),
       maxLinksPerQuery: envInt("MAX_LINKS_PER_QUERY", 15, 3, 25),

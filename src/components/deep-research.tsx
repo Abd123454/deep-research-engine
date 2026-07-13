@@ -58,11 +58,6 @@ type UIPhase = "idle" | "planning" | "researching";
 export function DeepResearch() {
   // ---------- Input state ----------
   const [query, setQuery] = React.useState("");
-  const [depth, setDepth] = React.useState<"standard" | "deep" | "advanced">("advanced");
-  const [numSubQueries, setNumSubQueries] = React.useState(8);
-  const [maxLinks, setMaxLinks] = React.useState(25);
-  const [reportTokens, setReportTokens] = React.useState(8000);
-  const [showSettings, setShowSettings] = React.useState(false);
 
   // ---------- Phase + plan state ----------
   const [phase, setPhase] = React.useState<UIPhase>("idle");
@@ -103,21 +98,6 @@ export function DeepResearch() {
     [job?.sources]
   );
 
-  // ---------- Depth preset helper ----------
-  function applyDepth(d: "standard" | "deep" | "advanced") {
-    setDepth(d);
-    if (d === "standard") {
-      setNumSubQueries(4);
-      setMaxLinks(5);
-    } else if (d === "deep") {
-      setNumSubQueries(6);
-      setMaxLinks(10);
-    } else {
-      setNumSubQueries(8);
-      setMaxLinks(25);
-    }
-  }
-
   // ---------- Auto-start: generate plan → immediately start research ----------
   async function startResearch() {
     if (!query.trim()) {
@@ -135,10 +115,6 @@ export function DeepResearch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: query.trim(),
-          depth,
-          numSubQueries,
-          maxLinksPerQuery: maxLinks,
-          reportMaxTokens: reportTokens,
         }),
       });
       const planData = (await planRes.json()) as {
@@ -157,10 +133,6 @@ export function DeepResearch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: query.trim(),
-          depth,
-          numSubQueries,
-          maxLinksPerQuery: maxLinks,
-          reportMaxTokens: reportTokens,
           plan: planData.plan,
         }),
       });
@@ -184,15 +156,15 @@ export function DeepResearch() {
         updatedAt: Date.now(),
         config: {
           query: query.trim(),
-          depth,
-          numSubQueries,
-          maxLinksPerQuery: maxLinks,
+          depth: "advanced",
+          numSubQueries: 7,
+          maxLinksPerQuery: 15,
           pageReadConcurrency: 4,
-          reportMaxTokens: reportTokens,
+          reportMaxTokens: 6000,
           retriever: "tavily",
           llmProvider: "nvidia",
-          enableMultiRound: depth !== "standard",
-          numGapQueries: depth === "advanced" ? 3 : depth === "deep" ? 2 : 0,
+          enableMultiRound: true,
+          numGapQueries: 3,
         },
         plan: planData.plan,
         gapAnalysis: null,
@@ -279,10 +251,6 @@ export function DeepResearch() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query: query.trim(),
-          depth,
-          numSubQueries,
-          maxLinksPerQuery: maxLinks,
-          reportMaxTokens: reportTokens,
           plan: restartedPlan,
         }),
       });
@@ -492,16 +460,6 @@ export function DeepResearch() {
               key="input"
               query={query}
               setQuery={setQuery}
-              depth={depth}
-              applyDepth={applyDepth}
-              numSubQueries={numSubQueries}
-              setNumSubQueries={setNumSubQueries}
-              maxLinks={maxLinks}
-              setMaxLinks={setMaxLinks}
-              reportTokens={reportTokens}
-              setReportTokens={setReportTokens}
-              showSettings={showSettings}
-              setShowSettings={setShowSettings}
               starting={starting}
               startResearch={startResearch}
               textareaRef={textareaRef}
