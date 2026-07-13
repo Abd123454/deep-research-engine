@@ -90,6 +90,7 @@ export function createJob(
     sources: [],
     report: null,
     logs: [],
+    thoughts: [],
     error: null,
     stats: {
       totalPagesFound: 0,

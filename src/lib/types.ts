@@ -120,6 +120,17 @@ export interface LogEntry {
   message: string;
 }
 
+// GEMINI-INSPIRED: "Thinking" entries — human-readable thoughts the model
+// produces during research. Unlike LogEntry (technical), these are meant
+// for the user to read: "I found that X... I want to explore Y next..."
+export interface ThoughtEntry {
+  ts: number;
+  stage: ResearchStatus;
+  text: string;
+  // Optional: what the model plans to do next
+  plan?: string;
+}
+
 export interface ResearchStats {
   totalPagesFound: number;
   totalPagesRead: number;
@@ -148,6 +159,8 @@ export interface ResearchJob {
   sources: Source[];
   report: string | null;
   logs: LogEntry[];
+  // GEMINI-INSPIRED: human-readable thoughts shown in the "thinking panel"
+  thoughts: ThoughtEntry[];
   error: string | null;
   stats: ResearchStats;
   // Client IP for rate-limit bookkeeping (never serialized to the client).

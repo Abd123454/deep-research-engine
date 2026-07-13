@@ -114,6 +114,19 @@ function log(
   job.updatedAt = Date.now();
 }
 
+// GEMINI-INSPIRED: push a human-readable "thought" to the thinking panel.
+// Unlike log() (technical), these are written for the user to read.
+function think(
+  job: ResearchJob,
+  stage: ResearchStatus,
+  text: string,
+  plan?: string
+) {
+  job.thoughts.push({ ts: Date.now(), stage, text, plan });
+  if (job.thoughts.length > 100) job.thoughts.splice(0, job.thoughts.length - 100);
+  job.updatedAt = Date.now();
+}
+
 function setStatus(job: ResearchJob, status: ResearchStatus) {
   job.status = status;
   job.updatedAt = Date.now();
@@ -286,6 +299,10 @@ Generate between 5 and 9 sections. Return ONLY the JSON object.`,
 
   job.plan = plan;
   log(job, "success", "planning", `Research plan ready: "${plan.title}" (${plan.sections.length} sections)`);
+  think(job, "planning",
+    `I've created a research plan with ${plan.sections.length} sections covering: ${plan.sections.map(s => s.title).join(", ")}.`,
+    "Now I'll break this into specific search queries and start researching."
+  );
   plan.sections.forEach((s, i) =>
     log(job, "info", "planning", `  ${i + 1}. ${s.title}`)
   );
@@ -729,6 +746,10 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
   if (gapAnalysis) {
     log(job, "info", "analyzing_gaps", `Gaps: ${gapAnalysis.slice(0, 200)}`);
   }
+  think(job, "analyzing_gaps",
+    `I reviewed all findings from round 1. ${gapAnalysis ? gapAnalysis.slice(0, 150) : "I identified areas that need more research."}`,
+    followUps.length > 0 ? `I'll search ${followUps.length} additional questions to fill the gaps.` : "The research is comprehensive enough. Moving to synthesis."
+  );
 
   // Store the follow-ups on the job (proper field, not a type-assertion hack).
   job.round2FollowUps = followUps;
@@ -743,6 +764,10 @@ async function synthesizeReport(
 ): Promise<string> {
   setStatus(job, "synthesizing");
   log(job, "info", "synthesizing", "Writing the comprehensive final report...");
+  think(job, "synthesizing",
+    `I've gathered enough information across ${job.subQueries.length} sub-questions and ${job.stats.roundsCompleted} round(s). Now I'm writing the comprehensive report.`,
+    "The report will follow the plan outline and include inline citations."
+  );
 
   const llm = await getLLM();
 
@@ -836,6 +861,9 @@ Write a comprehensive long-form Deep Research report answering the original quer
 
   job.reportStreaming = false;
   log(job, "success", "synthesizing", `Report written (${result.content.length} chars).`);
+  think(job, "synthesizing",
+    `Report complete — ${result.content.length} characters with citations from ${job.sources.length} sources.`
+  );
   return result.content;
 }
 
@@ -910,6 +938,10 @@ export async function runResearch(jobId: string): Promise<void> {
       })
     );
     log(job, "success", "searching", `Round 1 complete — all ${round1SubQueries.length} sub-questions processed.`);
+    think(job, "searching",
+      `Round 1 complete. I searched ${round1SubQueries.length} sub-questions, read ${job.stats.totalPagesRead} pages, and found ${job.stats.totalPagesSucceeded} with usable content.`,
+      job.config.enableMultiRound ? "Now I'll review what I found and identify knowledge gaps for a second research round." : "Now I'll synthesize everything into a comprehensive report."
+    );
     job.stats.roundsCompleted = 1;
 
     // Stage 4 + 5: Gap analysis + Round 2.

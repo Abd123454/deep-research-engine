@@ -16,6 +16,7 @@ import {
   Globe,
   GitBranch,
   Hash,
+  Brain,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,6 +205,7 @@ export function DeepResearch() {
         cancelled: false,
         reportStream: [],
         reportStreaming: false,
+        thoughts: [],
         stats: {
           totalPagesFound: 0,
           totalPagesRead: 0,
@@ -595,8 +597,29 @@ export function DeepResearch() {
                   streaming
                 />
               ) : (
-                <div className="rounded-xl border bg-card p-5">
-                  <LiveActivity logs={job.logs} />
+                <div className="space-y-4">
+                  {/* GEMINI-INSPIRED: Thinking panel */}
+                  {job.thoughts.length > 0 && (
+                    <div className="rounded-xl bg-secondary p-5 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Brain className="h-4 w-4 text-primary" />
+                        <h3 className="text-sm font-medium">Thinking</h3>
+                      </div>
+                      <div className="space-y-3">
+                        {job.thoughts.slice(-5).map((t, i) => (
+                          <div key={i} className="text-sm text-muted-foreground leading-relaxed">
+                            <p>{t.text}</p>
+                            {t.plan && (
+                              <p className="text-xs text-primary mt-1">→ {t.plan}</p>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div className="rounded-xl border bg-card p-5">
+                    <LiveActivity logs={job.logs} />
+                  </div>
                 </div>
               )}
 
