@@ -17,6 +17,7 @@ import {
   GitBranch,
   Hash,
   Brain,
+  Printer,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -178,6 +179,8 @@ export function DeepResearch() {
         reportStream: [],
         reportStreaming: false,
         thoughts: [],
+        followUpQuestions: [],
+        clarifyingQuestions: [],
         stats: {
           totalPagesFound: 0,
           totalPagesRead: 0,
@@ -436,6 +439,34 @@ export function DeepResearch() {
     URL.revokeObjectURL(url);
   }
 
+  function printReport() {
+    if (!job?.report) return;
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${job.plan?.title || "Deep Research Report"}</title>
+<style>body{font-family:Georgia,serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.7;color:#1a1a1a}
+h1{font-size:1.8rem}h2{font-size:1.4rem;margin-top:2rem}h3{font-size:1.1rem}
+a{color:#1a73e8}blockquote{border-left:3px solid #ddd;margin:0;padding-left:1rem;color:#555}
+code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:0.9em}
+pre{background:#f4f4f4;padding:1rem;border-radius:6px;overflow-x:auto}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}
+@media print{body{margin:0}}</style></head><body>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<div id="content"></div>
+<script>document.getElementById('content').innerHTML=marked.parse(${JSON.stringify(job.report)});window.print();</script>
+</body></html>`;
+    const w = window.open("", "_blank");
+    if (w) { w.document.write(html); w.document.close(); }
+  }
+
+  function startFollowUp(question: string) {
+    setQuery(question);
+    setPhase("idle");
+    setJob(null);
+    setStreamingReport("");
+    currentJobIdRef.current = null;
+    // Auto-start after a tick so the input renders
+    setTimeout(() => startResearch(), 100);
+  }
+
   // ---------- Render ----------
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -628,7 +659,35 @@ export function DeepResearch() {
                     Technical details ({job.logs.length})
                   </Button>
                 )}
+
+                {job.report && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={printReport}
+                    className="gap-1.5 text-xs rounded-full"
+                  >
+                    <Printer className="h-3 w-3" />
+                    Print / PDF
+                  </Button>
+                )}
               </div>
+
+              {/* Follow-up questions (after report is complete) */}
+              {job.report && job.followUpQuestions.length > 0 && (
+                <div className="pt-4 space-y-2">
+                  <p className="text-xs font-medium text-muted-foreground">Follow-up questions</p>
+                  {job.followUpQuestions.map((q, i) => (
+                    <button
+                      key={i}
+                      onClick={() => startFollowUp(q)}
+                      className="block w-full text-left text-sm text-primary hover:underline rounded-lg bg-secondary px-4 py-2.5 transition-colors hover:bg-accent"
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+              )}
 
               {/* Activity log modal (CHANGE 2: was inline collapsible) */}
               <ActivityLogModal

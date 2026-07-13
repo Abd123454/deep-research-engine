@@ -91,6 +91,8 @@ export async function POST(req: NextRequest) {
       reportStream: [],
       reportStreaming: false,
       thoughts: [],
+      followUpQuestions: [],
+      clarifyingQuestions: [],
     };
 
     const plan: ResearchPlan = await generatePlan(dummyJob, config);

@@ -865,6 +865,26 @@ Write a comprehensive long-form Deep Research report answering the original quer
   think(job, "synthesizing",
     `Report complete — ${result.content.length} characters with citations from ${job.sources.length} sources.`
   );
+
+  // Generate follow-up questions for the user.
+  try {
+    const fqSys: LLMMessage = {
+      role: "system",
+      content: "You are a research assistant. Given a research report, generate 3 follow-up questions that would help the user dig deeper into the topic. Return ONLY a JSON array of strings.",
+    };
+    const fqUser: LLMMessage = {
+      role: "user",
+      content: `Report title: ${job.plan?.title || "Research Report"}\n\nReport excerpt (first 1000 chars):\n${result.content.slice(0, 1000)}\n\nGenerate 3 follow-up questions as a JSON array: ["question 1", "question 2", "question 3"]`,
+    };
+    const fqResult = await llm.fast({ messages: [fqSys, fqUser], maxTokens: 300, temperature: 0.5, json: true });
+    try {
+      const parsed = JSON.parse(fqResult.content);
+      if (Array.isArray(parsed)) {
+        job.followUpQuestions = parsed.map(String).slice(0, 3);
+      }
+    } catch { /* ignore parse errors */ }
+  } catch { /* ignore — follow-ups are nice-to-have */ }
+
   return result.content;
 }
 

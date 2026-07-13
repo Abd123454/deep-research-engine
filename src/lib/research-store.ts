@@ -105,6 +105,8 @@ export function createJob(
     cancelled: false,
     reportStream: [],
     reportStreaming: false,
+    followUpQuestions: [],
+    clarifyingQuestions: [],
   };
   jobs.set(id, job);
   console.log(`[research-store] created job ${id}, store size now ${jobs.size}`);

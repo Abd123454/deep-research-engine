@@ -174,6 +174,11 @@ export interface ResearchJob {
   reportStream: string[];
   // True while the report is being streamed (synthesis stage).
   reportStreaming: boolean;
+  // FOLLOW-UP QUESTIONS: generated after the report, let the user dig deeper.
+  followUpQuestions: string[];
+  // CLARIFYING QUESTIONS: generated before research starts, if the query
+  // is ambiguous. The user can answer them to refine the research.
+  clarifyingQuestions: string[];
 }
 
 // Public-facing shape (sent to the client). Strips large text fields if needed.
