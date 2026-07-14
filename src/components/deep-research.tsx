@@ -473,30 +473,11 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
   }
 
   // ---------- Render ----------
+  // NOTE: The header, footer, and <main> wrapper now live in AppShell.
+  // This component returns ONLY the research content (input/plan/results).
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      {/* header */}
-      <header className="sticky top-0 z-40 border-b border-border/40 bg-background">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <h1 className="text-sm font-medium">{t("appName")}</h1>
-          </div>
-          <div className="flex items-center gap-1">
-            <LanguageToggle />
-            <ThemeToggle />
-          </div>
-        </div>
-      </header>
-
-      {/* Main */}
-      <main
-        id="main-content"
-        className="relative flex-1 mx-auto w-full max-w-4xl px-4 sm:px-6 py-8 sm:py-12"
-      >
-        <AnimatePresence mode="wait">
+    <>
+      <AnimatePresence mode="wait">
           {phase === "idle" && (
             <ResearchInput
               key="input"
@@ -709,7 +690,6 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
             </motion.div>
           )}
         </AnimatePresence>
-      </main>
 
       {/* Edit plan modal */}
       {editModalOpen && editPlan && (
@@ -723,14 +703,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
           }}
         />
       )}
-
-      {/* Footer — minimal */}
-      <footer className="border-t border-border/40 mt-auto">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 text-[11px] text-muted-foreground text-center">
-          {t("appTagline")}
-        </div>
-      </footer>
-    </div>
+    </>
   );
 }
 

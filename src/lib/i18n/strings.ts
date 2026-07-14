@@ -51,7 +51,22 @@ export type StringKey =
   | "toggleLanguage"
   | "writing"
   | "writingLong"
-  | "writingReport";
+  | "writingReport"
+  | "modeResearch"
+  | "modeQuick"
+  | "modeDocuments"
+  | "modeHistory"
+  | "comingSoon"
+  | "quickTitle"
+  | "quickSubtitle"
+  | "quickPlaceholder"
+  | "quickThinking"
+  | "quickResponse"
+  | "quickSend"
+  | "documentsPlaceholder"
+  | "documentsDesc"
+  | "historyPlaceholder"
+  | "historyDesc";
 
 type Dictionary = Record<StringKey, string>;
 
@@ -91,6 +106,21 @@ export const STRINGS: Record<Locale, Dictionary> = {
     writing: "Writing",
     writingLong: "Writing report...",
     writingReport: "Writing report...",
+    modeResearch: "Research",
+    modeQuick: "Quick",
+    modeDocuments: "Documents",
+    modeHistory: "History",
+    comingSoon: "Coming soon",
+    quickTitle: "Quick Ask",
+    quickSubtitle: "Fast answers from NVIDIA — no research pipeline.",
+    quickPlaceholder: "Ask anything...",
+    quickThinking: "Thinking...",
+    quickResponse: "Response",
+    quickSend: "Send",
+    documentsPlaceholder: "Document Q&A",
+    documentsDesc: "Upload PDFs, DOCX, or images and ask questions about them. Coming in the next update.",
+    historyPlaceholder: "History",
+    historyDesc: "Your past research sessions will appear here. Coming soon.",
   },
   ar: {
     appName: "البحث العميق",
@@ -127,6 +157,21 @@ export const STRINGS: Record<Locale, Dictionary> = {
     writing: "كتابة",
     writingLong: "جارٍ كتابة التقرير...",
     writingReport: "جارٍ كتابة التقرير...",
+    modeResearch: "بحث",
+    modeQuick: "سريع",
+    modeDocuments: "مستندات",
+    modeHistory: "السجل",
+    comingSoon: "قريبًا",
+    quickTitle: "سؤال سريع",
+    quickSubtitle: "إجابات سريعة من NVIDIA — بدون خط بحث.",
+    quickPlaceholder: "اسأل أي شيء...",
+    quickThinking: "جارٍ التفكير...",
+    quickResponse: "الرد",
+    quickSend: "إرسال",
+    documentsPlaceholder: "أسئلة المستندات",
+    documentsDesc: "ارفع ملفات PDF أو DOCX أو صور واسأل عنها. قريبًا في التحديث القادم.",
+    historyPlaceholder: "السجل",
+    historyDesc: "ستظهر جلسات البحث السابقة هنا. قريبًا.",
   },
 };
 

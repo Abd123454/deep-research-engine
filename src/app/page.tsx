@@ -1,5 +1,5 @@
-import { DeepResearch } from "@/components/deep-research";
+import { AppShell } from "@/components/layout/AppShell";
 
 export default function Home() {
-  return <DeepResearch />;
+  return <AppShell />;
 }
