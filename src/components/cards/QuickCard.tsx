@@ -71,6 +71,19 @@ export function QuickCard({ question }: QuickCardProps) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Request failed");
       } finally {
         if (!cancelled) setStreaming(false);
+        // Auto-extract memories from this Q&A (non-blocking).
+        if (!cancelled && response) {
+          fetch("/api/memories/extract", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversation: [
+                { role: "user", content: question },
+                { role: "assistant", content: response },
+              ],
+            }),
+          }).catch(() => {});
+        }
       }
     })();
     return () => {

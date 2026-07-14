@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-real-ip") ||
     "unknown";
 
-  const rl = checkStartRateLimit(ip);
+  const rl = await checkStartRateLimit(ip);
   if (!rl.ok) {
     return Response.json({ error: rl.reason }, { status: 429 });
   }

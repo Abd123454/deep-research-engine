@@ -10,6 +10,7 @@
 
 import * as React from "react";
 import { Sparkles, Menu, Lightbulb, FileSearch, Brain, Layers } from "lucide-react";
+import { Brain as BrainIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
@@ -24,6 +25,7 @@ import { QuickCard } from "@/components/cards/QuickCard";
 import { ResearchCard } from "@/components/cards/ResearchCard";
 import { DocumentCard } from "@/components/cards/DocumentCard";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
+import { MemoryPanel } from "@/components/memory/MemoryPanel";
 import type { SessionType } from "@/lib/session-store";
 import ReactMarkdown from "react-markdown";
 
@@ -83,6 +85,7 @@ export function UnifiedInterface() {
   const t = useT();
   const [cards, setCards] = React.useState<CardEntry[]>([]);
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [memoryOpen, setMemoryOpen] = React.useState(false);
   const [inputText, setInputText] = React.useState("");
   const [loadedSession, setLoadedSession] = React.useState<{
     title: string;
@@ -150,6 +153,13 @@ export function UnifiedInterface() {
             <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 ml-1" title="Online" />
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => setMemoryOpen(true)}
+              aria-label="Memory"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <BrainIcon className="h-4 w-4" />
+            </button>
             <button
               onClick={() => setHistoryOpen(true)}
               aria-label={t("historyPlaceholder")}
@@ -255,6 +265,9 @@ export function UnifiedInterface() {
         onClose={() => setHistoryOpen(false)}
         onSelect={handleSelectSession}
       />
+
+      {/* Memory panel */}
+      <MemoryPanel open={memoryOpen} onClose={() => setMemoryOpen(false)} />
     </div>
   );
 }
