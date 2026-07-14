@@ -66,7 +66,23 @@ export type StringKey =
   | "documentsPlaceholder"
   | "documentsDesc"
   | "historyPlaceholder"
-  | "historyDesc";
+  | "historyDesc"
+  | "uploadDocument"
+  | "uploadHint"
+  | "dragDrop"
+  | "orBrowse"
+  | "selectDocument"
+  | "selectDocumentHint"
+  | "documentPreview"
+  | "askMode"
+  | "summarizeMode"
+  | "questionsMode"
+  | "askPlaceholder"
+  | "summarizeBtn"
+  | "suggestQuestionsBtn"
+  | "answer"
+  | "uploading"
+  | "noDocuments";
 
 type Dictionary = Record<StringKey, string>;
 
@@ -121,6 +137,22 @@ export const STRINGS: Record<Locale, Dictionary> = {
     documentsDesc: "Upload PDFs, DOCX, or images and ask questions about them. Coming in the next update.",
     historyPlaceholder: "History",
     historyDesc: "Your past research sessions will appear here. Coming soon.",
+    uploadDocument: "Upload document",
+    uploadHint: "PDF, DOCX, TXT, MD, or images. Max 50MB.",
+    dragDrop: "Drag & drop a file here",
+    orBrowse: "or click to browse",
+    selectDocument: "Select a document",
+    selectDocumentHint: "Select a document from the left to ask questions.",
+    documentPreview: "Preview",
+    askMode: "Ask",
+    summarizeMode: "Summarize",
+    questionsMode: "Questions",
+    askPlaceholder: "Ask a question about this document...",
+    summarizeBtn: "Summarize",
+    suggestQuestionsBtn: "Suggest questions",
+    answer: "Answer",
+    uploading: "Uploading & extracting...",
+    noDocuments: "No documents yet. Upload one to get started.",
   },
   ar: {
     appName: "البحث العميق",
@@ -172,6 +204,22 @@ export const STRINGS: Record<Locale, Dictionary> = {
     documentsDesc: "ارفع ملفات PDF أو DOCX أو صور واسأل عنها. قريبًا في التحديث القادم.",
     historyPlaceholder: "السجل",
     historyDesc: "ستظهر جلسات البحث السابقة هنا. قريبًا.",
+    uploadDocument: "رفع مستند",
+    uploadHint: "PDF أو DOCX أو TXT أو MD أو صور. الحد الأقصى 50 ميجابايت.",
+    dragDrop: "اسحب وأفلت ملفًا هنا",
+    orBrowse: "أو انقر للتصفح",
+    selectDocument: "اختر مستندًا",
+    selectDocumentHint: "اختر مستندًا من اليسار لطرح أسئلة.",
+    documentPreview: "معاينة",
+    askMode: "اسأل",
+    summarizeMode: "لخّص",
+    questionsMode: "أسئلة",
+    askPlaceholder: "اطرح سؤالًا حول هذا المستند...",
+    summarizeBtn: "لخّص",
+    suggestQuestionsBtn: "اقترح أسئلة",
+    answer: "الإجابة",
+    uploading: "جارٍ الرفع والاستخراج...",
+    noDocuments: "لا توجد مستندات بعد. ارفع واحدًا للبدء.",
   },
 };
 

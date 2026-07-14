@@ -15,8 +15,8 @@ import { useT } from "@/components/i18n/locale-provider";
 import { Sidebar, type Mode } from "./Sidebar";
 import { DeepResearch } from "@/components/deep-research";
 import { QuickMode } from "@/components/modes/QuickMode";
-import { DocumentsMode } from "@/components/modes/DocumentsMode";
 import { HistoryMode } from "@/components/modes/HistoryMode";
+import { DocumentsMode } from "@/components/documents/DocumentsMode";
 
 export function AppShell() {
   const t = useT();

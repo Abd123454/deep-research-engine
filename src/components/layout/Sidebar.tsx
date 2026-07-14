@@ -55,7 +55,7 @@ export function Sidebar({ mode, setMode }: SidebarProps) {
             >
               <Icon className="h-4 w-4 shrink-0" />
               {t(m.labelKey)}
-              {(m.key === "documents" || m.key === "history") && (
+              {m.key === "history" && (
                 <span className="ml-auto hidden md:inline text-[9px] text-muted-foreground/60 uppercase tracking-wide">
                   {t("comingSoon")}
                 </span>

@@ -64,6 +64,21 @@ export function DeepResearch() {
 
   // ---------- Input state ----------
   const [query, setQuery] = React.useState("");
+  const [attachedDocs, setAttachedDocs] = React.useState<
+    { id: string; filename: string; text: string }[]
+  >([]);
+
+  // Build the effective query: user query + attached document text.
+  function effectiveQuery(): string {
+    if (attachedDocs.length === 0) return query.trim();
+    const docContext = attachedDocs
+      .map(
+        (d, i) =>
+          `\n\n<attached_document_${i + 1} filename="${d.filename}">\n${d.text.slice(0, 20000)}\n</attached_document_${i + 1}>`
+      )
+      .join("");
+    return `${query.trim()}${docContext}`;
+  }
 
   // ---------- Phase + plan state ----------
   const [phase, setPhase] = React.useState<UIPhase>("idle");
@@ -114,13 +129,14 @@ export function DeepResearch() {
     setPhase("planning");
     setJob(null);
     stopPollingRef.current = false;
+    const fullQuery = effectiveQuery();
     try {
       // Step 1: generate the plan.
       const planRes = await fetch("/api/research/plan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          query: query.trim(),
+          query: fullQuery,
         }),
       });
       const planData = (await planRes.json()) as {
@@ -486,6 +502,17 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
               starting={starting}
               startResearch={startResearch}
               textareaRef={textareaRef}
+              attachedDocs={attachedDocs}
+              onAttachDoc={(doc) =>
+                setAttachedDocs((prev) =>
+                  prev.some((d) => d.id === doc.id)
+                    ? prev
+                    : [...prev, { id: doc.id, filename: doc.filename, text: doc.preview }]
+                )
+              }
+              onDetachDoc={(id) =>
+                setAttachedDocs((prev) => prev.filter((d) => d.id !== id))
+              }
             />
           )}
 

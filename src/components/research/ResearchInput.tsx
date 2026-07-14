@@ -17,6 +17,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fmtNum } from "@/lib/research-ui-utils";
 import { useT } from "@/components/i18n/locale-provider";
+import { DocumentPicker } from "@/components/documents/DocumentPicker";
+import { Paperclip, X } from "lucide-react";
 
 const MAX_QUERY_CHARS = 100_000;
 
@@ -39,12 +41,21 @@ const EXAMPLES = [
   },
 ];
 
+interface AttachedDoc {
+  id: string;
+  filename: string;
+  text: string;
+}
+
 interface ResearchInputProps {
   query: string;
   setQuery: (q: string) => void;
   starting: boolean;
   startResearch: () => void;
   textareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  attachedDocs?: AttachedDoc[];
+  onAttachDoc?: (doc: { id: string; filename: string; preview: string }) => void;
+  onDetachDoc?: (id: string) => void;
 }
 
 export function ResearchInput({
@@ -53,8 +64,12 @@ export function ResearchInput({
   starting,
   startResearch,
   textareaRef,
+  attachedDocs = [],
+  onAttachDoc,
+  onDetachDoc,
 }: ResearchInputProps) {
   const t = useT();
+  const [pickerOpen, setPickerOpen] = React.useState(false);
   const charCount = query.length;
   const isOverLimit = charCount > MAX_QUERY_CHARS;
   const isGiant = charCount > 4000;
@@ -97,6 +112,23 @@ export function ResearchInput({
           {/* bottom bar */}
           <div className="flex items-center justify-between gap-2 px-3 pb-3 pt-1">
             <div className="flex items-center gap-1.5">
+              {onAttachDoc && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setPickerOpen(true)}
+                  className="h-7 gap-1 text-xs text-muted-foreground hover:text-foreground"
+                  aria-label="Attach document"
+                >
+                  <Paperclip className="h-3 w-3" />
+                  <span className="hidden sm:inline">Attach</span>
+                  {attachedDocs.length > 0 && (
+                    <span className="ml-0.5 rounded-full bg-primary/20 text-primary text-[9px] px-1.5">
+                      {attachedDocs.length}
+                    </span>
+                  )}
+                </Button>
+              )}
               {isGiant && (
                 <Badge
                   variant="secondary"
@@ -163,6 +195,37 @@ export function ResearchInput({
           </button>
         ))}
       </div>
+
+      {/* Attached documents */}
+      {attachedDocs.length > 0 && (
+        <div className="mx-auto max-w-3xl flex flex-wrap gap-1.5">
+          {attachedDocs.map((d) => (
+            <span
+              key={d.id}
+              className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1"
+            >
+              <Paperclip className="h-3 w-3" />
+              {d.filename}
+              {onDetachDoc && (
+                <button
+                  onClick={() => onDetachDoc(d.id)}
+                  aria-label={`Remove ${d.filename}`}
+                  className="hover:text-destructive"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Document picker modal */}
+      <DocumentPicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onAttach={(doc) => onAttachDoc?.(doc)}
+      />
     </motion.div>
   );
 }
