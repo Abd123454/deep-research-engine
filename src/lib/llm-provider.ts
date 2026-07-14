@@ -89,6 +89,30 @@ function isRetryableLLMError(msg: string): boolean {
   );
 }
 
+// Auth errors (401/403/invalid key) mean the SAME key is used for all 6
+// models — retrying the next model is guaranteed to fail with the same
+// error. Fast-fail to save time.
+function isAuthError(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return (
+    m.includes("api key") ||
+    m.includes("401") ||
+    m.includes("403") ||
+    m.includes("unauthorized") ||
+    m.includes("forbidden") ||
+    m.includes("invalid key") ||
+    m.includes("nvidia_api_key") ||
+    m.includes("not set")
+  );
+}
+
+// Model-not-found errors (404) mean that specific model is unavailable —
+// the next model in the chain might work, so continue.
+function isModelError(msg: string): boolean {
+  const m = msg.toLowerCase();
+  return m.includes("404") || m.includes("model not found") || m.includes("does not exist");
+}
+
 async function withRetry<T>(
   fn: () => Promise<T>,
   label: string,
@@ -110,6 +134,18 @@ async function withRetry<T>(
     }
   }
   throw lastErr;
+}
+
+// Estimate token count for text that doesn't come with a usage object
+// (NVIDIA streaming path). More accurate than chars/4 for non-English:
+//   - CJK (Chinese/Japanese/Korean) + Arabic + Hebrew: ~2 chars/token
+//   - Code symbols (brackets, operators): ~3.5 chars/token
+//   - English/other: ~4 chars/token
+function estimateTokens(text: string): number {
+  const cjkChars = (text.match(/[\u4e00-\u9fff\u3040-\u30ff\uac00-\ud7af\u0600-\u06ff\u0590-\u05ff]/g) || []).length;
+  const codeChars = (text.match(/[{}[\]()<>=;|&!]/g) || []).length;
+  const otherChars = text.length - cjkChars - codeChars;
+  return Math.ceil(cjkChars / 2 + codeChars / 3.5 + otherChars / 4);
 }
 
 // ---------- NVIDIA NIM backend (OpenAI-compatible) ----------
@@ -209,8 +245,9 @@ async function nvidiaCompleteSingle(
     return {
       content: fullContent,
       // NVIDIA streaming doesn't return a usage object. Estimate tokens
-      // (~4 chars/token for English) so the stats counter isn't always 0.
-      tokensUsed: Math.ceil(fullContent.length / 4),
+      // more accurately: CJK/Arabic/Hebrew ≈ 2 chars/token (complex scripts),
+      // code symbols ≈ 3.5 chars/token, English/other ≈ 4 chars/token.
+      tokensUsed: estimateTokens(fullContent),
       model,
       provider: "nvidia",
     };
@@ -287,6 +324,18 @@ async function nvidiaCompleteWithFallback(
         throw err;
       }
       const msg = err instanceof Error ? err.message : String(err);
+      // Fast-fail on auth errors: the same NVIDIA_API_KEY is used for all
+      // models, so the next model will fail with the same error. Don't
+      // waste time trying 5 more models.
+      if (isAuthError(msg)) {
+        throw new Error(
+          `NVIDIA_API_KEY invalid or expired. Skipping fallback chain. ` +
+            `First model "${model}" error: ${msg}`
+        );
+      }
+      // Model errors (404) → continue to next model.
+      // Retryable errors (429/503) → already retried by withRetry, continue.
+      // Other errors → continue to next model (might be model-specific).
       console.warn(
         `[llm-provider] Model "${model}" failed: ${msg.slice(0, 120)}. -> next model`
       );

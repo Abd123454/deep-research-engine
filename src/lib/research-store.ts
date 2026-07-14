@@ -109,3 +109,11 @@ export function listJobs(): ResearchJob[] {
 export function deleteJob(id: string): boolean {
   return getStore().delete(id);
 }
+
+// Get all jobs that are currently active (not completed/failed).
+// Used by /api/sessions to show in-progress research in the History drawer.
+export function getActiveJobs(): ResearchJob[] {
+  return Array.from(getStore().values())
+    .filter((j) => ACTIVE_STATUSES.has(j.status))
+    .sort((a, b) => b.updatedAt - a.updatedAt);
+}
