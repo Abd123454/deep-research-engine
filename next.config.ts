@@ -3,11 +3,15 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
-  // Allow large file uploads (documents up to 50MB). Without this, Next.js
-  // defaults to a 10MB body size limit and silently truncates uploads,
-  // causing the formData() parser to fail with "Expected multipart/form-data".
+  // Allow large file uploads (documents up to 50MB) via API routes.
+  // In Next.js 16, the proxy (middleware) clones the request body before
+  // passing it to the route handler. The default clone limit is 10MB —
+  // larger bodies are silently truncated, causing formData() to fail with
+  // "Expected multipart/form-data". proxyClientMaxBodySize raises that
+  // limit. (middlewareClientMaxBodySize is the deprecated name.)
   experimental: {
     serverActions: { bodySizeLimit: "50mb" },
+    proxyClientMaxBodySize: "50mb",
   },
   async headers() {
     return [
