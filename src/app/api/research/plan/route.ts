@@ -13,6 +13,7 @@ import { z } from "zod";
 import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
 import { requireAuth } from "@/lib/auth";
+import { sanitizeQuery } from "@/lib/prompt-security";
 import { generatePlan, resolveConfig } from "@/lib/research-engine";
 import type { ResearchJob, ResearchPlan } from "@/lib/types";
 
@@ -50,6 +51,20 @@ export async function POST(req: NextRequest) {
     }
     const body = parsed.data;
     const query = body.query;
+
+    // Prompt-injection defense: BLOCK (not just warn) if malicious patterns
+    // are detected. The query never reaches the LLM if blocked.
+    const sanitized = sanitizeQuery(query);
+    if (sanitized.blocked) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Request blocked: potential prompt injection detected.",
+          reason: sanitized.reason,
+        },
+        { status: 400 }
+      );
+    }
 
     const config = resolveConfig(query, {
       depth: body.depth,
@@ -94,7 +109,22 @@ export async function POST(req: NextRequest) {
       clarifyingQuestions: [],
     };
 
-    const plan: ResearchPlan = await generatePlan(dummyJob, config);
+    const plan = await generatePlan(dummyJob, config);
+
+    // If the LLM failed (all 6 NVIDIA models errored, or output unparseable),
+    // return 503 so the client knows the plan is a fallback — not a real plan.
+    // The heuristic fallback is allowed during runResearch (long-running job),
+    // but the /plan endpoint must not silently return a fake plan.
+    if (plan.llmFailed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "LLM service unavailable. All NVIDIA models failed or produced unparseable output.",
+          detail: plan.llmError || "Unknown LLM error.",
+        },
+        { status: 503 }
+      );
+    }
 
     return NextResponse.json({
       ok: true,

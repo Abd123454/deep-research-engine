@@ -237,7 +237,7 @@ function heuristicDecompose(query: string, numSubQueries: number): string[] {
 export async function generatePlan(
   job: ResearchJob,
   config: ResearchConfig
-): Promise<ResearchPlan> {
+): Promise<ResearchPlan & { llmFailed?: boolean; llmError?: string }> {
   setStatus(job, "planning");
   log(job, "info", "planning", "Creating a research plan...");
 
@@ -280,11 +280,9 @@ Produce a research plan as JSON with this exact shape (no markdown, no preamble)
 Generate between 5 and 9 sections. Return ONLY the JSON object.`,
   };
 
-  let plan: ResearchPlan = {
-    title: "Deep Research Report",
-    summary: "",
-    sections: [],
-  };
+  let plan: ResearchPlan | null = null;
+  let llmFailed = false;
+  let llmError = "";
 
   try {
     const result = await llm.smart({
@@ -298,15 +296,28 @@ Generate between 5 and 9 sections. Return ONLY the JSON object.`,
     // Try to parse the plan JSON.
     const parsed = tryParsePlan(result.content);
     if (parsed) plan = parsed;
+    else {
+      // LLM succeeded but output wasn't parseable JSON.
+      llmFailed = true;
+      llmError = `LLM returned unparseable plan (preview: ${result.content.slice(0, 150)})`;
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    llmFailed = true;
+    llmError = msg;
     log(job, "warn", "planning", `Plan generation failed: ${msg}`);
   }
 
-  // Fallback: if no sections, derive them heuristically.
-  if (plan.sections.length === 0) {
-    plan.title = plan.title || "Deep Research Report";
-    plan.sections = deriveFallbackSections(config.query);
+  // Fallback: if LLM failed or produced no sections, derive them heuristically.
+  // NOTE: This fallback is allowed in runResearch (so a long-running job still
+  // produces something), but the /api/research/plan endpoint should check
+  // `llmFailed` and return 503 to avoid silent failure.
+  if (!plan || plan.sections.length === 0) {
+    plan = {
+      title: "Deep Research Report",
+      summary: "",
+      sections: deriveFallbackSections(config.query),
+    };
   }
 
   job.plan = plan;
@@ -319,7 +330,7 @@ Generate between 5 and 9 sections. Return ONLY the JSON object.`,
     log(job, "info", "planning", `  ${i + 1}. ${s.title}`)
   );
 
-  return plan;
+  return { ...plan, llmFailed, llmError };
 }
 
 function tryParsePlan(text: string): ResearchPlan | null {
@@ -514,6 +525,7 @@ async function processSubQuery(
 ): Promise<void> {
   sq.status = "searching";
   sq.startedAt = Date.now();
+  job.updatedAt = Date.now();
 
   const searchQuery =
     sq.question.length > 400 ? truncateQuestion(sq.question) : sq.question;
@@ -531,17 +543,20 @@ async function processSubQuery(
     sq.status = "failed";
     sq.error = msg;
     sq.finishedAt = Date.now();
+    job.updatedAt = Date.now();
     log(job, "error", "searching", `Search failed ${roundTag}"${searchQuery}": ${msg}`);
     return;
   }
 
   sq.searchResults = results;
   job.stats.totalPagesFound += results.length;
+  job.updatedAt = Date.now();
   log(job, "success", "searching", `Found ${results.length} results ${roundTag}for: "${sq.question}"`);
 
   if (results.length === 0) {
     sq.status = "done";
     sq.finishedAt = Date.now();
+    job.updatedAt = Date.now();
     job.stats.subQueriesCompleted += 1;
     return;
   }
@@ -558,6 +573,7 @@ async function processSubQuery(
   job.stats.totalPagesRead += pages.length;
   job.stats.totalPagesSucceeded += sq.pagesSucceeded;
   job.stats.totalTokensUsed += pages.reduce((sum, p) => sum + (p.tokensUsed || 0), 0);
+  job.updatedAt = Date.now();
 
   // dedupe by URL across the WHOLE JOB — different sub-queries often return
   // the same Wikipedia/GitHub article, and adding it to job.sources multiple
@@ -989,6 +1005,10 @@ export async function runResearch(jobId: string): Promise<void> {
 
     // Stages 3-5: Process ALL round-1 sub-queries IN PARALLEL.
     checkCancelled();
+    // Set job status to "searching" BEFORE the parallel processing starts,
+    // so the status endpoint reflects the current activity immediately
+    // (not stuck on "decomposing" while sub-queries are already searching).
+    setStatus(job, "searching");
     log(
       job,
       "info",

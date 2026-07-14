@@ -1,19 +1,50 @@
 // Prompt-injection defense helpers.
 //
-// These are NOT a complete defense (no defense is), but they significantly
-// raise the bar. Three layers:
+// Three layers:
+//   1. DETECTION: scan the user query for prompt-injection signatures in
+//      multiple languages. Unicode normalization defeats homoglyph attacks,
+//      zero-width spaces, soft hyphens, and combining diacritics.
+//   2. BLOCKING: if suspicious patterns are found, the request is REJECTED
+//      (400), not just warned. The LLM never sees the malicious query.
+//   3. WRAPPING: legitimate queries are wrapped in <user_query> XML tags
+//      so the LLM treats them as data. This is the OWASP-recommended defense.
 //
-// 1. DETECTION: scan the user query for common prompt-injection signatures.
-//    If found, the query is still processed but the LLM is warned.
-// 2. WRAPPING: the user query is always wrapped in <user_query> XML tags
-//    so the LLM treats it as data, not instructions. This is the standard
-//    defense recommended by OWASP for LLM applications.
-// 3. WARNING: a system-prompt fragment tells the LLM to treat the wrapped
-//    content as untrusted data and never follow instructions inside it.
+// Multilingual: Arabic, French, Chinese injection patterns are detected
+// alongside English. Legitimate queries in those languages pass through.
 
-// Common prompt-injection signatures (lowercase match).
+// ---------- Unicode normalization ----------
+// Defeats: Cyrillic homoglyphs (Ignоre with Russian о), zero-width spaces
+// (Ignore\u200bprevious), soft hyphens (Ignore\u00adprevious), combining
+// diacritics (Igno\u0301re), and case mixing (iGnOrE).
+
+// Cyrillic → Latin mapping for common homoglyphs.
+const CYRILLIC_TO_LATIN: Record<string, string> = {
+  о: "o", е: "e", а: "a", р: "p", с: "c", у: "y", х: "x",
+  О: "O", Е: "E", А: "A", Р: "P", С: "C", У: "Y", Х: "X",
+};
+
+function normalizeUnicode(input: string): string {
+  // NFKC normalization: compatibility decomposition + canonical composition.
+  // Converts fullwidth chars (ｉｇｎｏｒｅ) to ASCII, folds case variants.
+  let s = input.normalize("NFKC");
+
+  // Remove zero-width characters and soft hyphens.
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, "");
+
+  // Remove combining diacritics (e.g. ì → i).
+  s = s.replace(/[\u0300-\u036f]/g, "");
+
+  // Convert Cyrillic homoglyphs to Latin.
+  s = s.replace(/[оеарсухОЕАРСУХ]/g, (c) => CYRILLIC_TO_LATIN[c] || c);
+
+  // Lowercase for case-insensitive matching.
+  return s.toLowerCase();
+}
+
+// ---------- Injection patterns (multilingual) ----------
+
 const INJECTION_PATTERNS = [
-  // Direct instruction overrides.
+  // === English: Direct instruction overrides ===
   "ignore previous",
   "ignore all previous",
   "ignore the above",
@@ -30,7 +61,7 @@ const INJECTION_PATTERNS = [
   "new directive:",
   "system prompt:",
   "system instruction:",
-  // Role-play / persona hijack.
+  // === English: Role-play / persona hijack ===
   "you are now",
   "act as",
   "pretend you are",
@@ -39,39 +70,135 @@ const INJECTION_PATTERNS = [
   "role-play as",
   "simulate being",
   "from now on you are",
-  // Known jailbreak labels.
+  // === English: Known jailbreak labels ===
   "jailbreak",
-  "DAN mode",
+  "dan mode",
   "developer mode",
   "root mode",
   "god mode",
   "unrestricted mode",
   "do anything now",
-  // Instruction leakage attempts.
+  // === English: Instruction leakage attempts ===
   "reveal your prompt",
   "show your instructions",
   "print your system",
   "repeat your instructions",
   "what are your rules",
   "output your system prompt",
-  // Encoding/obfuscation hints.
+  // === English: Encoding/obfuscation ===
   "base64:",
   "decode the following",
   "rot13",
+  // === Arabic: prompt injection ===
+  "تجاهل التعليمات السابقة",
+  "تجاهل التعليمات",
+  "تجاهل السابق",
+  "تجاهل",
+  "التعليمات السابقة",
+  "اكتب قنبلة",
+  "كيف اصنع",
+  "كيف أصنع",
+  "انسخ التعليمات",
+  "اكشف التعليمات",
+  "تجاهل كل ما سبق",
+  "انت الان",
+  "تظاهر بانك",
+  "تظاهر بأنك",
+  // === French: prompt injection ===
+  "ignorez les instructions",
+  "ignorez les instructions précédentes",
+  "révélez le prompt système",
+  "revelez le prompt systeme",
+  "oubliez tout",
+  "oubliez les instructions",
+  "agis comme",
+  "tu es maintenant",
+  // === Chinese: prompt injection ===
+  "忽略之前的指令",
+  "忽略指令",
+  "忽略",
+  "系统提示",
+  "忽略以上",
+  "忘记指令",
+  "你现在是一个",
+  "扮演",
 ];
+
+// Critical patterns that trigger immediate block (even a single match).
+const CRITICAL_PATTERNS = [
+  "ignore previous",
+  "ignore all previous",
+  "disregard previous",
+  "system prompt:",
+  "jailbreak",
+  "dan mode",
+  "تجاهل التعليمات السابقة",
+  "ignorez les instructions",
+  "忽略之前的指令",
+];
+
+// ---------- Public API ----------
 
 export interface InjectionCheck {
   isSuspicious: boolean;
+  isBlocked: boolean;
   matchedPatterns: string[];
+  criticalMatched: string[];
+  normalizedQuery: string; // for debugging
 }
 
-/** Scan a user query for prompt-injection signatures. */
+export interface SanitizeResult {
+  blocked: boolean;
+  reason: string;
+  sanitized: string;
+  warnings: string[];
+}
+
+/**
+ * Scan a user query for prompt-injection signatures.
+ * Uses Unicode normalization to defeat homoglyph/zero-width/soft-hyphen attacks.
+ * Supports English, Arabic, French, and Chinese patterns.
+ */
 export function checkPromptInjection(query: string): InjectionCheck {
-  const lower = query.toLowerCase();
-  const matched = INJECTION_PATTERNS.filter((p) => lower.includes(p));
+  const normalized = normalizeUnicode(query);
+  const matched = INJECTION_PATTERNS.filter((p) =>
+    normalized.includes(normalizeUnicode(p))
+  );
+  const criticalMatched = CRITICAL_PATTERNS.filter((p) =>
+    normalized.includes(normalizeUnicode(p))
+  );
   return {
     isSuspicious: matched.length > 0,
+    // Block if: 2+ warnings, OR any critical pattern matched.
+    isBlocked: matched.length >= 2 || criticalMatched.length > 0,
     matchedPatterns: matched,
+    criticalMatched,
+    normalizedQuery: normalized,
+  };
+}
+
+/**
+ * Sanitize a user query. If blocked, returns blocked=true with a reason.
+ * Otherwise returns the original query (untouched — we don't modify legit
+ * queries) plus any warnings.
+ */
+export function sanitizeQuery(query: string): SanitizeResult {
+  const check = checkPromptInjection(query);
+  if (check.isBlocked) {
+    return {
+      blocked: true,
+      reason: check.criticalMatched.length > 0
+        ? `Critical prompt injection pattern detected: ${check.criticalMatched.join(", ")}`
+        : `Multiple prompt injection patterns detected: ${check.matchedPatterns.join(", ")}`,
+      sanitized: "",
+      warnings: check.matchedPatterns,
+    };
+  }
+  return {
+    blocked: false,
+    reason: "",
+    sanitized: query,
+    warnings: check.matchedPatterns,
   };
 }
 

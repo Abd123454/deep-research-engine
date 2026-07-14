@@ -9,6 +9,7 @@ import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider
 import { getRetriever } from "@/lib/retriever";
 import { checkStartRateLimit, getClientIP } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/auth";
+import { sanitizeQuery } from "@/lib/prompt-security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -70,6 +71,20 @@ export async function POST(req: NextRequest) {
     }
     const body = parsed.data;
     const query = body.query;
+
+    // Prompt-injection defense: BLOCK (not just warn) if malicious patterns
+    // are detected. The query never reaches the LLM if blocked.
+    const sanitized = sanitizeQuery(query);
+    if (sanitized.blocked) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: "Request blocked: potential prompt injection detected.",
+          reason: sanitized.reason,
+        },
+        { status: 400 }
+      );
+    }
 
     // Rate limiting: protect free-tier API quotas from abuse.
     const clientIP = getClientIP(req);
