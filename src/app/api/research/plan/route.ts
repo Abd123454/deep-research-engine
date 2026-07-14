@@ -13,7 +13,7 @@ import { z } from "zod";
 import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
 import { requireAuth } from "@/lib/auth";
-import { sanitizeQuery } from "@/lib/prompt-security";
+import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { generatePlan, resolveConfig } from "@/lib/research-engine";
 import type { ResearchJob, ResearchPlan } from "@/lib/types";
 
@@ -54,19 +54,23 @@ export async function POST(req: NextRequest) {
 
     // Prompt-injection defense: BLOCK (not just warn) if malicious patterns
     // are detected. The query never reaches the LLM if blocked.
-    const sanitized = sanitizeQuery(query);
-    if (sanitized.blocked) {
+    const injectionCheck = sanitizeQuery(query);
+    if (injectionCheck.blocked) {
       return NextResponse.json(
         {
           ok: false,
           error: "Request blocked: potential prompt injection detected.",
-          reason: sanitized.reason,
+          reason: injectionCheck.reason,
         },
         { status: 400 }
       );
     }
 
-    const config = resolveConfig(query, {
+    // Input sanitization: strip SQL injection / XSS / command injection
+    // patterns from the query before it reaches the LLM or gets stored.
+    const cleanedQuery = sanitizeInput(injectionCheck.sanitized);
+
+    const config = resolveConfig(cleanedQuery, {
       depth: body.depth,
       numSubQueries: body.numSubQueries,
       maxLinksPerQuery: body.maxLinksPerQuery,
@@ -79,7 +83,7 @@ export async function POST(req: NextRequest) {
     // refactored to not need a full job object (it only uses it for log/status).
     const dummyJob: ResearchJob = {
       id: `plan-only-${Date.now()}`,
-      query,
+      query: cleanedQuery,
       status: "planning",
       createdAt: Date.now(),
       updatedAt: Date.now(),
