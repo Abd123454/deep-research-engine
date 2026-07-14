@@ -28,8 +28,11 @@ function normalizeUnicode(input: string): string {
   // Converts fullwidth chars (ｉｇｎｏｒｅ) to ASCII, folds case variants.
   let s = input.normalize("NFKC");
 
-  // Remove zero-width characters and soft hyphens.
-  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, "");
+  // Replace zero-width characters and soft hyphens with a SPACE, then
+  // collapse multiple spaces. This ensures "ignore\u200Bprevious" →
+  // "ignore previous" (matches the pattern), not "ignoreprevious" (doesn't).
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, " ");
+  s = s.replace(/\s+/g, " ");
 
   // Remove combining diacritics (e.g. ì → i).
   s = s.replace(/[\u0300-\u036f]/g, "");
