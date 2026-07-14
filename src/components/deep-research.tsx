@@ -477,14 +477,17 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <span className="text-sm font-medium">Deep Research</span>
+            <h1 className="text-sm font-medium">Deep Research</h1>
           </div>
           <ThemeToggle />
         </div>
       </header>
 
       {/* Main */}
-      <main className="relative flex-1 mx-auto w-full max-w-4xl px-4 sm:px-6 py-8 sm:py-12">
+      <main
+        id="main-content"
+        className="relative flex-1 mx-auto w-full max-w-4xl px-4 sm:px-6 py-8 sm:py-12"
+      >
         <AnimatePresence mode="wait">
           {phase === "idle" && (
             <ResearchInput

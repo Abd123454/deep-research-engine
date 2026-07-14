@@ -89,7 +89,7 @@ interface ScoredToken {
   index: number;
 }
 
-function scoreToken(word: string, index: number, total: number): number {
+function scoreToken(word: string, index: number): number {
   const lower = word.toLowerCase();
   if (STOP_WORDS.has(lower)) return 0;
   // All-caps acronym (≥2 letters, not a single all-caps word like "I").
@@ -119,7 +119,7 @@ function toKeywords(query: string): string {
   if (tokens.length === 0) return query.replace(/[?]/g, "").trim();
   const scored: ScoredToken[] = tokens.map((w, i) => ({
     word: w,
-    score: scoreToken(w, i, tokens.length),
+    score: scoreToken(w, i),
     index: i,
   }));
   // Drop stop words (score 0).
@@ -143,7 +143,7 @@ function toCoreTopic(query: string): string {
   const tokens = tokenize(query);
   const scored: ScoredToken[] = tokens.map((w, i) => ({
     word: w,
-    score: scoreToken(w, i, tokens.length),
+    score: scoreToken(w, i),
     index: i,
   }));
   const core = scored
@@ -160,7 +160,7 @@ function toCoreTopic(query: string): string {
 function toPrimaryTopic(query: string): string {
   const tokens = tokenize(query);
   for (let i = 0; i < tokens.length; i++) {
-    if (scoreToken(tokens[i]!, i, tokens.length) >= 4) {
+    if (scoreToken(tokens[i]!, i) >= 4) {
       return tokens[i]!;
     }
   }

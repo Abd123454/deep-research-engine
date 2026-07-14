@@ -17,9 +17,14 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Deep Research Engine",
-  description: "Self-hosted deep research with multi-round gap analysis. Runs on free-tier APIs.",
+  description:
+    "Self-hosted deep research with multi-round gap analysis. Runs on free-tier APIs.",
   keywords: ["deep research", "self-hosted", "open source", "NVIDIA NIM", "DuckDuckGo"],
   authors: [{ name: "Abd" }],
+  icons: {
+    icon: "/logo.svg",
+    apple: "/logo.svg",
+  },
 };
 
 export default function RootLayout({
@@ -38,10 +43,32 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
+          {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
+          <a
+            href="#main-content"
+            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
+          >
+            Skip to content
+          </a>
           {children}
           <Toaster />
           <SonnerToaster />
         </ThemeProvider>
+        <noscript>
+          <div
+            style={{
+              padding: "2rem",
+              textAlign: "center",
+              fontFamily: "system-ui, sans-serif",
+            }}
+          >
+            <h1>JavaScript required</h1>
+            <p>
+              Deep Research Engine needs JavaScript to run searches and stream
+              reports. Please enable JavaScript in your browser.
+            </p>
+          </div>
+        </noscript>
       </body>
     </html>
   );

@@ -19,21 +19,19 @@ It's not as polished as Perplexity. It probably never will be. But it's mine, it
 ## What it does NOT do (honestly)
 
 - **No persistent storage.** Jobs are in-memory; a restart wipes everything. (Working on it.)
-- **No streaming report.** The report appears all at once after synthesis. (Working on it.)
 - **No JS-rendered page reading.** SPA sites return empty HTML. No Puppeteer/Playwright yet.
 - **No source quality scoring.** Uses search-engine order as-is.
 - **No citation verification.** The LLM may cite URLs that don't support the claim.
 - **Rate limiter is in-memory.** Won't work behind a load balancer. (Need Redis.)
-- **40 tests.** Low coverage. No e2e tests yet.
+- **39 tests.** Low coverage. No e2e tests yet.
 
 If these gaps matter to you, this project isn't ready. Use [GPT Researcher](https://github.com/assafelovic/gpt-researcher) or pay for Perplexity Pro.
 
 ## Known Issues
 
-- DuckDuckGo sometimes hits CAPTCHA. The engine retries automatically.
-- The 10-minute wait for advanced research is real. No streaming yet.
+- DuckDuckGo sometimes hits CAPTCHA. The engine falls back to Wikipedia + GitHub APIs.
+- Advanced research can take 8-10 minutes. The report streams token-by-token via SSE.
 - `Promise.all` doesn't abort in-flight sub-queries on cancel. The stop button stops the next stage, not the current HTTP requests in flight.
-- DuckDuckGo JSON API returns mostly internal DDG pages, not real web results. It's a last resort.
 
 ## Quick Start
 
@@ -51,9 +49,13 @@ Open http://localhost:3000.
 ### Docker
 
 ```bash
+docker compose up -d   # uses docker-compose.yml with healthcheck
+# or without compose:
 docker build -t deep-research-engine .
 docker run -p 3000:3000 --env-file .env deep-research-engine
 ```
+
+Health check: `GET /api/health` returns `{status:"ok", uptime, version}`.
 
 ## Configuration
 
