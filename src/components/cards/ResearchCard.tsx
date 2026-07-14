@@ -42,10 +42,10 @@ export function ResearchCard({ query, onStop }: ResearchCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border/60 shadow-sm overflow-hidden"
+      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
     >
       {/* Query header */}
-      <div className="bg-secondary/50 px-5 py-3 flex items-start gap-2">
+      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 border-b border-border/40 flex items-start gap-2">
         <Search className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
         <p className="text-sm font-medium text-foreground flex-1">{query}</p>
         {isRunning && (

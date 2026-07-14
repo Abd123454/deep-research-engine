@@ -32,6 +32,9 @@ export interface AttachedFile {
 interface UnifiedInputProps {
   onSend: (text: string, files: AttachedFile[], mode: InputMode) => void;
   disabled?: boolean;
+  value?: string;
+  onValueChange?: (v: string) => void;
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -46,14 +49,19 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
-export function UnifiedInput({ onSend, disabled }: UnifiedInputProps) {
+export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaRef: externalRef }: UnifiedInputProps) {
   const t = useT();
-  const [text, setText] = React.useState("");
-  const [files, setFiles] = React.useState<AttachedFile[]>([]);
+  const [internalText, setInternalText] = React.useState("");
+  const text = value !== undefined ? value : internalText;
+  const setText = (v: string) => {
+    if (onValueChange) onValueChange(v);
+    else setInternalText(v);
+  };  const [files, setFiles] = React.useState<AttachedFile[]>([]);
   const [mode, setMode] = React.useState<InputMode>("auto");
   const [modeOpen, setModeOpen] = React.useState(false);
   const [error, setError] = React.useState("");
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
+  const textareaRef = externalRef || internalTextareaRef;
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const modeRef = React.useRef<HTMLDivElement>(null);
 
@@ -113,7 +121,7 @@ export function UnifiedInput({ onSend, disabled }: UnifiedInputProps) {
   const modeLabel = mode === "auto" ? "Auto" : mode === "research" ? t("modeResearch") : t("modeQuick");
 
   return (
-    <div className="border-t border-border/40 bg-background">
+    <div className="shrink-0 z-30 border-t border-border/40 bg-background/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3">
         {/* Attached files */}
         {files.length > 0 && (

@@ -192,3 +192,41 @@
 [dir="rtl"] .border-r { border-right: 0; border-left: 1px solid; }
 [dir="rtl"] .left-0 { left: auto; right: 0; }
 [dir="rtl"] .right-0 { right: auto; left: 0; }
+
+/* === UI Overhaul: Dark mode + scrollbar + card hover === */
+
+/* Dark mode improvements — darker background, more card contrast */
+.dark {
+  --background: oklch(0.13 0 0);
+  --card: oklch(0.17 0 0);
+  --border: oklch(1 0 0 / 8%);
+}
+
+/* Smooth thin scrollbar */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.7 0 0 / 0.4) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: oklch(0.7 0 0 / 0.3);
+  border-radius: 4px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.7 0 0 / 0.5);
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+}
