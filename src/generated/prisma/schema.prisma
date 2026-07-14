@@ -35,8 +35,42 @@ model User {
   documents     DocumentRecord[]
   preferences   UserPreference?
   memories      LongTermMemory[]
+  projects      Project[]
 
   @@map("users")
+}
+
+// ============ Projects / Workspaces ============
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  researchJobs  ResearchJobRecord[]
+  documents     DocumentRecord[]
+  connectors    Connector[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Connector {
+  id          String   @id @default(cuid())
+  projectId   String
+  type        String // "github" | "googledrive" | "notion"
+  credentials String? // encrypted token (JSON string)
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("connectors")
 }
 
 // ============ Layer 1: Conversation Memory ============
@@ -44,14 +78,17 @@ model User {
 model Conversation {
   id        String   @id @default(cuid())
   userId    String
+  projectId String?
   title     String   @default("New Conversation")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
   messages Message[]
 
   @@index([userId])
+  @@index([projectId])
   @@map("conversations")
 }
 
@@ -97,6 +134,7 @@ model LongTermMemory {
 model ResearchJobRecord {
   id                 String   @id @default(cuid())
   userId             String
+  projectId          String?
   query              String
   plan               Json?
   report             String?
@@ -107,10 +145,12 @@ model ResearchJobRecord {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([status])
+  @@index([projectId])
   @@map("research_jobs")
 }
 
@@ -119,6 +159,7 @@ model ResearchJobRecord {
 model DocumentRecord {
   id         String   @id @default(cuid())
   userId     String
+  projectId  String?
   filename   String
   mimeType   String
   size       Int
@@ -127,9 +168,11 @@ model DocumentRecord {
   // embedding Unsupported("vector(1536)")?
   createdAt  DateTime @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([projectId])
   @@map("documents")
 }
 

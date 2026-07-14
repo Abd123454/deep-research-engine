@@ -129,9 +129,27 @@ exports.Prisma.UserScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.ProjectScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  name: 'name',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.ConnectorScalarFieldEnum = {
+  id: 'id',
+  projectId: 'projectId',
+  type: 'type',
+  credentials: 'credentials',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.ConversationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  projectId: 'projectId',
   title: 'title',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
@@ -161,6 +179,7 @@ exports.Prisma.LongTermMemoryScalarFieldEnum = {
 exports.Prisma.ResearchJobRecordScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  projectId: 'projectId',
   query: 'query',
   plan: 'plan',
   report: 'report',
@@ -175,6 +194,7 @@ exports.Prisma.ResearchJobRecordScalarFieldEnum = {
 exports.Prisma.DocumentRecordScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
+  projectId: 'projectId',
   filename: 'filename',
   mimeType: 'mimeType',
   size: 'size',
@@ -221,6 +241,8 @@ exports.Prisma.JsonNullValueFilter = {
 
 exports.Prisma.ModelName = {
   User: 'User',
+  Project: 'Project',
+  Connector: 'Connector',
   Conversation: 'Conversation',
   Message: 'Message',
   LongTermMemory: 'LongTermMemory',
