@@ -139,6 +139,16 @@ function setStatus(job: ResearchJob, status: ResearchStatus) {
   }
 }
 
+// ---------- LLM token tracking ----------
+// Accumulates tokensUsed from each LLM call into job.stats.totalTokensUsed.
+// NVIDIA's streaming path doesn't return a usage object, so llm-provider.ts
+// estimates ~4 chars/token. Non-streaming uses the real usage value.
+function trackLLMTokens(job: ResearchJob, result: { tokensUsed?: number }): void {
+  if (result.tokensUsed && result.tokensUsed > 0) {
+    job.stats.totalTokensUsed += result.tokensUsed;
+  }
+}
+
 // ---------- Question utilities ----------
 
 const MAX_SUBQUESTION_CHARS = 280;
@@ -283,6 +293,7 @@ Generate between 5 and 9 sections. Return ONLY the JSON object.`,
       temperature: 0.4,
       json: true,
     });
+    trackLLMTokens(job, result);
 
     // Try to parse the plan JSON.
     const parsed = tryParsePlan(result.content);
@@ -425,6 +436,7 @@ Return ONLY a JSON object with this exact shape (no markdown fences, no preamble
       temperature: 0.5,
       json: true,
     });
+    trackLLMTokens(job, result);
     rawQuestions = extractQuestionsJson(result.content);
     if (rawQuestions.length === 0) {
       llmError = `LLM returned no parseable questions. Preview: ${result.content.slice(0, 200)}`;
@@ -581,7 +593,7 @@ async function processSubQuery(
   log(job, "info", "extracting", `Extracting findings ${roundTag}for: "${sq.question}"`);
 
   const successfulPages = pages.filter((p) => p.success && p.text.length > 200);
-  const findings = await extractFindings(sq.question, successfulPages);
+  const findings = await extractFindings(job, sq.question, successfulPages);
   sq.keyFindings = findings;
   sq.status = "done";
   sq.finishedAt = Date.now();
@@ -599,6 +611,7 @@ function safeHost(url: string): string {
 }
 
 async function extractFindings(
+  job: ResearchJob,
   question: string,
   pages: PageReadResult[]
 ): Promise<string> {
@@ -654,6 +667,7 @@ Extract the key findings as a markdown list. Each item should start with "- " an
           maxTokens: 1200,
           temperature: 0.2,
         });
+        trackLLMTokens(job, result);
         return result.content;
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -724,6 +738,7 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
       temperature: 0.3,
       json: true,
     });
+    trackLLMTokens(job, result);
 
     // Try to parse JSON.
     try {
