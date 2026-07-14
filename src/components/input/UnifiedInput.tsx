@@ -22,7 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useT } from "@/components/i18n/locale-provider";
 import { cn } from "@/lib/utils";
 
-export type InputMode = "auto" | "research" | "quick";
+export type InputMode = "auto" | "research" | "quick" | "chat";
 
 export interface AttachedFile {
   id: string;
@@ -118,7 +118,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
     setError("");
   }
 
-  const modeLabel = mode === "auto" ? "Auto" : mode === "research" ? t("modeResearch") : t("modeQuick");
+  const modeLabel = mode === "auto" ? "Auto" : mode === "research" ? t("modeResearch") : mode === "chat" ? "Chat" : t("modeQuick");
 
   return (
     <div className="shrink-0 z-30 border-t border-border/40 bg-background/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
@@ -202,6 +202,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                 {([
                   { key: "auto", label: "Auto" },
                   { key: "research", label: t("modeResearch") },
+                  { key: "chat", label: "Chat" },
                   { key: "quick", label: t("modeQuick") },
                 ] as { key: InputMode; label: string }[]).map((m) => (
                   <button
@@ -247,13 +248,14 @@ export function detectCardType(
   text: string,
   hasFiles: boolean,
   mode: InputMode
-): "research" | "quick" | "document" {
+): "research" | "quick" | "document" | "chat" {
   if (hasFiles) return "document";
   if (mode === "research") return "research";
   if (mode === "quick") return "quick";
-  // Auto mode.
+  if (mode === "chat") return "chat";
+  // Auto mode: default to chat (multi-turn conversation).
   const lower = text.toLowerCase().trim();
   if (lower.startsWith("research:") || lower.startsWith("ابحث")) return "research";
   if (text.length > 200) return "research";
-  return "quick";
+  return "chat";
 }

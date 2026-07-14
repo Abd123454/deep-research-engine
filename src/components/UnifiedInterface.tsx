@@ -24,6 +24,7 @@ import {
 import { QuickCard } from "@/components/cards/QuickCard";
 import { ResearchCard } from "@/components/cards/ResearchCard";
 import { DocumentCard } from "@/components/cards/DocumentCard";
+import { ChatCard } from "@/components/cards/ChatCard";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
 import { MemoryPanel } from "@/components/memory/MemoryPanel";
 import type { SessionType } from "@/lib/session-store";
@@ -32,7 +33,7 @@ import ReactMarkdown from "react-markdown";
 // ---------- Card entry type ----------
 interface CardEntry {
   id: string;
-  type: "research" | "quick" | "document";
+  type: "research" | "quick" | "document" | "chat";
   query: string;
   file?: File;
 }
@@ -244,6 +245,9 @@ export function UnifiedInterface() {
                     initialQuestion={card.query}
                   />
                 );
+              }
+              if (card.type === "chat") {
+                return <ChatCard key={card.id} initialMessage={card.query} />;
               }
               return <QuickCard key={card.id} question={card.query} />;
             })}
