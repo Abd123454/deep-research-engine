@@ -175,9 +175,9 @@ export function UnifiedInterface() {
         <div className="mx-auto max-w-3xl px-4 sm:px-6 py-8 space-y-4">
           {/* Empty state */}
           {cards.length === 0 && !loadedSession && (
-            <div className="text-center max-w-2xl mx-auto pt-8 sm:pt-16 pb-3">
-              <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight">{t("hello")}</h2>
-              <p className="mt-2 text-muted-foreground text-base sm:text-lg">
+            <div className="text-center max-w-2xl mx-auto pt-12 sm:pt-20 pb-8">
+              <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight">{t("hello")}</h2>
+              <p className="mt-3 text-muted-foreground text-sm sm:text-base">
                 {t("quickSubtitle")}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 mt-8 text-left">
@@ -190,9 +190,9 @@ export function UnifiedInterface() {
                         { id: crypto.randomUUID(), type: "quick", query: ex.text },
                       ]);
                     }}
-                    className="group flex items-start gap-3 rounded-2xl bg-secondary px-4 py-3 transition-colors hover:bg-accent"
+                    className="group flex items-start gap-3 rounded-2xl bg-secondary px-4 py-3.5 transition-colors hover:bg-accent h-full"
                   >
-                    <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                    <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
                       <ex.icon className="h-3.5 w-3.5" />
                     </div>
                     <span className="text-[13px] leading-snug text-muted-foreground group-hover:text-foreground">
@@ -246,8 +246,8 @@ export function UnifiedInterface() {
       <UnifiedInput onSend={handleSend} />
 
       {/* Footer */}
-      <footer className="border-t border-border/40">
-        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-2 text-[10px] text-muted-foreground text-center">
+      <footer className="border-t border-border/40 bg-background">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3 text-[11px] text-muted-foreground text-center">
           {t("appTagline")}
         </div>
       </footer>

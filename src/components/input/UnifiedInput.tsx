@@ -140,7 +140,7 @@ export function UnifiedInput({ onSend, disabled }: UnifiedInputProps) {
         {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
         {/* Input row */}
-        <div className="flex items-end gap-2 rounded-2xl bg-secondary shadow-sm focus-within:shadow-md transition-shadow p-2">
+        <div className="flex items-center gap-1.5 rounded-2xl bg-secondary shadow-sm focus-within:shadow-md transition-shadow p-1.5">
           {/* Attach button */}
           <Button
             variant="ghost"
@@ -167,7 +167,7 @@ export function UnifiedInput({ onSend, disabled }: UnifiedInputProps) {
             onChange={(e) => setText(e.target.value)}
             placeholder={t("quickPlaceholder")}
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm leading-relaxed focus:outline-none placeholder:text-muted-foreground/60 py-2 max-h-[200px]"
+            className="flex-1 resize-none bg-transparent text-sm leading-relaxed focus:outline-none placeholder:text-muted-foreground/60 py-2 min-h-[36px] max-h-[200px]"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
