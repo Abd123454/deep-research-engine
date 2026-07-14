@@ -11,7 +11,7 @@ It's not as polished as Perplexity. It probably never will be. But it's mine, it
 ## What it does well
 
 - **Multi-round research pipeline** — plan → decompose → search → gap analysis → round 2 → synthesize. The gap analysis step is the differentiator: after round 1, it reviews what was found, identifies what's missing, and runs a second round to fill the gaps.
-- **Triple-fallback resilience** — 6 NVIDIA LLM models, 3 search engines (Tavily → Z.AI → DuckDuckGo), 2 page readers (Z.AI → direct fetch). If one fails, the next takes over.
+- **Fallback resilience** — 6 NVIDIA LLM models (chain), 3 DuckDuckGo endpoints (HTML → lite → JSON), Mozilla Readability + regex fallback for pages. If one fails, the next takes over.
 - **Giant prompt support** — paste up to 100,000 characters of research briefs, RFPs, or multi-section requirements.
 - **Plan preview** — generates a research outline before starting. You can edit it, then the engine uses your version.
 - **Self-hostable** — Dockerfile included. Your data stays on your server.
@@ -42,7 +42,7 @@ git clone https://github.com/Abd123454/deep-research-engine.git
 cd deep-research-engine
 bun install
 cp .env.example .env
-# Edit .env: add NVIDIA_API_KEY and TAVILY_API_KEY
+# Edit .env: add NVIDIA_API_KEY (only key needed — search & page-reading are free)
 bun run dev
 ```
 

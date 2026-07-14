@@ -9,9 +9,8 @@ const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 // We test the fallback LOGIC by importing the actual modules. The modules
-// call `fetch` (for NVIDIA and direct-fetch)
-// (for Z.AI). We mock fetch; Z.AI SDK is harder to mock so we focus on the
-// NVIDIA/search/page-reader fallback paths that use fetch.
+// call `fetch` (for NVIDIA, DuckDuckGo, and direct page reads). We mock
+// fetch and verify the NVIDIA/search/page-reader fallback paths.
 
 describe("NVIDIA LLM fallback chain", () => {
   beforeEach(() => {
