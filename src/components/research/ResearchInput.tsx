@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { fmtNum } from "@/lib/research-ui-utils";
+import { useT } from "@/components/i18n/locale-provider";
 
 const MAX_QUERY_CHARS = 100_000;
 
@@ -53,6 +54,7 @@ export function ResearchInput({
   startResearch,
   textareaRef,
 }: ResearchInputProps) {
+  const t = useT();
   const charCount = query.length;
   const isOverLimit = charCount > MAX_QUERY_CHARS;
   const isGiant = charCount > 4000;
@@ -69,7 +71,7 @@ export function ResearchInput({
       {/* greeting */}
       <div className="text-center max-w-2xl mx-auto pt-8 sm:pt-16 pb-3">
         <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
-          Hello
+          {t("hello")}
         </h2>
         <p className="mt-2 text-muted-foreground text-base sm:text-lg">
           What should we research today?
@@ -83,7 +85,7 @@ export function ResearchInput({
             ref={textareaRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter your research question or paste a brief..."
+            placeholder={t("enterQuery")}
             className="min-h-[100px] resize-none border-0 bg-transparent px-5 pt-4 pb-2 text-[15px] leading-relaxed focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -125,7 +127,7 @@ export function ResearchInput({
                 disabled={starting || !query.trim() || isOverLimit}
                 size="icon"
                 className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 border-0"
-                aria-label="Start deep research"
+                aria-label={t("startResearch")}
               >
                 {starting ? (
                   <Loader2 className="h-4 w-4 animate-spin" />

@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -43,16 +44,18 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
-          >
-            Skip to content
-          </a>
-          {children}
-          <Toaster />
-          <SonnerToaster />
+          <LocaleProvider>
+            {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
+            >
+              Skip to content
+            </a>
+            {children}
+            <Toaster />
+            <SonnerToaster />
+          </LocaleProvider>
         </ThemeProvider>
         <noscript>
           <div

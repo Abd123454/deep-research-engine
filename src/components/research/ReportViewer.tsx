@@ -7,6 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import type { LogEntry } from "@/lib/types";
 import { LOG_COLORS, LOG_PREFIX } from "@/lib/research-ui-utils";
+import { useT } from "@/components/i18n/locale-provider";
 
 // ---------- ReportViewer ----------
 
@@ -20,6 +21,7 @@ interface ReportViewerProps {
 }
 
 export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: ReportViewerProps) {
+  const t = useT();
   return (
     <Card className="border-border/70 shadow-sm">
       <CardContent className="p-0">
@@ -27,7 +29,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: 
           <div className="flex items-center gap-2">
             <FileText className="h-4 w-4 text-primary" />
             <h3 className="text-sm font-semibold">
-              {streaming ? "Writing report..." : "Final report"}
+              {streaming ? t("writingReport") : t("finalReport")}
             </h3>
             {streaming && (
               <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
@@ -72,6 +74,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: 
 // ---------- LiveActivity (shown when report not ready yet) ----------
 
 export function LiveActivity({ logs }: { logs: LogEntry[] }) {
+  const t = useT();
   const containerRef = React.useRef<HTMLDivElement>(null);
   React.useEffect(() => {
     if (containerRef.current) {
@@ -84,7 +87,7 @@ export function LiveActivity({ logs }: { logs: LogEntry[] }) {
     <div>
       <div className="flex items-center gap-2 mb-3">
         <Sparkles className="h-4 w-4 text-primary" />
-        <h3 className="text-sm font-semibold">Live activity</h3>
+        <h3 className="text-sm font-semibold">{t("liveActivity")}</h3>
       </div>
       <div
         ref={containerRef}

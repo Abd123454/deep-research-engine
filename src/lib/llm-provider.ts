@@ -208,7 +208,9 @@ async function nvidiaCompleteSingle(
 
     return {
       content: fullContent,
-      tokensUsed: undefined,
+      // NVIDIA streaming doesn't return a usage object. Estimate tokens
+      // (~4 chars/token for English) so the stats counter isn't always 0.
+      tokensUsed: Math.ceil(fullContent.length / 4),
       model,
       provider: "nvidia",
     };

@@ -32,7 +32,9 @@ function isAllowedOrigin(origin: string): boolean {
   return false;
 }
 
-export function middleware(req: NextRequest) {
+// In Next.js 16, the proxy file must export a function named `proxy`
+// (or a default export). This replaces the old `middleware` export name.
+export function proxy(req: NextRequest) {
   // Only enforce on API routes.
   if (!req.nextUrl.pathname.startsWith("/api/")) {
     return NextResponse.next();

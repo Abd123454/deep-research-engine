@@ -28,6 +28,8 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { useT } from "@/components/i18n/locale-provider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ResearchJob } from "@/lib/types";
@@ -57,6 +59,9 @@ const MAX_QUERY_CHARS = 100_000;
 type UIPhase = "idle" | "planning" | "researching";
 
 export function DeepResearch() {
+  // ---------- i18n ----------
+  const t = useT();
+
   // ---------- Input state ----------
   const [query, setQuery] = React.useState("");
 
@@ -477,9 +482,12 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
               <Sparkles className="h-4 w-4 text-white" />
             </div>
-            <h1 className="text-sm font-medium">Deep Research</h1>
+            <h1 className="text-sm font-medium">{t("appName")}</h1>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-1">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
@@ -525,7 +533,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                         onClick={openEditPlan}
                         className="gap-1.5 text-xs rounded-full"
                       >
-                        <Pencil className="h-3 w-3" /> Edit plan
+                        <Pencil className="h-3 w-3" /> {t("editPlan")}
                       </Button>
                     )}
                     <Button
@@ -534,7 +542,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                       onClick={stopResearch}
                       className="gap-1.5 text-xs rounded-full text-destructive hover:text-destructive"
                     >
-                      <Square className="h-3 w-3" /> Stop
+                      <Square className="h-3 w-3" /> {t("stop")}
                     </Button>
                   </div>
                 )}
@@ -659,7 +667,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
                     className="gap-1.5 text-xs rounded-full"
                   >
                     <Hash className="h-3 w-3" />
-                    Technical details ({job.logs.length})
+                    {t("technicalDetails")} ({job.logs.length})
                   </Button>
                 )}
 
@@ -719,7 +727,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
       {/* Footer — minimal */}
       <footer className="border-t border-border/40 mt-auto">
         <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 text-[11px] text-muted-foreground text-center">
-          Deep Research Engine · self-hosted, free, multi-round
+          {t("appTagline")}
         </div>
       </footer>
     </div>

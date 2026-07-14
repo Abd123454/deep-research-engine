@@ -15,17 +15,17 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { ResearchJob, ResearchStatus as RStatus } from "@/lib/types";
 import { stageProgress, fmtTime } from "@/lib/research-ui-utils";
+import { useT } from "@/components/i18n/locale-provider";
 
-// simplified progress
-// simplified progress + 4 stat pills, we show:
-// - 3-state progress: Planning → Researching → Writing
-// - 1 status line: "Read 12 pages · 2 rounds · 5m 32s"
-
-const SIMPLE_STAGES: { key: string; label: string }[] = [
-  { key: "planning", label: "Planning" },
-  { key: "researching", label: "Researching" },
-  { key: "writing", label: "Writing" },
-];
+// simplified progress + 3-state progress + 1 status line
+const useStages = () => {
+  const t = useT();
+  return [
+    { key: "planning", label: t("planning") },
+    { key: "researching", label: t("researching") },
+    { key: "writing", label: t("writing") },
+  ];
+};
 
 // Map the 7 internal stages to the 3 visible ones.
 function getSimpleStage(status: RStatus): number {
@@ -52,6 +52,8 @@ interface ResearchStatusProps {
 }
 
 export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps) {
+  const t = useT();
+  const SIMPLE_STAGES = useStages();
   const simpleStage = getSimpleStage(job.status);
   const elapsed = job.stats.elapsedMs || Date.now() - (job.startedAt || Date.now());
 
@@ -71,11 +73,11 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
               )}
               <span className="text-xs font-medium">
                 {job.status === "completed"
-                  ? "Research complete"
+                  ? t("done")
                   : job.status === "failed"
                     ? job.error === "Cancelled by user"
-                      ? "Research cancelled"
-                      : "Research failed"
+                      ? t("cancel")
+                      : t("cancel")
                     : SIMPLE_STAGES[simpleStage]!.label}
               </span>
               <Badge variant="outline" className="text-[10px] rounded-full">
@@ -93,7 +95,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
             className="gap-1.5 shrink-0 rounded-full"
           >
             <RefreshCw className="h-3 w-3" />
-            New
+            {t("new")}
           </Button>
         </div>
 
@@ -101,7 +103,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
         <div className="space-y-1.5">
           <div className="flex items-center justify-between text-[11px]">
             <span className="text-muted-foreground">
-              {isRunning ? SIMPLE_STAGES[simpleStage]!.label + "..." : "Done"}
+              {isRunning ? SIMPLE_STAGES[simpleStage]!.label + "..." : t("done")}
             </span>
             <span className="font-mono tabular-nums">{stageProgress(job.status)}%</span>
           </div>
@@ -161,7 +163,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
 
         {/* Single status line (replaces 4 stat pills) */}
         <p className="text-[11px] text-muted-foreground font-mono">
-          Read {job.stats.totalPagesRead} pages
+          {t("pagesRead")} {job.stats.totalPagesRead} {t("pages")}
           {job.stats.totalPagesSucceeded > 0 && ` (${job.stats.totalPagesSucceeded} usable)`}
           {job.stats.roundsCompleted > 0 && ` · ${job.stats.roundsCompleted} round${job.stats.roundsCompleted > 1 ? "s" : ""}`}
           {" · "}

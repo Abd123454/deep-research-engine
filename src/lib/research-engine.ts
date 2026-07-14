@@ -497,7 +497,8 @@ function snippetFromPage(p: PageReadResult, max = 600): string {
 async function processSubQuery(
   job: ResearchJob,
   sq: SubQuery,
-  config: ResearchConfig
+  config: ResearchConfig,
+  jobSeenUrls: Set<string>
 ): Promise<void> {
   sq.status = "searching";
   sq.startedAt = Date.now();
@@ -546,13 +547,14 @@ async function processSubQuery(
   job.stats.totalPagesSucceeded += sq.pagesSucceeded;
   job.stats.totalTokensUsed += pages.reduce((sum, p) => sum + (p.tokensUsed || 0), 0);
 
-  // dedupe by URL — sometimes search engines return the same URL twice
-  const seenUrls = new Set<string>();
+  // dedupe by URL across the WHOLE JOB — different sub-queries often return
+  // the same Wikipedia/GitHub article, and adding it to job.sources multiple
+  // times inflates the source count and wastes report tokens.
   for (let i = 0; i < pages.length; i++) {
     const p = pages[i];
     const r = results[i];
-    if (seenUrls.has(p.url)) continue;
-    seenUrls.add(p.url);
+    if (jobSeenUrls.has(p.url)) continue;
+    jobSeenUrls.add(p.url);
     job.sources.push({
       url: p.url,
       title: p.title || r?.name || p.url,
@@ -886,8 +888,10 @@ Write a comprehensive long-form Deep Research report answering the original quer
       });
       if (critiqueResult.content.length > result.content.length * 0.7) {
         finalReport = critiqueResult.content;
-        log(job, "success", "synthesizing", `Self-critique pass improved report (${finalReport.length} chars, was ${result.content.length})`);
-        think(job, "synthesizing", `Report reviewed and improved. Final version: ${finalReport.length} characters.`);
+        const delta = finalReport.length - result.content.length;
+        const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
+        log(job, "success", "synthesizing", `Self-critique pass revised report (${finalReport.length} chars, was ${result.content.length}, ${deltaStr})`);
+        think(job, "synthesizing", `Report reviewed and revised. Final version: ${finalReport.length} characters.`);
       }
     } catch (err) {
       log(job, "warn", "synthesizing", `Self-critique pass failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -951,6 +955,10 @@ export async function runResearch(jobId: string): Promise<void> {
 
     // Stage 1: Plan.
     checkCancelled();
+    // Job-wide URL set: prevents the same article being added to job.sources
+    // by multiple sub-queries (Wikipedia/GitHub often return the same URL
+    // for related sub-questions).
+    const jobSeenUrls = new Set<string>();
     if (job.plan && job.plan.sections.length > 0) {
       log(job, "info", "planning", `Using pre-approved plan: "${job.plan.title}" (${job.plan.sections.length} sections)`);
     } else {
@@ -977,7 +985,7 @@ export async function runResearch(jobId: string): Promise<void> {
           "searching",
           `Round 1 — started sub-question ${i + 1}/${round1SubQueries.length}: "${sq.question}"`
         );
-        return processSubQuery(job, sq, job.config).catch((err) => {
+        return processSubQuery(job, sq, job.config, jobSeenUrls).catch((err) => {
           const msg = err instanceof Error ? err.message : String(err);
           sq.status = "failed";
           sq.error = msg;
@@ -1011,7 +1019,7 @@ export async function runResearch(jobId: string): Promise<void> {
         sq.pagesRead = 0;
         sq.pagesSucceeded = 0;
         try {
-          await processSubQuery(job, sq, job.config);
+          await processSubQuery(job, sq, job.config, jobSeenUrls);
         } catch { /* ignore retry failures */ }
       }
       log(job, "info", "searching", `Adaptive retry complete. ${failedRound1.filter(sq => sq.status === "done").length}/${failedRound1.length} recovered.`);
@@ -1061,7 +1069,7 @@ export async function runResearch(jobId: string): Promise<void> {
                 "searching",
                 `Round 2 — started gap-fill ${i + 1}/${round2SubQueries.length}: "${sq.question}"`
               );
-              return processSubQuery(job, sq, job.config).catch((err) => {
+              return processSubQuery(job, sq, job.config, jobSeenUrls).catch((err) => {
                 const msg = err instanceof Error ? err.message : String(err);
                 sq.status = "failed";
                 sq.error = msg;

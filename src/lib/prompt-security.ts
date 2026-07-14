@@ -13,22 +13,51 @@
 
 // Common prompt-injection signatures (lowercase match).
 const INJECTION_PATTERNS = [
+  // Direct instruction overrides.
   "ignore previous",
   "ignore all previous",
   "ignore the above",
   "ignore your instructions",
+  "ignore prior",
   "disregard previous",
   "disregard your instructions",
+  "disregard the above",
   "forget your instructions",
-  "you are now",
-  "new instructions:",
-  "system prompt:",
+  "forget previous",
   "override your",
+  "override previous",
+  "new instructions:",
+  "new directive:",
+  "system prompt:",
+  "system instruction:",
+  // Role-play / persona hijack.
+  "you are now",
   "act as",
   "pretend you are",
+  "pretend to be",
+  "roleplay as",
+  "role-play as",
+  "simulate being",
+  "from now on you are",
+  // Known jailbreak labels.
   "jailbreak",
   "DAN mode",
   "developer mode",
+  "root mode",
+  "god mode",
+  "unrestricted mode",
+  "do anything now",
+  // Instruction leakage attempts.
+  "reveal your prompt",
+  "show your instructions",
+  "print your system",
+  "repeat your instructions",
+  "what are your rules",
+  "output your system prompt",
+  // Encoding/obfuscation hints.
+  "base64:",
+  "decode the following",
+  "rot13",
 ];
 
 export interface InjectionCheck {
