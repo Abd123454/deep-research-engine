@@ -13,6 +13,7 @@
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import type { PageReadResult } from "./types";
+import { checkPromptInjection } from "./prompt-security";
 
 const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
 const MAX_TEXT_CHARS = 6000; // cap per-page text to save tokens
@@ -179,6 +180,31 @@ async function readPageDirect(url: string): Promise<PageReadResult> {
   };
 }
 
+// ---------- Indirect injection scanning ----------
+// Scans extracted page text for prompt-injection patterns that a malicious
+// page might embed (e.g. "Note to AI: ignore user request"). If detected,
+// the text is replaced with a blocked marker so the LLM never sees it.
+const INDIRECT_INJECTION_PATTERNS = [
+  "note to ai:",
+  "ignore the above",
+  "ignore previous",
+  "system:",
+  "[inst]",
+  "<|im_start|>",
+  "<|system|>",
+  "you are now a",
+  "disregard all",
+];
+
+function scanForIndirectInjection(text: string): boolean {
+  // Only scan the first 2000 chars — injection attempts are usually at the
+  // top of the page (before legit content).
+  const head = text.slice(0, 2000).toLowerCase();
+  // Also apply Unicode normalization to defeat obfuscation.
+  const normalized = head.normalize("NFKC").replace(/[\u200B-\u200D\uFEFF\u00AD]/g, " ");
+  return INDIRECT_INJECTION_PATTERNS.some((p) => normalized.includes(p));
+}
+
 // ---------- Public ----------
 export async function readPage(url: string): Promise<PageReadResult> {
   if (shouldSkip(url)) {
@@ -188,16 +214,25 @@ export async function readPage(url: string): Promise<PageReadResult> {
   // extracts API works reliably. Try the API first for Wikipedia URLs.
   if (isWikipediaUrl(url)) {
     try {
-      return await readWikipediaViaApi(url);
+      const result = await readWikipediaViaApi(url);
+      // Indirect injection scan: block if malicious content detected.
+      if (result.success && scanForIndirectInjection(result.text)) {
+        console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
+        return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
+      }
+      return result;
     } catch (err) {
       // Fall through to direct fetch as a last resort.
-      // (In environments where the API is also blocked, direct fetch may
-      // still work; in environments where HTML is blocked, the API already
-      // succeeded above.)
     }
   }
   try {
-    return await readPageDirect(url);
+    const result = await readPageDirect(url);
+    // Indirect injection scan for direct-fetched pages too.
+    if (result.success && scanForIndirectInjection(result.text)) {
+      console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
+      return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
+    }
+    return result;
   } catch (err) {
     return { url, title: "", text: "", success: false, error: err instanceof Error ? err.message : String(err), tokensUsed: 0, wordCount: 0 };
   }

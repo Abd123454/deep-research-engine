@@ -229,3 +229,34 @@ export function getInjectionDefensePrompt(): string {
     "",
   ].join("\n");
 }
+
+// ---------- Input sanitization (SQL/XSS/command injection) ----------
+// Strips dangerous patterns from user input before it's stored or processed.
+// NOTE: The research query is passed to the LLM (not SQL), but if the input
+// is ever stored in SQLite (session metadata) or rendered in HTML, these
+// patterns could be dangerous. We strip them defensively.
+
+const SQL_PATTERNS = [
+  /('|")/g, // quotes — could break SQL strings
+  /(\bDROP\b|\bDELETE\b|\bINSERT\b|\bUPDATE\b|\bSELECT\b)/gi, // SQL keywords
+];
+
+const CMD_PATTERNS = [
+  /(\$|`|\|\||&&|;|>|<)/g, // shell metacharacters
+  /(\bnmap\b|\bcurl\b|\bwget\b|\bbash\b|\bsh\b|\bexec\b)/gi, // command names
+];
+
+const XSS_PATTERNS = [
+  /<script[^>]*>[\s\S]*?<\/script>/gi, // script tags
+  /on\w+\s*=\s*["'][^"']*["']/gi, // event handlers (onclick=, etc.)
+  /javascript:/gi, // javascript: URLs
+  /<iframe[^>]*>/gi, // iframe tags
+];
+
+export function sanitizeInput(input: string): string {
+  let sanitized = input;
+  for (const p of [...SQL_PATTERNS, ...CMD_PATTERNS, ...XSS_PATTERNS]) {
+    sanitized = sanitized.replace(p, "");
+  }
+  return sanitized;
+}

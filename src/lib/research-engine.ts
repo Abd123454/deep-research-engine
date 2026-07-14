@@ -149,6 +149,42 @@ function trackLLMTokens(job: ResearchJob, result: { tokensUsed?: number }): void
   }
 }
 
+// ---------- Language detection ----------
+// Detects the dominant script of the query so the LLM can respond in the
+// same language. Uses Unicode ranges: Arabic (0600-06FF), CJK (4E00-9FFF),
+// Hebrew (0590-05FF), Cyrillic (0400-04FF).
+export type DetectedLanguage = "ar" | "zh" | "he" | "ru" | "en" | "unknown";
+
+export function detectLanguage(text: string): DetectedLanguage {
+  const sample = text.slice(0, 500);
+  const counts: Record<string, number> = { ar: 0, zh: 0, he: 0, ru: 0, latin: 0 };
+  for (const ch of sample) {
+    const code = ch.codePointAt(0)!;
+    if (code >= 0x0600 && code <= 0x06ff) counts.ar++;
+    else if (code >= 0x4e00 && code <= 0x9fff) counts.zh++;
+    else if (code >= 0x0590 && code <= 0x05ff) counts.he++;
+    else if (code >= 0x0400 && code <= 0x04ff) counts.ru++;
+    else if ((code >= 0x41 && code <= 0x5a) || (code >= 0x61 && code <= 0x7a)) counts.latin++;
+  }
+  // Require at least 3 non-Latin chars to switch language.
+  if (counts.ar >= 3) return "ar";
+  if (counts.zh >= 3) return "zh";
+  if (counts.he >= 3) return "he";
+  if (counts.ru >= 3) return "ru";
+  if (counts.latin >= 3) return "en";
+  return "unknown";
+}
+
+function languageInstruction(lang: DetectedLanguage): string {
+  switch (lang) {
+    case "ar": return "\n\nIMPORTANT: Respond in Arabic. The user's query is in Arabic.";
+    case "zh": return "\n\nIMPORTANT: Respond in Chinese. The user's query is in Chinese.";
+    case "he": return "\n\nIMPORTANT: Respond in Hebrew. The user's query is in Hebrew.";
+    case "ru": return "\n\nIMPORTANT: Respond in Russian. The user's query is in Russian.";
+    default: return "";
+  }
+}
+
 // ---------- Question utilities ----------
 
 const MAX_SUBQUESTION_CHARS = 280;
@@ -256,11 +292,14 @@ export async function generatePlan(
     );
   }
 
+  const detectedLang = detectLanguage(config.query);
+
   const sys: LLMMessage = {
     role: "system",
     content:
       "You are a senior research director. Given a research query, you produce a clear, well-structured research plan: a working title, a one-paragraph summary of what the report will cover, and a list of thematic sections (each with a title and a one-sentence description). The sections should collectively cover the topic exhaustively and flow logically. For long briefs, ensure every distinct topic mentioned is represented as a section." +
-      getInjectionDefensePrompt(),
+      getInjectionDefensePrompt() +
+      languageInstruction(detectedLang),
   };
   const user: LLMMessage = {
     role: "user",
@@ -834,6 +873,8 @@ Sections:
 ${job.plan.sections.map((s, i) => `${i + 1}. ${s.title} — ${s.description}`).join("\n")}`
     : "";
 
+  const detectedLang = detectLanguage(config.query);
+
   const sys: LLMMessage = {
     role: "system",
     content: `You are an elite research analyst and long-form writer, comparable to a senior journalist at a top-tier publication combined with a domain expert. You synthesize raw research notes into comprehensive, well-structured, deeply informative reports that surpass what single-pass research tools produce.
@@ -853,7 +894,8 @@ Your report MUST:
 - Avoid filler, fluff, and repetition. Every paragraph should add information.
 
 Do NOT fabricate sources or URLs. Only cite URLs that appear in the provided source list.` +
-      getInjectionDefensePrompt(),
+      getInjectionDefensePrompt() +
+      languageInstruction(detectedLang),
   };
 
   const user: LLMMessage = {
