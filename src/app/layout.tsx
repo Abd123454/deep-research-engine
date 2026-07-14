@@ -65,7 +65,7 @@ export default function RootLayout({
               fontFamily: "system-ui, sans-serif",
             }}
           >
-            <h1>JavaScript required</h1>
+            <h2>JavaScript required</h2>
             <p>
               Deep Research Engine needs JavaScript to run searches and stream
               reports. Please enable JavaScript in your browser.

@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "50mb" },
     proxyClientMaxBodySize: "50mb",
   },
+  // better-sqlite3 is a native addon (C++ binding to libsqlite3). Next.js's
+  // bundler (Turbopack/Webpack) tries to bundle it, which breaks the native
+  // require — causing the /api/sessions route to hang/crash on first
+  // compile. serverExternalPackages tells Next.js to leave it as a Node
+  // require (loaded at runtime, not bundled). This is the same fix used
+  // for any native addon (sharp, bcrypt, etc.) in Next.js.
+  serverExternalPackages: ["better-sqlite3"],
   async headers() {
     return [
       {
