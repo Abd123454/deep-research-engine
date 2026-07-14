@@ -20,6 +20,7 @@
     "db:reset": "prisma migrate reset"
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@radix-ui/react-collapsible": "^1.1.11",
     "@radix-ui/react-label": "^2.1.7",
     "@radix-ui/react-progress": "^1.1.7",
@@ -30,6 +31,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.23.2",
+    "jsdom": "^29.1.1",
     "lucide-react": "^0.525.0",
     "next": "^16.1.1",
     "next-themes": "^0.4.6",

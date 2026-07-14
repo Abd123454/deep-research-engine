@@ -1,11 +1,13 @@
-// LLM provider with fallback
+// LLM provider — Ollama (local, open-source, free).
+// No API keys. No cloud. Runs on localhost:11434.
 //
-// each model in order until one succeeds. This provides resilience against
-// individual model outages, rate limits, or timeouts.
-
-import ZAI from "z-ai-web-dev-sdk";
-import type { LLMProvider } from "./types";
-import { env, envList } from "./env";
+// Install Ollama: https://ollama.com
+// Pull models:
+//   ollama pull llama3.1:8b       (fast, for sub-questions)
+//   ollama pull llama3.1:70b      (smart, for reports) — needs 40GB RAM
+//   or use smaller models:
+//   ollama pull qwen2.5:7b
+//   ollama pull mistral:7b
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant";
@@ -16,11 +18,8 @@ export interface LLMCompletionOptions {
   messages: LLMMessage[];
   maxTokens?: number;
   temperature?: number;
-  // Hint that the model should produce structured JSON.
   json?: boolean;
-  // If true, return an async generator that yields tokens.
   stream?: boolean;
-  // Called for each token when stream=true (alternative to generator).
   onToken?: (token: string) => void;
 }
 
@@ -28,368 +27,161 @@ export interface LLMCompletionResult {
   content: string;
   tokensUsed?: number;
   model: string;
-  provider: LLMProvider;
+  provider: "ollama";
 }
 
-// ---------- Config from env ----------
-
-export function getLLMProvider(): LLMProvider {
-  const v = env("LLM_PROVIDER", "zai").toLowerCase();
-  // Auto-fallback to zai if NVIDIA selected but no key configured.
-  if (v === "nvidia" && !env("NVIDIA_API_KEY")) {
-    return "zai";
-  }
-  return v === "nvidia" ? "nvidia" : "zai";
+function env(key: string, fallback = ""): string {
+  if (typeof process === "undefined") return fallback;
+  return (process.env?.[key] ?? fallback).trim();
 }
 
-// The 6 smart models (fallback chain). Tries each in order.
-export function getSmartModels(): string[] {
-  return envList(
-    "SMART_LLM_MODELS",
-    "mistralai/mistral-large-3-675b-instruct-2512,deepseek-ai/deepseek-v4-pro,mistralai/mistral-nemotron,meta/llama-3.1-70b-instruct,minimaxai/minimax-m3,mistralai/mistral-small-4-119b-2603"
-  );
-}
+const OLLAMA_URL = env("OLLAMA_URL", "http://localhost:11434");
 
-// Backward-compatible single model (first in the chain).
 export function getSmartModel(): string {
-  return getSmartModels()[0];
+  return env("SMART_LLM", "llama3.1:70b");
 }
 
 export function getFastModel(): string {
-  return env("FAST_LLM", "meta/llama-3.1-8b-instruct");
+  return env("FAST_LLM", "llama3.1:8b");
 }
 
-export function getNvidiaBaseUrl(): string {
-  return env("NVIDIA_BASE_URL", "https://integrate.api.nvidia.com/v1");
+export function getSmartModels(): string[] {
+  return [getSmartModel()];
 }
 
-// ---------- Z.AI backend ----------
-
-let zaiInstance: Awaited<ReturnType<typeof ZAI.create>> | null = null;
-
-async function getZAI() {
-  if (!zaiInstance) {
-    zaiInstance = await ZAI.create();
-  }
-  return zaiInstance;
+export function getLLMProvider(): "ollama" {
+  return "ollama";
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-function isRetryableLLMError(msg: string): boolean {
-  const m = msg.toLowerCase();
-  return (
-    m.includes("429") ||
-    m.includes("rate limit") ||
-    m.includes("too many requests") ||
-    m.includes("503") ||
-    m.includes("service unavailable") ||
-    m.includes("timeout") ||
-    m.includes("temporarily") ||
-    m.includes("overloaded") ||
-    m.includes("capacity")
-  );
-}
-
-// Should we skip to the next model in the fallback chain (vs. retry)?
-// (shouldSkipModel was removed — the fallback loop now skips to the next model
-// on ANY error after exhausting retries, so a separate hard-error classifier
-// is no longer needed.)
-
-async function withRetry<T>(
-  fn: () => Promise<T>,
-  label: string,
-  retries = 1
-): Promise<T> {
-  let lastErr: unknown;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      return await fn();
-    } catch (err) {
-      lastErr = err;
-      const msg = err instanceof Error ? err.message : String(err);
-      // Only retry once on rate-limit errors; the fallback chain handles the rest.
-      if (attempt < retries && isRetryableLLMError(msg)) {
-        await sleep(1000); // short 1s backoff, only once
-        continue;
-      }
-      break;
-    }
-  }
-  throw lastErr;
-}
-
-async function zaiComplete(
-  opts: LLMCompletionOptions
-): Promise<LLMCompletionResult> {
-  return withRetry(async () => {
-    const zai = await getZAI();
-    // ZAI SDK uses 'assistant' role for the system prompt (per their docs).
-    const messages = opts.messages.map((m) =>
-      m.role === "system"
-        ? { role: "assistant" as const, content: m.content }
-        : { role: m.role as "user" | "assistant", content: m.content }
-    );
-
-    if (opts.json) {
-      messages.push({
-        role: "user",
-        content:
-          "\n\nIMPORTANT: Respond with valid JSON only. No markdown fences, no commentary, no preamble.",
-      });
-    }
-
-    const completion = await zai.chat.completions.create({
-      messages,
-      thinking: { type: "disabled" },
-    });
-
-    const content = completion.choices[0]?.message?.content ?? "";
-
-    return {
-      content,
-      tokensUsed: (completion as { usage?: { total_tokens?: number } }).usage
-        ?.total_tokens,
-      model: "zai-built-in",
-      provider: "zai" as const,
-    };
-  }, "zaiComplete");
-}
-
-// ---------- NVIDIA NIM backend (OpenAI-compatible) with fallback chain ----------
-
-interface NvidiaResponse {
-  choices?: {
-    message?: {
-      content?: string | null;
-      reasoning?: string | null;
-      reasoning_content?: string | null;
-    };
-  }[];
-  usage?: { total_tokens?: number };
-}
-
-async function nvidiaCompleteSingle(
+async function ollamaComplete(
   opts: LLMCompletionOptions,
   model: string
 ): Promise<LLMCompletionResult> {
-  const apiKey = env("NVIDIA_API_KEY");
-  if (!apiKey) {
-    throw new Error(
-      "NVIDIA_API_KEY is not set. Add your NVIDIA key to .env to use NVIDIA models."
-    );
-  }
-  const baseUrl = getNvidiaBaseUrl();
+  const url = `${OLLAMA_URL}/api/chat`;
 
+  // Ollama uses a different API format than OpenAI.
+  // POST /api/chat with messages array.
   const body: Record<string, unknown> = {
     model,
     messages: opts.messages,
-    temperature: opts.temperature ?? 0.4,
-    max_tokens: opts.maxTokens ?? 2048,
-    top_p: 0.9,
-    // Use streaming if requested.
     stream: opts.stream ?? false,
-  };
-  if (opts.json) {
-    body.response_format = { type: "json_object" };
-  }
-
-  const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      Accept: opts.stream ? "text/event-stream" : "application/json",
+    options: {
+      temperature: opts.temperature ?? 0.4,
+      num_predict: opts.maxTokens ?? 2048,
     },
-    body: JSON.stringify(body),
-  });
+  };
 
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(
-      `NVIDIA NIM request failed (${res.status} ${res.statusText}): ${text.slice(
-        0,
-        300
-      )}`
-    );
-  }
+  if (opts.stream && opts.onToken) {
+    // Streaming: read NDJSON line by line.
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
 
-  // --- Streaming path: parse SSE chunks, call onToken for each ---
-  if (opts.stream && res.body) {
+    if (!res.ok) {
+      throw new Error(`Ollama error ${res.status}: ${await res.text()}`);
+    }
+
     let fullContent = "";
-    const reader = res.body.getReader();
+    const reader = res.body?.getReader();
     const decoder = new TextDecoder();
     let buffer = "";
 
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
+    if (reader) {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-      // SSE events are separated by \n\n
-      const lines = buffer.split("\n");
-      buffer = lines.pop() || ""; // keep incomplete line in buffer
-
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (!trimmed || !trimmed.startsWith("data: ")) continue;
-        const payload = trimmed.slice(6);
-        if (payload === "[DONE]") continue;
-
-        try {
-          const chunk = JSON.parse(payload) as {
-            choices?: { delta?: { content?: string } }[];
-          };
-          const token = chunk.choices?.[0]?.delta?.content;
-          if (token) {
-            fullContent += token;
-            opts.onToken?.(token);
-          }
-        } catch {
-          // skip unparseable chunks
+        for (const line of lines) {
+          if (!line.trim()) continue;
+          try {
+            const chunk = JSON.parse(line) as {
+              message?: { content?: string };
+              done?: boolean;
+            };
+            const token = chunk.message?.content;
+            if (token) {
+              fullContent += token;
+              opts.onToken(token);
+            }
+          } catch { /* skip */ }
         }
       }
     }
 
     return {
       content: fullContent,
-      tokensUsed: undefined, // streaming doesn't return usage
       model,
-      provider: "nvidia" as const,
+      provider: "ollama",
     };
   }
 
-  // --- Non-streaming path (unchanged) ---
-  const data = (await res.json()) as NvidiaResponse;
-  const msg = data.choices?.[0]?.message;
+  // Non-streaming.
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
 
-  // Some reasoning models (e.g., gpt-oss, nemotron-super) return content=null
-  // and put the actual output in `reasoning_content` or `reasoning`. Handle both.
-  let content = msg?.content ?? "";
-  if (!content && (msg?.reasoning_content || msg?.reasoning)) {
-    content = msg.reasoning_content || msg.reasoning || "";
+  if (!res.ok) {
+    throw new Error(`Ollama error ${res.status}: ${await res.text()}`);
   }
+
+  const data = (await res.json()) as {
+    message?: { content?: string };
+    eval_count?: number;
+  };
 
   return {
-    content,
-    tokensUsed: data.usage?.total_tokens,
+    content: data.message?.content ?? "",
+    tokensUsed: data.eval_count,
     model,
-    provider: "nvidia" as const,
+    provider: "ollama",
   };
 }
 
-// Try each model in the fallback chain. For retryable errors (429/503/timeout),
-// retry with backoff. For hard errors (404/400/500), skip to the next model.
-//
-// if streaming (opts.stream) and at least one token was already
-// emitted via onToken, do NOT fallback — the user has already seen partial
-// output. Emit the error instead. Fallback only happens before the first
-// token arrives.
-async function nvidiaCompleteWithFallback(
-  opts: LLMCompletionOptions,
-  models: string[]
-): Promise<LLMCompletionResult> {
-  let lastErr: unknown;
-  const tried: string[] = [];
-  let tokensEmitted = false;
-
-  // Wrap onToken to track whether any tokens were emitted.
-  const originalOnToken = opts.onToken;
-  const wrappedOpts: LLMCompletionOptions = {
-    ...opts,
-    onToken: (token: string) => {
-      tokensEmitted = true;
-      originalOnToken?.(token);
-    },
-  };
-
-  for (let i = 0; i < models.length; i++) {
-    const model = models[i];
-    tried.push(model);
-
-    // If streaming and tokens were already emitted by a previous model,
-    // do NOT try the next model — the user has seen partial output.
-    if (opts.stream && tokensEmitted) {
-      throw new Error(
-        `Streaming failed mid-stream after ${model} emitted tokens. ` +
-          "Cannot fallback — partial report was already shown to the user. " +
-          `Last error: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`
-      );
-    }
-
-    try {
-      const result = await withRetry(
-        () => nvidiaCompleteSingle(wrappedOpts, model),
-        `nvidia:${model}`,
-        1
-      );
-      if (i > 0) {
-        console.log(
-          `[llm-provider] SMART_LLM fallback: "${model}" succeeded after ${i} previous model(s) failed.`
-        );
-      }
-      return result;
-    } catch (err) {
-      lastErr = err;
-      // If tokens were already emitted, don't fallback — throw immediately.
-      if (tokensEmitted) {
-        throw err;
-      }
-      const msg = err instanceof Error ? err.message : String(err);
-      console.warn(
-        `[llm-provider] Model "${model}" failed: ${msg.slice(0, 120)}. → next model`
-      );
-    }
-  }
-
-  // All models failed.
-  const triedStr = tried.join(", ");
-  const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
-  throw new Error(
-    `All ${models.length} NVIDIA models failed. Tried: ${triedStr}. Last error: ${msg}`
-  );
-}
-
-// Fast model: single model (no fallback needed — it's just for quick tasks).
-async function nvidiaFast(
+// Fallback chain: try smart model, then fast model.
+async function smartComplete(
   opts: LLMCompletionOptions
 ): Promise<LLMCompletionResult> {
-  return withRetry(
-    () => nvidiaCompleteSingle(opts, getFastModel()),
-    `nvidia-fast:${getFastModel()}`,
-    3
-  );
+  let lastErr: unknown;
+  const models = [getSmartModel(), getFastModel()];
+
+  for (const model of models) {
+    try {
+      return await ollamaComplete(opts, model);
+    } catch (err) {
+      lastErr = err;
+      console.warn(`[llm] ${model} failed:`, err instanceof Error ? err.message : String(err));
+    }
+  }
+  throw lastErr;
 }
 
-// ---------- Public API ----------
+async function fastComplete(
+  opts: LLMCompletionOptions
+): Promise<LLMCompletionResult> {
+  return ollamaComplete(opts, getFastModel());
+}
 
 export interface LLMProviderApi {
   fast(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
   smart(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
-  provider: LLMProvider;
-  // The list of smart models in the fallback chain (for display).
+  provider: "ollama";
   smartModels: string[];
 }
 
 export async function getLLM(): Promise<LLMProviderApi> {
-  const provider = getLLMProvider();
-  const smartModels = getSmartModels();
-
-  if (provider === "nvidia") {
-    return {
-      provider: "nvidia",
-      smartModels,
-      fast: nvidiaFast,
-      smart: (opts) => nvidiaCompleteWithFallback(opts, smartModels),
-    };
-  }
-
-  // Z.AI backend (default, free).
   return {
-    provider: "zai",
-    smartModels: ["zai-built-in"],
-    fast: zaiComplete,
-    smart: zaiComplete,
+    provider: "ollama",
+    smartModels: [getSmartModel()],
+    fast: fastComplete,
+    smart: smartComplete,
   };
 }
