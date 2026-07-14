@@ -1,5 +1,7 @@
 // Deep Research Engine - Core Types
 //
+import type { VerificationReport } from "./citation-verifier";
+//
 // The pipeline is designed to surpass single-round research tools by adding:
 //   1. A research PLAN (structured outline generated up-front).
 //   2. GAP ANALYSIS after round 1 — the agent reviews findings and identifies
@@ -139,6 +141,11 @@ export interface ResearchStats {
   elapsedMs: number;
   subQueriesCompleted: number;
   roundsCompleted: number;
+  // Cost tracking (Phase 2A.5)
+  llmCalls: number;
+  inputTokens: number;
+  outputTokens: number;
+  estimatedCost: number; // USD
 }
 
 export interface ResearchJob {
@@ -179,6 +186,9 @@ export interface ResearchJob {
   // CLARIFYING QUESTIONS: generated before research starts, if the query
   // is ambiguous. The user can answer them to refine the research.
   clarifyingQuestions: string[];
+  // CITATION VERIFICATION (Phase 2A): after synthesis, all citations in the
+  // report are checked against job.sources. URLs not in sources = unverified.
+  verificationReport?: VerificationReport | null;
 }
 
 // Public-facing shape (sent to the client). Strips large text fields if needed.

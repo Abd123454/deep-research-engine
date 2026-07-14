@@ -236,6 +236,10 @@ export function useResearchFlow(
           elapsedMs: 0,
           subQueriesCompleted: 0,
           roundsCompleted: 0,
+      llmCalls: 0,
+      inputTokens: 0,
+      outputTokens: 0,
+      estimatedCost: 0,
         },
       });
 

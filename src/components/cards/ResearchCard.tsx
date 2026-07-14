@@ -109,7 +109,26 @@ export function ResearchCard({ query, onStop }: ResearchCardProps) {
                 {job.stats.totalPagesSucceeded > 0 && ` (${job.stats.totalPagesSucceeded} usable)`}
                 {job.stats.roundsCompleted > 0 && ` · ${job.stats.roundsCompleted} round${job.stats.roundsCompleted > 1 ? "s" : ""}`}
                 {job.stats.elapsedMs ? ` · ${fmtTime(job.stats.elapsedMs)}` : ""}
+                {job.stats.llmCalls > 0 && ` · ${job.stats.llmCalls} LLM calls`}
+                {job.stats.estimatedCost > 0
+                  ? ` · $${job.stats.estimatedCost.toFixed(4)}`
+                  : " · $0.00 (free)"}
               </p>
+
+              {/* Citation verification badge */}
+              {job.verificationReport && job.verificationReport.total > 0 && (
+                <div className="flex items-center gap-1.5 text-[10px]">
+                  {job.verificationReport.unverified === 0 && job.verificationReport.contradicts === 0 ? (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 px-2 py-0.5 font-medium">
+                      ✓ {job.verificationReport.verified}/{job.verificationReport.total} citations verified
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 px-2 py-0.5 font-medium">
+                      ⚠ {job.verificationReport.unverified} unverified / {job.verificationReport.total} total
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Plan preview (collapsible) */}

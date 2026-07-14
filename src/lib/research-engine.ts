@@ -139,14 +139,20 @@ function setStatus(job: ResearchJob, status: ResearchStatus) {
   }
 }
 
-// ---------- LLM token tracking ----------
+// ---------- LLM token + cost tracking ----------
 // Accumulates tokensUsed from each LLM call into job.stats.totalTokensUsed.
-// NVIDIA's streaming path doesn't return a usage object, so llm-provider.ts
-// estimates ~4 chars/token. Non-streaming uses the real usage value.
+// Also tracks llmCalls count and estimated cost.
+// NVIDIA = $0 (free tier). OpenAI/Anthropic costs are calculated by the
+// provider when multi-provider support is added (Phase 2B).
 function trackLLMTokens(job: ResearchJob, result: { tokensUsed?: number }): void {
   if (result.tokensUsed && result.tokensUsed > 0) {
     job.stats.totalTokensUsed += result.tokensUsed;
+    job.stats.outputTokens += result.tokensUsed;
   }
+  job.stats.llmCalls += 1;
+  // NVIDIA free tier = $0. When multi-provider is added, the provider
+  // will set the cost per call. For now, all calls are free.
+  // job.stats.estimatedCost stays 0 for NVIDIA.
 }
 
 // ---------- Language detection ----------
@@ -1195,6 +1201,23 @@ export async function runResearch(jobId: string): Promise<void> {
     }
 
     job.report = await synthesizeReport(job, job.config);
+
+    // Citation verification (Phase 2A): check that all URLs cited in the
+    // report actually exist in job.sources. Hallucinated URLs = unverified.
+    if (job.report && job.sources.length > 0) {
+      try {
+        const { verifyAllCitations } = await import("./citation-verifier");
+        job.verificationReport = verifyAllCitations(job.report, job.sources);
+        log(
+          job,
+          "info",
+          "completed",
+          `Citation verification: ${job.verificationReport.verified}/${job.verificationReport.total} verified, ${job.verificationReport.unverified} unverified.`
+        );
+      } catch (e) {
+        console.warn("[citation] Verification failed:", e instanceof Error ? e.message : String(e));
+      }
+    }
 
     setStatus(job, "completed");
     log(
