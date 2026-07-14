@@ -74,3 +74,7 @@ Thumbs.db
 /tool-results/
 /upload/
 .zscripts/
+
+/src/generated/prisma
+data/
+prisma/

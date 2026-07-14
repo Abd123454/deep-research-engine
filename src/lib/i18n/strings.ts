@@ -87,7 +87,16 @@ export type StringKey =
   | "exportPdf"
   | "exportDocx"
   | "exportMd"
-  | "exporting";
+  | "exporting"
+  | "noSessions"
+  | "sessionResearch"
+  | "sessionDocQA"
+  | "sessionQuick"
+  | "loadSession"
+  | "deleteSession"
+  | "clearAllSessions"
+  | "sessionContent"
+  | "confirmDeleteAll";
 
 type Dictionary = Record<StringKey, string>;
 
@@ -163,6 +172,15 @@ export const STRINGS: Record<Locale, Dictionary> = {
     exportDocx: "Export as DOCX",
     exportMd: "Export as Markdown",
     exporting: "Exporting...",
+    noSessions: "No sessions yet. Completed research and Q&A will appear here.",
+    sessionResearch: "Research",
+    sessionDocQA: "Document Q&A",
+    sessionQuick: "Quick Ask",
+    loadSession: "Load session",
+    deleteSession: "Delete session",
+    clearAllSessions: "Clear all",
+    sessionContent: "Session content",
+    confirmDeleteAll: "Delete all sessions? This cannot be undone.",
   },
   ar: {
     appName: "البحث العميق",
@@ -235,6 +253,15 @@ export const STRINGS: Record<Locale, Dictionary> = {
     exportDocx: "تصدير كـ DOCX",
     exportMd: "تصدير كـ Markdown",
     exporting: "جارٍ التصدير...",
+    noSessions: "لا توجد جلسات بعد. البحوث والأسئلة المنجزة ستظهر هنا.",
+    sessionResearch: "بحث",
+    sessionDocQA: "أسئلة المستندات",
+    sessionQuick: "سؤال سريع",
+    loadSession: "تحميل الجلسة",
+    deleteSession: "حذف الجلسة",
+    clearAllSessions: "مسح الكل",
+    sessionContent: "محتوى الجلسة",
+    confirmDeleteAll: "حذف كل الجلسات؟ لا يمكن التراجع.",
   },
 };
 

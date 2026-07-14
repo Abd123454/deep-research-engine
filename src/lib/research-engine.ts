@@ -1143,6 +1143,29 @@ export async function runResearch(jobId: string): Promise<void> {
         (Date.now() - (job.startedAt || Date.now())) / 1000
       )}s across ${job.stats.roundsCompleted} round(s). Read ${job.stats.totalPagesRead} pages from ${job.subQueries.length} sub-questions.`
     );
+
+    // Auto-save the completed research to the session store (Phase D).
+    try {
+      const { createSession } = await import("./session-store");
+      createSession(
+        "research",
+        job.config.query.slice(0, 200),
+        `Read ${job.stats.totalPagesRead} pages · ${job.sources.length} sources · ${job.report.length} chars`,
+        job.report,
+        {
+          tokensUsed: job.stats.totalTokensUsed,
+          pagesRead: job.stats.totalPagesRead,
+          pagesSucceeded: job.stats.totalPagesSucceeded,
+          sourcesCount: job.sources.length,
+          rounds: job.stats.roundsCompleted,
+          elapsedMs: job.stats.elapsedMs,
+          depth: job.config.depth,
+        },
+        "completed"
+      );
+    } catch (e) {
+      console.warn("[session-store] Failed to save research session:", e instanceof Error ? e.message : String(e));
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     // Don't overwrite the "Cancelled by user" error if the stop endpoint
