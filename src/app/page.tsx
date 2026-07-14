@@ -1,5 +1,5 @@
-import { AppShell } from "@/components/layout/AppShell";
+import { UnifiedInterface } from "@/components/UnifiedInterface";
 
 export default function Home() {
-  return <AppShell />;
+  return <UnifiedInterface />;
 }
