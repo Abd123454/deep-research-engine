@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { SessionProvider } from "next-auth/react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -45,6 +46,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LocaleProvider>
+            <SessionProvider>
             {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
             <a
               href="#main-content"
@@ -55,6 +57,7 @@ export default function RootLayout({
             {children}
             <Toaster />
             <SonnerToaster />
+            </SessionProvider>
           </LocaleProvider>
         </ThemeProvider>
         <noscript>
