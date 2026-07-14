@@ -24,7 +24,7 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 }
 
-export function DocumentCard({ file, initialQuestion }: DocumentCardProps) {
+function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
   const t = useT();
   const [documentId, setDocumentId] = React.useState<string | null>(null);
   const [uploading, setUploading] = React.useState(true);
@@ -248,3 +248,5 @@ export function DocumentCard({ file, initialQuestion }: DocumentCardProps) {
     </motion.div>
   );
 }
+
+export const DocumentCard = React.memo(DocumentCardImpl);

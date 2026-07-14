@@ -22,7 +22,7 @@ interface ChatCardProps {
   conversationId?: string;
 }
 
-export function ChatCard({ initialMessage, conversationId: initialConvId }: ChatCardProps) {
+export const ChatCard = React.memo(function ChatCard({ initialMessage, conversationId: initialConvId }: ChatCardProps) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([
     { role: "user", content: initialMessage },
   ]);
@@ -267,3 +267,5 @@ export function ChatCard({ initialMessage, conversationId: initialConvId }: Chat
     </motion.div>
   );
 }
+
+);

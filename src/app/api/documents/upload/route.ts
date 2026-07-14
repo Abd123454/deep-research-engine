@@ -19,11 +19,6 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-real-ip") ||
     "unknown";
 
-  const rl = await checkStartRateLimit(ip);
-  if (!rl.ok) {
-    return Response.json({ error: rl.reason }, { status: 429 });
-  }
-
   let formData: FormData;
   try {
     formData = await req.formData();
@@ -42,7 +37,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Size check (before reading into memory).
+  // Size check (before rate limiting — cheap rejection).
   if (file.size > MAX_SIZE_BYTES) {
     return Response.json(
       { error: `File exceeds ${MAX_SIZE_MB}MB limit (got ${(file.size / 1024 / 1024).toFixed(1)}MB).` },
@@ -53,13 +48,19 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "File is empty." }, { status: 400 });
   }
 
-  // MIME type validation.
+  // MIME type validation — BEFORE rate limit so rejected types don't consume quota.
   const mimeType = file.type || "";
   if (!isAllowedMimeType(mimeType)) {
     return Response.json(
       { error: `Unsupported file type: ${mimeType || "unknown"}. Allowed: PDF, DOCX, TXT, MD, PNG, JPEG, WEBP.` },
       { status: 415 }
     );
+  }
+
+  // Rate limit — only after file passes validation.
+  const rl = await checkStartRateLimit(ip);
+  if (!rl.ok) {
+    return Response.json({ error: rl.reason }, { status: 429 });
   }
 
   // Extract text.

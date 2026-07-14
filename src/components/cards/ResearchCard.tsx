@@ -25,7 +25,7 @@ interface ResearchCardProps {
   onStop?: () => void;
 }
 
-export function ResearchCard({ query, onStop }: ResearchCardProps) {
+export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: ResearchCardProps) {
   const t = useT();
   const { phase, job, streamingReport, error, stop } = useResearchFlow(query);
   const [planExpanded, setPlanExpanded] = React.useState(false);
@@ -179,3 +179,5 @@ export function ResearchCard({ query, onStop }: ResearchCardProps) {
     </motion.div>
   );
 }
+
+);

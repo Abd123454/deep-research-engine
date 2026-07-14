@@ -27,6 +27,7 @@ import { DocumentCard } from "@/components/cards/DocumentCard";
 import { ChatCard } from "@/components/cards/ChatCard";
 import { HistoryDrawer } from "@/components/history/HistoryDrawer";
 import { MemoryPanel } from "@/components/memory/MemoryPanel";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import type { SessionType } from "@/lib/session-store";
 import ReactMarkdown from "react-markdown";
 
@@ -228,28 +229,38 @@ export function UnifiedInterface() {
             {cards.map((card) => {
               if (card.type === "research") {
                 return (
-                  <ResearchCard
-                    key={card.id}
-                    query={card.query}
-                    onStop={() => {
-                      setCards((prev) => prev.filter((c) => c.id !== card.id));
-                    }}
-                  />
+                  <ErrorBoundary key={card.id}>
+                    <ResearchCard
+                      query={card.query}
+                      onStop={() => {
+                        setCards((prev) => prev.filter((c) => c.id !== card.id));
+                      }}
+                    />
+                  </ErrorBoundary>
                 );
               }
               if (card.type === "document" && card.file) {
                 return (
-                  <DocumentCard
-                    key={card.id}
-                    file={card.file}
-                    initialQuestion={card.query}
-                  />
+                  <ErrorBoundary key={card.id}>
+                    <DocumentCard
+                      file={card.file}
+                      initialQuestion={card.query}
+                    />
+                  </ErrorBoundary>
                 );
               }
               if (card.type === "chat") {
-                return <ChatCard key={card.id} initialMessage={card.query} />;
+                return (
+                  <ErrorBoundary key={card.id}>
+                    <ChatCard initialMessage={card.query} />
+                  </ErrorBoundary>
+                );
               }
-              return <QuickCard key={card.id} question={card.query} />;
+              return (
+                <ErrorBoundary key={card.id}>
+                  <QuickCard question={card.query} />
+                </ErrorBoundary>
+              );
             })}
           </AnimatePresence>
         </div>

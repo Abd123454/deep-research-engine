@@ -14,7 +14,7 @@ interface QuickCardProps {
   question: string;
 }
 
-export function QuickCard({ question }: QuickCardProps) {
+export const QuickCard = React.memo(function QuickCard({ question }: QuickCardProps) {
   const t = useT();
   const [response, setResponse] = React.useState("");
   const [streaming, setStreaming] = React.useState(true);
@@ -156,3 +156,5 @@ export function QuickCard({ question }: QuickCardProps) {
     </motion.div>
   );
 }
+
+);
