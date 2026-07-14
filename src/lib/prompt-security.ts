@@ -250,32 +250,42 @@ export function getInjectionDefensePrompt(): string {
   ].join("\n");
 }
 
-// ---------- Input sanitization (SQL/XSS/command injection) ----------
+// ---------- Input sanitization (XSS + command injection) ----------
 // Strips dangerous patterns from user input before it's stored or processed.
-// NOTE: The research query is passed to the LLM (not SQL), but if the input
-// is ever stored in SQLite (session metadata) or rendered in HTML, these
-// patterns could be dangerous. We strip them defensively.
-
-const SQL_PATTERNS = [
-  /('|")/g, // quotes — could break SQL strings
-  /(\bDROP\b|\bDELETE\b|\bINSERT\b|\bUPDATE\b|\bSELECT\b)/gi, // SQL keywords
-];
-
-const CMD_PATTERNS = [
-  /(\$|`|\|\||&&|;|>|<)/g, // shell metacharacters
-  /(\bnmap\b|\bcurl\b|\bwget\b|\bbash\b|\bsh\b|\bexec\b)/gi, // command names
-];
+//
+// IMPORTANT: SQL keywords (SELECT/INSERT/UPDATE/DROP/DELETE) are NOT stripped.
+// The research query goes to the LLM (not a SQL layer), and stripping SQL
+// keywords from legitimate questions like "How do I write a SELECT in SQL?"
+// is a false-positive that harms UX. SQL injection is prevented at the
+// database layer (better-sqlite3 uses parameterized queries in session-store).
+//
+// What we DO strip:
+// - XSS: <script> tags, event handlers, javascript: URLs, <iframe>, <embed>
+// - Command injection: shell separators (;, |, &), command substitution
+//   $(...), backticks, and command names followed by a space (context-aware:
+//   "curl " is a command, "curl" in a sentence is not).
 
 const XSS_PATTERNS = [
   /<script[^>]*>[\s\S]*?<\/script>/gi, // script tags
   /on\w+\s*=\s*["'][^"']*["']/gi, // event handlers (onclick=, etc.)
   /javascript:/gi, // javascript: URLs
   /<iframe[^>]*>/gi, // iframe tags
+  /<embed[^>]*>/gi, // embed tags
+];
+
+// Command injection patterns — context-aware.
+// Shell separators are always stripped (they're rarely in legit queries).
+// Command names are only stripped when followed by a space (shell syntax).
+const CMD_PATTERNS = [
+  /[;|&]/g, // shell separators (;, |, &)
+  /\$\([^)]*\)/g, // command substitution $(...)
+  /`[^`]*`/g, // backtick command substitution
+  /\b(nmap|curl|wget|bash|sh|rm|mv|cp|chmod|sudo|exec)\s/gi, // command + space
 ];
 
 export function sanitizeInput(input: string): string {
   let sanitized = input;
-  for (const p of [...SQL_PATTERNS, ...CMD_PATTERNS, ...XSS_PATTERNS]) {
+  for (const p of [...XSS_PATTERNS, ...CMD_PATTERNS]) {
     sanitized = sanitized.replace(p, "");
   }
   return sanitized;
