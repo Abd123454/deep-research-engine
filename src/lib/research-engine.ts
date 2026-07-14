@@ -15,7 +15,7 @@
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { searchWeb } from "./retriever";
 import { readPages } from "./page-reader";
-import { getRetriever } from "./retriever";
+
 import { getJob } from "./research-store";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt, envStr } from "./env";
@@ -91,10 +91,10 @@ export function resolveConfig(
       envInt("PAGE_READ_CONCURRENCY", 4, 1, 8),
     reportMaxTokens:
       overrides?.reportMaxTokens ?? envInt("REPORT_MAX_TOKENS", 6000, 1000, 32000),
-    retriever: overrides?.retriever ?? getRetriever(),
+    retriever: "duckduckgo" as const,
     llmProvider:
       overrides?.llmProvider ??
-      (envStr("LLM_PROVIDER", "zai") as ResearchConfig["llmProvider"]),
+      ("nvidia" as ResearchConfig["llmProvider"]),
     enableMultiRound:
       overrides?.enableMultiRound ?? preset.enableMultiRound,
     numGapQueries: overrides?.numGapQueries ?? preset.numGapQueries,
@@ -512,7 +512,7 @@ async function processSubQuery(
 
   let results: SearchResultItem[] = [];
   try {
-    results = await searchWeb(searchQuery, config.maxLinksPerQuery, config.retriever);
+    results = await searchWeb(searchQuery, config.maxLinksPerQuery);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     sq.status = "failed";

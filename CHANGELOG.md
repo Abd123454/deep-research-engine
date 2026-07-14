@@ -13,7 +13,7 @@
 - Dockerfile (multi-stage, non-root, standalone output).
 - CI pipeline (GitHub Actions: lint + tsc + test).
 - 40 tests (parsing, fallback chain, plan preview, smoke tests with real APIs).
-- Smoke tests for real Tavily + NVIDIA APIs (skip in CI, run locally).
+- Smoke tests for NVIDIA + DuckDuckGo (skip in CI, run locally).
 
 ### Fixed
 - Job leak in /api/research/plan (was calling createJob, now uses a dummy job).
@@ -35,8 +35,8 @@
 
 ### Added
 - 6-model NVIDIA LLM fallback chain.
-- 3-engine search fallback (Tavily → Z.AI → DuckDuckGo).
-- 2-backend page reader fallback (Z.AI → direct HTTP fetch).
+- DuckDuckGo search (free, no key).
+- Direct fetch + Mozilla Readability.
 - Multi-round gap analysis (round 1 → analyze gaps → round 2).
 - Server-side job timeout (20 min hard cap).
 - Active-job eviction protection (never evict running jobs).
@@ -48,8 +48,8 @@
 - clean UI (gradient, dark mode, suggestion chips).
 - Giant prompt support (up to 100K chars).
 - NVIDIA NIM integration with OpenAI-compatible endpoint.
-- Tavily search integration.
-- Z.AI SDK for free fallback (web_search + page_reader).
+- DuckDuckGo search integration.
+- Direct fetch for page reading.
 
 ## [0.1.0] - 2026-07-11
 

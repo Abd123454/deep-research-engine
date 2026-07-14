@@ -31,9 +31,9 @@ export type SubQueryRound = 1 | 2;
 
 export type SearchDepth = "standard" | "deep" | "advanced";
 
-export type RetrieverType = "zai" | "tavily" | "duckduckgo";
+export type RetrieverType = "duckduckgo";
 
-export type LLMProvider = "zai" | "nvidia";
+export type LLMProvider = "nvidia";
 
 export interface ResearchConfig {
   query: string;

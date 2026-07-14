@@ -30,7 +30,7 @@ If these gaps matter to you, this project isn't ready. Use [GPT Researcher](http
 
 ## Known Issues
 
-- DuckDuckGo fallback breaks sometimes (CAPTCHA). Use Tavily if you can.
+- DuckDuckGo sometimes hits CAPTCHA. The engine retries automatically.
 - The 10-minute wait for advanced research is real. No streaming yet.
 - `Promise.all` doesn't abort in-flight sub-queries on cancel. The stop button stops the next stage, not the current HTTP requests in flight.
 - DuckDuckGo JSON API returns mostly internal DDG pages, not real web results. It's a last resort.
@@ -59,16 +59,16 @@ docker run -p 3000:3000 --env-file .env deep-research-engine
 
 | Variable | Default | Description |
 |---|---|---|
-| `LLM_PROVIDER` | `nvidia` | `nvidia` or `zai` (free fallback) |
+| `LLM_PROVIDER` | `nvidia` | NVIDIA NIM only |
 | `SMART_LLM_MODELS` | 6 models | Comma-separated NVIDIA fallback chain |
-| `RETRIEVER` | `tavily` | `tavily`, `zai`, or `duckduckgo` |
+| `RETRIEVER` | `duckduckgo` | DuckDuckGo only |
 | `SEARCH_DEPTH` | `advanced` | `standard` (~2-3 min), `deep` (~5-7 min), `advanced` (~10-15 min) |
 | `AUTH_USERNAME` / `AUTH_PASSWORD` | empty | Set both to enable HTTP Basic Auth |
 
 ## Tech Stack
 
 - Next.js 16, TypeScript 5 (strict), Tailwind CSS 4, shadcn/ui
-- NVIDIA NIM (6-model fallback), Z.AI SDK, Tavily, DuckDuckGo
+- NVIDIA NIM (6-model fallback), DuckDuckGo, Mozilla Readability
 - Vitest (40 tests), GitHub Actions CI, Docker
 
 ## Cost

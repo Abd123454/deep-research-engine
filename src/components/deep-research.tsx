@@ -162,7 +162,7 @@ export function DeepResearch() {
           maxLinksPerQuery: 15,
           pageReadConcurrency: 4,
           reportMaxTokens: 6000,
-          retriever: "tavily",
+          retriever: "duckduckgo",
           llmProvider: "nvidia",
           enableMultiRound: true,
           numGapQueries: 3,

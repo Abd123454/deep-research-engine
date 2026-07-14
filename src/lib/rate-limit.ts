@@ -4,7 +4,7 @@
 //   - max 5 research starts per minute (burst protection)
 //   - max 3 concurrent researches per IP
 //
-// This protects the NVIDIA/Tavily free-tier quotas from being exhausted by a
+// This protects the NVIDIA free-tier quotas from being exhausted by a
 // single abusive client. Uses a sliding-window counter in process memory.
 //
 

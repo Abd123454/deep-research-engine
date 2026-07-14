@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Deep Research Engine",
   description: "Self-hosted deep research with multi-round gap analysis. Runs on free-tier APIs.",
-  keywords: ["deep research", "self-hosted", "open source", "NVIDIA NIM", "Tavily"],
+  keywords: ["deep research", "self-hosted", "open source", "NVIDIA NIM", "DuckDuckGo"],
   authors: [{ name: "Abd" }],
 };
 

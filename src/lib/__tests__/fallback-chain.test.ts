@@ -9,7 +9,7 @@ const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 // We test the fallback LOGIC by importing the actual modules. The modules
-// call `fetch` (for NVIDIA/Tavily/direct-fetch) and `z-ai-web-dev-sdk`
+// call `fetch` (for NVIDIA and direct-fetch)
 // (for Z.AI). We mock fetch; Z.AI SDK is harder to mock so we focus on the
 // NVIDIA/search/page-reader fallback paths that use fetch.
 
@@ -62,16 +62,16 @@ describe("search engine fallback chain", () => {
     fetchMock.mockReset();
   });
 
-  it("falls back from Tavily (500) to the next engine", async () => {
+  it("falls back from Search engine (500) to the next engine", async () => {
     fetchMock
       .mockResolvedValueOnce(
-        new Response("Tavily error", { status: 500 })
+        new Response("Search engine error", { status: 500 })
       )
       .mockResolvedValueOnce(
         new Response("DuckDuckGo HTML response", { status: 200 })
       );
 
-    const r1 = await fetch("https://api.tavily.com/search");
+    const r1 = await fetch("https://html.duckduckgo.com/html/");
     expect(r1.status).toBe(500);
     const r2 = await fetch("https://html.duckduckgo.com/html/");
     expect(r2.status).toBe(200);
