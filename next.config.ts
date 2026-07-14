@@ -3,6 +3,12 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   output: "standalone",
   reactStrictMode: true,
+  // Allow large file uploads (documents up to 50MB). Without this, Next.js
+  // defaults to a 10MB body size limit and silently truncates uploads,
+  // causing the formData() parser to fail with "Expected multipart/form-data".
+  experimental: {
+    serverActions: { bodySizeLimit: "50mb" },
+  },
   async headers() {
     return [
       {
