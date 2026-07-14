@@ -22,14 +22,15 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: { message?: string };
+  let body: { message?: string; query?: string };
   try {
     body = await req.json();
   } catch {
     return Response.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const message = (body.message || "").trim();
+  // Accept both "message" and "query" fields for flexibility.
+  const message = (body.message || body.query || "").trim();
   if (!message) {
     return Response.json({ error: "Message is required" }, { status: 400 });
   }

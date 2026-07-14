@@ -16,14 +16,20 @@ import fs from "fs";
 let dbInstance: Database.Database | null = null;
 
 function getDbPath(): string {
+  let dbPath: string;
   // Default to ./data/research.db. Allow override via DATABASE_URL.
   const url = process.env.DATABASE_URL;
   if (url && url.startsWith("file:")) {
     const p = url.slice(5);
-    return path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+    dbPath = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+  } else {
+    dbPath = path.join(process.cwd(), "data", "research.db");
   }
-  // Default path — ensure the data directory exists.
-  const dir = path.join(process.cwd(), "data");
+  // Ensure the parent directory exists (for both default and DATABASE_URL
+  // paths). Without this, better-sqlite3 fails with "directory does not
+  // exist" on a fresh clone, and the app falls back to in-memory — which
+  // breaks persistence.
+  const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
     try {
       fs.mkdirSync(dir, { recursive: true });
@@ -31,7 +37,7 @@ function getDbPath(): string {
       /* ignore — may be read-only env */
     }
   }
-  return path.join(dir, "research.db");
+  return dbPath;
 }
 
 function initSchema(db: Database.Database): void {
