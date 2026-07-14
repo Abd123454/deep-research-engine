@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import type { LogEntry } from "@/lib/types";
 import { LOG_COLORS, LOG_PREFIX } from "@/lib/research-ui-utils";
 import { useT } from "@/components/i18n/locale-provider";
+import { ExportMenu } from "@/components/export/ExportMenu";
 
 // ---------- ReportViewer ----------
 
@@ -35,7 +36,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: 
               <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
             )}
           </div>
-          <div className="flex gap-1">
+          <div className="flex gap-1 items-center">
             <Button
               variant="ghost"
               size="sm"
@@ -45,15 +46,13 @@ export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: 
               {copied ? <Check className="h-3 w-3" /> : <Copy className="h-3 w-3" />}
               Copy
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onDownload}
-              className="h-7 gap-1 text-xs"
-            >
-              <Download className="h-3 w-3" />
-              .md
-            </Button>
+            {!streaming && report && (
+              <ExportMenu
+                content={report}
+                filename="research-report"
+                className=""
+              />
+            )}
           </div>
         </div>
         <article className="px-5 py-4 prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:scroll-mt-20 prose-headings:font-semibold prose-a:text-primary prose-a:no-underline hover:prose-a:underline prose-strong:font-semibold prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-blockquote:border-l-primary prose-blockquote:not-italic">

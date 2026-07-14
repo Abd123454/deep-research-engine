@@ -82,7 +82,12 @@ export type StringKey =
   | "suggestQuestionsBtn"
   | "answer"
   | "uploading"
-  | "noDocuments";
+  | "noDocuments"
+  | "exportAs"
+  | "exportPdf"
+  | "exportDocx"
+  | "exportMd"
+  | "exporting";
 
 type Dictionary = Record<StringKey, string>;
 
@@ -153,6 +158,11 @@ export const STRINGS: Record<Locale, Dictionary> = {
     answer: "Answer",
     uploading: "Uploading & extracting...",
     noDocuments: "No documents yet. Upload one to get started.",
+    exportAs: "Export as",
+    exportPdf: "Export as PDF",
+    exportDocx: "Export as DOCX",
+    exportMd: "Export as Markdown",
+    exporting: "Exporting...",
   },
   ar: {
     appName: "البحث العميق",
@@ -220,6 +230,11 @@ export const STRINGS: Record<Locale, Dictionary> = {
     answer: "الإجابة",
     uploading: "جارٍ الرفع والاستخراج...",
     noDocuments: "لا توجد مستندات بعد. ارفع واحدًا للبدء.",
+    exportAs: "تصدير كـ",
+    exportPdf: "تصدير كـ PDF",
+    exportDocx: "تصدير كـ DOCX",
+    exportMd: "تصدير كـ Markdown",
+    exporting: "جارٍ التصدير...",
   },
 };
 

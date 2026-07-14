@@ -14,6 +14,7 @@ import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n/locale-provider";
+import { ExportMenu } from "@/components/export/ExportMenu";
 import type { QAMode } from "@/lib/document-qa";
 
 interface DocListItem {
@@ -391,6 +392,14 @@ export function DocumentsMode() {
                     </span>
                     {streaming && (
                       <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+                    )}
+                    {!streaming && answer && (
+                      <div className="ml-auto">
+                        <ExportMenu
+                          content={answer}
+                          filename={`${selectedDoc.filename.replace(/\.[^.]+$/, "")}-answer`}
+                        />
+                      </div>
                     )}
                   </div>
                   {answer ? (
