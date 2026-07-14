@@ -880,6 +880,7 @@ Write a comprehensive long-form Deep Research report answering the original quer
       job.reportStream.push(token);
     },
   });
+  trackLLMTokens(job, result);
 
   job.reportStreaming = false;
   log(job, "success", "synthesizing", `Report written (${result.content.length} chars).`);
@@ -901,6 +902,7 @@ Write a comprehensive long-form Deep Research report answering the original quer
         maxTokens: config.reportMaxTokens,
         temperature: 0.3,
       });
+      trackLLMTokens(job, critiqueResult);
       if (critiqueResult.content.length > result.content.length * 0.7) {
         finalReport = critiqueResult.content;
         const delta = finalReport.length - result.content.length;
@@ -924,6 +926,7 @@ Write a comprehensive long-form Deep Research report answering the original quer
       content: `Report title: ${job.plan?.title || "Research Report"}\n\nReport excerpt (first 1000 chars):\n${result.content.slice(0, 1000)}\n\nGenerate 3 follow-up questions as a JSON array: ["question 1", "question 2", "question 3"]`,
     };
     const fqResult = await llm.fast({ messages: [fqSys, fqUser], maxTokens: 300, temperature: 0.5, json: true });
+    trackLLMTokens(job, fqResult);
     try {
       const parsed = JSON.parse(fqResult.content);
       if (Array.isArray(parsed)) {
