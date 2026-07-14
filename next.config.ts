@@ -20,6 +20,9 @@ const nextConfig: NextConfig = {
   // require (loaded at runtime, not bundled). This is the same fix used
   // for any native addon (sharp, bcrypt, etc.) in Next.js.
   serverExternalPackages: ["better-sqlite3"],
+  // Allow the preview/sandbox environment to load _next/* resources.
+  // Without this, the preview iframe gets cross-origin errors.
+  allowedDevOrigins: ["*.space-z.ai", "*.z.ai", "localhost", "127.0.0.1"],
   async headers() {
     return [
       {
