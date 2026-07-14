@@ -40,10 +40,25 @@ function randomUA(): string {
 }
 
 // Convert a natural-language sub-question into search keywords.
-// GitHub, Wikipedia, and DDG-JSON are keyword-based and return poor results
-// for full sentences like "What is RISC-V instruction set architecture?".
-// We strip question words, articles, and punctuation, keeping the topical
-// terms. e.g. "What is RISC-V instruction set architecture?" -> "RISC-V instruction set architecture".
+//
+// GitHub, Wikipedia, and DDG-JSON are keyword-based. Full sentences return
+// poor results, and naive "take the first N words" produces garbage like
+// "History and development" (which matches the Mozilla Firefox article).
+//
+// We tokenize, score each token by topic-ness, drop stop words, and build
+// the query from the highest-scoring tokens (preserving original order).
+//
+// Scoring (higher = more likely to be the topic):
+//   5 — all-caps acronym (≥2 letters): ARM, ISA, CPU
+//   5 — hyphenated or contains a digit: RISC-V, x86, COVID-19
+//   4 — capitalized word NOT at sentence start (proper noun): Firefox, Berkeley
+//   2 — other non-stopword
+//   1 — generic content word: history, development, overview, applications
+//   0 — stop word (dropped): the, of, and, vs, how, what...
+//
+// Example: "History and development of RISC-V instruction set architecture"
+//   -> RISC-V(5) instruction(2) set(2) architecture(2) history(1) development(1)
+//   -> top 5: "RISC-V instruction set architecture history"  (proper noun first)
 const STOP_WORDS = new Set([
   "what", "whats", "who", "whos", "when", "where", "why", "how",
   "is", "are", "was", "were", "be", "been", "being",
@@ -55,35 +70,101 @@ const STOP_WORDS = new Set([
   "tradeoffs", "trade-off", "their",
 ]);
 
-function toKeywords(query: string): string {
-  // Remove punctuation, split on whitespace, drop stop words.
-  const words = query
-    .replace(/[?.,!;:'"()]/g, " ")
+// Generic content words that appear in sub-questions but rarely identify the
+// topic. Kept (not dropped) but scored low so proper nouns outrank them.
+const GENERIC_WORDS = new Set([
+  "history", "development", "overview", "introduction", "background",
+  "applications", "details", "aspects", "implications", "analysis",
+  "comparison", "differences", "tradeoffs", "examples", "types",
+  "features", "benefits", "challenges", "limitations", "advantages",
+  "disadvantages", "pros", "cons", "use", "cases", "current", "state",
+  "future", "trends", "market", "industry", "ecosystem", "community",
+  "design", "principles", "concepts", "fundamentals", "basics",
+  "guide", "tutorial", "review", "summary", "approach", "method",
+]);
+
+interface ScoredToken {
+  word: string;
+  score: number;
+  index: number;
+}
+
+function scoreToken(word: string, index: number, total: number): number {
+  const lower = word.toLowerCase();
+  if (STOP_WORDS.has(lower)) return 0;
+  // All-caps acronym (≥2 letters, not a single all-caps word like "I").
+  if (word.length >= 2 && /^[A-Z][A-Z]+$/.test(word)) return 5;
+  // Hyphenated or contains a digit: RISC-V, x86, C++, COVID-19.
+  if (/[0-9]/.test(word) || (word.includes("-") && word.length > 1)) return 5;
+  // Capitalized word NOT at sentence start → proper noun.
+  if (/^[A-Z][a-z]/.test(word) && index > 0) return 4;
+  // Generic content word.
+  if (GENERIC_WORDS.has(lower)) return 1;
+  return 2;
+}
+
+function tokenize(query: string): string[] {
+  // Keep hyphens, digits, plus signs inside tokens. Split on whitespace and
+  // sentence punctuation.
+  return query
+    .replace(/[?.,!;:'"()\\]/g, " ")
     .replace(/\s+/g, " ")
     .trim()
     .split(" ")
-    .filter((w) => w.length > 1)
-    .filter((w) => !STOP_WORDS.has(w.toLowerCase()));
-  // If we stripped too much (e.g. all stop words), fall back to original
-  // minus question mark.
-  if (words.length < 2) {
-    return query.replace(/[?]/g, "").trim();
-  }
-  return words.join(" ");
+    .filter((w) => w.length > 1);
 }
 
-// Produce progressively shorter keyword queries for fallback.
-// e.g. "RISC-V instruction set architecture" -> ["RISC-V instruction set architecture", "RISC-V instruction", "RISC-V"]
-function progressiveKeywords(query: string): string[] {
-  const base = toKeywords(query);
-  const words = base.split(" ");
-  if (words.length <= 2) return [base];
-  const out = [base];
-  // Step down to first 4, then 3, then 2 words.
-  for (let n = Math.min(4, words.length - 1); n >= 2; n--) {
-    out.push(words.slice(0, n).join(" "));
+function toKeywords(query: string): string {
+  const tokens = tokenize(query);
+  if (tokens.length === 0) return query.replace(/[?]/g, "").trim();
+  const scored: ScoredToken[] = tokens.map((w, i) => ({
+    word: w,
+    score: scoreToken(w, i, tokens.length),
+    index: i,
+  }));
+  // Drop stop words (score 0).
+  const kept = scored.filter((t) => t.score > 0);
+  if (kept.length < 2) {
+    // Fallback: return original minus punctuation.
+    return tokens.join(" ");
   }
-  return out;
+  // Take top 5 by score, then re-sort by original index to preserve order.
+  const top = kept
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 5)
+    .sort((a, b) => a.index - b.index);
+  return top.map((t) => t.word).join(" ");
+}
+
+// Produce a fallback query containing ONLY the high-signal tokens
+// (proper nouns / acronyms / alphanumeric). Used when the full keyword
+// query returns 0 results.
+function toCoreTopic(query: string): string {
+  const tokens = tokenize(query);
+  const scored: ScoredToken[] = tokens.map((w, i) => ({
+    word: w,
+    score: scoreToken(w, i, tokens.length),
+    index: i,
+  }));
+  const core = scored
+    .filter((t) => t.score >= 4)
+    .sort((a, b) => a.index - b.index)
+    .map((t) => t.word);
+  return core.length >= 1 ? core.join(" ") : toKeywords(query);
+}
+
+// Produce a single-token query from the FIRST high-signal token. Used as a
+// last-resort fallback when multi-token queries return 0 (e.g. a sub-question
+// comparing "RISC-V vs ARM vs x86" — no single article covers all three, but
+// searching for "RISC-V" alone returns the canonical article).
+function toPrimaryTopic(query: string): string {
+  const tokens = tokenize(query);
+  for (let i = 0; i < tokens.length; i++) {
+    if (scoreToken(tokens[i]!, i, tokens.length) >= 4) {
+      return tokens[i]!;
+    }
+  }
+  return toKeywords(query).split(" ")[0] || query;
 }
 
 function looksLikeCaptcha(html: string): boolean {
@@ -479,38 +560,41 @@ async function duckduckgoSearch(
     }
   }
 
-  // 4. ALWAYS supplement with Wikipedia (free, no key, reliable).
-  //    We use progressively shorter keyword queries because the Wikipedia
-  //    opensearch API is keyword-based: a full sub-question returns 0, but
-  //    the core topic (e.g. "RISC-V") returns the canonical article.
+  // 4. ALWAYS supplement with Wikipedia (free, no key, reliable article URLs).
+  //    Wikipedia's opensearch API is keyword-based. We try up to three
+  //    keyword variants in order of decreasing specificity:
+  //      (a) full scored keywords: "RISC-V instruction set architecture history"
+  //      (b) core topic (proper nouns only): "RISC-V"
+  //      (c) primary topic (first proper noun): "RISC-V"
+  //    This guarantees results even for comparison-style sub-questions like
+  //    "RISC-V vs ARM vs x86" where no single article covers all terms.
   let wikiResults: SearchResultItem[] = [];
-  const wikiKws = progressiveKeywords(query);
+  const wikiPrimary = toKeywords(query);
+  const wikiCore = toCoreTopic(query);
+  const wikiSingle = toPrimaryTopic(query);
+  const wikiKws = [wikiPrimary, wikiCore, wikiSingle];
   for (const kw of wikiKws) {
     if (wikiResults.length >= Math.ceil(num / 2)) break;
+    // Skip duplicate keyword variants (e.g. core == single for simple queries).
+    if (wikiResults.length > 0 && kw === wikiSingle && wikiCore === wikiSingle) break;
     try {
       const r = await wikipediaSearch(kw, num);
-      if (r.length > 0) { wikiResults = [...wikiResults, ...r]; }
+      if (r.length > 0) wikiResults = [...wikiResults, ...r];
     } catch (err) {
       errors.push(`wiki(${kw}): ${err instanceof Error ? err.message : String(err)}`);
-      break; // rate-limited or network — stop trying Wikipedia variants.
+      break; // rate-limited or network — stop trying Wikipedia.
     }
   }
 
-  // 5. ALWAYS supplement with GitHub (free, no key, fetchable URLs).
-  //    GitHub repo pages extract cleanly via Readability and are never
-  //    CAPTCHA'd. We use progressively shorter keyword queries so even
-  //    niche sub-questions fall back to the core topic.
+  // 5. ALWAYS supplement with GitHub (free, no key, fetchable repo URLs).
+  //    GitHub's unauthenticated search API allows 10 req/min, so we make
+  //    a SINGLE call. We use the primary topic (first proper noun) because
+  //    GitHub search is strict and multi-term queries often return 0.
   let ghResults: SearchResultItem[] = [];
-  const ghKws = progressiveKeywords(query);
-  for (const kw of ghKws) {
-    if (ghResults.length >= Math.min(num, 5)) break;
-    try {
-      const r = await githubSearch(kw, Math.min(num, 5));
-      if (r.length > 0) { ghResults = [...ghResults, ...r]; }
-    } catch (err) {
-      errors.push(`github(${kw}): ${err instanceof Error ? err.message : String(err)}`);
-      break;
-    }
+  try {
+    ghResults = await githubSearch(toPrimaryTopic(query), Math.min(num, 5));
+  } catch (err) {
+    errors.push(`github: ${err instanceof Error ? err.message : String(err)}`);
   }
 
   // Combine: Wikipedia first (encyclopedic), then DDG (broad web),
