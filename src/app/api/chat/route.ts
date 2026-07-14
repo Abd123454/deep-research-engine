@@ -134,6 +134,20 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = DEFAULT_USER_ID; // TODO: use session user ID when auth is active
+
+  // LLM availability check — return 503 before starting the stream if no
+  // provider is configured. This prevents 200 OK + error-in-stream.
+  try {
+    const llm = await getLLM();
+    // Smoke check: if getLLM() throws (no API key), we catch it here.
+    void llm;
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: "LLM service unavailable", detail: err instanceof Error ? err.message : String(err) },
+      { status: 503 }
+    );
+  }
+
   const conversationId = await getOrCreateConversation(body.conversationId || null, userId, message);
 
   // Save user message.

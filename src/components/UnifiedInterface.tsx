@@ -25,9 +25,15 @@ import { QuickCard } from "@/components/cards/QuickCard";
 import { ResearchCard } from "@/components/cards/ResearchCard";
 import { DocumentCard } from "@/components/cards/DocumentCard";
 import { ChatCard } from "@/components/cards/ChatCard";
-import { HistoryDrawer } from "@/components/history/HistoryDrawer";
-import { MemoryPanel } from "@/components/memory/MemoryPanel";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+
+// Lazy load heavy drawers — they're only needed when opened.
+const HistoryDrawer = React.lazy(() =>
+  import("@/components/history/HistoryDrawer").then((m) => ({ default: m.HistoryDrawer }))
+);
+const MemoryPanel = React.lazy(() =>
+  import("@/components/memory/MemoryPanel").then((m) => ({ default: m.MemoryPanel }))
+);
 import type { SessionType } from "@/lib/session-store";
 import ReactMarkdown from "react-markdown";
 
@@ -275,14 +281,18 @@ export function UnifiedInterface() {
       />
 
       {/* History drawer */}
-      <HistoryDrawer
-        open={historyOpen}
-        onClose={() => setHistoryOpen(false)}
-        onSelect={handleSelectSession}
-      />
+      <React.Suspense fallback={null}>
+        <HistoryDrawer
+          open={historyOpen}
+          onClose={() => setHistoryOpen(false)}
+          onSelect={handleSelectSession}
+        />
+      </React.Suspense>
 
       {/* Memory panel */}
-      <MemoryPanel open={memoryOpen} onClose={() => setMemoryOpen(false)} />
+      <React.Suspense fallback={null}>
+        <MemoryPanel open={memoryOpen} onClose={() => setMemoryOpen(false)} />
+      </React.Suspense>
     </div>
   );
 }

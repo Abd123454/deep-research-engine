@@ -41,7 +41,17 @@ export async function POST(req: Request) {
     );
   }
 
-  const llm = await getLLM();
+  // LLM availability check — return 503 before starting the stream if no
+  // provider is configured. This prevents 200 OK + error-in-stream.
+  let llm;
+  try {
+    llm = await getLLM();
+  } catch (err) {
+    return Response.json(
+      { ok: false, error: "LLM service unavailable", detail: err instanceof Error ? err.message : String(err) },
+      { status: 503 }
+    );
+  }
 
   const sys: LLMMessage = {
     role: "system",
