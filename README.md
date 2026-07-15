@@ -31,7 +31,7 @@ It's not as polished as commercial tools. It probably never will be. But it's mi
 
 ### Interface
 - **3-column layout** — Sidebar (conversations) + Chat (main) + Artifacts (interactive HTML/React/SVG/code).
-- **5-layer memory** — conversation, long-term semantic, research history, documents, preferences.
+- **5-layer memory** — conversation, long-term (text-based semantic search via LIKE), research history, documents, preferences.
 - **PWA** — installable, offline indicator, service worker.
 
 ### Cross-Platform
