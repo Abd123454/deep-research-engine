@@ -41,17 +41,19 @@ export async function POST(req: Request) {
     );
   }
 
-  // LLM availability check — return 503 before starting the stream if no
-  // provider is configured. This prevents 200 OK + error-in-stream.
-  let llm;
-  try {
-    llm = await getLLM();
-  } catch (err) {
+  // Explicit LLM provider check — return 503 BEFORE starting the stream.
+  const hasNvidia = !!process.env.NVIDIA_API_KEY;
+  const hasOpenai = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasOllama = !!process.env.OLLAMA_URL;
+  if (!hasNvidia && !hasOpenai && !hasAnthropic && !hasOllama) {
     return Response.json(
-      { ok: false, error: "LLM service unavailable", detail: err instanceof Error ? err.message : String(err) },
+      { ok: false, error: "No LLM provider configured. Set NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_URL." },
       { status: 503 }
     );
   }
+
+  const llm = await getLLM();
 
   const sys: LLMMessage = {
     role: "system",

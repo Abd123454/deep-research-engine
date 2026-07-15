@@ -133,17 +133,19 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: rl.reason }, { status: 429 });
   }
 
-  const userId = DEFAULT_USER_ID; // TODO: use session user ID when auth is active
+  const userId = DEFAULT_USER_ID;
 
-  // LLM availability check — return 503 before starting the stream if no
-  // provider is configured. This prevents 200 OK + error-in-stream.
-  try {
-    const llm = await getLLM();
-    // Smoke check: if getLLM() throws (no API key), we catch it here.
-    void llm;
-  } catch (err) {
+  // Explicit LLM provider check — return 503 BEFORE starting the stream.
+  // getLLM() is lazy and won't throw until smart() is called inside the
+  // stream, which would return 200 + error-in-stream. This explicit check
+  // prevents that.
+  const hasNvidia = !!process.env.NVIDIA_API_KEY;
+  const hasOpenai = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasOllama = !!process.env.OLLAMA_URL;
+  if (!hasNvidia && !hasOpenai && !hasAnthropic && !hasOllama) {
     return Response.json(
-      { ok: false, error: "LLM service unavailable", detail: err instanceof Error ? err.message : String(err) },
+      { ok: false, error: "No LLM provider configured. Set NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_URL." },
       { status: 503 }
     );
   }

@@ -11,11 +11,11 @@ export interface Artifact {
 }
 
 export function detectArtifact(response: string): Artifact | null {
-  if (!response || response.length < 50) return null;
+  if (!response || response.length < 20) return null;
 
   // 1. HTML block: ```html ... ```
   const htmlMatch = response.match(/```html\s*\n([\s\S]*?)```/i);
-  if (htmlMatch && htmlMatch[1] && htmlMatch[1].length > 30) {
+  if (htmlMatch && htmlMatch[1] && htmlMatch[1].trim().length > 10) {
     return { type: "html", content: htmlMatch[1].trim(), title: "HTML Preview", language: "html" };
   }
 

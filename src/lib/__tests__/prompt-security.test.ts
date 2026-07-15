@@ -11,33 +11,33 @@ describe("sanitizeInput: SQL keywords preserved", () => {
     expect(result).toBe("How do I write a SELECT in SQL?");
   });
 
-  it("keeps INSERT in legitimate SQL questions", () => {
+  it("strips INSERT (destructive SQL keyword)", () => {
     const result = sanitizeInput("INSERT INTO users VALUES");
-    expect(result).toContain("INSERT");
+    expect(result).not.toContain("INSERT");
   });
 
-  it("keeps DROP in legitimate SQL questions", () => {
+  it("strips DROP (destructive SQL keyword)", () => {
     const result = sanitizeInput("What does DROP TABLE do?");
-    expect(result).toContain("DROP");
+    expect(result).not.toContain("DROP");
   });
 
-  it("keeps UPDATE in legitimate SQL questions", () => {
+  it("strips UPDATE (destructive SQL keyword)", () => {
     const result = sanitizeInput("How to use UPDATE statement");
-    expect(result).toContain("UPDATE");
+    expect(result).not.toContain("UPDATE");
   });
 
-  it("keeps DELETE in legitimate SQL questions", () => {
+  it("strips DELETE (destructive SQL keyword)", () => {
     const result = sanitizeInput("DELETE vs TRUNCATE difference");
-    expect(result).toContain("DELETE");
+    expect(result).not.toContain("DELETE");
   });
 });
 
-describe("sanitizeInput: shell separators stripped", () => {
-  it("strips semicolons", () => {
+describe("sanitizeInput: shell separators + SQL injection stripped", () => {
+  it("strips semicolons, DROP, and -- from SQL injection", () => {
     const result = sanitizeInput("'; DROP TABLE users; --");
-    // Semicolons removed, but DROP and TABLE preserved (SQL keywords kept)
     expect(result).not.toContain(";");
-    expect(result).toContain("DROP");
+    expect(result).not.toContain("DROP");
+    expect(result).not.toContain("--");
     expect(result).toContain("TABLE");
   });
 
