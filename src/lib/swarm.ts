@@ -41,7 +41,14 @@ import { detectToolCall, executeToolCall, getToolsDescription } from "./agent-to
 
 // ---------- Types ----------
 
-export type AgentRole = "researcher" | "coder" | "analyst" | "writer" | "generalist";
+export type AgentRole =
+  | "researcher"
+  | "coder"
+  | "analyst"
+  | "writer"
+  | "generalist"
+  | "security_analyst"
+  | "electrical_engineer";
 
 export interface Subtask {
   id: string;
@@ -88,6 +95,38 @@ Present findings with clear reasoning.`,
 Focus on readability, flow, and tone. No need for tools unless essential.`,
   generalist: `You are a Generalist agent in a swarm. Handle your subtask using any available tool.
 Be concise and complete.`,
+  security_analyst: `You are a Cybersecurity Analyst agent in a swarm. You specialize in:
+- Threat modeling and risk assessment
+- Vulnerability analysis (CVE, OWASP Top 10)
+- Security architecture review
+- Compliance frameworks (ISO 27001, NIST, PCI DSS)
+- Incident response and forensics
+- Network security and cryptography
+
+When analyzing security topics:
+1. Cite specific CVEs, standards, or frameworks
+2. Provide risk ratings (Critical/High/Medium/Low)
+3. Recommend mitigations with priority
+4. Reference OWASP, NIST, or CIS controls
+5. Consider attack vectors and threat actors
+
+Use the web_search tool to find current CVEs and advisories. Be precise and technical. Security requires accuracy.`,
+  electrical_engineer: `You are an Electrical Engineering agent in a swarm. You specialize in:
+- Industrial electrical systems (PLC, SCADA, DCS)
+- Power distribution and protection
+- Motor control and drives (VFD, soft starters)
+- Electrical safety (NFPA 70E, IEC 60364)
+- Power quality and harmonics
+- Energy efficiency and optimization
+
+When analyzing electrical topics:
+1. Reference relevant standards (IEC, IEEE, NEC)
+2. Provide calculations with formulas
+3. Consider safety implications
+4. Recommend equipment ratings and specifications
+5. Address power quality and efficiency
+
+Use the web_search tool for standards and specs, and run_code (Python) for calculations. Be precise with units, ratings, and calculations.`,
 };
 
 const ROLE_TOOLS: Record<AgentRole, string[]> = {
@@ -96,6 +135,8 @@ const ROLE_TOOLS: Record<AgentRole, string[]> = {
   analyst: ["run_code", "web_search"],
   writer: [],
   generalist: ["web_search", "run_code"],
+  security_analyst: ["web_search"],
+  electrical_engineer: ["web_search", "run_code"],
 };
 
 // ---------- Orchestrator: plan the task ----------
@@ -108,12 +149,14 @@ Available agent roles:
 - analyst: analyzes data, does calculations (has run_code, web_search)
 - writer: crafts prose, summaries, explanations (no tools)
 - generalist: flexible, has all tools
+- security_analyst: cybersecurity specialist — threat modeling, CVEs, OWASP, compliance (has web_search)
+- electrical_engineer: industrial electrical systems — PLC, power, motors, safety standards (has web_search, run_code)
 
 Rules:
 1. Return ONLY valid JSON (no markdown, no explanation).
 2. Create 2-4 subtasks. More than 4 is wasteful; fewer than 2 is under-utilizing the swarm.
 3. Each subtask must be independent enough to run in parallel.
-4. Assign the most fitting role to each subtask.
+4. Assign the most fitting role to each subtask. Use security_analyst for cybersecurity topics, electrical_engineer for electrical/power/industrial topics.
 5. Descriptions should be specific and actionable.
 
 Output format:
@@ -163,7 +206,7 @@ export async function planSwarm(
 }
 
 function validateRole(role: unknown): role is AgentRole {
-  return typeof role === "string" && ["researcher", "coder", "analyst", "writer", "generalist"].includes(role);
+  return typeof role === "string" && ["researcher", "coder", "analyst", "writer", "generalist", "security_analyst", "electrical_engineer"].includes(role);
 }
 
 // ---------- Worker: execute a subtask ----------

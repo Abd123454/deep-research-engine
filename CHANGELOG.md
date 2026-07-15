@@ -1,5 +1,52 @@
 # Changelog
 
+## [0.6.0] — Round 12: Eval Harness + Source Quality + JS Rendering + Domain Agents
+
+### Added — Evaluation Harness (Phase 12B)
+- `src/lib/eval/dataset.ts`: 20 eval queries (10 research, 5 coding, 5 factual) with objective pass/fail criteria (expected sources, keywords, code tests).
+- `src/lib/eval/runner.ts`: `runEval()` + `runEvalSuite()` with summary metrics (pass rate, avg score, tokens, time, by-type breakdown).
+- `POST /api/eval`: admin-only endpoint (10-min rate limit) to run the suite. `GET /api/eval` returns dataset metadata.
+- `scripts/eval.ts`: CLI with per-query table + JSON output. Usage: `bun run eval` or `bun run eval r1 r2 f1` or `bun run eval --type=factual`.
+- 17 tests (dataset structure, factual/coding/research pass-fail, suite summary).
+
+### Added — Source Quality Scoring (Phase 12C)
+- `src/lib/source-quality.ts`: `scoreSource()` + `rankSources()` + `rankSourcesWithMinimum()`.
+- Tier 1 (95+): .edu, .gov, .mil, wikipedia, nature, science, ieee, arxiv, reuters, bbc, nytimes, pubmed, scholar.google.
+- Tier 2 (70+): github, stackoverflow, MDN, w3.org, medium, dev.to.
+- Tier 3 (50+): everything else. Adjustments: +5 HTTPS, +5 substantial snippet, -20 sponsored content.
+- Sources scoring < 30 dropped; minimum 3 guaranteed (prevents source starvation).
+- Wired into `retriever.ts` `searchWeb()`: raw results → rank → return.
+- 19 tests (tier classification, bonuses, penalties, sorting, dropping, minimum recovery).
+
+### Added — JS-Rendered Page Reading (Phase 12D)
+- `src/lib/page-reader-js.ts`: `readPageWithJS()` + `isPlaywrightAvailable()`.
+- Dynamic import of Playwright (optional dependency — graceful error if not installed).
+- Headless chromium, 15s timeout, 1s render wait. Strips script/style/nav/footer/ads.
+- Wired into `page-reader.ts` `readPage()`: if direct fetch returns < 200 chars (SPA shell), falls back to Playwright.
+- Injection scan applied to JS-rendered content too.
+- 10 tests (availability, graceful absence, fallback trigger, normal path, non-HTML, fetch errors, abort, interface shape).
+
+### Added — Domain Agents (Phase 12E)
+- `security_analyst` role: cybersecurity specialist (threat modeling, CVEs, OWASP, compliance). Has web_search.
+- `electrical_engineer` role: industrial electrical systems (PLC, power, motors, safety standards). Has web_search + run_code.
+- Updated orchestrator prompt to mention the new roles so the LLM can assign them.
+- Updated `validateRole()` to accept the new roles.
+- 8 tests (role assignment, worker execution, tool access, fallback).
+
+### Fixed — README Honesty (Phase 12A)
+- Removed false claims: "No persistent storage" (it's wired since v0.5.1), "39 tests" (409+).
+- Added complete Features section covering all 16 features.
+- Added honest Known Limitations (research-engine coverage ~23%, no mobile app, no multi-user isolation, rate limiter in-memory without Redis, Docker sandbox requires Docker, Playwright adds ~150MB).
+- Updated Tech Stack, Configuration, Quick Start for v7.0.
+
+### Changed
+- `src/lib/swarm.ts`: Added `security_analyst` and `electrical_engineer` to `AgentRole`, `ROLE_PROMPTS`, `ROLE_TOOLS`, `PLAN_SYSTEM_PROMPT`, `validateRole()`.
+- `src/lib/retriever.ts`: `searchWeb()` now ranks sources by quality before returning.
+- `src/lib/page-reader.ts`: `readPage()` falls back to Playwright for SPA pages.
+- `package.json`: Added `eval` script. Version 0.5.1 → 0.6.0.
+- Tests: 409 pass + 1 skip (was 355+1; +54 tests across 5 phases).
+- New files: `src/lib/eval/dataset.ts`, `src/lib/eval/runner.ts`, `src/lib/source-quality.ts`, `src/lib/page-reader-js.ts`, `src/app/api/eval/route.ts`, `scripts/eval.ts`, + 5 test files.
+
 ## [0.5.1] — Round 11: Wiring Round (no new features, just connecting built-but-disconnected systems)
 
 ### Fixed — Multi-provider Fallback (WIRING)
