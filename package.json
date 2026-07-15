@@ -13,7 +13,8 @@
     "start": "NODE_ENV=production bun .next/standalone/server.js 2>&1 | tee server.log",
     "lint": "eslint .",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "eval": "bun run scripts/eval.ts"
   },
   "dependencies": {
     "@mozilla/readability": "^0.6.0",
