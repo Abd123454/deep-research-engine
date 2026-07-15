@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Deep Research Engine</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="popup">
+      <header class="header">
+        <div class="brand">
+          <span class="brand-logo" aria-hidden="true">
+            <svg viewBox="0 0 128 128" width="28" height="28">
+              <rect width="128" height="128" rx="28" fill="currentColor" />
+              <path fill="#fff" d="M64 24 L72 56 L104 64 L72 72 L64 104 L56 72 L24 64 L56 56 Z" />
+              <path fill="#fff" opacity="0.85" d="M96 18 L99 27 L108 30 L99 33 L96 42 L93 33 L84 30 L93 27 Z" />
+            </svg>
+          </span>
+          <div class="brand-text">
+            <h1>Deep Research Engine</h1>
+            <p>Capture &amp; research this page</p>
+          </div>
+        </div>
+      </header>
+
+      <main class="main">
+        <button class="btn btn-primary" id="researchBtn" type="button">
+          <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path fill="currentColor" d="M12 2l1.6 5.2L19 9l-5.4 1.8L12 16l-1.6-5.2L5 9l5.4-1.8L12 2z"/>
+          </svg>
+          <span>Research this page</span>
+        </button>
+
+        <div class="quick" role="group" aria-label="Quick question">
+          <input
+            id="quickInput"
+            class="input"
+            type="text"
+            placeholder="Quick question about this page…"
+            autocomplete="off"
+          />
+          <button class="btn btn-secondary btn-icon" id="quickBtn" type="button" aria-label="Send quick question">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M3 11l18-8-8 18-2-8-8-2z"/>
+            </svg>
+          </button>
+        </div>
+
+        <div class="grid">
+          <button class="btn btn-ghost" id="deepBtn" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path fill="currentColor" d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+            </svg>
+            <span>Deep research</span>
+          </button>
+          <button class="btn btn-ghost" id="swarmBtn" type="button">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <circle cx="6" cy="7" r="2.4" fill="currentColor"/>
+              <circle cx="18" cy="7" r="2.4" fill="currentColor"/>
+              <circle cx="6" cy="17" r="2.4" fill="currentColor"/>
+              <circle cx="18" cy="17" r="2.4" fill="currentColor"/>
+              <circle cx="12" cy="12" r="2.6" fill="currentColor"/>
+            </svg>
+            <span>Swarm</span>
+          </button>
+        </div>
+
+        <button class="btn btn-ghost btn-block" id="openPanelBtn" type="button">
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path fill="currentColor" d="M3 5h18v14H3V5zm12 2v10h4V7h-4z"/>
+          </svg>
+          <span>Open side panel</span>
+        </button>
+      </main>
+
+      <section class="settings" aria-label="Settings">
+        <div class="settings-row">
+          <label for="baseUrlInput">API base URL</label>
+          <input
+            id="baseUrlInput"
+            class="input"
+            type="url"
+            placeholder="http://localhost:3000"
+            autocomplete="off"
+            spellcheck="false"
+          />
+        </div>
+        <label class="switch-row">
+          <input type="checkbox" id="floatingToggle" />
+          <span>Show floating button on pages</span>
+        </label>
+        <button class="btn btn-link" id="saveSettingsBtn" type="button">Save settings</button>
+        <p class="saved-msg" id="savedMsg" role="status" aria-live="polite"></p>
+      </section>
+
+      <footer class="footer">
+        <span id="pageInfo" class="page-info">Loading current tab…</span>
+      </footer>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

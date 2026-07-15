@@ -76,3 +76,8 @@ Thumbs.db
 .zscripts/
 
 data/
+
+# Electron desktop build output
+/desktop/dist/
+/desktop/release/
+/desktop/node_modules/

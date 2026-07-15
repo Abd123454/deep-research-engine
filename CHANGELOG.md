@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.5.0] — Round 10: Agent Swarm + Browser Extension + Desktop App
+
+### Added — Agent Swarm
+- Multi-agent collaboration system: orchestrator → parallel workers → synthesizer.
+- 5 specialist roles: researcher, coder, analyst, writer, generalist (each with dedicated system prompt + tool access).
+- `src/lib/swarm.ts` — full swarm engine: `planSwarm()`, `runWorker()` (ReAct loop, 3 iterations), `synthesizeSwarm()` (streaming), `runSwarm()` (orchestrator).
+- `POST /api/swarm` — SSE endpoint with 10 event types: swarm_start, agent_start, agent_token, agent_tool, agent_result, agent_done, synth_start, synth_token, swarm_done, error.
+- `SwarmCard` component — live visualization: plan grid, parallel agent activity panel, streaming synthesis, final report with export.
+- "Swarm" mode in unified input dropdown + auto-detect ("swarm:" prefix).
+- Worker failure resilience: failed workers don't break synthesis; error noted in output.
+- 11 unit tests (plan parsing, worker streaming, synthesis, end-to-end orchestration, failure resilience, SSE format).
+
+### Added — Browser Extension
+- `/browser-extension/` — complete Manifest V3 extension (Chrome + Firefox, ~95 KB).
+- 4 actions: Research page, Quick question, Deep research, Swarm analysis.
+- Side panel with streaming markdown chat + offline history (last 20 cached).
+- Page content extraction (title, URL, text ≤10k, description, headings).
+- Opt-in floating "Research with AI" button.
+- Streaming-safe architecture: side panel owns all fetches (survives MV3 service worker termination).
+- Settings: configurable API base URL (synced via chrome.storage.sync).
+
+### Added — Desktop App
+- `/desktop/` — Electron wrapper (separate npm project, electron NOT in main package.json).
+- 1200×800 window, system tray + context menu, native app menu (File/Edit/View/Window/Help).
+- Keyboard shortcuts: Cmd/Ctrl+N (new research), +Shift+N (new chat), +R (reload), +Q (quit), +Alt+N (global new).
+- Single-instance lock, graceful server-wait (polls port 3000 every 2s for 30s → error page).
+- Dark mode via `nativeTheme`, security hardening (contextIsolation, no nodeIntegration, sandbox).
+- Production build config for macOS / Linux / Windows (electron-builder).
+- `contextBridge` API: `window.desktopAPI` exposes platform, version, event listeners.
+
+### Changed
+- ESLint config: ignores `desktop/` and `browser-extension/` (separate vanilla-JS projects).
+- Version bump 0.4.0 → 0.5.0.
+- Tests: 329 pass + 1 skip (was 304 pass + 1 skip; +25 tests across rounds 9–10).
+
 ## [0.4.0] - 2026-07-12
 
 ### Added

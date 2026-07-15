@@ -25,6 +25,7 @@ import { QuickCard } from "@/components/cards/QuickCard";
 import { ResearchCard } from "@/components/cards/ResearchCard";
 import { DocumentCard } from "@/components/cards/DocumentCard";
 import { ChatCard } from "@/components/cards/ChatCard";
+import { SwarmCard } from "@/components/cards/SwarmCard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { detectArtifact, type Artifact } from "@/lib/artifact-detector";
 
@@ -38,7 +39,7 @@ import ReactMarkdown from "react-markdown";
 // ---------- Card entry type ----------
 interface CardEntry {
   id: string;
-  type: "research" | "quick" | "document" | "chat";
+  type: "research" | "quick" | "document" | "chat" | "swarm";
   query: string;
   file?: File;
 }
@@ -257,6 +258,13 @@ export function UnifiedInterface({ onArtifact }: { onArtifact?: (a: Artifact | n
                 return (
                   <ErrorBoundary key={card.id}>
                     <ChatCard initialMessage={card.query} />
+                  </ErrorBoundary>
+                );
+              }
+              if (card.type === "swarm") {
+                return (
+                  <ErrorBoundary key={card.id}>
+                    <SwarmCard task={card.query} />
                   </ErrorBoundary>
                 );
               }
