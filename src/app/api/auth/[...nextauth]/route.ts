@@ -12,8 +12,6 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 
-const DEFAULT_USER_ID = "default";
-
 async function findUserByEmail(email: string): Promise<{ id: string; email: string; name: string | null; passwordHash: string } | null> {
   // Postgres.
   if (isPostgresAvailable()) {

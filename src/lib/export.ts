@@ -8,7 +8,7 @@
 //   headings parsed from the markdown.
 // - MD: direct download of the markdown source.
 
-import { PDFDocument, StandardFonts, PDFFont, PDFPage, rgb } from "pdf-lib";
+import { PDFDocument, StandardFonts, PDFFont, rgb } from "pdf-lib";
 import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
 
 export type ExportFormat = "pdf" | "docx" | "md";

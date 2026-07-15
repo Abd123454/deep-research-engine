@@ -3,12 +3,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Sparkles,
-  Quote,
   RefreshCw,
-  AlertCircle,
-  CheckCircle2,
-  Loader2,
   Square,
   Pencil,
   X,
@@ -27,17 +22,12 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { useT } from "@/components/i18n/locale-provider";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ResearchJob } from "@/lib/types";
 import type { ResearchPlan } from "@/lib/types";
 import {
-  stageMeta,
-  stageProgress,
-  fmtTime,
   dedupeSources,
 } from "@/lib/research-ui-utils";
 import { ResearchInput } from "@/components/research/ResearchInput";
@@ -49,8 +39,6 @@ import { SourcesList } from "@/components/research/SourcesList";
 import { ReportViewer, LiveActivity } from "@/components/research/ReportViewer";
 import { ActivityLogModal } from "@/components/research/ActivityLog";
 import { PlanPreviewLoading } from "@/components/research/PlanPreview";
-
-const MAX_QUERY_CHARS = 100_000;
 
 // Auto-start flow.
 //   idle → planning → researching → done
@@ -89,11 +77,10 @@ export function DeepResearch() {
   // ---------- Job state ----------
   const [job, setJob] = React.useState<ResearchJob | null>(null);
   const [starting, setStarting] = React.useState(false);
-  const [polling, setPolling] = React.useState(false);
+  const [, setPolling] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
   // streaming report state.
   const [streamingReport, setStreamingReport] = React.useState("");
-  const [logsOpen, setLogsOpen] = React.useState(false);
   // expandable sections (collapsed by default).
   const [sourcesExpanded, setSourcesExpanded] = React.useState(false);
   const [subQueriesExpanded, setSubQueriesExpanded] = React.useState(false);
@@ -112,7 +99,6 @@ export function DeepResearch() {
   }, [query]);
 
   const isRunning = job && job.status !== "completed" && job.status !== "failed";
-  const isCancelled = job?.status === "failed" && job?.error === "Cancelled by user";
 
   const dedupedSources = React.useMemo(
     () => (job ? dedupeSources(job.sources) : []),

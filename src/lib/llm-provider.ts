@@ -112,10 +112,6 @@ function isAuthError(msg: string): boolean {
 
 // Model-not-found errors (404) mean that specific model is unavailable —
 // the next model in the chain might work, so continue.
-function isModelError(msg: string): boolean {
-  const m = msg.toLowerCase();
-  return m.includes("404") || m.includes("model not found") || m.includes("does not exist");
-}
 
 async function withRetry<T>(
   fn: () => Promise<T>,

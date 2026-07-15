@@ -30,7 +30,7 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
   const [uploading, setUploading] = React.useState(true);
   const [uploadError, setUploadError] = React.useState("");
   const [textLength, setTextLength] = React.useState(0);
-  const [preview, setPreview] = React.useState("");
+  const [, setPreview] = React.useState("");
 
   // Q&A state
   const [question, setQuestion] = React.useState(initialQuestion || "");

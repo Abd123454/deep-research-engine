@@ -40,7 +40,7 @@ export function useResearchFlow(
     let es: EventSource | null = null;
     let fallbackStarted = false;
 
-    const startFallback = (reason: string) => {
+    const startFallback = (_reason: string) => {
       if (fallbackStarted) return;
       fallbackStarted = true;
       if (es) es.close();

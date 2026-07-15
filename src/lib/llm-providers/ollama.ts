@@ -9,8 +9,6 @@ import type {
 } from "./types";
 import { env, envList } from "../env";
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export class OllamaProvider implements LLMProviderInterface {
   name = "ollama" as const;
   models: string[];

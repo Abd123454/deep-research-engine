@@ -203,7 +203,7 @@ describe("URL filtering", () => {
       new Response('<div class="anomaly-modal">CAPTCHA</div>', { status: 200 })
     );
 
-    const results = await githubSearch("test", 5).catch(() => []);
+    await githubSearch("test", 5).catch(() => []);
     // Directly test githubSearch with mock
     fetchMock.mockReset();
     fetchMock.mockResolvedValueOnce(

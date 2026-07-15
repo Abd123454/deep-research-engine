@@ -656,7 +656,6 @@ export async function searchWeb(
 
   // Map back to SearchResultItem, preserving the original data but
   // reordering by quality score.
-  const rankedUrls = new Map(ranked.map((r) => [r.url, r.score]));
   const result: SearchResultItem[] = [];
   for (const r of ranked) {
     const original = raw.find((s) => s.url === r.url);

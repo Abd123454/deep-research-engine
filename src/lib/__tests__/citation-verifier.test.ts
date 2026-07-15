@@ -168,7 +168,6 @@ RISC-V is open [source](https://en.wikipedia.org/wiki/RISC-V).
 The Eiffel Tower is in Paris [hallucination](https://example.com/fake).
 The manual is [here](https://github.com/riscv/riscv-isa-manual).
 `;
-    const report2 = report + "\n\n## Sources\n\n[1]: https://en.wikipedia.org/wiki/RISC-V";
     const result = verifyAllCitations(report, mockSources);
 
     expect(result.total).toBeGreaterThanOrEqual(2);

@@ -5,12 +5,11 @@
 // synthesize), shows progress, then the final report.
 
 import { motion } from "framer-motion";
-import { Search, Square, Loader2, CheckCircle2, AlertCircle, Sparkles } from "lucide-react";
+import { Search, Square, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/components/i18n/locale-provider";
 import { useResearchFlow } from "@/hooks/useResearchFlow";
 import { ReportViewer } from "@/components/research/ReportViewer";
-import { ResearchStatus } from "@/components/research/ResearchStatus";
 import { SubQueryList } from "@/components/research/SubQueryList";
 import { LiveActivity } from "@/components/research/ReportViewer";
 import { PlanPreviewLoading } from "@/components/research/PlanPreview";

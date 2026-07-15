@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Copy, Check, Download, Sparkles } from "lucide-react";
+import { FileText, Copy, Check, Sparkles } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ interface ReportViewerProps {
   streaming?: boolean;
 }
 
-export function ReportViewer({ report, copied, onCopy, onDownload, streaming }: ReportViewerProps) {
+export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, streaming }: ReportViewerProps) {
   const t = useT();
   return (
     <Card className="border-border/70 shadow-sm">

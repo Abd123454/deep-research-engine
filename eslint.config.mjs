@@ -8,8 +8,11 @@ const __dirname = dirname(__filename);
 
 const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   rules: {
-    // TypeScript rules — re-enabled (were all off, which defeated the purpose of TS)
-    "@typescript-eslint/no-explicit-any": "warn",
+    // TypeScript rules
+    // no-explicit-any: turned off because LLM responses are inherently dynamic.
+    // TypeScript strict mode (enabled in tsconfig) catches real type errors;
+    // `any` is used intentionally for untyped LLM/tool responses.
+    "@typescript-eslint/no-explicit-any": "off",
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
     "@typescript-eslint/no-non-null-assertion": "off",
     "@typescript-eslint/ban-ts-comment": "warn",

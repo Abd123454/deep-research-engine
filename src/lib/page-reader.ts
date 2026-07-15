@@ -13,7 +13,6 @@
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import type { PageReadResult } from "./types";
-import { checkPromptInjection } from "./prompt-security";
 
 const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
 const MAX_TEXT_CHARS = 6000; // cap per-page text to save tokens
@@ -232,7 +231,7 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
         return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
       }
       return result;
-    } catch (err) {
+    } catch {
       // Fall through to direct fetch as a last resort.
     }
   }

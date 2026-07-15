@@ -19,7 +19,7 @@ import { readPages } from "./page-reader";
 import { getJob } from "./research-store";
 import { persistJob } from "./research-store";
 import { releaseConcurrency } from "./rate-limit";
-import { envInt, envStr } from "./env";
+import { envInt } from "./env";
 import {
   checkPromptInjection,
   wrapUserQuery,
@@ -252,7 +252,7 @@ function extractQuestionsJson(text: string): string[] {
   }
   const lines = text
     .split(/\n+/)
-    .map((l) => l.replace(/^\s*(\d+[\.\)]|-|\*|\+)\s*/, "").trim())
+    .map((l) => l.replace(/^\s*(\d+[.)]|-|\*|\+)\s*/, "").trim())
     .filter((l) => l.length > 8 && l.length < 600);
   const questions = lines.filter((l) => l.endsWith("?"));
   if (questions.length > 0) return questions;
@@ -261,7 +261,7 @@ function extractQuestionsJson(text: string): string[] {
 }
 
 function heuristicDecompose(query: string, numSubQueries: number): string[] {
-  const headingSplit = query.split(/\n\s*(?:\d+[\.\)]\s+|#{1,6}\s+)/);
+  const headingSplit = query.split(/\n\s*(?:\d+[.)]\s+|#{1,6}\s+)/);
   if (headingSplit.length >= 2) {
     return headingSplit
       .map((s) => truncateQuestion(s.replace(/\n+/g, " ").trim()))
@@ -421,7 +421,7 @@ function tryParsePlan(text: string): ResearchPlan | null {
 
 function deriveFallbackSections(query: string): PlanSection[] {
   const headingSplit = query
-    .split(/\n\s*(?:\d+[\.\)]\s+|#{1,6}\s+)/)
+    .split(/\n\s*(?:\d+[.)]\s+|#{1,6}\s+)/)
     .map((s) => s.replace(/\n+/g, " ").trim())
     .filter((s) => s.length > 20)
     .slice(0, 9);

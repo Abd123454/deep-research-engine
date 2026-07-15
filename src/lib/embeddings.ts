@@ -11,11 +11,6 @@ import { env } from "./env";
 const MAX_TOKENS_PER_CHUNK = 8000; // ~32K chars per chunk
 const MAX_BATCH_SIZE = 64;
 
-// Approximate token count (~4 chars/token for English).
-function approxTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
-
 // Split text into chunks that fit within the embedding model's token limit.
 function chunkText(text: string): string[] {
   if (text.length <= MAX_TOKENS_PER_CHUNK * 4) return [text];

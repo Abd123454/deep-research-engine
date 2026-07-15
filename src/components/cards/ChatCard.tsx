@@ -6,9 +6,8 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { MessageSquare, Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { MessageSquare, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export/ExportMenu";
 

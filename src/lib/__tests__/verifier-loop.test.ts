@@ -203,7 +203,7 @@ describe("Code verifier loop (Round 11 wiring)", () => {
 
       llmMock.__setMockSmartTokens("trying again...");
 
-      const result = await runWorker(
+      const _result = await runWorker(
         { id: "s1", description: "test", role: "coder" },
         "context",
         () => {}

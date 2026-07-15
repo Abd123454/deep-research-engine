@@ -87,12 +87,9 @@ import {
   detectLanguage,
   resolveConfig,
   runResearch,
-  type DetectedLanguage,
 } from "../research-engine";
-import { createJob, getJob } from "../research-store";
-import { searchWeb } from "../retriever";
-import { readPages } from "../page-reader";
-import type { ResearchJob, ResearchConfig, SubQuery, Source, PageReadResult } from "../types";
+import { getJob } from "../research-store";
+import type { ResearchJob, ResearchConfig, PageReadResult } from "../types";
 
 // ---------- Helpers ----------
 
@@ -149,17 +146,6 @@ function makeJob(query: string = "test query"): ResearchJob {
     abortController: new AbortController(),
     reportStream: [],
     reportStreaming: false,
-  };
-}
-
-function makeSearchResult(url: string, name: string = "Test Result"): Source {
-  return {
-    url,
-    title: name,
-    host: new URL(url).hostname,
-    snippet: "Test snippet for " + name,
-    subQueryId: "sq1",
-    round: 1,
   };
 }
 
@@ -327,7 +313,6 @@ describe("Research Engine — Integration (pipeline functions)", () => {
 
     it("completes full pipeline with mocked dependencies", async () => {
       const job = makeJob("What is quantum computing?");
-      const config = job.config;
       vi.mocked(getJob).mockReturnValue(job);
 
       // Mock plan generation

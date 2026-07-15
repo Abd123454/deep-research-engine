@@ -67,7 +67,7 @@ function extractQuestionsJson(text: string): string[] {
   }
   const lines = text
     .split(/\n+/)
-    .map((l) => l.replace(/^\s*(\d+[\.\)]|-|\*|\+)\s*/, "").trim())
+    .map((l) => l.replace(/^\s*(\d+[.)]|-|\*|\+)\s*/, "").trim())
     .filter((l) => l.length > 8 && l.length < 600);
   const questions = lines.filter((l) => l.endsWith("?"));
   if (questions.length > 0) return questions;

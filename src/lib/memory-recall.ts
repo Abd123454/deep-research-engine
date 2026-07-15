@@ -10,7 +10,7 @@
 //
 // Results are boosted by recency and access frequency.
 
-import { embed, cosineSimilarity } from "./embeddings";
+import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 
 const DEFAULT_USER_ID = "default";

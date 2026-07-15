@@ -48,7 +48,7 @@ vi.mock("../research-store", () => ({
 
 // Mock research-engine to avoid running the full pipeline.
 vi.mock("../research-engine", () => ({
-  runResearch: vi.fn(async (jobId: string) => {
+  runResearch: vi.fn(async (_jobId: string) => {
     // Simulate completion by updating the job via getJob mock.
     return;
   }),

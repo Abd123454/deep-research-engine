@@ -60,7 +60,7 @@ describe("LLM completion — non-streaming", () => {
       })
     );
 
-    const llm = await getLLM();
+    const _llm = await getLLM();
     // With only 1 model, auth error should fast-fail immediately.
     process.env.SMART_LLM_MODELS = "model-1";
     const llm1 = await getLLM();

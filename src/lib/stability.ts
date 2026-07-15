@@ -6,7 +6,6 @@
 // - withFallback: tries multiple operations, returns first success.
 // - systemHealth: checks all subsystems.
 
-import { getLLM } from "./llm-provider";
 import { getDb } from "./db";
 import { getRedis } from "./redis";
 

@@ -1,7 +1,7 @@
 // Tests for the Plan Preview feature: job leak, validation, section caps.
 // These lock in the bug fixes so they can't regress.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock fetch so we don't hit real APIs during route tests.
 const fetchMock = vi.fn();

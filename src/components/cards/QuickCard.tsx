@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Zap, Loader2, Sparkles, AlertCircle } from "lucide-react";
+import { Zap, Sparkles, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";

@@ -27,7 +27,7 @@ import { DocumentCard } from "@/components/cards/DocumentCard";
 import { ChatCard } from "@/components/cards/ChatCard";
 import { SwarmCard } from "@/components/cards/SwarmCard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { detectArtifact, type Artifact } from "@/lib/artifact-detector";
+import { detectArtifact as _detectArtifact, type Artifact } from "@/lib/artifact-detector";
 
 // Lazy load heavy drawers — they're only needed when opened.
 const HistoryDrawer = React.lazy(() =>
@@ -88,11 +88,11 @@ const EXAMPLES = [
 ];
 
 // ---------- Main component ----------
-export function UnifiedInterface({ onArtifact }: { onArtifact?: (a: Artifact | null) => void }) {
+export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a: Artifact | null) => void }) {
   const t = useT();
   const [cards, setCards] = React.useState<CardEntry[]>([]);
   const [historyOpen, setHistoryOpen] = React.useState(false);
-  const [memoryOpen, setMemoryOpen] = React.useState(false);
+  const [_memoryOpen, setMemoryOpen] = React.useState(false);
   const [inputText, setInputText] = React.useState("");
   const [loadedSession, setLoadedSession] = React.useState<{
     title: string;

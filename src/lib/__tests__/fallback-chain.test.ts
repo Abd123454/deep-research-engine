@@ -2,7 +2,7 @@
 // These mock the upstream HTTP calls and verify the fallback logic works
 // end-to-end. Run with: bunx vitest run
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock fetch globally so we can simulate upstream failures.
 const fetchMock = vi.fn();

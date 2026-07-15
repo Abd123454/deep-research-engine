@@ -5,7 +5,6 @@ import {
   scoreSource,
   rankSources,
   rankSourcesWithMinimum,
-  type SourceTier,
 } from "../source-quality";
 
 describe("scoreSource", () => {
@@ -136,7 +135,7 @@ describe("rankSourcesWithMinimum", () => {
       { url: "not-a-url-3", snippet: "bad 3" },
     ];
 
-    const { ranked, dropped } = rankSourcesWithMinimum(sources, 3);
+    const { ranked } = rankSourcesWithMinimum(sources, 3);
     // Should have 3 results: 1 good + 2 recovered (to reach min 3).
     expect(ranked.length).toBe(3);
     // Wikipedia should be first (highest score).

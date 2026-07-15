@@ -102,14 +102,12 @@ export async function POST(req: NextRequest) {
             { role: "user", content: currentMessage },
           ];
 
-          let iterationResponse = "";
           const result = await llm.smart({
             messages: llmMessages,
             maxTokens: 2000,
             temperature: 0.4,
             stream: true,
             onToken: (token: string) => {
-              iterationResponse += token;
               send({ token });
             },
           });

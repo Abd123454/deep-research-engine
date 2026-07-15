@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { X, Download, Copy, Check, Code2, FileText, Globe } from "lucide-react";
+import { X, Copy, Check, Code2, FileText, Globe } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export/ExportMenu";

@@ -404,7 +404,6 @@ describe("Arabic plan generation (i18n)", () => {
     job.query = "ما هو الذكاء الاصطناعي؟";
 
     // Capture the system prompt passed to the LLM.
-    const systemPrompt = mockSmart.mock.calls;
     mockSmart.mockResolvedValue(mockLLMResponse(
       JSON.stringify({ title: "الذكاء الاصطناعي", summary: "ملخص", sections: [{ title: "مقدمة", description: "وصف" }] })
     ));

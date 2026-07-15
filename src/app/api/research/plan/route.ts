@@ -15,7 +15,7 @@ import { getRetriever } from "@/lib/retriever";
 import { requireAuth } from "@/lib/auth";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { generatePlan, resolveConfig } from "@/lib/research-engine";
-import type { ResearchJob, ResearchPlan } from "@/lib/types";
+import type { ResearchJob } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";

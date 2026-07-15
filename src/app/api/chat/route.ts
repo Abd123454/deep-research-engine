@@ -189,7 +189,6 @@ export async function POST(req: NextRequest) {
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
-      let fullContent = "";
       try {
         const result = await llm.smart({
           messages: llmMessages,
@@ -197,7 +196,6 @@ export async function POST(req: NextRequest) {
           temperature: 0.4,
           stream: true,
           onToken: (token: string) => {
-            fullContent += token;
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
           },
         });

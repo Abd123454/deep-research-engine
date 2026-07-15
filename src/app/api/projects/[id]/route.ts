@@ -5,8 +5,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 
-const DEFAULT_USER_ID = "default";
-
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }

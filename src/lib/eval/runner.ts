@@ -148,7 +148,7 @@ export async function runEval(query: EvalQuery): Promise<EvalResult> {
     // ===== Coding =====
     if (query.type === "coding" && query.codingTest) {
       const events: { type: string; finalReport?: string }[] = [];
-      const { plan, finalReport } = await runSwarm(query.query, (e) => {
+      const { finalReport } = await runSwarm(query.query, (e) => {
         events.push(e as { type: string; finalReport?: string });
       });
 

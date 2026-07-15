@@ -12,7 +12,6 @@
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
-import { env } from "./env";
 
 export interface MemoryExtraction {
   type: "fact" | "preference" | "context";
@@ -122,7 +121,7 @@ export async function storeMemories(
           }
 
           // Embed the memory content.
-          const embedding = await embed(mem.content);
+          await embed(mem.content);
 
           await (prisma as any).longTermMemory.create({
             data: {
