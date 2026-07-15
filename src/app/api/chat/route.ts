@@ -19,6 +19,7 @@ import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-r
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 
 const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
@@ -121,10 +122,19 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Invalid JSON." }, { status: 400 });
   }
 
-  const message = (body.message || "").trim();
-  if (!message) {
+  const rawMessage = (body.message || "").trim();
+  if (!rawMessage) {
     return Response.json({ error: "Message is required." }, { status: 400 });
   }
+
+  // Prompt injection defense: scan the message for injection patterns.
+  // Blocks critical patterns (e.g. "ignore previous instructions") and
+  // multiple suspicious patterns.
+  const injectionCheck = sanitizeQuery(rawMessage);
+  if (injectionCheck.blocked) {
+    return Response.json({ error: "Request blocked: potential prompt injection detected." }, { status: 400 });
+  }
+  const message = sanitizeInput(injectionCheck.sanitized);
 
   // Rate limit.
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";

@@ -5,6 +5,7 @@
 
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 
 const MAX_MESSAGE_CHARS = 10_000;
 
@@ -30,16 +31,23 @@ export async function POST(req: Request) {
   }
 
   // Accept both "message" and "query" fields for flexibility.
-  const message = (body.message || body.query || "").trim();
-  if (!message) {
+  const rawMessage = (body.message || body.query || "").trim();
+  if (!rawMessage) {
     return Response.json({ error: "Message is required" }, { status: 400 });
   }
-  if (message.length > MAX_MESSAGE_CHARS) {
+  if (rawMessage.length > MAX_MESSAGE_CHARS) {
     return Response.json(
       { error: `Message exceeds ${MAX_MESSAGE_CHARS} character limit` },
       { status: 400 }
     );
   }
+
+  // Prompt injection defense.
+  const injectionCheck = sanitizeQuery(rawMessage);
+  if (injectionCheck.blocked) {
+    return Response.json({ error: "Request blocked: potential prompt injection detected." }, { status: 400 });
+  }
+  const message = sanitizeInput(injectionCheck.sanitized);
 
   // Explicit LLM provider check — return 503 BEFORE starting the stream.
   const hasNvidia = !!process.env.NVIDIA_API_KEY;

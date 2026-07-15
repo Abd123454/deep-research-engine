@@ -10,6 +10,7 @@ import {
   validateQARequest,
   type QAMode,
 } from "@/lib/document-qa";
+import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 
 export async function POST(
   req: NextRequest,
@@ -31,6 +32,16 @@ export async function POST(
   const validationError = validateQARequest(body);
   if (validationError) {
     return Response.json({ error: validationError }, { status: 400 });
+  }
+
+  // Prompt injection defense: sanitize the question before passing to LLM.
+  const rawQuestion = body.question || "";
+  if (rawQuestion) {
+    const injectionCheck = sanitizeQuery(rawQuestion);
+    if (injectionCheck.blocked) {
+      return Response.json({ error: "Request blocked: potential prompt injection detected." }, { status: 400 });
+    }
+    body.question = sanitizeInput(injectionCheck.sanitized);
   }
 
   const encoder = new TextEncoder();
