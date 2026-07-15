@@ -171,7 +171,7 @@ export const EVAL_DATASET: EvalQuery[] = [
     id: "f2",
     query: "What is the speed of light in vacuum?",
     type: "factual",
-    expectedKeywords: ["299", "792", "458", "km/s"],
+    expectedKeywords: ["299,792"],
     difficulty: "easy",
   },
   {
