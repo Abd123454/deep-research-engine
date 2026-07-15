@@ -5,6 +5,8 @@ import { Menu, Brain } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { ArtifactsPanel } from "../artifacts/ArtifactsPanel";
 import { MemoryPanel } from "../memory/MemoryPanel";
+import { InstallPrompt } from "../pwa/InstallPrompt";
+import { OfflineIndicator } from "../pwa/OfflineIndicator";
 import { Button } from "@/components/ui/button";
 import type { Artifact } from "@/lib/artifact-detector";
 
@@ -82,6 +84,10 @@ export function AppShell({
 
       {/* Memory panel (slide-in) */}
       <MemoryPanel open={memoryOpen} onClose={() => setMemoryOpen(false)} />
+
+      {/* PWA components */}
+      <InstallPrompt />
+      <OfflineIndicator />
     </div>
   );
 }

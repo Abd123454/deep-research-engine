@@ -27,6 +27,12 @@ export const metadata: Metadata = {
     icon: "/logo.svg",
     apple: "/logo.svg",
   },
+  manifest: "/manifest.json",
+  other: {
+    "theme-color": "#1a73e8",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-title": "Deep Research",
+  },
 };
 
 export default function RootLayout({

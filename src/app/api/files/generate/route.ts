@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from "next/server";
+import { generateFile, type FileType } from "@/lib/file-generator";
+
+const VALID_TYPES: FileType[] = ["pdf", "docx", "pptx", "xlsx", "md"];
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { type, title, content } = body;
+
+    if (!type || !VALID_TYPES.includes(type)) {
+      return NextResponse.json({ ok: false, error: `Invalid type. Use: ${VALID_TYPES.join(", ")}` }, { status: 400 });
+    }
+    if (!title || !title.trim()) {
+      return NextResponse.json({ ok: false, error: "Title is required." }, { status: 400 });
+    }
+    if (!content || content.length > 500_000) {
+      return NextResponse.json({ ok: false, error: "Content required (max 500K chars)." }, { status: 400 });
+    }
+
+    const result = await generateFile({ type, title, content });
+    return new Response(new Uint8Array(result.buffer), {
+      headers: {
+        "Content-Type": result.mimeType,
+        "Content-Disposition": `attachment; filename="${result.filename}"`,
+        "Content-Length": String(result.buffer.length),
+      },
+    });
+  } catch (err) {
+    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "File generation failed." }, { status: 500 });
+  }
+}
