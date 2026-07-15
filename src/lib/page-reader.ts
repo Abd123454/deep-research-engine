@@ -92,7 +92,18 @@ function wikipediaTitleFromUrl(url: string): string {
   return "";
 }
 
-async function readWikipediaViaApi(url: string): Promise<PageReadResult> {
+// ---------- Cancellation helper ----------
+// Combines an optional user-provided abort signal with a timeout.
+function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number): AbortSignal | undefined {
+  if (!userSignal) return AbortSignal.timeout(timeoutMs);
+  if (userSignal.aborted) return userSignal;
+  if (typeof (AbortSignal as any).any === "function") {
+    return (AbortSignal as any).any([userSignal, AbortSignal.timeout(timeoutMs)]);
+  }
+  return userSignal;
+}
+
+async function readWikipediaViaApi(url: string, userSignal?: AbortSignal): Promise<PageReadResult> {
   const title = wikipediaTitleFromUrl(url);
   if (!title) throw new Error("could not parse wikipedia title");
 
@@ -105,7 +116,7 @@ async function readWikipediaViaApi(url: string): Promise<PageReadResult> {
 
   const res = await fetch(apiUrl, {
     headers: { "User-Agent": WIKI_UA, Accept: "application/json" },
-    signal: AbortSignal.timeout(12000),
+    signal: withAbortSignal(userSignal, 12000),
   });
   if (!res.ok) throw new Error(`wikipedia api ${res.status}`);
 
@@ -131,7 +142,7 @@ async function readWikipediaViaApi(url: string): Promise<PageReadResult> {
 }
 
 // ---------- Direct fetch + Readability (for non-Wikipedia URLs) ----------
-async function readPageDirect(url: string): Promise<PageReadResult> {
+async function readPageDirect(url: string, userSignal?: AbortSignal): Promise<PageReadResult> {
   const res = await fetch(url, {
     method: "GET",
     redirect: "follow",
@@ -140,7 +151,7 @@ async function readPageDirect(url: string): Promise<PageReadResult> {
       Accept: "text/html,application/xhtml+xml",
       "Accept-Language": "en-US,en;q=0.9",
     },
-    signal: AbortSignal.timeout(10000),
+    signal: withAbortSignal(userSignal, 10000),
   });
 
   if (!res.ok) throw new Error(`fetch ${res.status}`);
@@ -206,7 +217,7 @@ function scanForIndirectInjection(text: string): boolean {
 }
 
 // ---------- Public ----------
-export async function readPage(url: string): Promise<PageReadResult> {
+export async function readPage(url: string, signal?: AbortSignal): Promise<PageReadResult> {
   if (shouldSkip(url)) {
     return { url, title: "", text: "", success: false, error: "skipped", tokensUsed: 0, wordCount: 0 };
   }
@@ -214,7 +225,7 @@ export async function readPage(url: string): Promise<PageReadResult> {
   // extracts API works reliably. Try the API first for Wikipedia URLs.
   if (isWikipediaUrl(url)) {
     try {
-      const result = await readWikipediaViaApi(url);
+      const result = await readWikipediaViaApi(url, signal);
       // Indirect injection scan: block if malicious content detected.
       if (result.success && scanForIndirectInjection(result.text)) {
         console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
@@ -226,7 +237,7 @@ export async function readPage(url: string): Promise<PageReadResult> {
     }
   }
   try {
-    const result = await readPageDirect(url);
+    const result = await readPageDirect(url, signal);
     // Indirect injection scan for direct-fetched pages too.
     if (result.success && scanForIndirectInjection(result.text)) {
       console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
@@ -238,14 +249,16 @@ export async function readPage(url: string): Promise<PageReadResult> {
   }
 }
 
-export async function readPages(urls: string[], concurrency: number): Promise<PageReadResult[]> {
+export async function readPages(urls: string[], concurrency: number, signal?: AbortSignal): Promise<PageReadResult[]> {
   const results: PageReadResult[] = new Array(urls.length);
   let cursor = 0;
   async function worker() {
     while (true) {
+      // Check for cancellation before reading each page.
+      if (signal?.aborted) return;
       const i = cursor++;
       if (i >= urls.length) return;
-      results[i] = await readPage(urls[i]!);
+      results[i] = await readPage(urls[i]!, signal);
     }
   }
   const c = Math.max(1, Math.min(concurrency, 6));

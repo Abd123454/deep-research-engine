@@ -168,7 +168,7 @@ function validateRole(role: unknown): role is AgentRole {
 
 // ---------- Worker: execute a subtask ----------
 
-const MAX_TOOL_ITERATIONS = 3;
+const MAX_TOOL_ITERATIONS = 4;
 
 export async function runWorker(
   subtask: Subtask,
@@ -215,10 +215,21 @@ export async function runWorker(
 
       // Feed tool result back for another iteration.
       messages.push({ role: "assistant", content: result.content });
-      messages.push({
-        role: "user",
-        content: `Tool result:\n${toolResult.output.slice(0, 3000)}\n\nContinue based on this result. If you have enough information, give your final answer.`,
-      });
+
+      // Verifier loop: if the tool failed (e.g. code execution error),
+      // explicitly ask the model to fix and retry. This gives the coder
+      // agent a chance to self-correct instead of just reporting failure.
+      if (!toolResult.success) {
+        messages.push({
+          role: "user",
+          content: `The tool call failed:\n\n${toolResult.output.slice(0, 3000)}\n\nPlease fix the issue and try again. If you've already retried and it still fails, explain the error in your final answer.`,
+        });
+      } else {
+        messages.push({
+          role: "user",
+          content: `Tool result:\n${toolResult.output.slice(0, 3000)}\n\nContinue based on this result. If you have enough information, give your final answer.`,
+        });
+      }
       continue;
     }
 

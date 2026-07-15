@@ -1,5 +1,46 @@
 # Changelog
 
+## [0.5.1] — Round 11: Wiring Round (no new features, just connecting built-but-disconnected systems)
+
+### Fixed — Multi-provider Fallback (WIRING)
+- **Problem**: `src/lib/llm-providers/` (OpenAI + Anthropic + Ollama) was built but never connected. All routes imported from `src/lib/llm-provider.ts` (NVIDIA only). If NVIDIA went down, the whole project went down.
+- **Fix**: Added `crossProviderFallback()` to `llm-provider.ts`. When all 6 NVIDIA models fail, it now tries OpenAI → Anthropic → Ollama before giving up.
+- Also added `crossProviderFastFallback()` for the `fast()` path.
+- **Result**: NVIDIA outage → OpenAI takes over → project stays up.
+- 5 new tests verify the full chain: NVIDIA fail → OpenAI, NVIDIA+OpenAI fail → Anthropic, all fail → Ollama, all fail → clear error, streaming tokens already emitted → no fallback.
+
+### Fixed — Persistent Storage (WIRING)
+- **Problem**: `research-store.ts` used an in-memory `Map` on `globalThis`. Server restart = all research jobs lost. `ResearchJobRecord` existed in Prisma schema but was never used.
+- **Fix**: Added `persistJob()` to `research-store.ts`. Every `setStatus()` call in `research-engine.ts` now writes to the SQLite `research_jobs` table. `getJob()` checks in-memory Map first (fast, full runtime state), then falls back to DB (completed jobs that survived a restart). `listJobs()` merges both. `deleteJob()` removes from both.
+- Added `abortController` to `ResearchJob` type for real cancellation.
+- **Result**: Server restart → completed research jobs survive → GET /api/research/status/[id] still works.
+- 6 new tests: createJob persists, getJob recovers from DB after Map cleared, listJobs merges, deleteJob removes from both, persistJob updates, survives restart.
+
+### Fixed — Real Cancellation (WIRING)
+- **Problem**: Stop button set `job.cancelled = true` but `Promise.all` in `processSubQuery` didn't cancel in-flight `fetch()` calls. The search/page-read requests kept running until they completed or timed out.
+- **Fix**: Added `AbortController` to every `ResearchJob`. The stop endpoint calls `abortController.abort()` which cancels all in-flight fetches immediately. `searchWeb()` and `readPages()` now accept an `AbortSignal` parameter and pass it to every `fetch()` call (combined with the existing timeout via `AbortSignal.any()`). `processSubQuery` passes `job.abortController.signal` to both.
+- Added abort checks before retries/sleeps in the retriever to prevent wasted time.
+- **Result**: Click Stop → in-flight search and page-read requests abort immediately → no wasted budget.
+- 9 new tests: aborted signal → empty results, mid-request abort, normal operation, Wikipedia API abort, direct page abort, readPages with pre-aborted signal, mid-batch abort, AbortController lifecycle, multiple fetches sharing one signal.
+
+### Fixed — Code Verifier Loop (WIRING)
+- **Problem**: `run_code` tool returned errors but the swarm's `runWorker` just said "Continue based on this result" — it didn't explicitly ask the model to fix and retry.
+- **Fix**: Enhanced `run_code` tool to return clearer error messages: `"Execution failed.\n\nError: ...\n\nPlease fix the code and try again. Common issues: ..."`. Enhanced `runWorker` ReAct loop: when a tool result has `success: false`, the feedback message now explicitly says "Please fix the issue and try again" instead of "Continue". Increased `MAX_TOOL_ITERATIONS` from 3 to 4 to give the coder agent an extra self-correction chance.
+- **Result**: Coder agent encounters a bug → sees the error → fixes the code → retries → succeeds.
+- 5 new tests: error message clarity, success message clarity, failure feedback with "fix and retry", success feedback with "continue", iteration limit respected.
+
+### Changed
+- `src/lib/types.ts`: Added `abortController?: AbortController` to `ResearchJob`.
+- `src/lib/research-store.ts`: Complete rewrite — dual-mode (in-memory + DB), `persistJob()`, `recordToJob()`, DB-backed `getJob()`/`listJobs()`/`deleteJob()`.
+- `src/lib/research-engine.ts`: `setStatus()` now calls `persistJob()`. `processSubQuery()` passes abort signal to `searchWeb()` and `readPages()`.
+- `src/lib/retriever.ts`: All search functions accept optional `AbortSignal`. Added `withAbortSignal()` helper. Abort checks before retries.
+- `src/lib/page-reader.ts`: `readPage()` and `readPages()` accept optional `AbortSignal`. Added `withAbortSignal()` helper. `readPages` checks signal before each page read.
+- `src/lib/agent-tools.ts`: `run_code` tool returns clearer success/error messages.
+- `src/lib/swarm.ts`: `MAX_TOOL_ITERATIONS` 3→4. Verifier loop: failure feedback says "fix and retry".
+- `src/app/api/research/stop/[id]/route.ts`: Calls `abortController.abort()` + `persistJob()`.
+- Tests: 354 pass + 1 skip (was 329 pass + 1 skip; +25 wiring tests across 4 new test files).
+- Version: 0.5.0 → 0.5.1.
+
 ## [0.5.0] — Round 10: Agent Swarm + Browser Extension + Desktop App
 
 ### Added — Agent Swarm

@@ -81,3 +81,4 @@ data/
 /desktop/dist/
 /desktop/release/
 /desktop/node_modules/
+:memory:*

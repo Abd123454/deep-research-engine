@@ -17,6 +17,7 @@ import { searchWeb } from "./retriever";
 import { readPages } from "./page-reader";
 
 import { getJob } from "./research-store";
+import { persistJob } from "./research-store";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt, envStr } from "./env";
 import {
@@ -137,6 +138,9 @@ function setStatus(job: ResearchJob, status: ResearchStatus) {
       job.stats.elapsedMs = job.finishedAt - job.startedAt;
     }
   }
+  // Persist to DB so the job survives server restarts.
+  // Fire-and-forget — failures are logged inside persistJob.
+  persistJob(job);
 }
 
 // ---------- LLM token + cost tracking ----------
@@ -580,11 +584,21 @@ async function processSubQuery(
   const roundTag = sq.round === 2 ? "[R2] " : "";
   log(job, "info", "searching", `Searching ${roundTag}"${searchQuery}"`);
 
+  // Use the job's AbortSignal for real cancellation. When the user clicks
+  // Stop, abort() is called and in-flight fetch requests throw immediately.
+  const signal = job.abortController?.signal;
+
   let results: SearchResultItem[] = [];
   try {
-    results = await searchWeb(searchQuery, config.maxLinksPerQuery);
+    results = await searchWeb(searchQuery, config.maxLinksPerQuery, signal);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
+    if (signal?.aborted) {
+      sq.status = "failed";
+      sq.error = "cancelled";
+      sq.finishedAt = Date.now();
+      throw new Error("Cancelled by user");
+    }
     sq.status = "failed";
     sq.error = msg;
     sq.finishedAt = Date.now();
@@ -611,7 +625,12 @@ async function processSubQuery(
   log(job, "info", "reading", `Reading up to ${results.length} pages ${roundTag}for: "${sq.question}"`);
 
   const urls = results.slice(0, config.maxLinksPerQuery).map((r) => r.url);
-  const pages = await readPages(urls, config.pageReadConcurrency);
+  const pages = await readPages(urls, config.pageReadConcurrency, signal);
+
+  // If aborted during page reads, throw.
+  if (signal?.aborted) {
+    throw new Error("Cancelled by user");
+  }
 
   sq.pagesRead = pages.length;
   sq.pagesSucceeded = pages.filter((p) => p.success).length;
@@ -1201,6 +1220,8 @@ export async function runResearch(jobId: string): Promise<void> {
     }
 
     job.report = await synthesizeReport(job, job.config);
+    // Persist the report so it survives server restarts.
+    persistJob(job);
 
     // Citation verification (Phase 2A): check that all URLs cited in the
     // report actually exist in job.sources. Hallucinated URLs = unverified.

@@ -49,10 +49,20 @@ const runCodeTool: AgentTool = {
     if (!code) return { tool: "run_code", success: false, output: "No code provided." };
 
     const result: CodeResult = await runCode(language, code);
+    if (result.success) {
+      return {
+        tool: "run_code",
+        success: true,
+        output: `Execution successful.\n\nOutput:\n${result.output}`,
+        data: result,
+      };
+    }
+    // On failure, return a clear error message that tells the LLM exactly
+    // what went wrong, so it can fix the code and retry.
     return {
       tool: "run_code",
-      success: result.success,
-      output: result.success ? result.output : `Error: ${result.error}`,
+      success: false,
+      output: `Execution failed.\n\nError:\n${result.error || "Unknown error"}\n\nPartial output:\n${result.output || "(none)"}\n\nPlease fix the code and try again. Common issues: syntax errors, undefined variables, type mismatches.`,
       data: result,
     };
   },

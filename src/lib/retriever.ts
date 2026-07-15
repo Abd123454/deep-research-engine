@@ -193,18 +193,38 @@ function isReadableUrl(url: string): boolean {
   }
 }
 
+// ---------- Cancellation helper ----------
+// Combines an optional user-provided abort signal (from the research job)
+// with a timeout signal. If either fires, the fetch is aborted.
+function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number): AbortSignal | undefined {
+  if (!userSignal) return AbortSignal.timeout(timeoutMs);
+  // If the user already aborted, return an already-aborted signal.
+  if (userSignal.aborted) return userSignal;
+  // AbortSignal.any() is available in Node 20+ — combines multiple signals.
+  // If not available, fall back to just the user signal (timeout is lost).
+  if (typeof (AbortSignal as any).any === "function") {
+    return (AbortSignal as any).any([userSignal, AbortSignal.timeout(timeoutMs)]);
+  }
+  return userSignal;
+}
+
 // ---------- Endpoint 1: HTML scraping (richest results) ----------
 async function ddgHtmlSearch(
   query: string,
   num: number,
-  retries = 2
+  retries = 2,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   const url = "https://html.duckduckgo.com/html/";
   const body = new URLSearchParams({ q: query, kp: "-2", kl: "us-en" });
 
   for (let attempt = 0; attempt <= retries; attempt++) {
+    // Check for user cancellation before each attempt (including sleeps).
+    if (userSignal?.aborted) throw new DOMException("Aborted", "AbortError");
     try {
       if (attempt > 0) await sleep(1500 + Math.random() * 1500);
+      // Re-check after sleep — user may have cancelled during the wait.
+      if (userSignal?.aborted) throw new DOMException("Aborted", "AbortError");
 
       const res = await fetch(url, {
         method: "POST",
@@ -216,7 +236,7 @@ async function ddgHtmlSearch(
           Referer: "https://duckduckgo.com/",
         },
         body: body.toString(),
-        signal: AbortSignal.timeout(12000),
+        signal: withAbortSignal(userSignal, 12000),
       });
 
       if (!res.ok) throw new Error(`DDG HTML ${res.status}`);
@@ -278,7 +298,8 @@ function parseHtmlResults(html: string, num: number): SearchResultItem[] {
 // ---------- Endpoint 2: lite.duckduckgo.com (plain text, lower CAPTCHA) ----------
 async function ddgLiteSearch(
   query: string,
-  num: number
+  num: number,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   const url = "https://lite.duckduckgo.com/lite/";
   const body = new URLSearchParams({
@@ -295,7 +316,7 @@ async function ddgLiteSearch(
       Referer: "https://lite.duckduckgo.com/",
     },
     body: body.toString(),
-    signal: AbortSignal.timeout(12000),
+    signal: withAbortSignal(userSignal, 12000),
   });
 
   if (!res.ok) throw new Error(`DDG lite ${res.status}`);
@@ -334,13 +355,14 @@ async function ddgLiteSearch(
 // ---------- Endpoint 3: Instant Answer JSON API (sparse but stable) ----------
 async function ddgJsonSearch(
   query: string,
-  num: number
+  num: number,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   const res = await fetch(
     `https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&kp=-2`,
     {
       headers: { "User-Agent": randomUA() },
-      signal: AbortSignal.timeout(10000),
+      signal: withAbortSignal(userSignal, 10000),
     }
   );
   if (!res.ok) throw new Error(`DDG JSON ${res.status}`);
@@ -406,7 +428,8 @@ const WIKI_UA =
 
 async function wikipediaSearch(
   query: string,
-  num: number
+  num: number,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   // Use the opensearch API: returns [query, [titles], [descriptions], [urls]].
   const url =
@@ -414,13 +437,14 @@ async function wikipediaSearch(
     `&limit=${num}&namespace=0&format=json&origin=*`;
 
   for (let attempt = 0; attempt < 2; attempt++) {
+    if (userSignal?.aborted) throw new DOMException("Aborted", "AbortError");
     try {
       const res = await fetch(url, {
         headers: {
           "User-Agent": WIKI_UA,
           Accept: "application/json",
         },
-        signal: AbortSignal.timeout(10000),
+        signal: withAbortSignal(userSignal, 10000),
       });
       if (res.status === 429 && attempt === 0) {
         await sleep(2000);
@@ -468,7 +492,8 @@ async function wikipediaSearch(
 // Good for technical/software/architecture queries.
 async function githubSearch(
   query: string,
-  num: number
+  num: number,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   const url =
     `https://api.github.com/search/repositories?q=${encodeURIComponent(query)}` +
@@ -478,7 +503,7 @@ async function githubSearch(
       "User-Agent": "DeepResearchEngine/1.0 (self-hosted)",
       Accept: "application/vnd.github+json",
     },
-    signal: AbortSignal.timeout(10000),
+    signal: withAbortSignal(userSignal, 10000),
   });
   if (!res.ok) throw new Error(`GitHub ${res.status}`);
   const data = (await res.json()) as {
@@ -524,14 +549,15 @@ function dedupResults(items: SearchResultItem[]): SearchResultItem[] {
 
 async function duckduckgoSearch(
   query: string,
-  num: number
+  num: number,
+  userSignal?: AbortSignal
 ): Promise<SearchResultItem[]> {
   const errors: string[] = [];
   let ddgResults: SearchResultItem[] = [];
 
   // 1. HTML endpoint (richest).
   try {
-    const r = await ddgHtmlSearch(query, num);
+    const r = await ddgHtmlSearch(query, num, 2, userSignal);
     if (r.length > 0) ddgResults = r;
     else errors.push("html: 0 results");
   } catch (err) {
@@ -541,7 +567,7 @@ async function duckduckgoSearch(
   // 2. lite endpoint (lower CAPTCHA rate).
   if (ddgResults.length < num) {
     try {
-      const r = await ddgLiteSearch(query, num);
+      const r = await ddgLiteSearch(query, num, userSignal);
       if (r.length > 0) ddgResults = [...ddgResults, ...r];
       else errors.push("lite: 0 results");
     } catch (err) {
@@ -552,7 +578,7 @@ async function duckduckgoSearch(
   // 3. JSON Instant Answer API (stable, sparse).
   if (ddgResults.length < num) {
     try {
-      const r = await ddgJsonSearch(query, num);
+      const r = await ddgJsonSearch(query, num, userSignal);
       if (r.length > 0) ddgResults = [...ddgResults, ...r];
       else errors.push("json: 0 results");
     } catch (err) {
@@ -578,7 +604,7 @@ async function duckduckgoSearch(
     // Skip duplicate keyword variants (e.g. core == single for simple queries).
     if (wikiResults.length > 0 && kw === wikiSingle && wikiCore === wikiSingle) break;
     try {
-      const r = await wikipediaSearch(kw, num);
+      const r = await wikipediaSearch(kw, num, userSignal);
       if (r.length > 0) wikiResults = [...wikiResults, ...r];
     } catch (err) {
       errors.push(`wiki(${kw}): ${err instanceof Error ? err.message : String(err)}`);
@@ -592,7 +618,7 @@ async function duckduckgoSearch(
   //    GitHub search is strict and multi-term queries often return 0.
   let ghResults: SearchResultItem[] = [];
   try {
-    ghResults = await githubSearch(toPrimaryTopic(query), Math.min(num, 5));
+    ghResults = await githubSearch(toPrimaryTopic(query), Math.min(num, 5), userSignal);
   } catch (err) {
     errors.push(`github: ${err instanceof Error ? err.message : String(err)}`);
   }
@@ -614,9 +640,10 @@ async function duckduckgoSearch(
 
 export async function searchWeb(
   query: string,
-  num: number
+  num: number,
+  signal?: AbortSignal
 ): Promise<SearchResultItem[]> {
-  return duckduckgoSearch(query, num);
+  return duckduckgoSearch(query, num, signal);
 }
 
 export { duckduckgoSearch, wikipediaSearch, githubSearch };

@@ -1,13 +1,15 @@
 // POST /api/research/stop/[id]
-// cancel a running job
+// Cancel a running job — real cancellation via AbortController.
 //
-//
-//
-// sub-queries already in-flight (inside processSubQuery's search/read
-// This is acceptable — the wasted budget is at most N sub-queries × 1 request.
+// Two things happen:
+//   1. job.abortController.abort() — cancels all in-flight fetch() calls
+//      (search, page reads) immediately. They throw AbortError.
+//   2. job.cancelled = true — the pipeline checks this before each stage
+//      as a cooperative fallback (in case a request already completed).
 
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/research-store";
+import { persistJob } from "@/lib/research-store";
 import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
@@ -30,12 +32,20 @@ export async function POST(
     );
   }
 
-  // Set the cancellation flag. The pipeline checks this before each stage.
+  // 1. Abort all in-flight HTTP requests (real cancellation).
+  if (job.abortController) {
+    job.abortController.abort("Cancelled by user");
+  }
+
+  // 2. Set the cooperative cancel flag (checked before each stage).
   job.cancelled = true;
   job.error = "Cancelled by user";
   job.status = "failed";
   job.finishedAt = Date.now();
   job.updatedAt = Date.now();
+
+  // Persist the cancellation so it survives server restarts.
+  persistJob(job);
 
   return NextResponse.json({ ok: true, id, status: "failed" });
 }
