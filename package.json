@@ -1,6 +1,6 @@
 {
   "name": "deep-research-engine",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "author": "Abd",
   "license": "MIT",
@@ -70,5 +70,8 @@
     "tw-animate-css": "^1.3.5",
     "typescript": "^5",
     "vitest": "^2.1.9"
+  },
+  "optionalDependencies": {
+    "playwright": "^1.40.0"
   }
 }

@@ -31,8 +31,12 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
   let chromium: ((options?: { headless?: boolean }) => Promise<any>) | null = null;
 
   // Dynamic import — if Playwright isn't installed, return gracefully.
+  // We use a variable to hold the module name so the bundler doesn't try
+  // to statically resolve it (which would cause "Module not found" warnings
+  // during build when playwright is not installed).
   try {
-    const playwright = await import("playwright");
+    const moduleName = "playwright";
+    const playwright = await import(/* webpackIgnore: true */ /* @vite-ignore */ moduleName);
     chromium = playwright.chromium.launch;
   } catch {
     return {
@@ -145,7 +149,8 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
  */
 export async function isPlaywrightAvailable(): Promise<boolean> {
   try {
-    await import("playwright");
+    const moduleName = "playwright";
+    await import(/* webpackIgnore: true */ /* @vite-ignore */ moduleName);
     return true;
   } catch {
     return false;
