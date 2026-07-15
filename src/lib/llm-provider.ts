@@ -23,8 +23,10 @@ import type { LLMProvider } from "./types";
 import { env, envList } from "./env";
 
 export interface LLMMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  toolCallId?: string;
+  toolCalls?: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 
 export interface LLMCompletionOptions {
@@ -36,6 +38,7 @@ export interface LLMCompletionOptions {
   // If true, stream tokens via onToken instead of returning them all at once.
   stream?: boolean;
   onToken?: (token: string) => void;
+  tools?: { name: string; description: string; parameters: { type: "object"; properties: Record<string, unknown>; required: string[] } }[];
 }
 
 export interface LLMCompletionResult {
@@ -43,6 +46,7 @@ export interface LLMCompletionResult {
   tokensUsed?: number;
   model: string;
   provider: LLMProvider;
+  toolCalls?: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 
 // ---------- Config from env ----------
