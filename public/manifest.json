@@ -1,0 +1,14 @@
+{
+  "name": "Deep Research Engine",
+  "short_name": "DeepResearch",
+  "description": "Self-hosted AI Workstation — Research, Chat, Code, Documents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#1a73e8",
+  "orientation": "any",
+  "icons": [
+    { "src": "/logo.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "categories": ["productivity", "education", "utilities"]
+}

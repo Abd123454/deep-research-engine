@@ -23,8 +23,10 @@ import type { LLMProvider } from "./types";
 import { env, envList } from "./env";
 
 export interface LLMMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  toolCallId?: string;
+  toolCalls?: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 
 export interface LLMCompletionOptions {
@@ -36,6 +38,7 @@ export interface LLMCompletionOptions {
   // If true, stream tokens via onToken instead of returning them all at once.
   stream?: boolean;
   onToken?: (token: string) => void;
+  tools?: { name: string; description: string; parameters: { type: "object"; properties: Record<string, unknown>; required: string[] } }[];
 }
 
 export interface LLMCompletionResult {
@@ -43,6 +46,7 @@ export interface LLMCompletionResult {
   tokensUsed?: number;
   model: string;
   provider: LLMProvider;
+  toolCalls?: { id: string; name: string; arguments: Record<string, unknown> }[];
 }
 
 // ---------- Config from env ----------
@@ -324,14 +328,17 @@ async function nvidiaCompleteWithFallback(
         throw err;
       }
       const msg = err instanceof Error ? err.message : String(err);
-      // Fast-fail on auth errors: the same NVIDIA_API_KEY is used for all
-      // models, so the next model will fail with the same error. Don't
-      // waste time trying 5 more models.
+      // Auth error (401/403/invalid key) — the same NVIDIA_API_KEY is used
+      // for all models, so skip the remaining NVIDIA models. But DON'T throw:
+      // fall through to crossProviderFallback which may succeed via OpenAI,
+      // Anthropic, or Ollama. This is exactly the case cross-provider fallback
+      // exists for (revoked/expired NVIDIA key).
       if (isAuthError(msg)) {
-        throw new Error(
-          `NVIDIA_API_KEY invalid or expired. Skipping fallback chain. ` +
-            `First model "${model}" error: ${msg}`
+        console.warn(
+          `[llm-provider] NVIDIA auth error for model "${model}": ${msg.slice(0, 100)}. ` +
+            `Skipping remaining NVIDIA models, attempting cross-provider fallback.`
         );
+        break;
       }
       // Model errors (404) → continue to next model.
       // Retryable errors (429/503) → already retried by withRetry, continue.
@@ -342,21 +349,164 @@ async function nvidiaCompleteWithFallback(
     }
   }
 
+  // All NVIDIA models failed — try cross-provider fallback before giving up.
   const triedStr = tried.join(", ");
-  const msg = lastErr instanceof Error ? lastErr.message : String(lastErr);
+  console.warn(
+    `[llm-provider] All ${models.length} NVIDIA models failed (tried: ${triedStr}). ` +
+      `Attempting cross-provider fallback (OpenAI → Anthropic → Ollama).`
+  );
+  return await crossProviderFallback(opts, lastErr);
+}
+
+// ---------- Cross-provider fallback ----------
+// When all NVIDIA models fail (or NVIDIA_API_KEY is missing/invalid), try
+// the other configured providers in order: OpenAI → Anthropic → Ollama.
+//
+// This is what makes the project resilient to NVIDIA outages. Each provider
+// is dynamically imported so that a missing dependency doesn't break the
+// NVIDIA-only path.
+//
+// If streaming tokens were already emitted to the caller, we do NOT fallback
+// (the caller already saw partial output). The caller (nvidiaCompleteWithFallback)
+// checks this before calling us.
+
+async function crossProviderFallback(
+  opts: LLMCompletionOptions,
+  nvidiaErr: unknown
+): Promise<LLMCompletionResult> {
+  const nvidiaMsg = nvidiaErr instanceof Error ? nvidiaErr.message : String(nvidiaErr);
+  const triedProviders: string[] = ["nvidia"];
+
+  // 1. OpenAI
+  if (env("OPENAI_API_KEY")) {
+    try {
+      const { OpenAIProvider } = await import("./llm-providers/openai");
+      const provider = new OpenAIProvider();
+      const result = await provider.smart(opts);
+      console.log("[llm-provider] Cross-provider fallback succeeded via OpenAI.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] OpenAI fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("openai");
+    }
+  }
+
+  // 2. Anthropic
+  if (env("ANTHROPIC_API_KEY")) {
+    try {
+      const { AnthropicProvider } = await import("./llm-providers/anthropic");
+      const provider = new AnthropicProvider();
+      const result = await provider.smart(opts);
+      console.log("[llm-provider] Cross-provider fallback succeeded via Anthropic.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] Anthropic fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("anthropic");
+    }
+  }
+
+  // 3. Ollama (local — always worth trying if URL is set)
+  if (env("OLLAMA_URL")) {
+    try {
+      const { OllamaProvider } = await import("./llm-providers/ollama");
+      const provider = new OllamaProvider();
+      const result = await provider.smart(opts);
+      console.log("[llm-provider] Cross-provider fallback succeeded via Ollama.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] Ollama fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("ollama");
+    }
+  }
+
+  // All providers failed.
   throw new Error(
-    `All ${models.length} NVIDIA models failed. Tried: ${triedStr}. Last error: ${msg}`
+    `All LLM providers failed. Tried: ${triedProviders.join(" → ")}. ` +
+      `NVIDIA error: ${nvidiaMsg.slice(0, 200)}`
   );
 }
 
-// Fast model: single model (no fallback needed).
+// Fast model: single model (no fallback needed within NVIDIA).
+// Falls back to cross-provider if NVIDIA fast model fails.
 async function nvidiaFast(
   opts: LLMCompletionOptions
 ): Promise<LLMCompletionResult> {
-  return withRetry(
-    () => nvidiaCompleteSingle(opts, getFastModel()),
-    `nvidia-fast:${getFastModel()}`,
-    3
+  try {
+    return await withRetry(
+      () => nvidiaCompleteSingle(opts, getFastModel()),
+      `nvidia-fast:${getFastModel()}`,
+      3
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    // If NVIDIA fast fails with auth error and we have other providers, try them.
+    if (env("OPENAI_API_KEY") || env("ANTHROPIC_API_KEY") || env("OLLAMA_URL")) {
+      console.warn(
+        `[llm-provider] NVIDIA fast model failed (${msg.slice(0, 80)}). Trying cross-provider fast fallback.`
+      );
+      return await crossProviderFastFallback(opts, err);
+    }
+    throw err;
+  }
+}
+
+// Cross-provider fallback for the fast() path (mirrors crossProviderFallback
+// but uses each provider's fast() method instead of smart()).
+async function crossProviderFastFallback(
+  opts: LLMCompletionOptions,
+  nvidiaErr: unknown
+): Promise<LLMCompletionResult> {
+  const nvidiaMsg = nvidiaErr instanceof Error ? nvidiaErr.message : String(nvidiaErr);
+  const triedProviders: string[] = ["nvidia"];
+
+  if (env("OPENAI_API_KEY")) {
+    try {
+      const { OpenAIProvider } = await import("./llm-providers/openai");
+      const provider = new OpenAIProvider();
+      const result = await provider.fast(opts);
+      console.log("[llm-provider] Cross-provider fast fallback succeeded via OpenAI.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] OpenAI fast fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("openai");
+    }
+  }
+
+  if (env("ANTHROPIC_API_KEY")) {
+    try {
+      const { AnthropicProvider } = await import("./llm-providers/anthropic");
+      const provider = new AnthropicProvider();
+      const result = await provider.fast(opts);
+      console.log("[llm-provider] Cross-provider fast fallback succeeded via Anthropic.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] Anthropic fast fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("anthropic");
+    }
+  }
+
+  if (env("OLLAMA_URL")) {
+    try {
+      const { OllamaProvider } = await import("./llm-providers/ollama");
+      const provider = new OllamaProvider();
+      const result = await provider.fast(opts);
+      console.log("[llm-provider] Cross-provider fast fallback succeeded via Ollama.");
+      return { ...result, provider: result.provider as unknown as LLMProvider };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn(`[llm-provider] Ollama fast fallback failed: ${msg.slice(0, 120)}`);
+      triedProviders.push("ollama");
+    }
+  }
+
+  throw new Error(
+    `All LLM providers failed (fast path). Tried: ${triedProviders.join(" → ")}. ` +
+      `NVIDIA error: ${nvidiaMsg.slice(0, 200)}`
   );
 }
 

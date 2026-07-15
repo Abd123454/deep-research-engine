@@ -5,7 +5,7 @@
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Zap, Loader2, Sparkles } from "lucide-react";
+import { Zap, Loader2, Sparkles, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
@@ -14,7 +14,7 @@ interface QuickCardProps {
   question: string;
 }
 
-export function QuickCard({ question }: QuickCardProps) {
+export const QuickCard = React.memo(function QuickCard({ question }: QuickCardProps) {
   const t = useT();
   const [response, setResponse] = React.useState("");
   const [streaming, setStreaming] = React.useState(true);
@@ -71,6 +71,19 @@ export function QuickCard({ question }: QuickCardProps) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Request failed");
       } finally {
         if (!cancelled) setStreaming(false);
+        // Auto-extract memories from this Q&A (non-blocking).
+        if (!cancelled && response) {
+          fetch("/api/memories/extract", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              conversation: [
+                { role: "user", content: question },
+                { role: "assistant", content: response },
+              ],
+            }),
+          }).catch(() => {});
+        }
       }
     })();
     return () => {
@@ -83,18 +96,31 @@ export function QuickCard({ question }: QuickCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border/60 shadow-sm overflow-hidden"
+      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
     >
       {/* Question */}
-      <div className="bg-secondary/50 px-5 py-3 flex items-start gap-2">
-        <Zap className="h-4 w-4 shrink-0 mt-0.5 text-primary" />
+      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 flex items-start gap-2 border-b border-border/40">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+          <Zap className="h-3.5 w-3.5 text-primary" />
+        </div>
         <p className="text-sm font-medium text-foreground">{question}</p>
       </div>
 
       {/* Answer */}
       <div className="px-5 py-4">
         {error ? (
-          <p className="text-sm text-destructive">{error}</p>
+          <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
+            <AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+            <div className="flex-1">
+              <p className="text-sm text-destructive">{error}</p>
+              <button
+                onClick={() => { setError(""); setStreaming(true); setResponse(""); }}
+                className="text-xs text-primary hover:underline mt-1"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
         ) : response ? (
           <>
             <div className="flex items-center gap-2 mb-2">
@@ -119,12 +145,16 @@ export function QuickCard({ question }: QuickCardProps) {
             )}
           </>
         ) : (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin" />
-            {t("quickThinking")}
+          <div className="space-y-2 animate-pulse">
+            <div className="h-4 bg-muted rounded w-3/4" />
+            <div className="h-4 bg-muted rounded w-full" />
+            <div className="h-4 bg-muted rounded w-5/6" />
+            <div className="h-4 bg-muted rounded w-2/3" />
           </div>
         )}
       </div>
     </motion.div>
   );
 }
+
+);

@@ -14,7 +14,7 @@ export async function POST(req: Request) {
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     req.headers.get("x-real-ip") ||
     "unknown";
-  const rl = checkStartRateLimit(ip);
+  const rl = await checkStartRateLimit(ip);
   if (!rl.ok) {
     return Response.json(
       { error: rl.reason },
@@ -38,6 +38,18 @@ export async function POST(req: Request) {
     return Response.json(
       { error: `Message exceeds ${MAX_MESSAGE_CHARS} character limit` },
       { status: 400 }
+    );
+  }
+
+  // Explicit LLM provider check — return 503 BEFORE starting the stream.
+  const hasNvidia = !!process.env.NVIDIA_API_KEY;
+  const hasOpenai = !!process.env.OPENAI_API_KEY;
+  const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+  const hasOllama = !!process.env.OLLAMA_URL;
+  if (!hasNvidia && !hasOpenai && !hasAnthropic && !hasOllama) {
+    return Response.json(
+      { ok: false, error: "No LLM provider configured. Set NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_URL." },
+      { status: 503 }
     );
   }
 

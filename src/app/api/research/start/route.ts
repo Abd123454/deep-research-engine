@@ -92,7 +92,7 @@ export async function POST(req: NextRequest) {
 
     // Rate limiting: protect free-tier API quotas from abuse.
     const clientIP = getClientIP(req);
-    const rateLimit = checkStartRateLimit(clientIP);
+    const rateLimit = await checkStartRateLimit(clientIP);
     if (!rateLimit.ok) {
       return NextResponse.json(
         { ok: false, error: rateLimit.reason },

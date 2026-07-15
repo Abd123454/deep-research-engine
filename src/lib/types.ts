@@ -173,9 +173,12 @@ export interface ResearchJob {
   // Client IP for rate-limit bookkeeping (never serialized to the client).
   clientIP?: string;
   // Cancellation flag. Set by /api/research/stop. The pipeline checks this
-  // before each major stage and throws if true. This is a cooperative cancel
-  // (not AbortController) — simpler and sufficient for our pipeline.
+  // before each major stage and throws if true.
   cancelled: boolean;
+  // AbortController for real cancellation of in-flight HTTP requests.
+  // When the user clicks Stop, abort() is called — all active fetch() calls
+  // (search, page reads) throw AbortError immediately instead of completing.
+  abortController?: AbortController;
   // Streaming report: tokens are pushed here as they arrive from the LLM.
   // The SSE endpoint reads this buffer and emits "report_token" events.
   reportStream: string[];

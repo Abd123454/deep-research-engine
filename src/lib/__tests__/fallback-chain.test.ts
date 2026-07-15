@@ -162,10 +162,10 @@ describe("rate limiter", () => {
     const ip = "test-ip-concurrent-" + Date.now();
 
     // MAX_CONCURRENT is 3.
-    const r1 = checkStartRateLimit(ip);
-    const r2 = checkStartRateLimit(ip);
-    const r3 = checkStartRateLimit(ip);
-    const r4 = checkStartRateLimit(ip);
+    const r1 = await checkStartRateLimit(ip);
+    const r2 = await checkStartRateLimit(ip);
+    const r3 = await checkStartRateLimit(ip);
+    const r4 = await checkStartRateLimit(ip);
 
     expect(r1.ok).toBe(true);
     expect(r2.ok).toBe(true);
@@ -175,22 +175,23 @@ describe("rate limiter", () => {
 
     // Release one slot.
     releaseConcurrency(ip);
-    const r5 = checkStartRateLimit(ip);
+    const r5 = await checkStartRateLimit(ip);
     expect(r5.ok).toBe(true); // now allowed again
   });
 
   it("blocks after MAX_STARTS_PER_WINDOW in a 60s window", async () => {
-    const { checkStartRateLimit } = await import("../rate-limit");
+    const { checkStartRateLimit, releaseConcurrency } = await import("../rate-limit");
     const ip = "test-ip-burst-" + Date.now();
 
-    // MAX_STARTS_PER_WINDOW is 5, but with concurrency=3, we need to release.
+    // MAX_STARTS is 5, but with concurrency=3, we need to release.
     const results: boolean[] = [];
     for (let i = 0; i < 6; i++) {
-      const r = checkStartRateLimit(ip);
+      const r = await checkStartRateLimit(ip);
       results.push(r.ok);
+      if (r.ok) releaseConcurrency(ip); // release to test burst limit, not concurrency
     }
-    // First 3 allowed (concurrency), 4th-6th blocked.
-    expect(results.slice(0, 3)).toEqual([true, true, true]);
-    expect(results.slice(3)).toEqual([false, false, false]);
+    // First 5 allowed (burst), 6th blocked.
+    expect(results.slice(0, 5)).toEqual([true, true, true, true, true]);
+    expect(results[5]).toBe(false);
   });
 });

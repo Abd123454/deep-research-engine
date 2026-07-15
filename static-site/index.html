@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <meta name="description" content="Self-hosted AI workstation — deep research, agentic chat, multi-agent swarm, code execution, vision, voice. Runs on free-tier APIs ($0/month).">
+  <title>Deep Research Engine — Self-hosted AI Workstation</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'%3E%3Cpath d='M12 3l1.9 5.8a2 2 0 001.3 1.3L21 12l-5.8 1.9a2 2 0 00-1.3 1.3L12 21l-1.9-5.8a2 2 0 00-1.3-1.3L3 12l5.8-1.9a2 2 0 001.3-1.3L12 3z'/%3E%3C/svg%3E">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg: #0a0a0f;
+      --bg-card: #13131a;
+      --bg-hover: #1a1a25;
+      --border: #27272a;
+      --text: #fafafa;
+      --text-muted: #a1a1aa;
+      --primary: #6366f1;
+      --primary-hover: #818cf8;
+      --accent: #10b981;
+      --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 0 1.5rem; }
+
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: "";
+      position: absolute;
+      top: -50%; left: -50%;
+      width: 200%; height: 200%;
+      background: radial-gradient(circle at 30% 40%, rgba(99,102,241,0.15) 0%, transparent 50%),
+                  radial-gradient(circle at 70% 60%, rgba(217,70,239,0.1) 0%, transparent 50%);
+      animation: drift 20s ease-in-out infinite;
+    }
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(-5%, -3%); }
+    }
+    .hero-content { position: relative; z-index: 1; }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      background: rgba(99,102,241,0.1);
+      border: 1px solid rgba(99,102,241,0.3);
+      font-size: 0.85rem;
+      color: var(--primary-hover);
+      margin-bottom: 1.5rem;
+    }
+    .badge::before {
+      content: "";
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+    .hero h1 {
+      font-size: clamp(2.5rem, 7vw, 4.5rem);
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 1.5rem;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: clamp(1.1rem, 2vw, 1.4rem);
+      color: var(--text-muted);
+      max-width: 640px;
+      margin: 0 auto 2.5rem;
+    }
+    .cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.85rem 1.75rem;
+      border-radius: 0.75rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+    .btn-primary:hover {
+      background: var(--primary-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(99,102,241,0.3);
+    }
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      background: var(--bg-hover);
+      border-color: var(--primary);
+    }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1.5rem;
+      margin: 4rem 0;
+    }
+    .stat {
+      text-align: center;
+      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+    }
+    .stat-num {
+      font-size: 2.5rem;
+      font-weight: 800;
+      background: var(--gradient);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .stat-label {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Features */
+    .section { padding: 5rem 0; }
+    .section-title {
+      text-align: center;
+      font-size: clamp(2rem, 4vw, 2.75rem);
+      font-weight: 700;
+      margin-bottom: 1rem;
+    }
+    .section-subtitle {
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 640px;
+      margin: 0 auto 3rem;
+    }
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+    .feature {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 1.75rem;
+      transition: all 0.2s;
+    }
+    .feature:hover {
+      border-color: var(--primary);
+      background: var(--bg-hover);
+      transform: translateY(-4px);
+    }
+    .feature-icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 48px; height: 48px;
+      border-radius: 0.75rem;
+      background: rgba(99,102,241,0.1);
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .feature h3 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .feature p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    /* Architecture */
+    .arch {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin: 2rem 0;
+      overflow-x: auto;
+    }
+    .arch pre {
+      font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", monospace;
+      font-size: 0.85rem;
+      line-height: 1.5;
+      color: var(--text-muted);
+    }
+    .arch .highlight { color: var(--primary-hover); }
+
+    /* Tech stack */
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1rem;
+    }
+    .tech-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      transition: all 0.2s;
+    }
+    .tech-item:hover {
+      border-color: var(--primary);
+      background: var(--bg-hover);
+    }
+    .tech-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .tech-desc {
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      margin-top: 0.25rem;
+    }
+
+    /* Quick start */
+    .code-block {
+      background: #0d0d14;
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      overflow-x: auto;
+      margin: 1.5rem 0;
+    }
+    .code-block code {
+      font-family: "SF Mono", Monaco, "Cascadia Code", "Roboto Mono", monospace;
+      font-size: 0.9rem;
+      color: #e4e4e7;
+    }
+    .code-block .comment { color: #71717a; }
+    .code-block .cmd { color: var(--accent); }
+    .code-block .str { color: #fbbf24; }
+
+    /* Limitations */
+    .limitations {
+      background: rgba(234,88,12,0.05);
+      border: 1px solid rgba(234,88,12,0.2);
+      border-radius: 1rem;
+      padding: 2rem;
+      margin: 2rem 0;
+    }
+    .limitations h3 {
+      color: #fb923c;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .limitations ul {
+      list-style: none;
+      padding: 0;
+    }
+    .limitations li {
+      padding: 0.5rem 0;
+      color: var(--text-muted);
+      padding-left: 1.5rem;
+      position: relative;
+    }
+    .limitations li::before {
+      content: "•";
+      color: #fb923c;
+      position: absolute;
+      left: 0;
+      font-weight: bold;
+    }
+
+    /* Footer */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 3rem 0;
+      text-align: center;
+      color: var(--text-muted);
+    }
+    footer a {
+      color: var(--primary-hover);
+      text-decoration: none;
+    }
+    footer a:hover { text-decoration: underline; }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .cta { flex-direction: column; align-items: stretch; }
+      .btn { justify-content: center; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container hero-content">
+      <span class="badge">v7.1 • build passes • 409 tests • 0 errors</span>
+      <h1>Deep Research Engine</h1>
+      <p>Self-hosted AI workstation — deep research, agentic chat, multi-agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).</p>
+      <div class="cta">
+        <a href="https://github.com/Abd123454/deep-research-engine" class="btn btn-primary" target="_blank" rel="noopener">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+          View on GitHub
+        </a>
+        <a href="#features" class="btn btn-secondary">Explore Features</a>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">16+</div>
+          <div class="stat-label">Features</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">409</div>
+          <div class="stat-label">Tests Passing</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">$0</div>
+          <div class="stat-label">Monthly Cost</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">7</div>
+          <div class="stat-label">Agent Roles</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="section" id="features">
+    <div class="container">
+      <h2 class="section-title">Features</h2>
+      <p class="section-subtitle">Everything you need for AI-powered research and automation, in one self-hosted platform.</p>
+      <div class="features-grid">
+        <div class="feature">
+          <div class="feature-icon">🔬</div>
+          <h3>Deep Research</h3>
+          <p>6-stage pipeline: plan → decompose → search → gap analysis → round 2 → synthesize. Citation verification checks every URL.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎯</div>
+          <h3>Source Quality Scoring</h3>
+          <p>Tier-based ranking: academic/government (tier 1) → industry (tier 2) → general web (tier 3). Weak sources dropped.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🌐</div>
+          <h3>JS-Rendered Reading</h3>
+          <p>Playwright headless browser fallback for SPA sites (React/Vue/Angular) that return empty HTML to direct fetch.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🤖</div>
+          <h3>Agentic Chat</h3>
+          <p>ReAct (Reason + Act) loop with native tool calling. Skills system: Default, Coder, Researcher, Writer, Data Analyst.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🐝</div>
+          <h3>Agent Swarm</h3>
+          <p>Multi-agent collaboration: orchestrator breaks tasks, specialists run in parallel, synthesizer combines outputs.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⌨️</div>
+          <h3>Code Sandbox</h3>
+          <p>JavaScript (vm) + Python (subprocess) + Docker (isolated). Verifier loop: code fails → agent fixes → retries.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">👁️</div>
+          <h3>Vision</h3>
+          <p>4-provider fallback: OpenAI GPT-4o → Anthropic Claude 3.5 → NVIDIA Llama 3.2 → Tesseract OCR.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎙️</div>
+          <h3>Voice</h3>
+          <p>Text-to-speech (TTS) + speech-to-text (ASR) with multi-provider support.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📄</div>
+          <h3>File Generation</h3>
+          <p>Export to PDF, DOCX, PPTX, XLSX. Generate documents from research reports.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🎨</div>
+          <h3>3-Column Layout</h3>
+          <p>Sidebar (conversations) + Chat (main) + Artifacts (interactive HTML/React/SVG/code results).</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🧠</div>
+          <h3>5-Layer Memory</h3>
+          <p>Conversation history, long-term semantic memory, research history, documents, user preferences.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🔄</div>
+          <h3>Multi-Provider LLM</h3>
+          <p>NVIDIA (6-model chain) → OpenAI → Anthropic → Ollama. If NVIDIA fails, OpenAI takes over automatically.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">⏹️</div>
+          <h3>Real Cancellation</h3>
+          <p>AbortController cancels in-flight HTTP requests immediately. No wasted budget when you click Stop.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">📱</div>
+          <h3>PWA</h3>
+          <p>Installable, offline indicator, service worker. Works like a native app on mobile.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🧩</div>
+          <h3>Browser Extension</h3>
+          <p>Chrome/Firefox (Manifest V3): capture any page and research it with one click.</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">🖥️</div>
+          <h3>Desktop App</h3>
+          <p>Electron wrapper: system tray, native menu, keyboard shortcuts. Native desktop experience.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Architecture -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Swarm Architecture</h2>
+      <p class="section-subtitle">Multi-agent collaboration with parallel execution and synthesis.</p>
+      <div class="arch">
+<pre>
+  <span class="highlight">User Task</span>
+      │
+      ▼
+  ┌─────────────┐
+  │ Orchestrator │  <span class="highlight">breaks task into subtasks</span>
+  └──────┬──────┘
+         │
+    ┌────┼────┬──────────┬──────────────┐
+    ▼    ▼    ▼          ▼              ▼
+  Worker Worker Worker  Worker        Worker   <span class="highlight">(parallel)</span>
+  │     │     │        │              │
+  │     │     │        │              │
+  └─────┴─────┴────────┴──────────────┘
+         │
+         ▼
+  ┌──────────────┐
+  │  Synthesizer  │  <span class="highlight">combines outputs into final report</span>
+  └──────────────┘
+
+  <span class="highlight">7 Agent Roles:</span>
+  • researcher        — web search, citations
+  • coder             — write + test code
+  • analyst           — data analysis, calculations
+  • writer            — long-form prose
+  • generalist        — flexible, all tools
+  • security_analyst  — CVEs, OWASP, compliance
+  • electrical_engineer — PLC, power, motors, safety
+</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tech Stack -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Tech Stack</h2>
+      <p class="section-subtitle">Modern, type-safe, and battle-tested.</p>
+      <div class="tech-grid">
+        <div class="tech-item">
+          <div class="tech-name">Next.js 16</div>
+          <div class="tech-desc">App Router</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">TypeScript 5</div>
+          <div class="tech-desc">Strict mode</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Tailwind CSS 4</div>
+          <div class="tech-desc">shadcn/ui</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Prisma ORM</div>
+          <div class="tech-desc">Postgres / SQLite</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">NVIDIA NIM</div>
+          <div class="tech-desc">Primary LLM (free)</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">OpenAI</div>
+          <div class="tech-desc">Fallback #1</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Anthropic</div>
+          <div class="tech-desc">Fallback #2</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Ollama</div>
+          <div class="tech-desc">Local LLM</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Vitest</div>
+          <div class="tech-desc">409 tests</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Playwright</div>
+          <div class="tech-desc">JS rendering</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Docker</div>
+          <div class="tech-desc">Code sandbox</div>
+        </div>
+        <div class="tech-item">
+          <div class="tech-name">Electron</div>
+          <div class="tech-desc">Desktop app</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Start -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-subtitle">Get running in under 2 minutes.</p>
+      <div class="code-block">
+        <code>
+<span class="comment"># Clone the repository</span>
+<span class="cmd">git clone</span> https://github.com/Abd123454/deep-research-engine.git
+<span class="cmd">cd</span> deep-research-engine
+
+<span class="comment"># Install dependencies</span>
+<span class="cmd">bun install</span>
+
+<span class="comment"># Configure environment</span>
+<span class="cmd">cp</span> .env.example .env
+<span class="comment"># Edit .env: add NVIDIA_API_KEY (free at https://build.nvidia.com/)</span>
+
+<span class="comment"># Start the dev server</span>
+<span class="cmd">bun run dev</span>
+
+<span class="comment"># Open http://localhost:3000</span>
+
+<span class="comment"># Run the evaluation suite</span>
+<span class="cmd">bun run eval</span>
+        </code>
+      </div>
+    </div>
+  </section>
+
+  <!-- Limitations -->
+  <section class="section">
+    <div class="container">
+      <h2 class="section-title">Known Limitations</h2>
+      <p class="section-subtitle">Honest about what's not perfect yet.</p>
+      <div class="limitations">
+        <h3>⚠️ Honest Gaps</h3>
+        <ul>
+          <li>research-engine.ts test coverage: ~23% (targeting 60%)</li>
+          <li>No mobile app (planned for future release)</li>
+          <li>No multi-user isolation (single-user by default)</li>
+          <li>Rate limiter uses in-memory fallback without Redis</li>
+          <li>Docker sandbox requires Docker installed (falls back to vm)</li>
+          <li>Playwright adds ~150MB (optional, for JS-rendered pages)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer>
+    <div class="container">
+      <p>
+        <a href="https://github.com/Abd123454/deep-research-engine" target="_blank" rel="noopener">GitHub</a> •
+        <a href="https://github.com/Abd123454/deep-research-engine/releases" target="_blank" rel="noopener">Releases</a> •
+        <a href="https://github.com/Abd123454/deep-research-engine/blob/main/CHANGELOG.md" target="_blank" rel="noopener">Changelog</a>
+      </p>
+      <p style="margin-top: 1rem; font-size: 0.9rem;">
+        MIT License • Built with Next.js 16, TypeScript, and $0/month APIs
+      </p>
+      <p style="margin-top: 0.5rem; font-size: 0.8rem; color: #52525b;">
+        This is a static showcase page. The full app runs locally with API keys.
+      </p>
+    </div>
+  </footer>
+</body>
+</html>

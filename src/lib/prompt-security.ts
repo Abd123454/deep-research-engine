@@ -281,6 +281,14 @@ const CMD_PATTERNS = [
   /\$\([^)]*\)/g, // command substitution $(...)
   /`[^`]*`/g, // backtick command substitution
   /\b(nmap|curl|wget|bash|sh|rm|mv|cp|chmod|sudo|exec)\s/gi, // command + space
+  // SQL destructive keywords — stripped because they're dangerous in SQL
+  // context and rarely appear in legit research queries. SELECT is kept
+  // (users may ask "How do I write a SELECT in SQL?").
+  /\bDROP\b/gi,
+  /\bDELETE\b/gi,
+  /\bINSERT\b/gi,
+  /\bUPDATE\b/gi,
+  /--/g, // SQL comment marker
 ];
 
 export function sanitizeInput(input: string): string {

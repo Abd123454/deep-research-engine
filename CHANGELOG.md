@@ -1,5 +1,128 @@
 # Changelog
 
+## [0.6.0] — Round 12: Eval Harness + Source Quality + JS Rendering + Domain Agents
+
+### Added — Evaluation Harness (Phase 12B)
+- `src/lib/eval/dataset.ts`: 20 eval queries (10 research, 5 coding, 5 factual) with objective pass/fail criteria (expected sources, keywords, code tests).
+- `src/lib/eval/runner.ts`: `runEval()` + `runEvalSuite()` with summary metrics (pass rate, avg score, tokens, time, by-type breakdown).
+- `POST /api/eval`: admin-only endpoint (10-min rate limit) to run the suite. `GET /api/eval` returns dataset metadata.
+- `scripts/eval.ts`: CLI with per-query table + JSON output. Usage: `bun run eval` or `bun run eval r1 r2 f1` or `bun run eval --type=factual`.
+- 17 tests (dataset structure, factual/coding/research pass-fail, suite summary).
+
+### Added — Source Quality Scoring (Phase 12C)
+- `src/lib/source-quality.ts`: `scoreSource()` + `rankSources()` + `rankSourcesWithMinimum()`.
+- Tier 1 (95+): .edu, .gov, .mil, wikipedia, nature, science, ieee, arxiv, reuters, bbc, nytimes, pubmed, scholar.google.
+- Tier 2 (70+): github, stackoverflow, MDN, w3.org, medium, dev.to.
+- Tier 3 (50+): everything else. Adjustments: +5 HTTPS, +5 substantial snippet, -20 sponsored content.
+- Sources scoring < 30 dropped; minimum 3 guaranteed (prevents source starvation).
+- Wired into `retriever.ts` `searchWeb()`: raw results → rank → return.
+- 19 tests (tier classification, bonuses, penalties, sorting, dropping, minimum recovery).
+
+### Added — JS-Rendered Page Reading (Phase 12D)
+- `src/lib/page-reader-js.ts`: `readPageWithJS()` + `isPlaywrightAvailable()`.
+- Dynamic import of Playwright (optional dependency — graceful error if not installed).
+- Headless chromium, 15s timeout, 1s render wait. Strips script/style/nav/footer/ads.
+- Wired into `page-reader.ts` `readPage()`: if direct fetch returns < 200 chars (SPA shell), falls back to Playwright.
+- Injection scan applied to JS-rendered content too.
+- 10 tests (availability, graceful absence, fallback trigger, normal path, non-HTML, fetch errors, abort, interface shape).
+
+### Added — Domain Agents (Phase 12E)
+- `security_analyst` role: cybersecurity specialist (threat modeling, CVEs, OWASP, compliance). Has web_search.
+- `electrical_engineer` role: industrial electrical systems (PLC, power, motors, safety standards). Has web_search + run_code.
+- Updated orchestrator prompt to mention the new roles so the LLM can assign them.
+- Updated `validateRole()` to accept the new roles.
+- 8 tests (role assignment, worker execution, tool access, fallback).
+
+### Fixed — README Honesty (Phase 12A)
+- Removed false claims: "No persistent storage" (it's wired since v0.5.1), "39 tests" (409+).
+- Added complete Features section covering all 16 features.
+- Added honest Known Limitations (research-engine coverage ~23%, no mobile app, no multi-user isolation, rate limiter in-memory without Redis, Docker sandbox requires Docker, Playwright adds ~150MB).
+- Updated Tech Stack, Configuration, Quick Start for v7.0.
+
+### Changed
+- `src/lib/swarm.ts`: Added `security_analyst` and `electrical_engineer` to `AgentRole`, `ROLE_PROMPTS`, `ROLE_TOOLS`, `PLAN_SYSTEM_PROMPT`, `validateRole()`.
+- `src/lib/retriever.ts`: `searchWeb()` now ranks sources by quality before returning.
+- `src/lib/page-reader.ts`: `readPage()` falls back to Playwright for SPA pages.
+- `package.json`: Added `eval` script. Version 0.5.1 → 0.6.0.
+- Tests: 409 pass + 1 skip (was 355+1; +54 tests across 5 phases).
+- New files: `src/lib/eval/dataset.ts`, `src/lib/eval/runner.ts`, `src/lib/source-quality.ts`, `src/lib/page-reader-js.ts`, `src/app/api/eval/route.ts`, `scripts/eval.ts`, + 5 test files.
+
+## [0.5.1] — Round 11: Wiring Round (no new features, just connecting built-but-disconnected systems)
+
+### Fixed — Multi-provider Fallback (WIRING)
+- **Problem**: `src/lib/llm-providers/` (OpenAI + Anthropic + Ollama) was built but never connected. All routes imported from `src/lib/llm-provider.ts` (NVIDIA only). If NVIDIA went down, the whole project went down.
+- **Fix**: Added `crossProviderFallback()` to `llm-provider.ts`. When all 6 NVIDIA models fail, it now tries OpenAI → Anthropic → Ollama before giving up.
+- Also added `crossProviderFastFallback()` for the `fast()` path.
+- **Result**: NVIDIA outage → OpenAI takes over → project stays up.
+- 5 new tests verify the full chain: NVIDIA fail → OpenAI, NVIDIA+OpenAI fail → Anthropic, all fail → Ollama, all fail → clear error, streaming tokens already emitted → no fallback.
+
+### Fixed — Persistent Storage (WIRING)
+- **Problem**: `research-store.ts` used an in-memory `Map` on `globalThis`. Server restart = all research jobs lost. `ResearchJobRecord` existed in Prisma schema but was never used.
+- **Fix**: Added `persistJob()` to `research-store.ts`. Every `setStatus()` call in `research-engine.ts` now writes to the SQLite `research_jobs` table. `getJob()` checks in-memory Map first (fast, full runtime state), then falls back to DB (completed jobs that survived a restart). `listJobs()` merges both. `deleteJob()` removes from both.
+- Added `abortController` to `ResearchJob` type for real cancellation.
+- **Result**: Server restart → completed research jobs survive → GET /api/research/status/[id] still works.
+- 6 new tests: createJob persists, getJob recovers from DB after Map cleared, listJobs merges, deleteJob removes from both, persistJob updates, survives restart.
+
+### Fixed — Real Cancellation (WIRING)
+- **Problem**: Stop button set `job.cancelled = true` but `Promise.all` in `processSubQuery` didn't cancel in-flight `fetch()` calls. The search/page-read requests kept running until they completed or timed out.
+- **Fix**: Added `AbortController` to every `ResearchJob`. The stop endpoint calls `abortController.abort()` which cancels all in-flight fetches immediately. `searchWeb()` and `readPages()` now accept an `AbortSignal` parameter and pass it to every `fetch()` call (combined with the existing timeout via `AbortSignal.any()`). `processSubQuery` passes `job.abortController.signal` to both.
+- Added abort checks before retries/sleeps in the retriever to prevent wasted time.
+- **Result**: Click Stop → in-flight search and page-read requests abort immediately → no wasted budget.
+- 9 new tests: aborted signal → empty results, mid-request abort, normal operation, Wikipedia API abort, direct page abort, readPages with pre-aborted signal, mid-batch abort, AbortController lifecycle, multiple fetches sharing one signal.
+
+### Fixed — Code Verifier Loop (WIRING)
+- **Problem**: `run_code` tool returned errors but the swarm's `runWorker` just said "Continue based on this result" — it didn't explicitly ask the model to fix and retry.
+- **Fix**: Enhanced `run_code` tool to return clearer error messages: `"Execution failed.\n\nError: ...\n\nPlease fix the code and try again. Common issues: ..."`. Enhanced `runWorker` ReAct loop: when a tool result has `success: false`, the feedback message now explicitly says "Please fix the issue and try again" instead of "Continue". Increased `MAX_TOOL_ITERATIONS` from 3 to 4 to give the coder agent an extra self-correction chance.
+- **Result**: Coder agent encounters a bug → sees the error → fixes the code → retries → succeeds.
+- 5 new tests: error message clarity, success message clarity, failure feedback with "fix and retry", success feedback with "continue", iteration limit respected.
+
+### Changed
+- `src/lib/types.ts`: Added `abortController?: AbortController` to `ResearchJob`.
+- `src/lib/research-store.ts`: Complete rewrite — dual-mode (in-memory + DB), `persistJob()`, `recordToJob()`, DB-backed `getJob()`/`listJobs()`/`deleteJob()`.
+- `src/lib/research-engine.ts`: `setStatus()` now calls `persistJob()`. `processSubQuery()` passes abort signal to `searchWeb()` and `readPages()`.
+- `src/lib/retriever.ts`: All search functions accept optional `AbortSignal`. Added `withAbortSignal()` helper. Abort checks before retries.
+- `src/lib/page-reader.ts`: `readPage()` and `readPages()` accept optional `AbortSignal`. Added `withAbortSignal()` helper. `readPages` checks signal before each page read.
+- `src/lib/agent-tools.ts`: `run_code` tool returns clearer success/error messages.
+- `src/lib/swarm.ts`: `MAX_TOOL_ITERATIONS` 3→4. Verifier loop: failure feedback says "fix and retry".
+- `src/app/api/research/stop/[id]/route.ts`: Calls `abortController.abort()` + `persistJob()`.
+- Tests: 354 pass + 1 skip (was 329 pass + 1 skip; +25 wiring tests across 4 new test files).
+- Version: 0.5.0 → 0.5.1.
+
+## [0.5.0] — Round 10: Agent Swarm + Browser Extension + Desktop App
+
+### Added — Agent Swarm
+- Multi-agent collaboration system: orchestrator → parallel workers → synthesizer.
+- 5 specialist roles: researcher, coder, analyst, writer, generalist (each with dedicated system prompt + tool access).
+- `src/lib/swarm.ts` — full swarm engine: `planSwarm()`, `runWorker()` (ReAct loop, 3 iterations), `synthesizeSwarm()` (streaming), `runSwarm()` (orchestrator).
+- `POST /api/swarm` — SSE endpoint with 10 event types: swarm_start, agent_start, agent_token, agent_tool, agent_result, agent_done, synth_start, synth_token, swarm_done, error.
+- `SwarmCard` component — live visualization: plan grid, parallel agent activity panel, streaming synthesis, final report with export.
+- "Swarm" mode in unified input dropdown + auto-detect ("swarm:" prefix).
+- Worker failure resilience: failed workers don't break synthesis; error noted in output.
+- 11 unit tests (plan parsing, worker streaming, synthesis, end-to-end orchestration, failure resilience, SSE format).
+
+### Added — Browser Extension
+- `/browser-extension/` — complete Manifest V3 extension (Chrome + Firefox, ~95 KB).
+- 4 actions: Research page, Quick question, Deep research, Swarm analysis.
+- Side panel with streaming markdown chat + offline history (last 20 cached).
+- Page content extraction (title, URL, text ≤10k, description, headings).
+- Opt-in floating "Research with AI" button.
+- Streaming-safe architecture: side panel owns all fetches (survives MV3 service worker termination).
+- Settings: configurable API base URL (synced via chrome.storage.sync).
+
+### Added — Desktop App
+- `/desktop/` — Electron wrapper (separate npm project, electron NOT in main package.json).
+- 1200×800 window, system tray + context menu, native app menu (File/Edit/View/Window/Help).
+- Keyboard shortcuts: Cmd/Ctrl+N (new research), +Shift+N (new chat), +R (reload), +Q (quit), +Alt+N (global new).
+- Single-instance lock, graceful server-wait (polls port 3000 every 2s for 30s → error page).
+- Dark mode via `nativeTheme`, security hardening (contextIsolation, no nodeIntegration, sandbox).
+- Production build config for macOS / Linux / Windows (electron-builder).
+- `contextBridge` API: `window.desktopAPI` exposes platform, version, event listeners.
+
+### Changed
+- ESLint config: ignores `desktop/` and `browser-extension/` (separate vanilla-JS projects).
+- Version bump 0.4.0 → 0.5.0.
+- Tests: 329 pass + 1 skip (was 304 pass + 1 skip; +25 tests across rounds 9–10).
+
 ## [0.4.0] - 2026-07-12
 
 ### Added

@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
   // compile. serverExternalPackages tells Next.js to leave it as a Node
   // require (loaded at runtime, not bundled). This is the same fix used
   // for any native addon (sharp, bcrypt, etc.) in Next.js.
-  serverExternalPackages: ["better-sqlite3"],
+  serverExternalPackages: ["better-sqlite3", "playwright"],
   // Allow the preview/sandbox environment to load _next/* resources.
   // Without this, the preview iframe gets cross-origin errors.
   allowedDevOrigins: ["*.space-z.ai", "*.z.ai", "localhost", "127.0.0.1"],

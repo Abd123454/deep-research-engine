@@ -67,6 +67,19 @@ export class OpenAIProvider implements LLMProviderInterface {
     };
     if (opts.json) body.response_format = { type: "json_object" };
 
+    // Native tool calling support (OpenAI function calling format).
+    if (opts.tools && opts.tools.length > 0) {
+      body.tools = opts.tools.map((t) => ({
+        type: "function",
+        function: {
+          name: t.name,
+          description: t.description,
+          parameters: t.parameters,
+        },
+      }));
+      body.tool_choice = "auto";
+    }
+
     const res = await fetch(`${this.baseUrl}/chat/completions`, {
       method: "POST",
       headers: {
@@ -111,7 +124,15 @@ export class OpenAIProvider implements LLMProviderInterface {
     }
 
     const data = (await res.json()) as {
-      choices?: { message?: { content?: string } }[];
+      choices?: {
+        message?: {
+          content?: string;
+          tool_calls?: Array<{
+            id: string;
+            function: { name: string; arguments: string };
+          }>;
+        };
+      }[];
       usage?: { total_tokens?: number; prompt_tokens?: number; completion_tokens?: number };
     };
     const content = data.choices?.[0]?.message?.content ?? "";
@@ -121,7 +142,16 @@ export class OpenAIProvider implements LLMProviderInterface {
     const cost =
       (inputTokens / 1_000_000) * this.costPer1MTokens.input +
       (outputTokens / 1_000_000) * this.costPer1MTokens.output;
-    return { content, tokensUsed, model, provider: "openai", cost };
+
+    // Parse native tool calls from OpenAI response.
+    const rawToolCalls = data.choices?.[0]?.message?.tool_calls;
+    const toolCalls = rawToolCalls?.map((tc) => {
+      let args: Record<string, unknown> = {};
+      try { args = JSON.parse(tc.function.arguments); } catch { /* leave empty */ }
+      return { id: tc.id, name: tc.function.name, arguments: args };
+    });
+
+    return { content, tokensUsed, model, provider: "openai", cost, toolCalls };
   }
 
   async smart(opts: LLMCompletionOptions): Promise<LLMCompletionResult> {

@@ -206,10 +206,16 @@ describe("nvidiaCompleteWithFallback", () => {
     );
 
     process.env.SMART_LLM_MODELS = "model-1,model-2";
+    // Clear other provider keys so cross-provider fallback isn't attempted.
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.ANTHROPIC_API_KEY;
+    delete process.env.OLLAMA_URL;
     const llm = await getLLM();
+    // After Round 11 wiring: all NVIDIA models fail → cross-provider fallback
+    // → no other provider available → throws "All LLM providers failed".
     await expect(
       llm.smart({ messages: [{ role: "user", content: "Hi" }] })
-    ).rejects.toThrow(/All.*models.*failed/i);
+    ).rejects.toThrow(/All (LLM providers|.*models).*failed/i);
   });
 });
 

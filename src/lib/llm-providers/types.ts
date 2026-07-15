@@ -6,8 +6,26 @@
 // available one.
 
 export interface LLMMessage {
-  role: "system" | "user" | "assistant";
+  role: "system" | "user" | "assistant" | "tool";
   content: string;
+  toolCallId?: string;
+  toolCalls?: LLMToolCall[];
+}
+
+export interface LLMTool {
+  name: string;
+  description: string;
+  parameters: {
+    type: "object";
+    properties: Record<string, unknown>;
+    required: string[];
+  };
+}
+
+export interface LLMToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
 }
 
 export interface LLMCompletionOptions {
@@ -17,6 +35,7 @@ export interface LLMCompletionOptions {
   json?: boolean;
   stream?: boolean;
   onToken?: (token: string) => void;
+  tools?: LLMTool[];
 }
 
 export interface LLMCompletionResult {
@@ -24,7 +43,8 @@ export interface LLMCompletionResult {
   tokensUsed?: number;
   model: string;
   provider: string;
-  cost?: number; // USD for this call
+  cost?: number;
+  toolCalls?: LLMToolCall[];
 }
 
 export interface LLMProviderInterface {
@@ -32,6 +52,6 @@ export interface LLMProviderInterface {
   smart(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
   fast(opts: LLMCompletionOptions): Promise<LLMCompletionResult>;
   models: string[];
-  costPer1MTokens: { input: number; output: number }; // USD
+  costPer1MTokens: { input: number; output: number };
   isAvailable(): boolean;
 }

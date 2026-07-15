@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
+import { SessionProvider } from "@/components/SessionProvider";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,6 +27,12 @@ export const metadata: Metadata = {
     icon: "/logo.svg",
     apple: "/logo.svg",
   },
+  manifest: "/manifest.json",
+  other: {
+    "theme-color": "#1a73e8",
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-title": "Deep Research",
+  },
 };
 
 export default function RootLayout({
@@ -45,6 +52,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LocaleProvider>
+            <SessionProvider>
             {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
             <a
               href="#main-content"
@@ -55,6 +63,7 @@ export default function RootLayout({
             {children}
             <Toaster />
             <SonnerToaster />
+            </SessionProvider>
           </LocaleProvider>
         </ThemeProvider>
         <noscript>

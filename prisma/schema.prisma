@@ -1,0 +1,192 @@
+// Deep Research Engine — 5-Layer Memory System Schema
+//
+// Layer 1: Conversation Memory (conversations + messages)
+// Layer 2: Long-term Memory (long_term_memories + pgvector)
+// Layer 3: Research History (research_jobs)
+// Layer 4: Document Memory (documents + pgvector)
+// Layer 5: User Preferences (user_preferences)
+//
+// NOTE: This schema supports Postgres with pgvector for production.
+// For development without Postgres, the app falls back to in-memory
+// stores (SQLite via better-sqlite3). See src/lib/db.ts for the
+// fallback logic.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============ User ============
+
+model User {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  name         String?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  conversations Conversation[]
+  researchJobs  ResearchJobRecord[]
+  documents     DocumentRecord[]
+  preferences   UserPreference?
+  memories      LongTermMemory[]
+  projects      Project[]
+
+  @@map("users")
+}
+
+// ============ Projects / Workspaces ============
+
+model Project {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user         User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversations Conversation[]
+  researchJobs  ResearchJobRecord[]
+  documents     DocumentRecord[]
+  connectors    Connector[]
+
+  @@index([userId])
+  @@map("projects")
+}
+
+model Connector {
+  id          String   @id @default(cuid())
+  projectId   String
+  type        String   // "github" | "googledrive" | "notion"
+  credentials String?  // encrypted token (JSON string)
+  createdAt   DateTime @default(now())
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@index([projectId])
+  @@map("connectors")
+}
+
+// ============ Layer 1: Conversation Memory ============
+
+model Conversation {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  title     String   @default("New Conversation")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project  Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String
+  role           String // "user" | "assistant" | "system"
+  content        String
+  tokensUsed     Int      @default(0)
+  modelUsed      String?
+  // embedding is stored via raw SQL when pgvector is available.
+  // Prisma doesn't natively support vector type, so we use Unsupported.
+  // embedding      Unsupported("vector(1536)")?
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@map("messages")
+}
+
+// ============ Layer 2: Long-term Memory ============
+
+model LongTermMemory {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String // "fact" | "preference" | "context"
+  content      String
+  // embedding   Unsupported("vector(1536)")?
+  confidence   Float    @default(0.5)
+  createdAt    DateTime @default(now())
+  lastAccessed DateTime?
+  accessCount  Int      @default(0)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("long_term_memories")
+}
+
+// ============ Layer 3: Research History ============
+
+model ResearchJobRecord {
+  id                 String   @id @default(cuid())
+  userId             String
+  projectId          String?
+  query              String
+  plan               Json?
+  report             String?
+  sources            Json?
+  stats              Json?
+  verificationReport Json?
+  status             String   @default("queued")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([projectId])
+  @@map("research_jobs")
+}
+
+// ============ Layer 4: Document Memory ============
+
+model DocumentRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  projectId String?
+  filename  String
+  mimeType  String
+  size      Int
+  text      String
+  textLength Int
+  // embedding Unsupported("vector(1536)")?
+  createdAt DateTime @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [projectId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([projectId])
+  @@map("documents")
+}
+
+// ============ Layer 5: User Preferences ============
+
+model UserPreference {
+  userId            String   @id
+  preferredLanguage String?  @default("auto")
+  preferredDepth    String?  @default("standard")
+  preferredFormat   String?  @default("markdown")
+  preferredProvider String?  @default("auto")
+  timezone          String?
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("user_preferences")
+}

@@ -24,7 +24,7 @@ function fmtSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)}MB`;
 }
 
-export function DocumentCard({ file, initialQuestion }: DocumentCardProps) {
+function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
   const t = useT();
   const [documentId, setDocumentId] = React.useState<string | null>(null);
   const [uploading, setUploading] = React.useState(true);
@@ -135,10 +135,10 @@ export function DocumentCard({ file, initialQuestion }: DocumentCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl border border-border/60 shadow-sm overflow-hidden"
+      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
     >
       {/* Document header */}
-      <div className="bg-secondary/50 px-5 py-3 flex items-center gap-2">
+      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 border-b border-border/40 flex items-center gap-2">
         <FileText className="h-4 w-4 shrink-0 text-primary" />
         <span className="text-sm font-medium truncate flex-1">{file.name}</span>
         <span className="text-[10px] text-muted-foreground shrink-0">{fmtSize(file.size)}</span>
@@ -248,3 +248,5 @@ export function DocumentCard({ file, initialQuestion }: DocumentCardProps) {
     </motion.div>
   );
 }
+
+export const DocumentCard = React.memo(DocumentCardImpl);

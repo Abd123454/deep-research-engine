@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;" />
+  <title>Deep Research Engine</title>
+  <style>
+    :root {
+      /* Match the main app's dark palette (Gemini-style #1e1e1e). */
+      --bg: #1e1e1e;
+      --bg-elevated: #262626;
+      --fg: #ededed;
+      --fg-muted: #9aa0a6;
+      --primary: #8ab4f8;     /* light blue from dark-mode palette */
+      --primary-strong: #1a73e8;
+      --error: #f28b82;
+      --error-bg: #3d1f1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 32px;
+      text-align: center;
+      max-width: 420px;
+      width: 100%;
+    }
+
+    /* Sparkle logo — matches the main app's brand mark */
+    .logo {
+      width: 72px;
+      height: 72px;
+      flex-shrink: 0;
+      animation: breathe 2.4s ease-in-out infinite;
+    }
+
+    @keyframes breathe {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%      { opacity: 0.55; transform: scale(0.92); }
+    }
+
+    .title {
+      font-size: 18px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      margin: 0;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin: 0;
+      line-height: 1.55;
+      white-space: pre-line;
+      min-height: 1.5em;
+    }
+
+    /* Spinner */
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(138, 180, 248, 0.18);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Progress bar — visible during the "waiting" phase */
+    .progress {
+      width: 100%;
+      height: 3px;
+      background: var(--bg-elevated);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar {
+      width: 35%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-strong), var(--primary));
+      border-radius: 99px;
+      animation: indeterminate 1.6s ease-in-out infinite;
+    }
+
+    @keyframes indeterminate {
+      0%   { transform: translateX(-100%); }
+      100% { transform: translateX(380%); }
+    }
+
+    /* Error view */
+    .error-view { display: none; flex-direction: column; align-items: center; gap: 18px; }
+
+    .error-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background: var(--error-bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .error-icon svg { width: 28px; height: 28px; }
+
+    .error-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--error);
+      margin: 0;
+    }
+
+    .error-detail {
+      font-size: 12.5px;
+      color: var(--fg-muted);
+      line-height: 1.6;
+      white-space: pre-line;
+      text-align: left;
+      background: var(--bg-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px 14px;
+      width: 100%;
+      max-width: 380px;
+      font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+    }
+
+    .retry-btn {
+      background: var(--primary-strong);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 9px 18px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+
+    .retry-btn:hover { background: #1765cc; }
+    .retry-btn:active { background: #1557b0; }
+  </style>
+</head>
+<body>
+  <div class="container" id="loading-view">
+    <!-- Sparkle logo (inline SVG so no external deps are needed) -->
+    <svg class="logo" viewBox="0 0 30 30" fill="none" xmlns="http://www.w3.org/2000/svg"
+         aria-hidden="true">
+      <defs>
+        <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%"  stop-color="#8ab4f8" />
+          <stop offset="50%" stop-color="#9b7cf6" />
+          <stop offset="100%" stop-color="#d85cc8" />
+        </linearGradient>
+      </defs>
+      <!-- Four-point sparkle -->
+      <path d="M15 2 C16 9 21 14 28 15 C21 16 16 21 15 28 C14 21 9 16 2 15 C9 14 14 9 15 2 Z"
+            fill="url(#sparkle-grad)" />
+    </svg>
+
+    <h1 class="title">Deep Research Engine</h1>
+
+    <div class="spinner" role="status" aria-label="Loading"></div>
+
+    <p class="subtitle" id="loading-message">Starting Deep Research Engine…</p>
+
+    <div class="progress" aria-hidden="true">
+      <div class="progress-bar"></div>
+    </div>
+  </div>
+
+  <div class="container error-view" id="error-view">
+    <div class="error-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 7v6m0 4h.01M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0Z"
+              stroke="#f28b82" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round" />
+      </svg>
+    </div>
+    <h1 class="error-title">Couldn't connect to the Deep Research Engine</h1>
+    <pre class="error-detail" id="error-detail"></pre>
+    <button class="retry-btn" id="retry-btn">Retry now</button>
+  </div>
+
+  <script>
+    // Expose helpers for the main process to drive this page.
+    window.__setLoadingMessage = function (message) {
+      var el = document.getElementById('loading-message');
+      if (el) el.textContent = message || 'Starting Deep Research Engine…';
+    };
+
+    window.__showError = function (instructions) {
+      var loadingView = document.getElementById('loading-view');
+      var errorView = document.getElementById('error-view');
+      var detail = document.getElementById('error-detail');
+      if (loadingView) loadingView.style.display = 'none';
+      if (errorView) errorView.style.display = 'flex';
+      if (detail) detail.textContent = instructions || 'An unknown error occurred.';
+    };
+
+    // Retry button → ask Electron to restart the health check.
+    // (The actual retry is triggered from the main process via executeJavaScript
+    //  on this window — here we just reload the page so the spinner comes back.)
+    document.getElementById('retry-btn').addEventListener('click', function () {
+      location.reload();
+    });
+  </script>
+</body>
+</html>
