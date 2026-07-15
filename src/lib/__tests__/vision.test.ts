@@ -1,16 +1,25 @@
 // Tests for vision.ts — multimodal image understanding.
+//
+// Tesseract.js is mocked to prevent uncaught exceptions from its worker
+// when given invalid base64 input. The mock returns a clean result.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+
+// Mock tesseract.js — prevents worker uncaught exceptions on invalid base64.
+vi.mock("tesseract.js", () => ({
+  createWorker: vi.fn().mockResolvedValue({
+    recognize: vi.fn().mockResolvedValue({
+      data: { text: "mocked OCR text" },
+    }),
+    terminate: vi.fn().mockResolvedValue(undefined),
+  }),
+}));
 
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
 
 beforeEach(() => {
   fetchMock.mockReset();
-});
-
-afterEach(() => {
-  vi.restoreAllMocks();
 });
 
 describe("Vision — OpenAI", () => {
