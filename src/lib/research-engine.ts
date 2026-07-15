@@ -1,4 +1,4 @@
-// Deep Research Engine
+// Cognis — Deep Research Pipeline
 //
 // Multi-stage pipeline designed to surpass single-round deep research tools:
 //

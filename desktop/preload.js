@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * Deep Research Engine — preload script
+ * Cognis — preload script
  *
  * Runs in an isolated context with access to a subset of Node/Electron APIs,
  * and exposes a tiny, audited surface to the renderer (the Next.js web app)

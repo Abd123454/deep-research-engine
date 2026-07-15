@@ -1,4 +1,4 @@
-/* popup.js — Deep Research Engine popup logic.
+/* popup.js — Cognis popup logic.
  *
  * Talks to the background service worker for every action (extraction,
  * side-panel opening, streaming). The popup itself stays thin.

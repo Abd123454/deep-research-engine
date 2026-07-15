@@ -1,7 +1,7 @@
 {
-  "name": "Deep Research Engine",
-  "short_name": "DeepResearch",
-  "description": "Self-hosted AI Workstation — Research, Chat, Code, Documents",
+  "name": "Cognis — AI Workstation",
+  "short_name": "Cognis",
+  "description": "Self-hosted AI Workstation — Deep Research, Agent Swarm, Code Execution, Vision",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

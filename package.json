@@ -1,9 +1,10 @@
 {
-  "name": "deep-research-engine",
-  "version": "0.6.4",
+  "name": "cognis",
+  "version": "1.0.0",
   "private": true,
   "author": "Abd",
   "license": "MIT",
+  "description": "Cognis — Self-hosted AI Workstation with deep research, agent swarm, code execution, vision, and voice.",
   "engines": {
     "node": ">=20"
   },

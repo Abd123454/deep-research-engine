@@ -425,7 +425,7 @@ async function ddgJsonSearch(
 // Per Wikipedia's User-Agent policy, we send a descriptive UA with a
 // contact URL. We retry once on 429 with backoff.
 const WIKI_UA =
-  "DeepResearchEngine/1.0 (https://github.com/Abd123454/deep-research-engine; self-hosted research tool)";
+  "Cognis/1.0 (https://github.com/Abd123454/deep-research-engine; self-hosted research tool)";
 
 async function wikipediaSearch(
   query: string,
@@ -501,7 +501,7 @@ async function githubSearch(
     `&sort=stars&order=desc&per_page=${Math.min(num, 10)}`;
   const res = await fetch(url, {
     headers: {
-      "User-Agent": "DeepResearchEngine/1.0 (self-hosted)",
+      "User-Agent": "Cognis/1.0 (self-hosted)",
       Accept: "application/vnd.github+json",
     },
     signal: withAbortSignal(userSignal, 10000),

@@ -1,4 +1,4 @@
-// Minimal i18n dictionary for Deep Research Engine.
+// Minimal i18n dictionary for Cognis.
 //
 // Supports English (en) and Arabic (ar). Arabic is RTL.
 // The dictionary is intentionally flat and small — only UI chrome strings
@@ -102,8 +102,8 @@ type Dictionary = Record<StringKey, string>;
 
 export const STRINGS: Record<Locale, Dictionary> = {
   en: {
-    appName: "Deep Research",
-    appTagline: "Deep Research Engine · self-hosted, free, multi-round",
+    appName: "Cognis",
+    appTagline: "Cognis · self-hosted AI workstation, free, multi-round",
     cancel: "Cancel",
     close: "Close",
     done: "Done",
@@ -183,8 +183,8 @@ export const STRINGS: Record<Locale, Dictionary> = {
     confirmDeleteAll: "Delete all sessions? This cannot be undone.",
   },
   ar: {
-    appName: "البحث العميق",
-    appTagline: "محرك البحث العميق · ذاتي الاستضافة، مجاني، متعدد الجولات",
+    appName: "كوجنس",
+    appTagline: "كوجنس · محرك بحث ذاتي الاستضافة، مجاني، متعدد الجولات",
     cancel: "إلغاء",
     close: "إغلاق",
     done: "تم",

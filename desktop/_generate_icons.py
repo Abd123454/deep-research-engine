@@ -1,5 +1,5 @@
 """Generate tray-icon.png (22x22) and icon.png (512x512) for the Electron
-desktop wrapper. Both are a four-point sparkle in the Deep Research Engine
+desktop wrapper. Both are a four-point sparkle in the Cognis
 brand gradient (blue → purple → pink), on a transparent background.
 
 Run once:  python3 /home/z/my-project/desktop/_generate_icons.py

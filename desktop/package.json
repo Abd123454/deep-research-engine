@@ -1,9 +1,9 @@
 {
-  "name": "deep-research-desktop",
+  "name": "cognis-desktop",
   "version": "1.0.0",
-  "description": "Electron desktop wrapper for the Deep Research Engine web application.",
+  "description": "Cognis — Electron desktop wrapper for the self-hosted AI workstation.",
   "main": "main.js",
-  "author": "Deep Research Engine Team",
+  "author": "Cognis",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -18,9 +18,9 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.deepresearch.desktop",
-    "productName": "Deep Research Engine",
-    "copyright": "Copyright © 2024 Deep Research Engine",
+    "appId": "com.cognis.desktop",
+    "productName": "Cognis",
+    "copyright": "Copyright © 2024 Cognis",
     "directories": {
       "output": "dist",
       "buildResources": "build-resources"
@@ -53,10 +53,10 @@
       ],
       "icon": "icon.png",
       "category": "Office",
-      "maintainer": "Deep Research Engine Team",
+      "maintainer": "Cognis",
       "desktop": {
-        "Name": "Deep Research Engine",
-        "Comment": "Deep Research Engine Desktop App",
+        "Name": "Cognis",
+        "Comment": "Cognis Desktop App",
         "Categories": "Office;Research;Utility;",
         "Terminal": "false",
         "Type": "Application"
@@ -74,7 +74,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Deep Research Engine"
+      "shortcutName": "Cognis"
     }
   }
 }

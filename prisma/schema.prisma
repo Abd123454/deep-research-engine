@@ -1,4 +1,4 @@
-// Deep Research Engine — 5-Layer Memory System Schema
+// Cognis — 5-Layer Memory System Schema
 //
 // Layer 1: Conversation Memory (conversations + messages)
 // Layer 2: Long-term Memory (long_term_memories + pgvector)

@@ -1,4 +1,4 @@
-/* background.js — Deep Research Engine service worker (Manifest V3).
+/* background.js — Cognis service worker (Manifest V3).
  *
  * Responsibilities:
  *   1. action.onClicked → open the side panel (defensive; popup usually
@@ -404,5 +404,5 @@
   }
 
   // Startup log (visible in service worker devtools console).
-  console.log("[Deep Research Engine] background service worker ready.");
+  console.log("[Cognis] background service worker ready.");
 })();

@@ -1,4 +1,4 @@
-/* sidepanel.js — Deep Research Engine side panel.
+/* sidepanel.js — Cognis side panel.
  *
  * Owns all streaming API calls (the side panel is long-lived, unlike a
  * service worker). Talks to the background worker only for:

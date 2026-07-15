@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:;" />
-  <title>Deep Research Engine</title>
+  <title>Cognis</title>
   <style>
     :root {
       /* Match the main app's dark palette (Gemini-style #1e1e1e). */
@@ -190,11 +190,11 @@
             fill="url(#sparkle-grad)" />
     </svg>
 
-    <h1 class="title">Deep Research Engine</h1>
+    <h1 class="title">Cognis</h1>
 
     <div class="spinner" role="status" aria-label="Loading"></div>
 
-    <p class="subtitle" id="loading-message">Starting Deep Research Engine…</p>
+    <p class="subtitle" id="loading-message">Starting Cognis…</p>
 
     <div class="progress" aria-hidden="true">
       <div class="progress-bar"></div>
@@ -209,7 +209,7 @@
               stroke-linejoin="round" />
       </svg>
     </div>
-    <h1 class="error-title">Couldn't connect to the Deep Research Engine</h1>
+    <h1 class="error-title">Couldn't connect to the Cognis</h1>
     <pre class="error-detail" id="error-detail"></pre>
     <button class="retry-btn" id="retry-btn">Retry now</button>
   </div>
@@ -218,7 +218,7 @@
     // Expose helpers for the main process to drive this page.
     window.__setLoadingMessage = function (message) {
       var el = document.getElementById('loading-message');
-      if (el) el.textContent = message || 'Starting Deep Research Engine…';
+      if (el) el.textContent = message || 'Starting Cognis…';
     };
 
     window.__showError = function (instructions) {

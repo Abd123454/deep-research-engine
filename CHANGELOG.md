@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.0.0] — Cognis (formerly Deep Research Engine)
+
+### Changed — Project Rename
+- Renamed project from "Deep Research Engine" to **Cognis** (from Latin *cognoscere* — "to know").
+- Updated all references across the codebase: package.json, README, layout metadata, manifest.json, i18n strings, source file comments, browser-extension, desktop app, showcase site.
+- Updated User-Agent strings (retriever.ts, page-reader.ts) to `Cognis/1.0`.
+- Updated auth realm to "Cognis".
+- Updated desktop app: `deep-research-desktop` → `cognis-desktop`, productName → "Cognis", appId → `com.cognis.desktop`.
+- Updated browser-extension: name → "Cognis", gecko id → `cognis@z.ai`.
+- Version bump to 1.0.0 (stable release milestone).
+
+### Previous versions
+See git history for v0.1.0 through v0.6.4 (when the project was named "Deep Research Engine").
+
 ## [0.6.0] — Round 12: Eval Harness + Source Quality + JS Rendering + Domain Agents
 
 ### Added — Evaluation Harness (Phase 12B)

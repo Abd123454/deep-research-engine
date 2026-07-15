@@ -1,6 +1,6 @@
-# Deep Research Engine — Desktop App
+# Cognis — Desktop App
 
-A thin Electron wrapper around the **Deep Research Engine** Next.js web
+A thin Electron wrapper around the **Cognis** Next.js web
 application. It gives you a native desktop window, system-tray icon, native
 menus, keyboard shortcuts, and dark-mode support — without bundling the web
 app. The Electron shell simply loads the running Next.js server on
@@ -35,7 +35,7 @@ installer tiny and decouples native updates from web updates.
 ## Prerequisites
 
 - **Node.js 20+** (for Electron itself)
-- The **Deep Research Engine** Next.js app running on port 3000
+- The **Cognis** Next.js app running on port 3000
   (`cd /home/z/my-project && bun run dev`)
 
 ---
@@ -68,7 +68,7 @@ cd /home/z/my-project/desktop
 npm run dev
 ```
 
-Electron will show a loading spinner ("Starting Deep Research Engine…") while
+Electron will show a loading spinner ("Starting Cognis…") while
 it waits for `localhost:3000` to come up. It retries every 2 seconds for up
 to 30 seconds, then shows a friendly error page with retry instructions if
 the server still isn't reachable.
@@ -86,9 +86,9 @@ the server still isn't reachable.
 ## Build
 
 ```bash
-npm run build:mac    # → dist/Deep Research Engine-x.y.z.dmg / .zip
-npm run build:linux  # → dist/Deep Research Engine-x.y.z.AppImage / .deb / .snap
-npm run build:win    # → dist/Deep Research Engine Setup x.y.z.exe / portable .exe
+npm run build:mac    # → dist/Cognis-x.y.z.dmg / .zip
+npm run build:linux  # → dist/Cognis-x.y.z.AppImage / .deb / .snap
+npm run build:win    # → dist/Cognis Setup x.y.z.exe / portable .exe
 ```
 
 Build artifacts land in `desktop/dist/`.

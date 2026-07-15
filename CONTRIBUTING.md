@@ -1,4 +1,4 @@
-# Contributing to Deep Research Engine
+# Contributing to Cognis
 
 Thank you for your interest in contributing! This project welcomes contributions of all kinds.
 

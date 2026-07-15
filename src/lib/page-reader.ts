@@ -68,7 +68,7 @@ function htmlToText(html: string): string {
 // Wikipedia article HTML 403s from some IPs, but the extracts API is
 // designed for programmatic access and returns clean plain text.
 const WIKI_UA =
-  "DeepResearchEngine/1.0 (https://github.com/Abd123454/deep-research-engine; self-hosted research tool)";
+  "Cognis/1.0 (https://github.com/Abd123454/deep-research-engine; self-hosted research tool)";
 
 function isWikipediaUrl(url: string): boolean {
   try {

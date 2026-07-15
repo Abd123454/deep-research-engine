@@ -1,4 +1,4 @@
-// Deep Research Engine - Core Types
+// Cognis - Core Types
 //
 import type { VerificationReport } from "./citation-verifier";
 //

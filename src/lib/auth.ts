@@ -14,7 +14,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { env } from "./env";
 
-const REALM = "Deep Research Engine";
+const REALM = "Cognis";
 
 /** Returns true if basic auth is enabled (both creds configured). */
 export function isAuthEnabled(): boolean {

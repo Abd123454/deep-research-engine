@@ -18,10 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Deep Research Engine",
+  title: "Cognis — Self-hosted AI Workstation",
   description:
-    "Self-hosted deep research with multi-round gap analysis. Runs on free-tier APIs.",
-  keywords: ["deep research", "self-hosted", "open source", "NVIDIA NIM", "DuckDuckGo"],
+    "Deep research, agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).",
+  keywords: ["cognis", "deep research", "self-hosted", "open source", "AI workstation", "NVIDIA NIM", "agent swarm"],
   authors: [{ name: "Abd" }],
   icons: {
     icon: "/logo.svg",
@@ -76,7 +76,7 @@ export default function RootLayout({
           >
             <h2>JavaScript required</h2>
             <p>
-              Deep Research Engine needs JavaScript to run searches and stream
+              Cognis needs JavaScript to run searches and stream
               reports. Please enable JavaScript in your browser.
             </p>
           </div>
