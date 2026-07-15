@@ -328,14 +328,17 @@ async function nvidiaCompleteWithFallback(
         throw err;
       }
       const msg = err instanceof Error ? err.message : String(err);
-      // Fast-fail on auth errors: the same NVIDIA_API_KEY is used for all
-      // models, so the next model will fail with the same error. Don't
-      // waste time trying 5 more models.
+      // Auth error (401/403/invalid key) — the same NVIDIA_API_KEY is used
+      // for all models, so skip the remaining NVIDIA models. But DON'T throw:
+      // fall through to crossProviderFallback which may succeed via OpenAI,
+      // Anthropic, or Ollama. This is exactly the case cross-provider fallback
+      // exists for (revoked/expired NVIDIA key).
       if (isAuthError(msg)) {
-        throw new Error(
-          `NVIDIA_API_KEY invalid or expired. Skipping fallback chain. ` +
-            `First model "${model}" error: ${msg}`
+        console.warn(
+          `[llm-provider] NVIDIA auth error for model "${model}": ${msg.slice(0, 100)}. ` +
+            `Skipping remaining NVIDIA models, attempting cross-provider fallback.`
         );
+        break;
       }
       // Model errors (404) → continue to next model.
       // Retryable errors (429/503) → already retried by withRetry, continue.

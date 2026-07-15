@@ -251,4 +251,47 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
 
     vi.unstubAllGlobals();
   });
+
+  it("falls back to OpenAI on NVIDIA 401 auth error (not 500)", async () => {
+    // Configure env: NVIDIA key set (so nvidiaCompleteSingle runs) but returns 401.
+    (env as ReturnType<typeof vi.fn>).mockImplementation((key: string, fallback = "") => {
+      const vals: Record<string, string> = {
+        NVIDIA_API_KEY: "revoked-nvidia-key",
+        OPENAI_API_KEY: "sk-test-openai",
+        SMART_LLM_MODELS: "meta/llama-3.1-70b-instruct",
+      };
+      return vals[key] ?? fallback;
+    });
+
+    // OpenAI provider succeeds.
+    const openaiInstance = {
+      smart: vi.fn().mockResolvedValue(makeProviderResult("openai", "OpenAI via 401 fallback")),
+      fast: vi.fn(),
+    };
+    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
+
+    // Mock fetch so NVIDIA returns 401 Unauthorized (real auth error, not 500).
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ error: "Invalid API Key" }), {
+        status: 401,
+        statusText: "Unauthorized",
+      })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const llm = await getLLM();
+    // Before the fix, this would throw "NVIDIA_API_KEY invalid or expired.
+    // Skipping fallback chain." — bypassing crossProviderFallback entirely.
+    // After the fix, it should break out of the NVIDIA model loop and fall
+    // through to crossProviderFallback, which succeeds via OpenAI.
+    const result = await llm.smart({
+      messages: [{ role: "user", content: "test" }],
+    });
+
+    expect(result.content).toBe("OpenAI via 401 fallback");
+    expect(result.provider).toBe("openai");
+    expect(openaiInstance.smart).toHaveBeenCalledTimes(1);
+
+    vi.unstubAllGlobals();
+  });
 });
