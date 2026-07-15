@@ -243,6 +243,34 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
       console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
       return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
     }
+
+    // JS-rendered page fallback: if direct fetch returned very little text
+    // (< 200 chars), the page is likely a SPA (React/Vue/Angular) that needs
+    // JavaScript execution to render content. Try Playwright as a fallback.
+    if (result.success && result.text.length < 200) {
+      try {
+        const { readPageWithJS } = await import("./page-reader-js");
+        const jsResult = await readPageWithJS(url, signal);
+        if (jsResult.success && jsResult.text.length > result.text.length) {
+          // Check the JS-rendered content for injection too.
+          if (scanForIndirectInjection(jsResult.text)) {
+            console.warn(`[page-reader] Indirect injection detected in JS-rendered ${url} — blocked.`);
+            return { url, title: jsResult.title, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked", tokensUsed: 0, wordCount: 0 };
+          }
+          return {
+            url,
+            title: jsResult.title,
+            text: jsResult.text,
+            success: true,
+            tokensUsed: jsResult.tokensUsed,
+            wordCount: jsResult.wordCount,
+          };
+        }
+      } catch {
+        // Playwright not installed or failed — return the original result.
+      }
+    }
+
     return result;
   } catch (err) {
     return { url, title: "", text: "", success: false, error: err instanceof Error ? err.message : String(err), tokensUsed: 0, wordCount: 0 };
