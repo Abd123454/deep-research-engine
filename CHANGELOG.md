@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.1.0] — Quaesitor (formerly Cognis / Deep Research Engine)
+
+### Changed — Project Rename
+- Renamed project from "Cognis" to **Quaesitor** (from Latin *quaerere* — "to seek/investigate").
+- In Roman antiquity, the *quaesitor* was the magistrate charged with investigation and inquiry — reflecting the project's core mission: systematic, multi-round research with citation verification.
+- Updated all references across the codebase: package.json, README, layout metadata, manifest.json, i18n strings (EN + AR), source file comments, browser-extension, desktop app, showcase site.
+- Updated User-Agent strings to `Quaesitor/1.0`.
+- Updated auth realm to "Quaesitor".
+- Updated desktop app: productName → "Quaesitor", appId → `com.quaesitor.desktop`.
+- Updated browser-extension: name → "Quaesitor", gecko id → `quaesitor@z.ai`.
+
 ## [1.0.0] — Cognis (formerly Deep Research Engine)
 
 ### Changed — Project Rename

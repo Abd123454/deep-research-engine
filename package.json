@@ -1,10 +1,10 @@
 {
-  "name": "cognis",
-  "version": "1.0.0",
+  "name": "quaesitor",
+  "version": "1.1.0",
   "private": true,
   "author": "Abd",
   "license": "MIT",
-  "description": "Cognis — Self-hosted AI Workstation with deep research, agent swarm, code execution, vision, and voice.",
+  "description": "Quaesitor — Self-hosted AI Workstation with deep research, agent swarm, code execution, vision, and voice.",
   "engines": {
     "node": ">=20"
   },

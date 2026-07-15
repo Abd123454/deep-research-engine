@@ -1,7 +1,7 @@
-# Cognis — Browser Extension
+# Quaesitor — Browser Extension
 
 A Manifest V3 browser extension (Chrome & Firefox) that lets you capture the
-current page and send it to the **Cognis** web app for analysis.
+current page and send it to the **Quaesitor** web app for analysis.
 
 > Capture a page → ask a quick question, get a summary, run a deep research
 > pipeline, or unleash a multi-agent swarm — all from a popup or a side panel.
@@ -38,7 +38,7 @@ current page and send it to the **Cognis** web app for analysis.
 2. Toggle **Developer mode** on (top-right).
 3. Click **Load unpacked**.
 4. Select the `browser-extension/` folder (the one containing `manifest.json`).
-5. The Cognis icon appears in your toolbar. Pin it for easy access.
+5. The Quaesitor icon appears in your toolbar. Pin it for easy access.
 
 > **Side panel:** Chrome 114+ is required for the side panel API. On older
 > versions or other Chromium browsers without `chrome.sidePanel`, the extension
@@ -75,7 +75,7 @@ current page and send it to the **Cognis** web app for analysis.
 ## Usage
 
 1. Navigate to any web page you want to research.
-2. Click the Cognis toolbar icon.
+2. Click the Quaesitor toolbar icon.
 3. Choose an action:
    - **Research this page** → instant AI summary of the page.
    - **Quick question** → type a question about the page, hit send.
@@ -150,7 +150,7 @@ extension to talk to it.
 
 ## Troubleshooting
 
-- **"Error: HTTP 503"** — the Cognis has no LLM provider
+- **"Error: HTTP 503"** — the Quaesitor has no LLM provider
   configured. Set `NVIDIA_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or
   `OLLAMA_URL` on the server.
 - **Side panel won't open** — make sure you're on Chrome 114+. On Firefox or

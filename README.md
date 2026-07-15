@@ -1,10 +1,10 @@
-# Cognis
+# Quaesitor
 
 > Self-hosted AI workstation — deep research, agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).
 
-**Cognis** (from Latin *cognoscere* — "to know") is a complete AI platform that evolved through 12 development rounds from a single research script into a 16-feature workstation. It's not just a chat wrapper — it's a multi-agent system with real research capabilities, code execution, and persistent memory.
+**Quaesitor** (from Latin *quaerere* — "to seek/investigate") is a complete AI platform that evolved through 12 development rounds from a single research script into a 16-feature workstation. It's not just a chat wrapper — it's a multi-agent system with real research capabilities, code execution, and persistent memory.
 
-## Why Cognis exists
+## Why Quaesitor exists
 
 I was paying $20/month for Perplexity Pro just for deep research. I wanted something I could run on my own server, with no limits, that I could hack on. This is that thing.
 
@@ -64,8 +64,8 @@ Open http://localhost:3000 (or use the Preview Panel in your IDE).
 ```bash
 docker compose up -d
 # or:
-docker build -t cognis .
-docker run -p 3000:3000 --env-file .env cognis
+docker build -t quaesitor .
+docker run -p 3000:3000 --env-file .env quaesitor
 ```
 
 ### Browser Extension
@@ -104,7 +104,7 @@ npm run dev   # requires the Next.js app running on port 3000
 
 ## Evaluation
 
-Cognis includes a built-in evaluation harness to measure quality with real numbers:
+Quaesitor includes a built-in evaluation harness to measure quality with real numbers:
 
 ```bash
 bun run eval                    # run all 20 queries

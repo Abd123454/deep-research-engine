@@ -1,4 +1,4 @@
-// Cognis - Core Types
+// Quaesitor - Core Types
 //
 import type { VerificationReport } from "./citation-verifier";
 //

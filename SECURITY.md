@@ -2,7 +2,7 @@
 
 ## Reporting a Vulnerability
 
-If you discover a security vulnerability in Cognis, please report it responsibly:
+If you discover a security vulnerability in Quaesitor, please report it responsibly:
 
 1. **Do NOT open a public GitHub issue.**
 2. Email the maintainer directly (see GitHub profile for contact info).

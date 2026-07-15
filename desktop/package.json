@@ -1,9 +1,9 @@
 {
-  "name": "cognis-desktop",
+  "name": "quaesitor-desktop",
   "version": "1.0.0",
-  "description": "Cognis — Electron desktop wrapper for the self-hosted AI workstation.",
+  "description": "Quaesitor — Electron desktop wrapper for the self-hosted AI workstation.",
   "main": "main.js",
-  "author": "Cognis",
+  "author": "Quaesitor",
   "license": "MIT",
   "private": true,
   "scripts": {
@@ -18,9 +18,9 @@
     "electron-builder": "^24.13.3"
   },
   "build": {
-    "appId": "com.cognis.desktop",
-    "productName": "Cognis",
-    "copyright": "Copyright © 2024 Cognis",
+    "appId": "com.quaesitor.desktop",
+    "productName": "Quaesitor",
+    "copyright": "Copyright © 2024 Quaesitor",
     "directories": {
       "output": "dist",
       "buildResources": "build-resources"
@@ -53,10 +53,10 @@
       ],
       "icon": "icon.png",
       "category": "Office",
-      "maintainer": "Cognis",
+      "maintainer": "Quaesitor",
       "desktop": {
-        "Name": "Cognis",
-        "Comment": "Cognis Desktop App",
+        "Name": "Quaesitor",
+        "Comment": "Quaesitor Desktop App",
         "Categories": "Office;Research;Utility;",
         "Terminal": "false",
         "Type": "Application"
@@ -74,7 +74,7 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Cognis"
+      "shortcutName": "Quaesitor"
     }
   }
 }

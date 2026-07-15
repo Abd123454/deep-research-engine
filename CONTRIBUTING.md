@@ -1,4 +1,4 @@
-# Contributing to Cognis
+# Contributing to Quaesitor
 
 Thank you for your interest in contributing! This project welcomes contributions of all kinds.
 

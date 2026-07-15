@@ -1,9 +1,9 @@
 'use strict';
 
 /**
- * Cognis — Electron main process
+ * Quaesitor — Electron main process
  *
- * This is a thin native wrapper around the Cognis Next.js web app.
+ * This is a thin native wrapper around the Quaesitor Next.js web app.
  * It loads the running web app (http://localhost:3000 by default) and adds:
  *   - Native window with reasonable defaults
  *   - System tray icon + context menu
@@ -249,7 +249,7 @@ function createMainWindow() {
     minWidth: 800,
     minHeight: 600,
     show: false,
-    title: 'Cognis',
+    title: 'Quaesitor',
     backgroundColor: '#1e1e1e',
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     trafficLightPosition: process.platform === 'darwin' ? { x: 16, y: 16 } : undefined,
@@ -323,7 +323,7 @@ function waitForServerAndLoad() {
       mainWindow.loadURL(SERVER_URL).catch((err) => {
         console.error('Failed to load server URL:', err);
         showLoadingError(
-          'Could not load the Cognis even though the server responded. ' +
+          'Could not load the Quaesitor even though the server responded. ' +
             'Please check the console output of the Next.js app.',
         );
       });
@@ -334,7 +334,7 @@ function waitForServerAndLoad() {
     if (elapsed >= HEALTH_CHECK_TIMEOUT_MS) {
       stopHealthCheckTimer();
       showLoadingError(
-        'Timed out waiting for the Cognis to start on port 3000.\n\n' +
+        'Timed out waiting for the Quaesitor to start on port 3000.\n\n' +
           'Please make sure the Next.js app is running:\n' +
           '  cd /home/z/my-project && bun run dev\n\n' +
           'Then restart this desktop app.',
@@ -343,7 +343,7 @@ function waitForServerAndLoad() {
     }
 
     showLoadingMessage(
-      `Waiting for Cognis to start...\n(elapsed ${Math.round(elapsed / 1000)}s)`,
+      `Waiting for Quaesitor to start...\n(elapsed ${Math.round(elapsed / 1000)}s)`,
     );
   };
 
@@ -383,7 +383,7 @@ function createTray() {
 
   trayIconImage = icon;
   tray = new Tray(icon);
-  tray.setToolTip('Cognis');
+  tray.setToolTip('Quaesitor');
 
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -444,7 +444,7 @@ function buildAppMenu() {
       ? [{
           label: app.name,
           submenu: [
-            { role: 'about', label: 'About Cognis' },
+            { role: 'about', label: 'About Quaesitor' },
             { type: 'separator' },
             { role: 'services' },
             { type: 'separator' },
@@ -553,15 +553,15 @@ function buildAppMenu() {
 function showAboutDialog() {
   dialog.showMessageBox({
     type: 'info',
-    title: 'About Cognis',
-    message: 'Cognis',
+    title: 'About Quaesitor',
+    message: 'Quaesitor',
     detail:
       `Version: ${app.getVersion()}\n` +
       `Electron: ${process.versions.electron}\n` +
       `Chrome: ${process.versions.chrome}\n` +
       `Node: ${process.versions.node}\n` +
       `Platform: ${process.platform} ${process.arch}\n\n` +
-      'A thin native wrapper around the Cognis web app.',
+      'A thin native wrapper around the Quaesitor web app.',
     buttons: ['OK'],
     icon: path.join(__dirname, 'icon.png'),
   });
@@ -687,7 +687,7 @@ app.on('web-contents-created', (event, contents) => {
       .showMessageBox({
         type: 'error',
         title: 'Renderer crashed',
-        message: 'The Cognis renderer crashed.',
+        message: 'The Quaesitor renderer crashed.',
         detail: 'Would you like to reload it?',
         buttons: ['Reload', 'Quit'],
         cancelId: 1,

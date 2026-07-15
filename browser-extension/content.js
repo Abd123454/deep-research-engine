@@ -1,4 +1,4 @@
-/* content.js — Cognis content script.
+/* content.js — Quaesitor content script.
  *
  * Runs on every page (<all_urls>). Responsibilities:
  *   1. expose extractPageContent() to the background/popup
@@ -100,8 +100,8 @@
 
   let floatingBtn = null;
   let floatingEnabled = false;
-  const FLOATING_BTN_ID = "__cognis_floating_btn__";
-  const FLOATING_STYLE_ID = "__cognis_floating_style__";
+  const FLOATING_BTN_ID = "__quaesitor_floating_btn__";
+  const FLOATING_STYLE_ID = "__quaesitor_floating_style__";
 
   function injectFloatingStyles() {
     if (document.getElementById(FLOATING_STYLE_ID)) return;

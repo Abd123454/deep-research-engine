@@ -18,10 +18,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Cognis — Self-hosted AI Workstation",
+  title: "Quaesitor — Self-hosted AI Workstation",
   description:
     "Deep research, agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).",
-  keywords: ["cognis", "deep research", "self-hosted", "open source", "AI workstation", "NVIDIA NIM", "agent swarm"],
+  keywords: ["quaesitor", "deep research", "self-hosted", "open source", "AI workstation", "NVIDIA NIM", "agent swarm"],
   authors: [{ name: "Abd" }],
   icons: {
     icon: "/logo.svg",
@@ -76,7 +76,7 @@ export default function RootLayout({
           >
             <h2>JavaScript required</h2>
             <p>
-              Cognis needs JavaScript to run searches and stream
+              Quaesitor needs JavaScript to run searches and stream
               reports. Please enable JavaScript in your browser.
             </p>
           </div>

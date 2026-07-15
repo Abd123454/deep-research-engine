@@ -1,6 +1,6 @@
 {
-  "name": "Cognis — AI Workstation",
-  "short_name": "Cognis",
+  "name": "Quaesitor — AI Workstation",
+  "short_name": "Quaesitor",
   "description": "Self-hosted AI Workstation — Deep Research, Agent Swarm, Code Execution, Vision",
   "start_url": "/",
   "display": "standalone",

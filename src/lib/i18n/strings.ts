@@ -1,4 +1,4 @@
-// Minimal i18n dictionary for Cognis.
+// Minimal i18n dictionary for Quaesitor.
 //
 // Supports English (en) and Arabic (ar). Arabic is RTL.
 // The dictionary is intentionally flat and small — only UI chrome strings
@@ -102,8 +102,8 @@ type Dictionary = Record<StringKey, string>;
 
 export const STRINGS: Record<Locale, Dictionary> = {
   en: {
-    appName: "Cognis",
-    appTagline: "Cognis · self-hosted AI workstation, free, multi-round",
+    appName: "Quaesitor",
+    appTagline: "Quaesitor · self-hosted AI workstation, free, multi-round",
     cancel: "Cancel",
     close: "Close",
     done: "Done",
@@ -183,8 +183,8 @@ export const STRINGS: Record<Locale, Dictionary> = {
     confirmDeleteAll: "Delete all sessions? This cannot be undone.",
   },
   ar: {
-    appName: "كوجنس",
-    appTagline: "كوجنس · محرك بحث ذاتي الاستضافة، مجاني، متعدد الجولات",
+    appName: "كويسيتور",
+    appTagline: "كويسيتور · محطة ذكاء اصطناعي ذاتية الاستضافة، مجانية، متعددة الجولات",
     cancel: "إلغاء",
     close: "إغلاق",
     done: "تم",

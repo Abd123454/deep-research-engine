@@ -33,7 +33,7 @@ async function main() {
   }
 
   console.log("=".repeat(60));
-  console.log("Cognis — Evaluation Suite");
+  console.log("Quaesitor — Evaluation Suite");
   console.log("=".repeat(60));
   console.log(`Queries: ${queries ? queries.length : EVAL_DATASET.length}`);
   console.log("");
