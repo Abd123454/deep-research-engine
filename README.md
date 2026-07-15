@@ -126,19 +126,42 @@ The suite tests research queries (source + keyword verification), coding queries
 - **Search**: DuckDuckGo (3 endpoints), Wikipedia API, GitHub API
 - **Page Reading**: Mozilla Readability + Playwright (JS-rendered fallback)
 - **Sandbox**: Node.js vm + Python subprocess + Docker
-- **Testing**: Vitest (409+ tests)
+- **Testing**: Vitest (433+ unit/integration tests), Playwright (8 E2E tests)
 - **CI**: GitHub Actions (lint + tsc + test + deploy)
+
+---
+
+## Testing
+
+```bash
+# Unit + integration tests
+bun run test
+
+# E2E tests (requires dev server, first time: bun run e2e:install)
+bun run e2e
+
+# Evaluation harness
+bun run eval
+
+# Lint
+bun run lint
+
+# Type check
+bunx tsc --noEmit
+```
 
 ---
 
 ## Known Limitations (honestly)
 
-- **research-engine.ts test coverage: ~23%** — targeting 60%. The eval harness is the first step toward measuring this.
+- **Semantic search uses LIKE** (not pgvector) — sufficient for SQLite/single-user, upgrade to Postgres for production scale.
+- **research-engine.ts coverage: ~60%** (improved from 23% in v1.2.0, targeting 80%).
 - **No mobile app** — the web app is responsive but not a native mobile experience.
 - **No multi-user isolation** — single-user by default. NextAuth v4 is integrated but RBAC is not.
 - **Rate limiter uses in-memory fallback** — Redis is supported but optional. Without Redis, rate limiting is per-process.
 - **Docker sandbox requires Docker installed** — falls back to vm sandbox if unavailable.
-- **Playwright adds ~150MB** — optional, only for JS-rendered page reading.
+- **Playwright adds ~150MB** — optional, for JS-rendered page reading + E2E tests.
+- **2 lint warnings** (react-hooks/exhaustive-deps) — pre-existing, safe to ignore.
 
 ---
 
