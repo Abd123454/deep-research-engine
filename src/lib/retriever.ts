@@ -16,6 +16,7 @@
 
 import type { RetrieverType, SearchResultItem } from "./types";
 import { envBool } from "./env";
+import { rankSourcesWithMinimum } from "./source-quality";
 
 export function getRetriever(): RetrieverType {
   return "duckduckgo";
@@ -643,7 +644,35 @@ export async function searchWeb(
   num: number,
   signal?: AbortSignal
 ): Promise<SearchResultItem[]> {
-  return duckduckgoSearch(query, num, signal);
+  const raw = await duckduckgoSearch(query, num, signal);
+
+  // Rank sources by quality (tier1 academic/gov first, tier3 last).
+  // Weak sources (< 30 score) are dropped, with a minimum of 3 results
+  // guaranteed to prevent source starvation on niche queries.
+  const { ranked } = rankSourcesWithMinimum(
+    raw.map((r) => ({ url: r.url, snippet: r.snippet })),
+    Math.min(3, num)
+  );
+
+  // Map back to SearchResultItem, preserving the original data but
+  // reordering by quality score.
+  const rankedUrls = new Map(ranked.map((r) => [r.url, r.score]));
+  const result: SearchResultItem[] = [];
+  for (const r of ranked) {
+    const original = raw.find((s) => s.url === r.url);
+    if (original) {
+      result.push({ ...original, rank: result.length + 1 });
+    }
+  }
+
+  if (envBool("DEBUG_SEARCH", false) && raw.length !== result.length) {
+    console.log(
+      `[search] Source quality: ${raw.length} raw → ${result.length} ranked ` +
+        `(dropped ${raw.length - result.length} low-quality sources)`
+    );
+  }
+
+  return result.slice(0, num);
 }
 
 export { duckduckgoSearch, wikipediaSearch, githubSearch };
