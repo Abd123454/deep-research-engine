@@ -46,88 +46,134 @@
   --color-brand-to: var(--brand-to);
 }
 
-/* Gemini-inspired palette — clean, Google-like, no heavy gradients.
-   Primary is Google Blue (#1a73e8). Backgrounds are white/near-white.
-   Dark mode is #1e1e1e (not neon purple). */
+/* ============================================
+   PREMIUM DESIGN SYSTEM
+   Inspired by Claude.ai warmth + Linear precision
+   ============================================ */
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(1 0 0);
+  --radius: 0.75rem;  /* 12px base */
+
+  /* Light mode — warm cream like Claude.ai (#faf9f5) */
+  --background: oklch(0.98 0.005 80);
   --foreground: oklch(0.18 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0 0);
-  /* primary blue */
-  --primary: oklch(0.55 0.2 255);
+
+  /* Primary — warm coral/orange (Claude.ai-like) */
+  --primary: oklch(0.62 0.18 35);
   --primary-foreground: oklch(1 0 0);
-  /* Light gray for input boxes (like Gemini's #f0f4f9) */
-  --secondary: oklch(0.96 0.003 240);
-  --secondary-foreground: oklch(0.2 0 0);
-  --muted: oklch(0.96 0.003 240);
-  --muted-foreground: oklch(0.45 0 0);
-  --accent: oklch(0.95 0.008 250);
-  --accent-foreground: oklch(0.2 0 0);
-  --destructive: oklch(0.58 0.22 25);
-  --border: oklch(0.91 0 0);
-  --input: oklch(0.94 0.002 240);
-  --ring: oklch(0.55 0.2 255);
-  --chart-1: oklch(0.55 0.2 255);
-  --chart-2: oklch(0.65 0.15 160);
-  --chart-3: oklch(0.7 0.18 70);
-  --chart-4: oklch(0.6 0.22 300);
-  --chart-5: oklch(0.65 0.2 20);
-  --sidebar: oklch(0.98 0 0);
+
+  /* Secondary — soft warm gray */
+  --secondary: oklch(0.96 0.005 80);
+  --secondary-foreground: oklch(0.25 0 0);
+
+  /* Muted — for subtle text */
+  --muted: oklch(0.95 0.005 80);
+  --muted-foreground: oklch(0.50 0 0);
+
+  /* Accent — warm hover */
+  --accent: oklch(0.94 0.01 80);
+  --accent-foreground: oklch(0.20 0 0);
+
+  /* Destructive — red */
+  --destructive: oklch(0.55 0.22 25);
+
+  /* Borders — visible but subtle */
+  --border: oklch(0.90 0.005 80);
+  --input: oklch(0.94 0.005 80);
+  --ring: oklch(0.62 0.18 35);
+
+  /* Charts */
+  --chart-1: oklch(0.62 0.18 35);
+  --chart-2: oklch(0.60 0.15 200);
+  --chart-3: oklch(0.70 0.18 80);
+  --chart-4: oklch(0.55 0.20 300);
+  --chart-5: oklch(0.65 0.20 145);
+
+  /* Sidebar — slightly darker than main */
+  --sidebar: oklch(0.96 0.005 80);
   --sidebar-foreground: oklch(0.18 0 0);
-  --sidebar-primary: oklch(0.55 0.2 255);
+  --sidebar-primary: oklch(0.62 0.18 35);
   --sidebar-primary-foreground: oklch(1 0 0);
-  --sidebar-accent: oklch(0.96 0 0);
-  --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: oklch(0.91 0 0);
-  --sidebar-ring: oklch(0.55 0.2 255);
-  /* Subtle gradient only for the logo sparkle, not for text/backgrounds */
-  --brand-from: oklch(0.55 0.2 255);
-  --brand-via: oklch(0.52 0.18 280);
-  --brand-to: oklch(0.5 0.2 320);
+  --sidebar-accent: oklch(0.93 0.01 80);
+  --sidebar-accent-foreground: oklch(0.20 0 0);
+  --sidebar-border: oklch(0.90 0.005 80);
+  --sidebar-ring: oklch(0.62 0.18 35);
+
+  /* Brand gradient — for logo sparkle only */
+  --brand-from: oklch(0.62 0.18 35);
+  --brand-via: oklch(0.58 0.18 15);
+  --brand-to: oklch(0.55 0.15 300);
+
+  /* Premium shadows — soft, layered */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.04);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 4px 6px -1px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 10px 15px -3px rgb(0 0 0 / 0.06), 0 20px 25px -5px rgb(0 0 0 / 0.04);
+  --shadow-xl: 0 10px 25px -5px rgb(0 0 0 / 0.10), 0 20px 40px -10px rgb(0 0 0 / 0.08);
+  --shadow-focus: 0 0 0 3px oklch(0.62 0.18 35 / 0.15);
 }
 
 .dark {
-  /* Gemini dark mode: #1e1e1e, not neon */
-  --background: oklch(0.15 0 0);
-  --foreground: oklch(0.93 0 0);
-  --card: oklch(0.19 0 0);
-  --card-foreground: oklch(0.93 0 0);
-  --popover: oklch(0.19 0 0);
-  --popover-foreground: oklch(0.93 0 0);
-  --primary: oklch(0.65 0.18 255);
-  --primary-foreground: oklch(0.15 0 0);
-  --secondary: oklch(0.22 0 0);
-  --secondary-foreground: oklch(0.93 0 0);
-  --muted: oklch(0.22 0 0);
-  --muted-foreground: oklch(0.65 0 0);
-  --accent: oklch(0.25 0.005 255);
-  --accent-foreground: oklch(0.93 0 0);
-  --destructive: oklch(0.65 0.2 25);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 8%);
-  --ring: oklch(0.65 0.18 255);
-  --chart-1: oklch(0.65 0.18 255);
-  --chart-2: oklch(0.6 0.15 160);
-  --chart-3: oklch(0.7 0.18 70);
-  --chart-4: oklch(0.6 0.22 300);
-  --chart-5: oklch(0.65 0.2 20);
-  --sidebar: oklch(0.17 0 0);
-  --sidebar-foreground: oklch(0.93 0 0);
-  --sidebar-primary: oklch(0.65 0.18 255);
-  --sidebar-primary-foreground: oklch(0.15 0 0);
-  --sidebar-accent: oklch(0.22 0 0);
-  --sidebar-accent-foreground: oklch(0.93 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.65 0.18 255);
-  --brand-from: oklch(0.65 0.18 255);
-  --brand-via: oklch(0.6 0.16 280);
-  --brand-to: oklch(0.58 0.18 320);
+  /* Dark mode — NOT pure black. Use #0a0a0a (Linear-style) */
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --card: #171717;
+  --card-foreground: #ededed;
+  --popover: #171717;
+  --popover-foreground: #ededed;
+
+  --primary: #e87553;
+  --primary-foreground: #0a0a0a;
+
+  --secondary: #1f1f1f;
+  --secondary-foreground: #e5e5e5;
+
+  --muted: #1f1f1f;
+  --muted-foreground: #888888;
+
+  --accent: #2a2a2a;
+  --accent-foreground: #ededed;
+
+  --destructive: #dc2626;
+
+  /* CRITICAL: visible borders in dark mode */
+  --border: #333333;
+  --input: #1f1f1f;
+  --ring: #e87553;
+
+  --chart-1: #e87553;
+  --chart-2: #4cb8c4;
+  --chart-3: #f0c040;
+  --chart-4: #9333ea;
+  --chart-5: #22c55e;
+
+  --sidebar: #141414;
+  --sidebar-foreground: #ededed;
+  --sidebar-primary: #e87553;
+  --sidebar-primary-foreground: #0a0a0a;
+  --sidebar-accent: #262626;
+  --sidebar-accent-foreground: #ededed;
+  --sidebar-border: #333333;
+  --sidebar-ring: #e87553;
+
+  --brand-from: #e87553;
+  --brand-via: #d97706;
+  --brand-to: #9333ea;
+
+  /* Dark mode shadows */
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow-md: 0 2px 4px -1px rgb(0 0 0 / 0.4), 0 4px 6px -1px rgb(0 0 0 / 0.3);
+  --shadow-lg: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 10px 15px -3px rgb(0 0 0 / 0.4);
+  --shadow-xl: 0 10px 25px -5px rgb(0 0 0 / 0.6), 0 20px 40px -10px rgb(0 0 0 / 0.5);
+  --shadow-focus: 0 0 0 3px rgba(232, 117, 83, 0.25);
 }
+
+/* ============================================
+   BASE STYLES — typography, spacing, smooth
+   ============================================ */
 
 @layer base {
   * {
@@ -135,10 +181,146 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-size: 15px;
+    line-height: 1.6;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+  }
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+  }
+  h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+  h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
   }
 }
 
-/* Only used for the small logo sparkle */
+/* ============================================
+   PREMIUM INPUT — visible, spacious, focusable
+   ============================================ */
+
+textarea, input[type="text"], input[type="email"], input[type="password"] {
+  background-color: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.875rem 1rem;
+  font-size: 15px;
+  line-height: 1.5;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+  box-shadow: var(--shadow-sm);
+  min-height: 52px;
+  width: 100%;
+}
+
+textarea:focus, input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--shadow-focus), var(--shadow-sm);
+}
+
+textarea::placeholder, input::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* ============================================
+   PREMIUM BUTTONS — clear hierarchy
+   ============================================ */
+
+button {
+  font-family: inherit;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  transition: all 150ms ease;
+}
+
+button[class*="bg-primary"],
+button[class*="bg-foreground"] {
+  box-shadow: var(--shadow-sm);
+  border-radius: var(--radius);
+}
+
+button[class*="bg-primary"]:hover,
+button[class*="bg-foreground"]:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+button[class*="bg-primary"]:active,
+button[class*="bg-foreground"]:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ============================================
+   PREMIUM CARDS — depth + borders
+   ============================================ */
+
+[class*="bg-card"],
+div[class*="rounded-"][class*="border"] {
+  box-shadow: var(--shadow-sm);
+}
+
+[class*="bg-card"]:hover {
+  box-shadow: var(--shadow-md);
+}
+
+/* ============================================
+   SCROLLBAR — subtle, premium
+   ============================================ */
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+/* ============================================
+   ANIMATIONS — smooth, not flashy
+   ============================================ */
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 200ms ease-out;
+}
+
+/* Selection */
+::selection {
+  background-color: oklch(0.62 0.18 35 / 0.2);
+  color: var(--foreground);
+}
+
+/* Brand gradient — for logo sparkle only */
 @utility bg-brand-gradient {
   background-image: linear-gradient(
     135deg,
@@ -148,33 +330,18 @@
   );
 }
 
-/* Scrollbar */
-@layer base {
-  * {
-    scrollbar-width: thin;
-    scrollbar-color: oklch(0.8 0 0 / 0.3) transparent;
-  }
-  *::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  *::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  *::-webkit-scrollbar-thumb {
-    background-color: oklch(0.7 0 0 / 0.3);
-    border-radius: 4px;
-  }
-  *::-webkit-scrollbar-thumb:hover {
-    background-color: oklch(0.7 0 0 / 0.5);
-  }
+/* Card hover effect */
+.card-hover {
+  transition: all 150ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* prefers-reduced-motion */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
@@ -182,51 +349,10 @@
   }
 }
 
-/* RTL support — mirrors directional spacing/padding for Arabic layout.
-   The dir="rtl" attribute is set on <html> by LocaleProvider. Tailwind's
-   logical properties (ps-, pe-, ms-, me-) handle most cases automatically;
-   this covers the few physical-property leftovers. */
+/* RTL support */
 [dir="rtl"] .rounded-l-3xl { border-radius: 0 1.5rem 1.5rem 0; }
 [dir="rtl"] .rounded-r-3xl { border-radius: 1.5rem 0 0 1.5rem; }
 [dir="rtl"] .border-l { border-left: 0; border-right: 1px solid; }
 [dir="rtl"] .border-r { border-right: 0; border-left: 1px solid; }
 [dir="rtl"] .left-0 { left: auto; right: 0; }
 [dir="rtl"] .right-0 { right: auto; left: 0; }
-
-/* === UI Overhaul: Dark mode + scrollbar + card hover === */
-
-/* Dark mode improvements — darker background, more card contrast */
-.dark {
-  --background: oklch(0.13 0 0);
-  --card: oklch(0.17 0 0);
-  --border: oklch(1 0 0 / 8%);
-}
-
-/* Smooth thin scrollbar */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: oklch(0.7 0 0 / 0.4) transparent;
-}
-*::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background-color: oklch(0.7 0 0 / 0.3);
-  border-radius: 4px;
-}
-*::-webkit-scrollbar-thumb:hover {
-  background-color: oklch(0.7 0 0 / 0.5);
-}
-
-/* Card hover effect */
-.card-hover {
-  transition: all 0.2s ease;
-}
-.card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-}

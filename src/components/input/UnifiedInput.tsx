@@ -147,8 +147,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
 
         {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
-        {/* Input row */}
-        <div className="flex items-center gap-1.5 rounded-2xl bg-secondary shadow-sm focus-within:shadow-md transition-shadow p-1.5">
+        {/* Input row — premium visible container */}
+        <div className="flex items-center gap-1.5 rounded-2xl bg-card border border-border shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-primary/50 transition-all p-1.5">
           {/* Attach button */}
           <Button
             variant="ghost"
@@ -168,14 +168,15 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
             onChange={handleFileSelect}
           />
 
-          {/* Textarea */}
+          {/* Textarea — transparent inside the visible container */}
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={t("quickPlaceholder")}
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm leading-relaxed focus:outline-none placeholder:text-muted-foreground/60 py-2 min-h-[36px] max-h-[200px]"
+            className="flex-1 resize-none bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none text-sm leading-relaxed placeholder:text-muted-foreground/60 py-3 min-h-[48px] max-h-[200px] px-2"
+            style={{ boxShadow: "none", minHeight: "48px" }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
                 e.preventDefault();
