@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -39,7 +40,10 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
         const prefData = await prefRes.json();
         setMemories(memData.memories || []);
         setPrefs(prefData.preferences || null);
-      } catch { /* ignore */ } finally {
+      } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */ 
+} finally {
         setLoading(false);
       }
     })();

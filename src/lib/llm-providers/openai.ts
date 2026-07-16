@@ -1,6 +1,8 @@
 // OpenAI provider — GPT-4o, GPT-4o-mini.
 // Cost: $2.50/1M input, $10/1M output (gpt-4o).
 // Streaming support via SSE (same format as NVIDIA — OpenAI-compatible).
+import * as Sentry from "@sentry/nextjs";
+
 
 import type {
   LLMProviderInterface,
@@ -116,7 +118,10 @@ export class OpenAIProvider implements LLMProviderInterface {
             const chunk = JSON.parse(payload) as { choices?: { delta?: { content?: string } }[] };
             const token = chunk.choices?.[0]?.delta?.content;
             if (token) { fullContent += token; opts.onToken?.(token); }
-          } catch { /* skip */ }
+          } catch (err) {
+  Sentry.captureException(err);
+/* skip */ 
+}
         }
       }
       const tokens = Math.ceil(fullContent.length / 4);
@@ -148,7 +153,10 @@ export class OpenAIProvider implements LLMProviderInterface {
     const rawToolCalls = data.choices?.[0]?.message?.tool_calls;
     const toolCalls = rawToolCalls?.map((tc) => {
       let args: Record<string, unknown> = {};
-      try { args = JSON.parse(tc.function.arguments); } catch { /* leave empty */ }
+      try { args = JSON.parse(tc.function.arguments); } catch (err) {
+  Sentry.captureException(err);
+/* leave empty */ 
+}
       return { id: tc.id, name: tc.function.name, arguments: args };
     });
 

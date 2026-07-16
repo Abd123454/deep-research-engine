@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // QuickMode — single LLM call with streaming response.
 // No research pipeline, no web search. Just ask → NVIDIA answers.
@@ -63,9 +64,11 @@ export function QuickMode() {
               if (data.token) setResponse((r) => r + data.token);
               if (data.done && data.tokensUsed) setTokens(data.tokensUsed);
               if (data.error) setError(data.error);
-            } catch {
-              /* skip unparseable */
-            }
+            } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip unparseable */
+            
+}
           }
         }
       }

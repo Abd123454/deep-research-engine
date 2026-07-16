@@ -1,5 +1,7 @@
 // GET  /api/chat/conversations — list user's conversations.
 // POST /api/chat/conversations — create new conversation.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -24,7 +26,10 @@ export async function GET() {
           updatedAt: c.updatedAt?.toISOString?.() || String(c.updatedAt),
         })) });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();
@@ -55,7 +60,10 @@ export async function POST(req: NextRequest) {
         });
         return NextResponse.json({ ok: true, conversation: { id: conv.id, title: conv.title } });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();

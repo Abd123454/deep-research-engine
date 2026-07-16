@@ -4,6 +4,8 @@
 // tries Postgres (via Prisma) first when available, and falls back to the
 // embedded SQLite database otherwise. This dual-mode behaviour matches the
 // rest of the codebase (see src/lib/db.ts).
+import * as Sentry from "@sentry/nextjs";
+
 
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { MessageRow } from "@/lib/sqlite-types";
@@ -46,14 +48,20 @@ export async function getOrCreateConversation(
         });
         return conv.id;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
 
   // SQLite fallback.
   try {
     const db = getDb();
     db.prepare("INSERT OR IGNORE INTO conversations (id, user_id, title) VALUES (?, ?, ?)").run(id, userId, title);
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   return id;
 }
 
@@ -78,14 +86,20 @@ export async function saveMessage(
         });
         return;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();
     db.prepare("INSERT INTO messages (id, conversation_id, role, content, tokens_used, model_used) VALUES (?, ?, ?, ?, ?, ?)").run(
       id, conversationId, role, content, tokensUsed || 0, modelUsed || null
     );
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 }
 
 /**
@@ -107,7 +121,10 @@ export async function getHistory(conversationId: string): Promise<ChatMessage[]>
           createdAt: m.createdAt?.toISOString?.() || String(m.createdAt),
         }));
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();

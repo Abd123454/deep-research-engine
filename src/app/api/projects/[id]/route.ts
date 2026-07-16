@@ -1,6 +1,8 @@
 // GET    /api/projects/[id] — get project details with items.
 // PATCH  /api/projects/[id] — update project (name, description).
 // DELETE /api/projects/[id] — delete project.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -28,7 +30,10 @@ export async function GET(
         if (!project) return NextResponse.json({ error: "Not found." }, { status: 404 });
         return NextResponse.json({ ok: true, project });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   // SQLite fallback.
   try {
@@ -58,7 +63,10 @@ export async function PATCH(
         });
         return NextResponse.json({ ok: true, project: updated });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();
@@ -83,7 +91,10 @@ export async function DELETE(
         await prisma.project.delete({ where: { id } });
         return NextResponse.json({ ok: true });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();

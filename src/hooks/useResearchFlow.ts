@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // useResearchFlow — encapsulates the full research pipeline (plan → start →
 // poll/stream → report). Extracted from DeepResearch so it can be reused
@@ -59,18 +60,22 @@ export function useResearchFlow(
         try {
           const data = JSON.parse(e.data) as { ok: boolean; job?: ResearchJob };
           if (data.ok && data.job) setJob(data.job);
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       es.addEventListener("report_token", (e: MessageEvent) => {
         try {
           const data = JSON.parse(e.data) as { tokens: string };
           if (data.tokens) setStreamingReport((prev) => prev + data.tokens);
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       es.addEventListener("done", (e: MessageEvent) => {
@@ -88,9 +93,11 @@ export function useResearchFlow(
             setPhase("failed");
             setError(data.error || "Research failed");
           }
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       es.addEventListener("error", () => {
@@ -144,9 +151,11 @@ export function useResearchFlow(
             }
           }
         }
-      } catch {
-        /* ignore transient poll errors */
-      }
+      } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore transient poll errors */
+      
+}
       await new Promise((r) => setTimeout(r, interval));
       interval = 1500;
     }
@@ -259,9 +268,11 @@ export function useResearchFlow(
     stopPollingRef.current = true;
     try {
       await fetch(`/api/research/stop/${id}`, { method: "POST" });
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
     setPhase("failed");
     setError("Cancelled by user");
     toast.info("Research cancelled");

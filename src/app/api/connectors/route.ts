@@ -1,5 +1,7 @@
 // GET  /api/connectors — list connectors for a project.
 // POST /api/connectors — add a connector to a project.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -20,7 +22,10 @@ export async function GET(req: NextRequest) {
         });
         return NextResponse.json({ ok: true, connectors });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();
@@ -57,7 +62,10 @@ export async function POST(req: NextRequest) {
           });
           return NextResponse.json({ ok: true, connector });
         }
-      } catch { /* fall through */ }
+      } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
     }
     try {
       const db = getDb();

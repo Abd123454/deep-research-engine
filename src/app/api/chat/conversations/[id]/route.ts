@@ -1,5 +1,7 @@
 // GET    /api/chat/conversations/[id] — get conversation with messages.
 // DELETE /api/chat/conversations/[id] — delete conversation + messages.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -22,7 +24,10 @@ export async function GET(
         if (!conv) return NextResponse.json({ error: "Not found." }, { status: 404 });
         return NextResponse.json({ ok: true, conversation: conv });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();
@@ -58,7 +63,10 @@ export async function DELETE(
         await prisma.conversation.delete({ where: { id } });
         return NextResponse.json({ ok: true });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();

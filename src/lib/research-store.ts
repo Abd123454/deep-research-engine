@@ -13,6 +13,8 @@
 //
 // The DB stores: id, query, status, plan, report, sources, stats, createdAt, updatedAt.
 // Runtime fields (logs, thoughts, reportStream, etc.) are NOT persisted — they're
+import * as Sentry from "@sentry/nextjs";
+
 // only relevant during execution.
 
 import { randomUUID } from "crypto";
@@ -94,12 +96,14 @@ export function persistJob(job: ResearchJob): void {
       updatedAt: new Date(job.updatedAt).toISOString(),
     });
   } catch (err) {
-    // DB write failed — don't break the research. Just log.
+  Sentry.captureException(err);
+// DB write failed — don't break the research. Just log.
     logger.warn(
       { module: "research-store", err: err instanceof Error ? err.message : String(err) },
       "persistJob failed"
     );
-  }
+  
+}
 }
 
 /**
@@ -111,12 +115,18 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
   let plan: ResearchJob["plan"] = null;
   try {
     if (row.plan) plan = JSON.parse(String(row.plan));
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 
   let sources: ResearchJob["sources"] = [];
   try {
     if (row.sources) sources = JSON.parse(String(row.sources));
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 
   let stats: ResearchJob["stats"] = {
     totalPagesFound: 0,
@@ -133,7 +143,10 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
   };
   try {
     if (row.stats) stats = { ...stats, ...JSON.parse(String(row.stats)) };
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 
   const createdAt = row.created_at ? new Date(String(row.created_at)).getTime() : now;
   const updatedAt = row.updated_at ? new Date(String(row.updated_at)).getTime() : now;
@@ -319,9 +332,11 @@ export function deleteJob(id: string): boolean {
     if (db) {
       try {
         db.prepare("DELETE FROM research_jobs WHERE id = ?").run(id);
-      } catch {
-        /* ignore */
-      }
+      } catch (err) {
+  Sentry.captureException(err);
+/* ignore */
+      
+}
     }
   }
 

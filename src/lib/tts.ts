@@ -1,4 +1,6 @@
 // TTS — Text-to-Speech via NVIDIA → OpenAI → Browser fallback.
+import * as Sentry from "@sentry/nextjs";
+
 
 export interface TTSOptions {
   text: string;
@@ -17,10 +19,16 @@ export async function synthesizeSpeech(opts: TTSOptions): Promise<TTSResult> {
   if (!text) return { audioBase64: "", format: "none", provider: "none" };
 
   if (process.env.NVIDIA_API_KEY) {
-    try { return await nvidiaTTS(opts); } catch { /* fall through */ }
+    try { return await nvidiaTTS(opts); } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   if (process.env.OPENAI_API_KEY) {
-    try { return await openaiTTS(opts); } catch { /* fall through */ }
+    try { return await openaiTTS(opts); } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   return { audioBase64: "", format: "web-speech", provider: "browser" };
 }

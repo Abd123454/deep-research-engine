@@ -4,6 +4,8 @@
 // memory limit 256m, CPU limit 0.5, 10s timeout.
 //
 // Falls back to vm-based sandbox (code-sandbox.ts) when Docker is not available.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { exec } from "child_process";
 import { promisify } from "util";
@@ -124,9 +126,11 @@ export async function runCodeSmart(
           provider: "docker",
         };
       }
-    } catch {
-      // Fall through to vm.
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+// Fall through to vm.
+    
+}
   }
 
   // Fallback to vm-based sandbox.

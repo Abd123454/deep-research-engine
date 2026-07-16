@@ -1,6 +1,8 @@
 // Ollama provider — local, free, open-source models.
 // Runs on localhost:11434. No API key needed.
 // Models: llama3.1:70b, llama3.1:8b, qwen2.5:7b, etc.
+import * as Sentry from "@sentry/nextjs";
+
 
 import type {
   LLMProviderInterface,
@@ -85,7 +87,10 @@ export class OllamaProvider implements LLMProviderInterface {
             const chunk = JSON.parse(line) as { message?: { content?: string }; done?: boolean };
             const token = chunk.message?.content;
             if (token) { fullContent += token; opts.onToken?.(token); }
-          } catch { /* skip */ }
+          } catch (err) {
+  Sentry.captureException(err);
+/* skip */ 
+}
         }
       }
       const tokens = Math.ceil(fullContent.length / 4);
@@ -102,7 +107,10 @@ export class OllamaProvider implements LLMProviderInterface {
         const data = JSON.parse(line) as { message?: { content?: string }; eval_count?: number; done?: boolean };
         if (data.message?.content) content += data.message.content;
         if (data.eval_count) evalCount = data.eval_count;
-      } catch { /* skip */ }
+      } catch (err) {
+  Sentry.captureException(err);
+/* skip */ 
+}
     }
     return { content, tokensUsed: evalCount || Math.ceil(content.length / 4), model, provider: "ollama", cost: 0 };
   }

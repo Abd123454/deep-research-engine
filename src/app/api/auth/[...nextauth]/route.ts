@@ -6,6 +6,8 @@
 //
 // Until auth is fully wired, the app works in "guest mode" (no login
 // required). When NEXTAUTH_SECRET is set + user registers, auth activates.
+import * as Sentry from "@sentry/nextjs";
+
 
 import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
@@ -25,7 +27,10 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
         }
         return null;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
 
   // SQLite fallback.
@@ -35,7 +40,10 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
     if (row && row.password_hash) {
       return { id: row.id, email: row.email, name: row.name, passwordHash: row.password_hash };
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   return null;
 }
 

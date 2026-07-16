@@ -13,6 +13,8 @@
 //   2. A single fast model for quick tasks (sub-question decomposition,
 //      gap analysis).
 //   3. Cooperative streaming: if a model emits at least one token before
+import * as Sentry from "@sentry/nextjs";
+
 //      failing, we do NOT fall back (the user has already seen partial
 //      output). We surface the error instead.
 //
@@ -237,9 +239,11 @@ async function nvidiaCompleteSingle(
             fullContent += token;
             opts.onToken?.(token);
           }
-        } catch {
-          // skip unparseable chunks
-        }
+        } catch (err) {
+  Sentry.captureException(err);
+// skip unparseable chunks
+        
+}
       }
     }
 

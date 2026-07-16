@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // DocumentCard — document upload + Q&A in a single card.
 // Used in the unified interface when the user attaches a file and asks a question.
@@ -118,9 +119,11 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
               if (data.token) setAnswer((a) => a + data.token);
               if (data.done && data.tokensUsed) setTokens(data.tokensUsed);
               if (data.error) setQaError(data.error);
-            } catch {
-              /* skip */
-            }
+            } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */
+            
+}
           }
         }
       }

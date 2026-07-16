@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 import * as React from "react";
 import { Mic, MicOff, Loader2 } from "lucide-react";
 
@@ -28,14 +29,20 @@ export function MicButton({ onTranscript, language }: { onTranscript: (text: str
             });
             const data = await res.json();
             if (data.text) onTranscript(data.text);
-          } catch { /* ignore */ } finally { setProcessing(false); }
+          } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */ 
+} finally { setProcessing(false); }
         };
         reader.readAsDataURL(blob);
       };
       recorder.start();
       mediaRecorderRef.current = recorder;
       setRecording(true);
-    } catch { /* mic denied */ }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* mic denied */ 
+}
   }
 
   function stopRecording() {

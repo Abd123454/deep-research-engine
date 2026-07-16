@@ -1,4 +1,7 @@
 // POST /api/billing/webhook — handle Stripe webhooks
+import * as Sentry from "@sentry/nextjs";
+import { trackEvent } from "@/lib/analytics";
+
 import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
@@ -40,6 +43,7 @@ export async function POST(req: NextRequest) {
         } catch (err) {
           logger.error({ err }, "Failed to store subscription");
         }
+        trackEvent(userId, "plan_upgraded", { plan: "pro", customerId });
         break;
       }
 
@@ -50,7 +54,10 @@ export async function POST(req: NextRequest) {
           db.prepare(`UPDATE subscriptions SET status = ?, updated_at = datetime('now') WHERE stripe_subscription_id = ?`)
             .run(sub.status, sub.id);
           logger.info({ subscriptionId: sub.id, status: sub.status }, "Subscription updated");
-        } catch { /* ignore */ }
+        } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
         break;
       }
 
@@ -61,7 +68,10 @@ export async function POST(req: NextRequest) {
           db.prepare(`UPDATE subscriptions SET status = 'canceled', updated_at = datetime('now') WHERE stripe_subscription_id = ?`)
             .run(sub.id);
           logger.info({ subscriptionId: sub.id }, "Subscription canceled");
-        } catch { /* ignore */ }
+        } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
         break;
       }
 

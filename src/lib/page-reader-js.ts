@@ -10,6 +10,8 @@
 // Usage:
 //   const result = await readPageWithJS(url);
 //   if (result.success) { /* use result.text */ }
+import * as Sentry from "@sentry/nextjs";
+
 
 import type { Browser, BrowserType } from "playwright";
 
@@ -115,7 +117,8 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
       wordCount: countWords(truncated),
     };
   } catch (err) {
-    // Handle abort specially.
+  Sentry.captureException(err);
+// Handle abort specially.
     if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) {
       return {
         text: "",
@@ -134,13 +137,16 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
       tokensUsed: 0,
       wordCount: 0,
     };
-  } finally {
+  
+} finally {
     if (browser) {
       try {
         await browser.close();
-      } catch {
-        // ignore close errors
-      }
+      } catch (err) {
+  Sentry.captureException(err);
+// ignore close errors
+      
+}
     }
   }
 }

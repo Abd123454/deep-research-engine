@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent } from "@/lib/analytics";
 import { generateFile, type FileType } from "@/lib/file-generator";
 
 const VALID_TYPES: FileType[] = ["pdf", "docx", "pptx", "xlsx", "md"];
@@ -18,6 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Content required (max 500K chars)." }, { status: 400 });
     }
 
+  trackEvent("default", "feature_used", { feature: "file_generation" });
     const result = await generateFile({ type, title, content, userId });
     return NextResponse.json({
       ok: true,

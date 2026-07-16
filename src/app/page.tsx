@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { AppShell } from "@/components/layout/AppShell";
@@ -47,7 +48,10 @@ export default function Home() {
         setConversations([...chatConvs, ...sessionConvs].sort((a, b) =>
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         ));
-      } catch { /* ignore */ }
+      } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */ 
+}
     })();
   }, []);
 

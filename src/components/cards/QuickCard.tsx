@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // QuickCard — a single Q&A pair (question + streaming answer).
 // Used in the unified interface when the user asks a quick question.
@@ -61,9 +62,11 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
                 if (data.token) setResponse((r) => r + data.token);
                 if (data.done && data.tokensUsed) setTokens(data.tokensUsed);
                 if (data.error) setError(data.error);
-              } catch {
-                /* skip */
-              }
+              } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */
+              
+}
             }
           }
         }

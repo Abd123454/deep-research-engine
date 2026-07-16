@@ -5,6 +5,8 @@
 // - Usage tracking (per user, per month, per type)
 // - Plan enforcement (check before processing requests)
 // - Stripe Checkout + Customer Portal integration
+import * as Sentry from "@sentry/nextjs";
+
 
 import Stripe from "stripe";
 import { logger } from "./logger";
@@ -69,14 +71,20 @@ export async function getUserPlan(userId: string): Promise<Plan> {
         });
         if (sub && PLANS[sub.plan as Plan]) return sub.plan as Plan;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   // SQLite fallback
   try {
     const db = getDb();
     const row = db.prepare("SELECT plan FROM subscriptions WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1").get(userId) as { plan: string } | undefined;
     if (row && PLANS[row.plan as Plan]) return row.plan as Plan;
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   return "free";
 }
 
@@ -109,14 +117,20 @@ export async function checkUsageLimit(userId: string, type: "research" | "chat" 
         });
         count = record ? (type === "tokens" ? record.tokensUsed : record.count) : 0;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   if (count === 0) {
     try {
       const db = getDb();
       const row = db.prepare("SELECT count, tokens_used FROM usage_records WHERE user_id = ? AND type = ? AND period = ?").get(userId, type, periodType) as { count: number; tokens_used: number } | undefined;
       count = row ? (type === "tokens" ? row.tokens_used : row.count) : 0;
-    } catch { /* ignore */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   }
 
   const remaining = Math.max(0, limit - count);
@@ -137,7 +151,10 @@ export async function incrementUsage(userId: string, type: string, tokens = 0): 
         });
         return;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   // SQLite fallback
   try {

@@ -6,6 +6,8 @@
 //
 // This endpoint is expensive (runs real research jobs + LLM calls).
 // Rate limited to 1 run per 10 minutes per IP to prevent abuse.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { runEvalSuite } from "@/lib/eval/runner";
@@ -40,9 +42,11 @@ export async function POST(req: NextRequest) {
   let body: { queries?: string[] } = {};
   try {
     body = await req.json();
-  } catch {
-    // Empty body is fine — run all queries.
-  }
+  } catch (err) {
+  Sentry.captureException(err);
+// Empty body is fine — run all queries.
+  
+}
 
   // Validate query IDs if provided.
   if (body.queries && body.queries.length > 0) {

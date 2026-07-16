@@ -2,6 +2,7 @@
 // Body: { image: base64, mimeType, prompt? }
 
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent } from "@/lib/analytics";
 import { analyzeImage } from "@/lib/vision";
 
 export async function POST(req: NextRequest) {
@@ -16,6 +17,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
+  trackEvent("default", "feature_used", { feature: "vision" });
     const result = await analyzeImage(image, mimeType, prompt);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
