@@ -18,9 +18,17 @@
 // diacritics (Igno\u0301re), and case mixing (iGnOrE).
 
 // Cyrillic → Latin mapping for common homoglyphs.
+// Includes ALL visually identical Cyrillic letters that could be used
+// to bypass pattern matching (e.g., "Іgnore" with Cyrillic І U+0406).
 const CYRILLIC_TO_LATIN: Record<string, string> = {
   о: "o", е: "e", а: "a", р: "p", с: "c", у: "y", х: "x",
   О: "O", Е: "E", А: "A", Р: "P", С: "C", У: "Y", Х: "X",
+  // Byelorussian-Ukrainian I (visually identical to Latin I)
+  І: "I", і: "i",
+  // Cyrillic small/i capital Dze (looks like Latin S/s)
+  Ѕ: "S", ѕ: "s",
+  // Cyrillic Iota (looks like Latin I)
+  Ӏ: "I",
 };
 
 function normalizeUnicode(input: string): string {
@@ -38,7 +46,8 @@ function normalizeUnicode(input: string): string {
   s = s.replace(/[\u0300-\u036f]/g, "");
 
   // Convert Cyrillic homoglyphs to Latin.
-  s = s.replace(/[оеарсухОЕАРСУХ]/g, (c) => CYRILLIC_TO_LATIN[c] || c);
+  // The regex must include ALL keys from CYRILLIC_TO_LATIN.
+  s = s.replace(/[оеарсухОЕАРСУХІіЅѕӀ]/g, (c) => CYRILLIC_TO_LATIN[c] || c);
 
   // Lowercase for case-insensitive matching.
   return s.toLowerCase();

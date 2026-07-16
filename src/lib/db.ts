@@ -140,6 +140,37 @@ function initSqliteSchema(db: SqliteDatabase): void {
       preferred_provider TEXT DEFAULT 'auto',
       timezone TEXT
     );
+
+    -- Auxiliary tables (previously lazily created in route handlers —
+    -- moved here to fix schema drift so all tables exist on first startup).
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      email TEXT UNIQUE,
+      name TEXT,
+      password_hash TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+
+    CREATE TABLE IF NOT EXISTS projects (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      name TEXT NOT NULL,
+      description TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);
+
+    CREATE TABLE IF NOT EXISTS connectors (
+      id TEXT PRIMARY KEY,
+      project_id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      credentials TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE
+    );
+    CREATE INDEX IF NOT EXISTS idx_connectors_project ON connectors(project_id);
   `);
 }
 

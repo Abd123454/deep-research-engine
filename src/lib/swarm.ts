@@ -339,6 +339,19 @@ export async function synthesizeSwarm(
 
 // ---------- Swarm runner: orchestrate the whole thing ----------
 
+const WORKER_TIMEOUT_MS = 90_000; // 90s per worker
+const SYNTH_TIMEOUT_MS = 120_000; // 120s for synthesis
+
+/** Wrap a promise with a timeout. Returns the result or throws on timeout. */
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
+    ),
+  ]);
+}
+
 export async function runSwarm(
   task: string,
   emit: SwarmEventEmitter
@@ -348,12 +361,16 @@ export async function runSwarm(
   const plan: SwarmPlan = { taskId: crypto.randomUUID(), task, subtasks };
   emit({ type: "swarm_start", taskId: plan.taskId, plan });
 
-  // Phase 2: Run workers in parallel.
+  // Phase 2: Run workers in parallel (with per-worker timeout).
   const workerResults = await Promise.allSettled(
     subtasks.map(async (subtask) => {
       emit({ type: "agent_start", agentId: subtask.id, role: subtask.role, task: subtask.description });
       try {
-        const output = await runWorker(subtask, task, emit);
+        const output = await withTimeout(
+          runWorker(subtask, task, emit),
+          WORKER_TIMEOUT_MS,
+          `Worker ${subtask.id} (${subtask.role})`
+        );
         emit({ type: "agent_done", agentId: subtask.id });
         return { role: subtask.role, subtask: subtask.description, output };
       } catch (err) {
@@ -373,8 +390,12 @@ export async function runSwarm(
     r.status === "fulfilled" ? r.value : { role: "generalist" as AgentRole, subtask: "unknown", output: "(worker crashed)" }
   );
 
-  // Phase 3: Synthesize.
-  const finalReport = await synthesizeSwarm(task, outputs, emit);
+  // Phase 3: Synthesize (with timeout).
+  const finalReport = await withTimeout(
+    synthesizeSwarm(task, outputs, emit),
+    SYNTH_TIMEOUT_MS,
+    "Synthesizer"
+  );
   emit({ type: "swarm_done", finalReport });
 
   return { plan, finalReport };
