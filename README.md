@@ -163,7 +163,8 @@ bunx tsc --noEmit
 - **Rate limiter uses in-memory fallback** — Redis is supported but optional. Without Redis, rate limiting is per-process.
 - **Docker sandbox requires Docker installed** — falls back to vm sandbox if unavailable.
 - **Playwright adds ~150MB** — optional, for JS-rendered page reading + E2E tests.
-- **2 lint warnings** (react-hooks/exhaustive-deps) — pre-existing, safe to ignore.
+- **Dev-dependency vulnerabilities** — `vite`, `minimatch` (via eslint/vitest/prisma dev tools) have HIGH advisories. These are dev-only deps, not in production runtime. Upgrading requires major version bumps that may break the toolchain.
+- **Dead code** — `src/components/deep-research.tsx` (legacy component, replaced by `UnifiedInterface`) and `src/hooks/use-mobile.ts` (unused shadcn/ui hook) are still present but not imported by any production route. Safe to remove in a future cleanup.
 
 ---
 

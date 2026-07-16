@@ -2,14 +2,21 @@
 import * as React from "react";
 import { Download, X } from "lucide-react";
 
+// BeforeInstallPromptEvent is not in standard DOM lib types (W3C never standardized it).
+// Chrome/Edge support it; Firefox/Safari don't fire the event at all.
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export function InstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
   const [show, setShow] = React.useState(false);
 
   React.useEffect(() => {
     const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       setTimeout(() => setShow(true), 30_000);
     };
     window.addEventListener("beforeinstallprompt", handler);

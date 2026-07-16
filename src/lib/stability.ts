@@ -150,6 +150,7 @@ export async function systemHealth(): Promise<HealthStatus> {
   }
 
   // Check Docker (for sandbox).
+  // Safe: hardcoded command string, no user input, 3s timeout, stdio ignored.
   try {
     const { execSync } = await import("child_process");
     execSync("docker info", { timeout: 3000, stdio: "ignore" });

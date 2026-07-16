@@ -96,8 +96,8 @@ function wikipediaTitleFromUrl(url: string): string {
 function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number): AbortSignal | undefined {
   if (!userSignal) return AbortSignal.timeout(timeoutMs);
   if (userSignal.aborted) return userSignal;
-  if (typeof (AbortSignal as any).any === "function") {
-    return (AbortSignal as any).any([userSignal, AbortSignal.timeout(timeoutMs)]);
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any([userSignal, AbortSignal.timeout(timeoutMs)]);
   }
   return userSignal;
 }

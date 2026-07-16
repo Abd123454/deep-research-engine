@@ -203,8 +203,8 @@ function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number)
   if (userSignal.aborted) return userSignal;
   // AbortSignal.any() is available in Node 20+ — combines multiple signals.
   // If not available, fall back to just the user signal (timeout is lost).
-  if (typeof (AbortSignal as any).any === "function") {
-    return (AbortSignal as any).any([userSignal, AbortSignal.timeout(timeoutMs)]);
+  if (typeof AbortSignal.any === "function") {
+    return AbortSignal.any([userSignal, AbortSignal.timeout(timeoutMs)]);
   }
   return userSignal;
 }

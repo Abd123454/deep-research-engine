@@ -71,7 +71,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
     if (!ta) return;
     ta.style.height = "auto";
     ta.style.height = Math.min(ta.scrollHeight, 200) + "px";
-  }, [text]);
+  }, [text, textareaRef]);
 
   // Close mode dropdown on outside click.
   React.useEffect(() => {

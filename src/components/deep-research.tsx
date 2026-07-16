@@ -102,7 +102,7 @@ export function DeepResearch() {
 
   const dedupedSources = React.useMemo(
     () => (job ? dedupeSources(job.sources) : []),
-    [job?.sources]
+    [job]
   );
 
   // ---------- Auto-start: generate plan → immediately start research ----------

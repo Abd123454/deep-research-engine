@@ -11,6 +11,8 @@
 //   const result = await readPageWithJS(url);
 //   if (result.success) { /* use result.text */ }
 
+import type { Browser, BrowserType } from "playwright";
+
 export interface JSPageResult {
   text: string;
   title: string;
@@ -28,7 +30,7 @@ function countWords(text: string): number {
 }
 
 export async function readPageWithJS(url: string, signal?: AbortSignal): Promise<JSPageResult> {
-  let chromium: ((options?: { headless?: boolean }) => Promise<any>) | null = null;
+  let chromium: BrowserType["launch"] | null = null;
 
   // Dynamic import — if Playwright isn't installed, return gracefully.
   // We use a variable to hold the module name so the bundler doesn't try
@@ -60,7 +62,7 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
     };
   }
 
-  let browser: any = null;
+  let browser: Browser | null = null;
   try {
     if (signal?.aborted) {
       throw new Error("Aborted before browser launch");

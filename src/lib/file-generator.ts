@@ -102,7 +102,7 @@ async function generatePPTX(req: FileGenRequest): Promise<FileGenResult> {
   pptx.layout = "LAYOUT_WIDE";
 
   const lines = req.content.split("\n");
-  let currentSlide: any = null;
+  let currentSlide: ReturnType<typeof pptx.addSlide> | null = null;
 
   for (const line of lines) {
     if (line.startsWith("## ") || line.startsWith("# ")) {
