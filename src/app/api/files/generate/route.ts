@@ -6,7 +6,7 @@ const VALID_TYPES: FileType[] = ["pdf", "docx", "pptx", "xlsx", "md"];
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { type, title, content } = body;
+    const { type, title, content, userId } = body;
 
     if (!type || !VALID_TYPES.includes(type)) {
       return NextResponse.json({ ok: false, error: `Invalid type. Use: ${VALID_TYPES.join(", ")}` }, { status: 400 });
@@ -18,13 +18,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: "Content required (max 500K chars)." }, { status: 400 });
     }
 
-    const result = await generateFile({ type, title, content });
-    return new Response(new Uint8Array(result.buffer), {
-      headers: {
-        "Content-Type": result.mimeType,
-        "Content-Disposition": `attachment; filename="${result.filename}"`,
-        "Content-Length": String(result.buffer.length),
-      },
+    const result = await generateFile({ type, title, content, userId });
+    return NextResponse.json({
+      ok: true,
+      url: result.url,
+      filename: result.filename,
+      size: result.size,
+      mimeType: result.mimeType,
+      key: result.key,
     });
   } catch (err) {
     return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "File generation failed." }, { status: 500 });

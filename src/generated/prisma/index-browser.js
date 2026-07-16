@@ -212,6 +212,30 @@ exports.Prisma.UserPreferenceScalarFieldEnum = {
   timezone: 'timezone'
 };
 
+exports.Prisma.SubscriptionScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  stripeCustomerId: 'stripeCustomerId',
+  stripeSubscriptionId: 'stripeSubscriptionId',
+  stripePriceId: 'stripePriceId',
+  plan: 'plan',
+  status: 'status',
+  currentPeriodEnd: 'currentPeriodEnd',
+  cancelAtPeriodEnd: 'cancelAtPeriodEnd',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.UsageRecordScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  type: 'type',
+  count: 'count',
+  tokensUsed: 'tokensUsed',
+  period: 'period',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -248,7 +272,9 @@ exports.Prisma.ModelName = {
   LongTermMemory: 'LongTermMemory',
   ResearchJobRecord: 'ResearchJobRecord',
   DocumentRecord: 'DocumentRecord',
-  UserPreference: 'UserPreference'
+  UserPreference: 'UserPreference',
+  Subscription: 'Subscription',
+  UsageRecord: 'UsageRecord'
 };
 
 /**

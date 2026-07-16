@@ -31,12 +31,14 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  conversations Conversation[]
-  researchJobs  ResearchJobRecord[]
-  documents     DocumentRecord[]
-  preferences   UserPreference?
-  memories      LongTermMemory[]
-  projects      Project[]
+  conversations  Conversation[]
+  researchJobs   ResearchJobRecord[]
+  documents      DocumentRecord[]
+  preferences    UserPreference?
+  memories       LongTermMemory[]
+  projects       Project[]
+  subscriptions  Subscription[]
+  usageRecords   UsageRecord[]
 
   @@map("users")
 }
@@ -190,4 +192,42 @@ model UserPreference {
   user User @relation(fields: [userId], references: [id])
 
   @@map("user_preferences")
+}
+
+// ============ Billing ============
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  userId               String
+  stripeCustomerId     String   @unique
+  stripeSubscriptionId String?  @unique
+  stripePriceId        String?
+  plan                 String   @default("free")
+  status               String   @default("active")
+  currentPeriodEnd     DateTime?
+  cancelAtPeriodEnd    Boolean  @default(false)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@map("subscriptions")
+}
+
+model UsageRecord {
+  id         String   @id @default(cuid())
+  userId     String
+  type       String
+  count      Int      @default(1)
+  tokensUsed Int      @default(0)
+  period     String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, period])
+  @@index([userId, period])
+  @@map("usage_records")
 }

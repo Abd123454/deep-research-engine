@@ -1,6 +1,12 @@
 // File Generator — creates PDF, DOCX, PPTX, XLSX, MD files from content.
+//
+// Generated files are uploaded to S3/R2 (or fall back to local dev mode) and
+// the caller receives a presigned download URL + filename + size instead of
+// the raw bytes. This keeps request payloads small and lets the browser stream
+// the artifact directly from object storage.
 
 import { Buffer } from "buffer";
+import { uploadFile, getDownloadUrl } from "./storage";
 
 export type FileType = "pdf" | "docx" | "pptx" | "xlsx" | "md";
 
@@ -8,12 +14,25 @@ export interface FileGenRequest {
   type: FileType;
   title: string;
   content: string;
+  /** Used to namespace the S3 key: generated/<userId>/<filename>. Defaults to "anonymous". */
+  userId?: string;
 }
 
-export interface FileGenResult {
+/** Raw in-memory artifact produced by the per-format generators. */
+interface GeneratedArtifact {
   buffer: Buffer;
   mimeType: string;
   filename: string;
+}
+
+/** Public result: a presigned download URL plus metadata. */
+export interface FileGenResult {
+  url: string;
+  filename: string;
+  size: number;
+  /** Object key in the bucket (or the would-be key in local mode). */
+  key: string;
+  mimeType: string;
 }
 
 function safeFilename(title: string): string {
@@ -21,6 +40,23 @@ function safeFilename(title: string): string {
 }
 
 export async function generateFile(req: FileGenRequest): Promise<FileGenResult> {
+  const artifact = await generateArtifact(req);
+  const userId = (req.userId || "anonymous").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+  const key = `generated/${userId}/${artifact.filename}`;
+
+  await uploadFile(key, artifact.buffer, artifact.mimeType);
+  const url = await getDownloadUrl(key);
+
+  return {
+    url,
+    filename: artifact.filename,
+    size: artifact.buffer.length,
+    key,
+    mimeType: artifact.mimeType,
+  };
+}
+
+async function generateArtifact(req: FileGenRequest): Promise<GeneratedArtifact> {
   switch (req.type) {
     case "pdf": return generatePDF(req);
     case "docx": return generateDOCX(req);
@@ -34,7 +70,7 @@ export async function generateFile(req: FileGenRequest): Promise<FileGenResult> 
   }
 }
 
-async function generatePDF(req: FileGenRequest): Promise<FileGenResult> {
+async function generatePDF(req: FileGenRequest): Promise<GeneratedArtifact> {
   const { PDFDocument, StandardFonts, rgb } = await import("pdf-lib");
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -70,7 +106,7 @@ async function generatePDF(req: FileGenRequest): Promise<FileGenResult> {
   return { buffer: Buffer.from(buffer), mimeType: "application/pdf", filename: `${safeFilename(req.title)}.pdf` };
 }
 
-async function generateDOCX(req: FileGenRequest): Promise<FileGenResult> {
+async function generateDOCX(req: FileGenRequest): Promise<GeneratedArtifact> {
   const { Document, Packer, Paragraph, HeadingLevel, TextRun } = await import("docx");
   const lines = req.content.split("\n");
   const children: InstanceType<typeof Paragraph>[] = [];
@@ -96,7 +132,7 @@ async function generateDOCX(req: FileGenRequest): Promise<FileGenResult> {
   return { buffer: Buffer.from(buffer), mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", filename: `${safeFilename(req.title)}.docx` };
 }
 
-async function generatePPTX(req: FileGenRequest): Promise<FileGenResult> {
+async function generatePPTX(req: FileGenRequest): Promise<GeneratedArtifact> {
   const pptxgen = (await import("pptxgenjs")).default;
   const pptx = new pptxgen();
   pptx.layout = "LAYOUT_WIDE";
@@ -124,7 +160,7 @@ async function generatePPTX(req: FileGenRequest): Promise<FileGenResult> {
   return { buffer, mimeType: "application/vnd.openxmlformats-officedocument.presentationml.presentation", filename: `${safeFilename(req.title)}.pptx` };
 }
 
-async function generateXLSX(req: FileGenRequest): Promise<FileGenResult> {
+async function generateXLSX(req: FileGenRequest): Promise<GeneratedArtifact> {
   const ExcelJS = (await import("exceljs")).default;
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet("Sheet1");

@@ -161,6 +161,12 @@ export async function systemHealth(): Promise<HealthStatus> {
     details.docker = "not_available (using vm fallback)";
   }
 
+  // Check cloud storage (S3/R2). Reported alongside the other checks; in
+  // local dev (S3 not configured) the overall status will be "degraded",
+  // which is intentional — operators should wire up storage in production.
+  checks.storage = !!process.env.S3_ACCESS_KEY_ID;
+  details.storage = process.env.S3_ACCESS_KEY_ID ? "s3/r2" : "local";
+
   const allHealthy = Object.values(checks).every((v) => v);
   const someHealthy = Object.values(checks).some((v) => v);
 
