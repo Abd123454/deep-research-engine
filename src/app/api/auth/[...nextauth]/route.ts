@@ -11,6 +11,7 @@ import NextAuth, { type NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { UserRow } from "@/lib/sqlite-types";
 
 async function findUserByEmail(email: string): Promise<{ id: string; email: string; name: string | null; passwordHash: string } | null> {
   // Postgres.
@@ -30,7 +31,7 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
   // SQLite fallback.
   try {
     const db = getDb();
-    const row = db.prepare("SELECT id, email, name, password_hash FROM users WHERE email = ?").get(email) as any;
+    const row = db.prepare("SELECT id, email, name, password_hash FROM users WHERE email = ?").get(email) as Pick<UserRow, "id" | "email" | "name" | "password_hash"> | undefined;
     if (row && row.password_hash) {
       return { id: row.id, email: row.email, name: row.name, passwordHash: row.password_hash };
     }
@@ -70,7 +71,7 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.userId;
+        session.user.id = token.userId as string;
       }
       return session;
     },

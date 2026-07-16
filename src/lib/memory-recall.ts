@@ -12,6 +12,7 @@
 
 import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
+import type { LongTermMemoryRow, RawVectorSearchRow } from "./sqlite-types";
 
 const DEFAULT_USER_ID = "default";
 
@@ -68,7 +69,7 @@ export async function recallRelevantMemories(
           LIMIT ${limit}
         `;
 
-        const results = (memories as any[]).map((m) => {
+        const results = (memories as RawVectorSearchRow[]).map((m) => {
           const recency = recencyBoost(m.created_at);
           const access = accessBoost(m.access_count || 0);
           return {
@@ -78,8 +79,8 @@ export async function recallRelevantMemories(
             confidence: m.confidence,
             similarity: m.similarity || 0,
             score: (m.similarity || 0) * recency * access,
-            createdAt: m.created_at?.toISOString?.() || String(m.created_at),
-            lastAccessed: m.last_accessed?.toISOString?.() || null,
+            createdAt: m.created_at instanceof Date ? m.created_at.toISOString() : String(m.created_at),
+            lastAccessed: m.last_accessed instanceof Date ? m.last_accessed.toISOString() : null,
           };
         });
 
@@ -117,7 +118,7 @@ export async function recallRelevantMemories(
       .prepare(
         `SELECT * FROM long_term_memories WHERE user_id = ? AND (${conditions}) ORDER BY created_at DESC LIMIT ?`
       )
-      .all(uid, ...params, limit * 2) as any[];
+      .all(uid, ...params, limit * 2) as LongTermMemoryRow[];
 
     const results: RecalledMemory[] = rows.map((r) => {
       // Simple keyword-match score (0-1 based on how many keywords matched).
@@ -131,7 +132,7 @@ export async function recallRelevantMemories(
         id: r.id,
         type: r.type,
         content: r.content,
-        confidence: r.confidence,
+        confidence: r.confidence as number,
         similarity: keywordScore,
         score: keywordScore * recency * access,
         createdAt: r.created_at,

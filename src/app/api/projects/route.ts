@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { ProjectRow } from "@/lib/sqlite-types";
 
 const DEFAULT_USER_ID = "default";
 
@@ -20,7 +21,7 @@ export async function GET() {
             },
           },
         });
-        return NextResponse.json({ ok: true, projects: projects.map((p: any) => ({
+        return NextResponse.json({ ok: true, projects: projects.map((p) => ({
           ...p,
           createdAt: p.createdAt?.toISOString?.() || String(p.createdAt),
           updatedAt: p.updatedAt?.toISOString?.() || String(p.updatedAt),
@@ -39,7 +40,7 @@ export async function GET() {
       created_at TEXT NOT NULL DEFAULT (datetime('now')),
       updated_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`);
-    const rows = db.prepare("SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC").all(DEFAULT_USER_ID) as any[];
+    const rows = db.prepare("SELECT * FROM projects WHERE user_id = ? ORDER BY updated_at DESC").all(DEFAULT_USER_ID) as ProjectRow[];
     return NextResponse.json({ ok: true, projects: rows.map((r) => ({
       id: r.id, userId: r.user_id, name: r.name, description: r.description,
       createdAt: r.created_at, updatedAt: r.updated_at,

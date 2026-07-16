@@ -12,6 +12,7 @@
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
+import type { LongTermMemoryRow } from "./sqlite-types";
 
 export interface MemoryExtraction {
   type: "fact" | "preference" | "context";
@@ -148,11 +149,11 @@ export async function storeMemories(
       // Check for duplicates.
       const existing = db
         .prepare("SELECT id FROM long_term_memories WHERE user_id = ? AND content LIKE ?")
-        .get(uid, `%${mem.content.slice(0, 50)}%`);
+        .get(uid, `%${mem.content.slice(0, 50)}%`) as Pick<LongTermMemoryRow, "id"> | undefined;
       if (existing) {
         // Update confidence if higher.
         db.prepare("UPDATE long_term_memories SET confidence = ? WHERE id = ? AND confidence < ?")
-          .run(mem.confidence, (existing as any).id, mem.confidence);
+          .run(mem.confidence, existing.id, mem.confidence);
         continue;
       }
 
@@ -187,7 +188,7 @@ export async function getMemories(
           orderBy: { createdAt: "desc" },
           take: 100,
         });
-        return memories.map((m: any) => ({
+        return memories.map((m) => ({
           id: m.id,
           type: m.type,
           content: m.content,
@@ -207,11 +208,11 @@ export async function getMemories(
     const rows = type
       ? db.prepare("SELECT * FROM long_term_memories WHERE user_id = ? AND type = ? ORDER BY created_at DESC LIMIT 100").all(uid, type)
       : db.prepare("SELECT * FROM long_term_memories WHERE user_id = ? ORDER BY created_at DESC LIMIT 100").all(uid);
-    return (rows as any[]).map((r) => ({
+    return (rows as LongTermMemoryRow[]).map((r) => ({
       id: r.id,
       type: r.type,
       content: r.content,
-      confidence: r.confidence,
+      confidence: r.confidence as number,
       createdAt: r.created_at,
       accessCount: r.access_count || 0,
     }));

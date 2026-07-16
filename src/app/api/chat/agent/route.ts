@@ -8,6 +8,7 @@ import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-r
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
 import { getDb } from "@/lib/db";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import type { MessageRow } from "@/lib/sqlite-types";
 
 const MAX_HISTORY = 20;
 const MAX_TOOL_ITERATIONS = 5;
@@ -35,7 +36,7 @@ async function saveMessage(conversationId: string, role: string, content: string
 async function getHistory(conversationId: string): Promise<{ role: string; content: string }[]> {
   try {
     const db = getDb();
-    const rows = db.prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as any[];
+    const rows = db.prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as Pick<MessageRow, "role" | "content">[];
     return rows.map((r) => ({ role: r.role, content: r.content }));
   } catch { return []; }
 }

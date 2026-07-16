@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { ProjectRow } from "@/lib/sqlite-types";
 
 export async function GET(
   _req: NextRequest,
@@ -32,7 +33,7 @@ export async function GET(
   // SQLite fallback.
   try {
     const db = getDb();
-    const proj = db.prepare("SELECT * FROM projects WHERE id = ?").get(id) as any;
+    const proj = db.prepare("SELECT * FROM projects WHERE id = ?").get(id) as ProjectRow | undefined;
     if (!proj) return NextResponse.json({ error: "Not found." }, { status: 404 });
     return NextResponse.json({ ok: true, project: { ...proj, conversations: [], researchJobs: [], documents: [], connectors: [] } });
   } catch {

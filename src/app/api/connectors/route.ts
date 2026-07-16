@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { ConnectorRow } from "@/lib/sqlite-types";
 
 export async function GET(req: NextRequest) {
   const projectId = req.nextUrl.searchParams.get("projectId");
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
       id TEXT PRIMARY KEY, project_id TEXT NOT NULL, type TEXT NOT NULL,
       credentials TEXT, created_at TEXT NOT NULL DEFAULT (datetime('now'))
     )`);
-    const rows = db.prepare("SELECT * FROM connectors WHERE project_id = ?").all(projectId) as any[];
+    const rows = db.prepare("SELECT * FROM connectors WHERE project_id = ?").all(projectId) as ConnectorRow[];
     return NextResponse.json({ ok: true, connectors: rows.map((r) => ({
       id: r.id, projectId: r.project_id, type: r.type, credentials: r.credentials, createdAt: r.created_at,
     })) });

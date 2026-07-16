@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { UserPreferenceRow } from "@/lib/sqlite-types";
 
 const DEFAULT_PREFS = {
   preferredLanguage: "auto",
@@ -27,7 +28,7 @@ export async function GET() {
   // SQLite fallback.
   try {
     const db = getDb();
-    const row = db.prepare("SELECT * FROM user_preferences WHERE user_id = ?").get("default") as any;
+    const row = db.prepare("SELECT * FROM user_preferences WHERE user_id = ?").get("default") as UserPreferenceRow | undefined;
     if (row) {
       return NextResponse.json({
         ok: true,

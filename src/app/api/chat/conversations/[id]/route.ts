@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { ConversationRow, MessageRow } from "@/lib/sqlite-types";
 
 export async function GET(
   _req: NextRequest,
@@ -25,9 +26,9 @@ export async function GET(
   }
   try {
     const db = getDb();
-    const conv = db.prepare("SELECT * FROM conversations WHERE id = ?").get(id) as any;
+    const conv = db.prepare("SELECT * FROM conversations WHERE id = ?").get(id) as ConversationRow | undefined;
     if (!conv) return NextResponse.json({ error: "Not found." }, { status: 404 });
-    const messages = db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 100").all(id) as any[];
+    const messages = db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT 100").all(id) as MessageRow[];
     return NextResponse.json({
       ok: true,
       conversation: {

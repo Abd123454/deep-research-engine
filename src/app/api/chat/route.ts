@@ -20,6 +20,7 @@ import { extractAndStoreMemories } from "@/lib/memory-extractor";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import type { MessageRow } from "@/lib/sqlite-types";
 
 const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
@@ -88,7 +89,7 @@ async function getHistory(conversationId: string): Promise<ChatMessage[]> {
           orderBy: { createdAt: "asc" },
           take: MAX_HISTORY,
         });
-        return messages.map((m: any) => ({
+        return messages.map((m) => ({
           id: m.id, role: m.role, content: m.content,
           createdAt: m.createdAt?.toISOString?.() || String(m.createdAt),
         }));
@@ -97,7 +98,7 @@ async function getHistory(conversationId: string): Promise<ChatMessage[]> {
   }
   try {
     const db = getDb();
-    const rows = db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as any[];
+    const rows = db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as MessageRow[];
     return rows.map((r) => ({
       id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
     }));

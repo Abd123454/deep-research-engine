@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import type { ConversationWithCountRow } from "@/lib/sqlite-types";
 
 const DEFAULT_USER_ID = "default";
 
@@ -17,7 +18,7 @@ export async function GET() {
           take: 50,
           include: { _count: { select: { messages: true } } },
         });
-        return NextResponse.json({ ok: true, conversations: convs.map((c: any) => ({
+        return NextResponse.json({ ok: true, conversations: convs.map((c) => ({
           id: c.id, title: c.title, messageCount: c._count?.messages || 0,
           createdAt: c.createdAt?.toISOString?.() || String(c.createdAt),
           updatedAt: c.updatedAt?.toISOString?.() || String(c.updatedAt),
@@ -30,7 +31,7 @@ export async function GET() {
     const rows = db.prepare(`
       SELECT c.*, (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id) as msg_count
       FROM conversations c WHERE c.user_id = ? ORDER BY c.updated_at DESC LIMIT 50
-    `).all(DEFAULT_USER_ID) as any[];
+    `).all(DEFAULT_USER_ID) as ConversationWithCountRow[];
     return NextResponse.json({ ok: true, conversations: rows.map((r) => ({
       id: r.id, title: r.title, messageCount: r.msg_count,
       createdAt: r.created_at, updatedAt: r.updated_at,
