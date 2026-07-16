@@ -14,7 +14,7 @@ export async function GET(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const conv = await (prisma as any).conversation.findUnique({
+        const conv = await prisma.conversation.findUnique({
           where: { id },
           include: { messages: { orderBy: { createdAt: "asc" }, take: 100 } },
         });
@@ -54,7 +54,7 @@ export async function DELETE(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        await (prisma as any).conversation.delete({ where: { id } });
+        await prisma.conversation.delete({ where: { id } });
         return NextResponse.json({ ok: true });
       }
     } catch { /* fall through */ }

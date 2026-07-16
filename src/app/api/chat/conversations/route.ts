@@ -11,7 +11,7 @@ export async function GET() {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const convs = await (prisma as any).conversation.findMany({
+        const convs = await prisma.conversation.findMany({
           where: { userId: DEFAULT_USER_ID },
           orderBy: { updatedAt: "desc" },
           take: 50,
@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const conv = await (prisma as any).conversation.create({
+        const conv = await prisma.conversation.create({
           data: { id, userId: DEFAULT_USER_ID, title },
         });
         return NextResponse.json({ ok: true, conversation: { id: conv.id, title: conv.title } });

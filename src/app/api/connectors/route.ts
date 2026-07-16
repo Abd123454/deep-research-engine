@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const connectors = await (prisma as any).connector.findMany({
+        const connectors = await prisma.connector.findMany({
           where: { projectId },
         });
         return NextResponse.json({ ok: true, connectors });
@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       try {
         const prisma = await getPrismaDb();
         if (prisma) {
-          const connector = await (prisma as any).connector.create({
+          const connector = await prisma.connector.create({
             data: { id, projectId, type, credentials: credStr },
           });
           return NextResponse.json({ ok: true, connector });

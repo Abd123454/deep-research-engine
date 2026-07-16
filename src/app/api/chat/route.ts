@@ -41,7 +41,7 @@ async function getOrCreateConversation(conversationId: string | null, userId: st
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const conv = await (prisma as any).conversation.create({
+        const conv = await prisma.conversation.create({
           data: { id, userId, title },
         });
         return conv.id;
@@ -63,7 +63,7 @@ async function saveMessage(conversationId: string, role: string, content: string
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        await (prisma as any).message.create({
+        await prisma.message.create({
           data: { id, conversationId, role, content, tokensUsed: tokensUsed || 0, modelUsed },
         });
         return;
@@ -83,7 +83,7 @@ async function getHistory(conversationId: string): Promise<ChatMessage[]> {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const messages = await (prisma as any).message.findMany({
+        const messages = await prisma.message.findMany({
           where: { conversationId },
           orderBy: { createdAt: "asc" },
           take: MAX_HISTORY,

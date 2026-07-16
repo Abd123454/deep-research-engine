@@ -4,6 +4,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { X, Copy, Check, Code2, FileText, Globe } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import DOMPurify from "dompurify";
 import { Button } from "@/components/ui/button";
 import { ExportMenu } from "@/components/export/ExportMenu";
 import type { Artifact } from "@/lib/artifact-detector";
@@ -15,6 +16,21 @@ interface ArtifactsPanelProps {
 
 export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onClose }: ArtifactsPanelProps) {
   const [copied, setCopied] = React.useState(false);
+
+  // Sanitize SVG content to prevent XSS attacks.
+  // The LLM can generate SVG with <script> or onload="..." handlers.
+  // DOMPurify strips dangerous tags and attributes while preserving
+  // safe SVG elements (paths, circles, text, etc.).
+  const sanitizedSvg = React.useMemo(() => {
+    if (artifact.type !== "svg") return artifact.content;
+    if (typeof window === "undefined") return artifact.content; // SSR safety
+    return DOMPurify.sanitize(artifact.content, {
+      USE_PROFILES: { svg: true, html: true },
+      ADD_TAGS: ["svg", "path", "circle", "rect", "line", "text", "g", "polyline", "polygon", "ellipse", "defs", "use", "linearGradient", "radialGradient", "stop"],
+      FORBID_TAGS: ["script", "object", "embed", "iframe", "link", "style"],
+      FORBID_ATTR: ["onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur", "onchange", "onsubmit"],
+    });
+  }, [artifact.content, artifact.type]);
 
   function copyContent() {
     navigator.clipboard.writeText(artifact.content);
@@ -73,7 +89,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
         )}
 
         {artifact.type === "svg" && (
-          <div className="p-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: artifact.content }} />
+          <div className="p-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
         )}
 
         {artifact.type === "code" && (

@@ -18,8 +18,8 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const user = await (prisma as any).user.findUnique({ where: { email } });
-        if (user && user.passwordHash) {
+        const user = await prisma.user.findUnique({ where: { email } });
+        if (user && user.email && user.passwordHash) {
           return { id: user.id, email: user.email, name: user.name, passwordHash: user.passwordHash };
         }
         return null;

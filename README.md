@@ -2,6 +2,8 @@
 
 > Self-hosted AI workstation — deep research, agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).
 
+**Version:** 1.2.1 (semver). Tags v6.x–v7.x were internal development rounds before the v1.0 stable release.
+
 **Quaesitor** (from Latin *quaerere* — "to seek/investigate") is a complete AI platform that evolved through 12 development rounds from a single research script into a 16-feature workstation. It's not just a chat wrapper — it's a multi-agent system with real research capabilities, code execution, and persistent memory.
 
 ## Why Quaesitor exists

@@ -32,11 +32,11 @@ export async function POST(req: NextRequest) {
       try {
         const prisma = await getPrismaDb();
         if (prisma) {
-          const existing = await (prisma as any).user.findUnique({ where: { email } });
+          const existing = await prisma.user.findUnique({ where: { email } });
           if (existing) {
             return NextResponse.json({ ok: false, error: "Email already registered." }, { status: 409 });
           }
-          await (prisma as any).user.create({
+          await prisma.user.create({
             data: { email, passwordHash, name: name || null },
           });
           return NextResponse.json({ ok: true });

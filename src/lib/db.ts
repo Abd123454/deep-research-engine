@@ -12,6 +12,7 @@
 import type { Database as SqliteDatabase } from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import type { PrismaClient } from "../generated/prisma/client";
 
 // ---------- Type exports ----------
 // The Prisma client is only imported when Postgres is available.
@@ -22,9 +23,9 @@ export type DbType = "postgres" | "sqlite" | "memory";
 export let activeDbType: DbType = "memory";
 
 // ---------- Postgres (Prisma) ----------
-let prismaClient: unknown = null;
+let prismaClient: PrismaClient | null = null;
 
-async function getPrisma() {
+async function getPrisma(): Promise<PrismaClient | null> {
   if (prismaClient) return prismaClient;
   const { PrismaClient } = await import("../generated/prisma/client");
   prismaClient = new PrismaClient({
@@ -174,11 +175,12 @@ export function getDb(): SqliteDatabase {
 }
 
 // For Postgres access — returns PrismaClient or null if not available.
-export async function getPrismaDb() {
+export async function getPrismaDb(): Promise<PrismaClient | null> {
   const url = process.env.DATABASE_URL || "";
   if (!url.startsWith("postgresql://")) return null;
   try {
     const prisma = await getPrisma();
+    if (!prisma) return null;
     activeDbType = "postgres";
     return prisma;
   } catch (err) {

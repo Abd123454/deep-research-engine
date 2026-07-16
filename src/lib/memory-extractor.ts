@@ -106,13 +106,13 @@ export async function storeMemories(
         let stored = 0;
         for (const mem of memories) {
           // Check for duplicates (similar content).
-          const existing = await (prisma as any).longTermMemory.findFirst({
+          const existing = await prisma.longTermMemory.findFirst({
             where: { userId: uid, content: { contains: mem.content.slice(0, 50) } },
           });
           if (existing) {
             // Update confidence if higher.
             if (mem.confidence > existing.confidence) {
-              await (prisma as any).longTermMemory.update({
+              await prisma.longTermMemory.update({
                 where: { id: existing.id },
                 data: { confidence: mem.confidence },
               });
@@ -123,7 +123,7 @@ export async function storeMemories(
           // Embed the memory content.
           await embed(mem.content);
 
-          await (prisma as any).longTermMemory.create({
+          await prisma.longTermMemory.create({
             data: {
               userId: uid,
               type: mem.type,
@@ -182,7 +182,7 @@ export async function getMemories(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const memories = await (prisma as any).longTermMemory.findMany({
+        const memories = await prisma.longTermMemory.findMany({
           where: type ? { userId: uid, type } : { userId: uid },
           orderBy: { createdAt: "desc" },
           take: 100,
@@ -227,7 +227,7 @@ export async function deleteMemory(id: string): Promise<boolean> {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        await (prisma as any).longTermMemory.delete({ where: { id } });
+        await prisma.longTermMemory.delete({ where: { id } });
         return true;
       }
     } catch { /* fall through */ }

@@ -18,7 +18,7 @@ export async function GET() {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const prefs = await (prisma as any).userPreference.findUnique({ where: { userId: "default" } });
+        const prefs = await prisma.userPreference.findUnique({ where: { userId: "default" } });
         return NextResponse.json({ ok: true, preferences: prefs || DEFAULT_PREFS });
       }
     } catch { /* fall through */ }
@@ -61,7 +61,7 @@ export async function PUT(req: NextRequest) {
       try {
         const prisma = await getPrismaDb();
         if (prisma) {
-          await (prisma as any).userPreference.upsert({
+          await prisma.userPreference.upsert({
             where: { userId: "default" },
             create: { userId: "default", ...prefs },
             update: prefs,

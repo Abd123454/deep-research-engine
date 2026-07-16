@@ -15,7 +15,7 @@ export async function GET(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const project = await (prisma as any).project.findUnique({
+        const project = await prisma.project.findUnique({
           where: { id },
           include: {
             conversations: { orderBy: { createdAt: "desc" }, take: 20 },
@@ -51,7 +51,7 @@ export async function PATCH(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const updated = await (prisma as any).project.update({
+        const updated = await prisma.project.update({
           where: { id },
           data: { name: body.name, description: body.description },
         });
@@ -79,7 +79,7 @@ export async function DELETE(
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        await (prisma as any).project.delete({ where: { id } });
+        await prisma.project.delete({ where: { id } });
         return NextResponse.json({ ok: true });
       }
     } catch { /* fall through */ }

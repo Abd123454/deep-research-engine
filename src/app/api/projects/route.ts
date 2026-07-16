@@ -11,7 +11,7 @@ export async function GET() {
     try {
       const prisma = await getPrismaDb();
       if (prisma) {
-        const projects = await (prisma as any).project.findMany({
+        const projects = await prisma.project.findMany({
           where: { userId: DEFAULT_USER_ID },
           orderBy: { updatedAt: "desc" },
           include: {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       try {
         const prisma = await getPrismaDb();
         if (prisma) {
-          const project = await (prisma as any).project.create({
+          const project = await prisma.project.create({
             data: { id, userId: DEFAULT_USER_ID, name, description },
           });
           return NextResponse.json({ ok: true, project: { ...project, createdAt: project.createdAt?.toISOString?.(), updatedAt: project.updatedAt?.toISOString?.() } });

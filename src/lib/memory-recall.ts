@@ -59,7 +59,7 @@ export async function recallRelevantMemories(
       if (prisma) {
         // pgvector cosine similarity search via raw SQL.
         const vectorStr = `[${embeddingResult.vector.join(",")}]`;
-        const memories = await (prisma as any).$queryRaw`
+        const memories = await prisma.$queryRaw`
           SELECT id, type, content, confidence, created_at, last_accessed, access_count,
                  1 - (embedding <=> ${vectorStr}::vector) as similarity
           FROM long_term_memories
@@ -85,7 +85,7 @@ export async function recallRelevantMemories(
 
         // Update access count for recalled memories.
         for (const r of results) {
-          await (prisma as any).longTermMemory.update({
+          await prisma.longTermMemory.update({
             where: { id: r.id },
             data: { accessCount: { increment: 1 }, lastAccessed: new Date() },
           }).catch(() => {});

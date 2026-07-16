@@ -1,15 +1,16 @@
-// Deep Research Engine — 5-Layer Memory System Schema
+// Quaesitor — 5-Layer Memory System Schema
 //
 // Layer 1: Conversation Memory (conversations + messages)
-// Layer 2: Long-term Memory (long_term_memories + pgvector)
+// Layer 2: Long-term Memory (long_term_memories)
 // Layer 3: Research History (research_jobs)
-// Layer 4: Document Memory (documents + pgvector)
+// Layer 4: Document Memory (documents)
 // Layer 5: User Preferences (user_preferences)
 //
-// NOTE: This schema supports Postgres with pgvector for production.
-// For development without Postgres, the app falls back to in-memory
-// stores (SQLite via better-sqlite3). See src/lib/db.ts for the
-// fallback logic.
+// NOTE: This schema supports Postgres for production. For development
+// without Postgres, the app falls back to SQLite via better-sqlite3.
+// Semantic search uses LIKE on content (text-based), not pgvector.
+// This is sufficient for SQLite/single-user use; upgrade to Postgres
+// for production scale. See src/lib/db.ts for the fallback logic.
 
 generator client {
   provider = "prisma-client-js"
