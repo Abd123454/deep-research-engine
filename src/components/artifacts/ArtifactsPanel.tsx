@@ -38,16 +38,17 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
     setTimeout(() => setCopied(false), 2000);
   }
 
-  const typeIcon = {
+  const typeIcon: Record<string, React.ElementType> = {
     research_report: FileText,
     markdown: FileText,
     code: Code2,
     html: Globe,
     react: Globe,
     svg: Globe,
-  }[artifact.type] || FileText;
+    mermaid: Globe,
+  };
 
-  const TypeIcon = typeIcon;
+  const TypeIcon = typeIcon[artifact.type] || FileText;
 
   return (
     <motion.div
@@ -92,6 +93,10 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
           <div className="p-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: sanitizedSvg }} />
         )}
 
+        {artifact.type === "mermaid" && (
+          <MermaidRenderer content={artifact.content} />
+        )}
+
         {artifact.type === "code" && (
           <pre className="p-4 text-sm font-mono overflow-x-auto bg-muted/30">
             <code>{artifact.content}</code>
@@ -126,4 +131,38 @@ function wrapReact(jsx: string): string {
   </script>
 </body>
 </html>`;
+}
+
+// Mermaid diagram renderer — dynamically imports mermaid.js and renders the diagram.
+function MermaidRenderer({ content }: { content: string }) {
+  const [svg, setSvg] = React.useState<string>("");
+  const [error, setError] = React.useState<string>("");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const mermaid = (await import("mermaid")).default;
+        mermaid.initialize({ startOnLoad: false, theme: "default" });
+        const { svg: rendered } = await mermaid.render("mermaid-" + Date.now(), content);
+        if (!cancelled) setSvg(rendered);
+      } catch (err) {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Mermaid render failed");
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [content]);
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <p className="text-sm text-destructive mb-2">Mermaid render error:</p>
+        <pre className="text-xs text-muted-foreground bg-muted p-2 rounded">{content}</pre>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: svg || "<p>Loading diagram...</p>" }} />
+  );
 }

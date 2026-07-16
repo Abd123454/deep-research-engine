@@ -34,7 +34,12 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
           if (!cancelled) {
-            setError(data.error || `HTTP ${res.status}`);
+            const errorMsg = res.status === 503
+              ? "⚠️ No LLM provider configured. Set NVIDIA_API_KEY (free at build.nvidia.com) or another provider key in .env"
+              : res.status === 402
+              ? "⚠️ Plan limit reached. Upgrade at /pricing"
+              : data.error || `HTTP ${res.status}`;
+            setError(errorMsg);
             setStreaming(false);
           }
           return;

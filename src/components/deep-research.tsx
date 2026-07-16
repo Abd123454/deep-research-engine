@@ -382,6 +382,7 @@ export function DeepResearch() {
   async function pollJob(id: string) {
     let interval = 1500;
     let consecutive404 = 0;
+    let consecutiveErrors = 0;
     const pollStart = Date.now();
     while (!stopPollingRef.current) {
       if (Date.now() - pollStart > 30 * 60 * 1000) {
@@ -402,6 +403,7 @@ export function DeepResearch() {
           throw new Error(`Status fetch failed (${res.status})`);
         } else {
           consecutive404 = 0;
+          consecutiveErrors = 0;
           const data = (await res.json()) as { ok: boolean; job?: ResearchJob };
           if (data.ok && data.job) {
             setJob(data.job);
@@ -419,7 +421,16 @@ export function DeepResearch() {
           }
         }
       } catch (err) {
-        logger.error({ module: "stream", err: err instanceof Error ? err.message : String(err) }, "poll error");
+        consecutiveErrors++;
+        if (consecutiveErrors >= 5) {
+          setPolling(false);
+          toast.error("Connection lost", { description: "5 consecutive poll failures. Please check your network." });
+          return;
+        }
+        // Log only once per 3 errors to reduce spam
+        if (consecutiveErrors === 1) {
+          logger.warn({ module: "stream", err: err instanceof Error ? err.message : String(err) }, "poll error (will retry)");
+        }
       }
       await new Promise((r) => setTimeout(r, interval));
       interval = 1500;

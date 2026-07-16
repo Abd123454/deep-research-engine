@@ -4,7 +4,7 @@
 // instead of cluttering the chat.
 
 export interface Artifact {
-  type: "research_report" | "code" | "html" | "react" | "markdown" | "svg";
+  type: "research_report" | "code" | "html" | "react" | "markdown" | "svg" | "mermaid";
   content: string;
   title?: string;
   language?: string;
@@ -31,7 +31,13 @@ export function detectArtifact(response: string): Artifact | null {
     return { type: "svg", content: svgMatch[1].trim(), title: "SVG Diagram" };
   }
 
-  // 4. Code block (python, javascript, etc.) — only if it's the main content
+  // 4. Mermaid diagram: ```mermaid ... ```
+  const mermaidMatch = response.match(/```mermaid\s*\n([\s\S]*?)```/i);
+  if (mermaidMatch && mermaidMatch[1] && mermaidMatch[1].trim().length > 10) {
+    return { type: "mermaid", content: mermaidMatch[1].trim(), title: "Mermaid Diagram", language: "mermaid" };
+  }
+
+  // 5. Code block (python, javascript, etc.) — only if it's the main content
   const codeMatch = response.match(/```(?:python|javascript|typescript|go|rust|java|c\+\+|sql)\s*\n([\s\S]*?)```/i);
   if (codeMatch && codeMatch[1] && codeMatch[1].length > 100 && response.length < codeMatch[1]!.length * 2) {
     const lang = response.match(/```(\w+)/)?.[1] || "code";

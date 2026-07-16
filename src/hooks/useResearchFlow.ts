@@ -117,6 +117,7 @@ export function useResearchFlow(
   async function pollJob(id: string) {
     let interval = 1500;
     let consecutive404 = 0;
+    let consecutiveErrors = 0;
     const pollStart = Date.now();
     while (!stopPollingRef.current) {
       if (Date.now() - pollStart > 30 * 60 * 1000) {
@@ -137,6 +138,7 @@ export function useResearchFlow(
           throw new Error(`Status fetch failed (${res.status})`);
         } else {
           consecutive404 = 0;
+          consecutiveErrors = 0;
           const data = (await res.json()) as { ok: boolean; job?: ResearchJob };
           if (data.ok && data.job) {
             setJob(data.job);
@@ -152,10 +154,14 @@ export function useResearchFlow(
           }
         }
       } catch (err) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= 5) {
+          setPhase("failed");
+          setError("Connection lost — 5 consecutive poll failures");
+          return;
+        }
   if (process.env.NODE_ENV === "production") Sentry.captureException(err);
-/* ignore transient poll errors */
-      
-}
+      }
       await new Promise((r) => setTimeout(r, interval));
       interval = 1500;
     }
