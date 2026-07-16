@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter, Source_Serif_4, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
@@ -7,14 +7,23 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SessionProvider } from "@/components/SessionProvider";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const sourceSerif = Source_Serif_4({
+  variable: "--font-serif",
   subsets: ["latin"],
+  weight: ["400", "600"],
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  variable: "--font-mono",
+  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -29,9 +38,9 @@ export const metadata: Metadata = {
   },
   manifest: "/manifest.json",
   other: {
-    "theme-color": "#1a73e8",
+    "theme-color": "#d97757",
     "apple-mobile-web-app-capable": "yes",
-    "apple-mobile-web-app-title": "Deep Research",
+    "apple-mobile-web-app-title": "Quaesitor",
   },
 };
 
@@ -43,7 +52,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${inter.variable} ${sourceSerif.variable} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
       >
         <ThemeProvider
           attribute="class"
@@ -53,10 +62,9 @@ export default function RootLayout({
         >
           <LocaleProvider>
             <SessionProvider>
-            {/* Skip link for screen-reader / keyboard users — jumps to main content. */}
             <a
               href="#main-content"
-              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground focus:shadow-lg"
+              className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:rounded-lg focus:bg-[#d97757] focus:px-4 focus:py-2 focus:text-[#faf9f5]"
             >
               Skip to content
             </a>
