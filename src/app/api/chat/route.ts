@@ -17,93 +17,17 @@ import { NextRequest } from "next/server";
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
-import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
-import type { MessageRow } from "@/lib/sqlite-types";
+import {
+  getOrCreateConversation,
+  saveMessage,
+  getHistory,
+  type ChatMessage,
+} from "@/lib/chat-store";
 
 const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
-
-interface ChatMessage {
-  id: string;
-  role: string;
-  content: string;
-  createdAt: string;
-}
-
-async function getOrCreateConversation(conversationId: string | null, userId: string, firstMessage: string): Promise<string> {
-  if (conversationId) return conversationId;
-
-  const id = crypto.randomUUID();
-  const title = firstMessage.slice(0, 50);
-
-  if (isPostgresAvailable()) {
-    try {
-      const prisma = await getPrismaDb();
-      if (prisma) {
-        const conv = await prisma.conversation.create({
-          data: { id, userId, title },
-        });
-        return conv.id;
-      }
-    } catch { /* fall through */ }
-  }
-
-  // SQLite fallback.
-  try {
-    const db = getDb();
-    db.prepare("INSERT INTO conversations (id, user_id, title) VALUES (?, ?, ?)").run(id, userId, title);
-  } catch { /* ignore */ }
-  return id;
-}
-
-async function saveMessage(conversationId: string, role: string, content: string, tokensUsed?: number, modelUsed?: string): Promise<void> {
-  const id = crypto.randomUUID();
-  if (isPostgresAvailable()) {
-    try {
-      const prisma = await getPrismaDb();
-      if (prisma) {
-        await prisma.message.create({
-          data: { id, conversationId, role, content, tokensUsed: tokensUsed || 0, modelUsed },
-        });
-        return;
-      }
-    } catch { /* fall through */ }
-  }
-  try {
-    const db = getDb();
-    db.prepare("INSERT INTO messages (id, conversation_id, role, content, tokens_used, model_used) VALUES (?, ?, ?, ?, ?, ?)").run(
-      id, conversationId, role, content, tokensUsed || 0, modelUsed || null
-    );
-  } catch { /* ignore */ }
-}
-
-async function getHistory(conversationId: string): Promise<ChatMessage[]> {
-  if (isPostgresAvailable()) {
-    try {
-      const prisma = await getPrismaDb();
-      if (prisma) {
-        const messages = await prisma.message.findMany({
-          where: { conversationId },
-          orderBy: { createdAt: "asc" },
-          take: MAX_HISTORY,
-        });
-        return messages.map((m) => ({
-          id: m.id, role: m.role, content: m.content,
-          createdAt: m.createdAt?.toISOString?.() || String(m.createdAt),
-        }));
-      }
-    } catch { /* fall through */ }
-  }
-  try {
-    const db = getDb();
-    const rows = db.prepare("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as MessageRow[];
-    return rows.map((r) => ({
-      id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
-    }));
-  } catch { return []; }
-}
 
 function buildChatSystemPrompt(history: ChatMessage[], memories: Awaited<ReturnType<typeof recallRelevantMemories>>): string {
   let prompt = "You are a helpful, knowledgeable AI assistant. You're having a conversation with the user. Be concise but thorough. Use markdown formatting when helpful.";

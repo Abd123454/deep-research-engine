@@ -4,6 +4,7 @@
 // (Llama 3.2 Vision) → Tesseract OCR (text only, no understanding).
 
 import { env } from "./env";
+import { logger } from "./logger";
 
 export interface ImageAnalysis {
   description: string;
@@ -21,7 +22,10 @@ export async function analyzeImage(
     try {
       return await openaiVision(imageBase64, mimeType, prompt);
     } catch (err) {
-      console.warn("[vision] OpenAI failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "vision", provider: "openai", err: err instanceof Error ? err.message : String(err) },
+        "OpenAI vision failed"
+      );
     }
   }
 
@@ -29,7 +33,10 @@ export async function analyzeImage(
     try {
       return await anthropicVision(imageBase64, mimeType, prompt);
     } catch (err) {
-      console.warn("[vision] Anthropic failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "vision", provider: "anthropic", err: err instanceof Error ? err.message : String(err) },
+        "Anthropic vision failed"
+      );
     }
   }
 
@@ -37,7 +44,10 @@ export async function analyzeImage(
     try {
       return await nvidiaVision(imageBase64, mimeType, prompt);
     } catch (err) {
-      console.warn("[vision] NVIDIA failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "vision", provider: "nvidia", err: err instanceof Error ? err.message : String(err) },
+        "NVIDIA vision failed"
+      );
     }
   }
 

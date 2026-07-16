@@ -13,6 +13,7 @@ import type {
   LLMCompletionResult,
 } from "./types";
 import { getLLM as getNvidiaLLM } from "../llm-provider";
+import { logger } from "../logger";
 import { OpenAIProvider } from "./openai";
 import { AnthropicProvider } from "./anthropic";
 import { OllamaProvider } from "./ollama";
@@ -128,7 +129,10 @@ export async function smartWithFallback(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-router] Provider "${name}" failed: ${msg.slice(0, 100)}. → next provider`);
+      logger.warn(
+        { module: "llm-router", provider: name, err: msg.slice(0, 100) },
+        "Provider failed -> next provider"
+      );
     }
   }
 
@@ -163,7 +167,10 @@ export async function fastWithFallback(
     } catch (err) {
       lastErr = err;
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-router] Provider "${name}" fast failed: ${msg.slice(0, 100)}. → next provider`);
+      logger.warn(
+        { module: "llm-router", provider: name, path: "fast", err: msg.slice(0, 100) },
+        "Provider fast failed -> next provider"
+      );
     }
   }
 

@@ -13,6 +13,7 @@ import { getLLM, type LLMMessage } from "./llm-provider";
 import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 import type { LongTermMemoryRow } from "./sqlite-types";
+import { logger } from "./logger";
 
 export interface MemoryExtraction {
   type: "fact" | "preference" | "context";
@@ -83,7 +84,10 @@ export async function extractMemories(
 
     return filtered;
   } catch (err) {
-    console.warn("[memory-extractor] LLM extraction failed:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "LLM extraction failed"
+    );
     return [];
   }
 }
@@ -137,7 +141,10 @@ export async function storeMemories(
         return stored;
       }
     } catch (err) {
-      console.warn("[memory-extractor] Postgres store failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+        "Postgres store failed"
+      );
     }
   }
 
@@ -165,7 +172,10 @@ export async function storeMemories(
     }
     return stored;
   } catch (err) {
-    console.warn("[memory-extractor] SQLite store failed:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "SQLite store failed"
+    );
     return 0;
   }
 }
@@ -198,7 +208,10 @@ export async function getMemories(
         }));
       }
     } catch (err) {
-      console.warn("[memory-extractor] Postgres getMemories failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+        "Postgres getMemories failed"
+      );
     }
   }
 

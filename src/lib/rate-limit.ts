@@ -9,6 +9,7 @@
 // (works across multiple instances). Otherwise falls back to in-memory Map.
 
 import { getRedis } from "./redis";
+import { logger } from "./logger";
 
 interface RateLimitResult {
   ok: boolean;
@@ -111,7 +112,13 @@ export async function checkStartRateLimit(ip: string): Promise<RateLimitResult> 
     try {
       return await redisRateLimit(ip);
     } catch (err) {
-      console.warn("[rate-limit] Redis failed, falling back to memory:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        {
+          module: "rate-limit",
+          err: err instanceof Error ? err.message : String(err),
+        },
+        "Redis failed, falling back to memory"
+      );
     }
   }
   return memoryRateLimit(ip);

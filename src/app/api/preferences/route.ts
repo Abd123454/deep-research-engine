@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserPreferenceRow } from "@/lib/sqlite-types";
+import { logger } from "@/lib/logger";
 
 const DEFAULT_PREFS = {
   preferredLanguage: "auto",
@@ -87,7 +88,10 @@ export async function PUT(req: NextRequest) {
       ).run(prefs.preferredLanguage, prefs.preferredDepth, prefs.preferredFormat, prefs.preferredProvider, prefs.timezone);
       return NextResponse.json({ ok: true, preferences: prefs });
     } catch (err) {
-      console.error("[preferences] SQLite update failed:", err instanceof Error ? err.message : String(err));
+      logger.error(
+        { module: "preferences", err: err instanceof Error ? err.message : String(err) },
+        "SQLite update failed"
+      );
     }
 
     return NextResponse.json({ ok: true, preferences: prefs });

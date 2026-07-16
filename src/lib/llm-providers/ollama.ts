@@ -8,6 +8,7 @@ import type {
   LLMCompletionResult,
 } from "./types";
 import { env, envList } from "../env";
+import { logger } from "../logger";
 
 export class OllamaProvider implements LLMProviderInterface {
   name = "ollama" as const;
@@ -114,7 +115,10 @@ export class OllamaProvider implements LLMProviderInterface {
       } catch (err) {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
-        console.warn(`[ollama] Model "${model}" failed: ${msg.slice(0, 100)}`);
+        logger.warn(
+          { module: "ollama", model, err: msg.slice(0, 100) },
+          "Model failed"
+        );
       }
     }
     throw new Error(`All Ollama models failed. Last: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);

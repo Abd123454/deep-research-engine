@@ -21,6 +21,7 @@
 
 import type { LLMProvider } from "./types";
 import { env, envList } from "./env";
+import { logger } from "./logger";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -313,8 +314,9 @@ async function nvidiaCompleteWithFallback(
         1
       );
       if (i > 0) {
-        console.log(
-          `[llm-provider] SMART_LLM fallback: "${model}" succeeded after ${i} previous model(s) failed.`
+        logger.info(
+          { module: "llm-provider", model, failedCount: i },
+          `SMART_LLM fallback: "${model}" succeeded after ${i} previous model(s) failed.`
         );
       }
       return result;
@@ -330,26 +332,27 @@ async function nvidiaCompleteWithFallback(
       // Anthropic, or Ollama. This is exactly the case cross-provider fallback
       // exists for (revoked/expired NVIDIA key).
       if (isAuthError(msg)) {
-        console.warn(
-          `[llm-provider] NVIDIA auth error for model "${model}": ${msg.slice(0, 100)}. ` +
-            `Skipping remaining NVIDIA models, attempting cross-provider fallback.`
+        logger.warn(
+          { module: "llm-provider", model, err: msg.slice(0, 100) },
+          "NVIDIA auth error — skipping remaining NVIDIA models, attempting cross-provider fallback"
         );
         break;
       }
       // Model errors (404) → continue to next model.
       // Retryable errors (429/503) → already retried by withRetry, continue.
       // Other errors → continue to next model (might be model-specific).
-      console.warn(
-        `[llm-provider] Model "${model}" failed: ${msg.slice(0, 120)}. -> next model`
+      logger.warn(
+        { module: "llm-provider", model, err: msg.slice(0, 120) },
+        "Model failed -> next model"
       );
     }
   }
 
   // All NVIDIA models failed — try cross-provider fallback before giving up.
   const triedStr = tried.join(", ");
-  console.warn(
-    `[llm-provider] All ${models.length} NVIDIA models failed (tried: ${triedStr}). ` +
-      `Attempting cross-provider fallback (OpenAI → Anthropic → Ollama).`
+  logger.warn(
+    { module: "llm-provider", modelCount: models.length, tried: triedStr },
+    "All NVIDIA models failed — attempting cross-provider fallback (OpenAI → Anthropic → Ollama)"
   );
   return await crossProviderFallback(opts, lastErr);
 }
@@ -379,11 +382,11 @@ async function crossProviderFallback(
       const { OpenAIProvider } = await import("./llm-providers/openai");
       const provider = new OpenAIProvider();
       const result = await provider.smart(opts);
-      console.log("[llm-provider] Cross-provider fallback succeeded via OpenAI.");
+      logger.info({ module: "llm-provider", provider: "openai" }, "Cross-provider fallback succeeded via OpenAI");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] OpenAI fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "openai", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
       triedProviders.push("openai");
     }
   }
@@ -394,11 +397,11 @@ async function crossProviderFallback(
       const { AnthropicProvider } = await import("./llm-providers/anthropic");
       const provider = new AnthropicProvider();
       const result = await provider.smart(opts);
-      console.log("[llm-provider] Cross-provider fallback succeeded via Anthropic.");
+      logger.info({ module: "llm-provider", provider: "anthropic" }, "Cross-provider fallback succeeded via Anthropic");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] Anthropic fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "anthropic", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
       triedProviders.push("anthropic");
     }
   }
@@ -409,11 +412,11 @@ async function crossProviderFallback(
       const { OllamaProvider } = await import("./llm-providers/ollama");
       const provider = new OllamaProvider();
       const result = await provider.smart(opts);
-      console.log("[llm-provider] Cross-provider fallback succeeded via Ollama.");
+      logger.info({ module: "llm-provider", provider: "ollama" }, "Cross-provider fallback succeeded via Ollama");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] Ollama fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "ollama", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
       triedProviders.push("ollama");
     }
   }
@@ -440,8 +443,9 @@ async function nvidiaFast(
     const msg = err instanceof Error ? err.message : String(err);
     // If NVIDIA fast fails with auth error and we have other providers, try them.
     if (env("OPENAI_API_KEY") || env("ANTHROPIC_API_KEY") || env("OLLAMA_URL")) {
-      console.warn(
-        `[llm-provider] NVIDIA fast model failed (${msg.slice(0, 80)}). Trying cross-provider fast fallback.`
+      logger.warn(
+        { module: "llm-provider", err: msg.slice(0, 80) },
+        "NVIDIA fast model failed — trying cross-provider fast fallback"
       );
       return await crossProviderFastFallback(opts, err);
     }
@@ -463,11 +467,11 @@ async function crossProviderFastFallback(
       const { OpenAIProvider } = await import("./llm-providers/openai");
       const provider = new OpenAIProvider();
       const result = await provider.fast(opts);
-      console.log("[llm-provider] Cross-provider fast fallback succeeded via OpenAI.");
+      logger.info({ module: "llm-provider", provider: "openai", path: "fast" }, "Cross-provider fast fallback succeeded via OpenAI");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] OpenAI fast fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "openai", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
       triedProviders.push("openai");
     }
   }
@@ -477,11 +481,11 @@ async function crossProviderFastFallback(
       const { AnthropicProvider } = await import("./llm-providers/anthropic");
       const provider = new AnthropicProvider();
       const result = await provider.fast(opts);
-      console.log("[llm-provider] Cross-provider fast fallback succeeded via Anthropic.");
+      logger.info({ module: "llm-provider", provider: "anthropic", path: "fast" }, "Cross-provider fast fallback succeeded via Anthropic");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] Anthropic fast fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "anthropic", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
       triedProviders.push("anthropic");
     }
   }
@@ -491,11 +495,11 @@ async function crossProviderFastFallback(
       const { OllamaProvider } = await import("./llm-providers/ollama");
       const provider = new OllamaProvider();
       const result = await provider.fast(opts);
-      console.log("[llm-provider] Cross-provider fast fallback succeeded via Ollama.");
+      logger.info({ module: "llm-provider", provider: "ollama", path: "fast" }, "Cross-provider fast fallback succeeded via Ollama");
       return { ...result, provider: result.provider as unknown as LLMProvider };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      console.warn(`[llm-provider] Ollama fast fallback failed: ${msg.slice(0, 120)}`);
+      logger.warn({ module: "llm-provider", provider: "ollama", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
       triedProviders.push("ollama");
     }
   }

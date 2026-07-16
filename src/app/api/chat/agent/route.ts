@@ -6,40 +6,16 @@ import { getSkill } from "@/lib/skills";
 import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agent-tools";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
-import { getDb } from "@/lib/db";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
-import type { MessageRow } from "@/lib/sqlite-types";
+import {
+  getOrCreateConversation,
+  saveMessage,
+  getHistory,
+} from "@/lib/chat-store";
 
 const MAX_HISTORY = 20;
 const MAX_TOOL_ITERATIONS = 5;
 const DEFAULT_USER_ID = "default";
-
-async function getOrCreateConversation(conversationId: string | null, userId: string, firstMessage: string): Promise<string> {
-  if (conversationId) return conversationId;
-  const id = crypto.randomUUID();
-  const title = firstMessage.slice(0, 50);
-  try {
-    const db = getDb();
-    db.prepare("INSERT OR IGNORE INTO conversations (id, user_id, title) VALUES (?, ?, ?)").run(id, userId, title);
-  } catch { /* ignore */ }
-  return id;
-}
-
-async function saveMessage(conversationId: string, role: string, content: string): Promise<void> {
-  const id = crypto.randomUUID();
-  try {
-    const db = getDb();
-    db.prepare("INSERT INTO messages (id, conversation_id, role, content) VALUES (?, ?, ?, ?)").run(id, conversationId, role, content);
-  } catch { /* ignore */ }
-}
-
-async function getHistory(conversationId: string): Promise<{ role: string; content: string }[]> {
-  try {
-    const db = getDb();
-    const rows = db.prepare("SELECT role, content FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?").all(conversationId, MAX_HISTORY) as Pick<MessageRow, "role" | "content">[];
-    return rows.map((r) => ({ role: r.role, content: r.content }));
-  } catch { return []; }
-}
 
 export async function POST(req: NextRequest) {
   let body: { conversationId?: string; message?: string; skill?: string };

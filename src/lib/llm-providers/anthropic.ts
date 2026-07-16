@@ -9,6 +9,7 @@ import type {
   LLMMessage,
 } from "./types";
 import { env, envList } from "../env";
+import { logger } from "../logger";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -151,7 +152,10 @@ export class AnthropicProvider implements LLMProviderInterface {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
         if (isAuthError(msg)) throw new Error(`Anthropic API key invalid. Skipping fallback. Error: ${msg}`);
-        console.warn(`[anthropic] Model "${model}" failed: ${msg.slice(0, 100)}`);
+        logger.warn(
+          { module: "anthropic", model, err: msg.slice(0, 100) },
+          "Model failed"
+        );
       }
     }
     throw new Error(`All Anthropic models failed. Last: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);

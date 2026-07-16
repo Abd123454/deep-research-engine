@@ -17,6 +17,8 @@
 import type { RetrieverType, SearchResultItem } from "./types";
 import { envBool } from "./env";
 import { rankSourcesWithMinimum } from "./source-quality";
+import { logger } from "./logger";
+import { withAbortSignal } from "./abort-utils";
 
 export function getRetriever(): RetrieverType {
   return "duckduckgo";
@@ -195,19 +197,9 @@ function isReadableUrl(url: string): boolean {
 }
 
 // ---------- Cancellation helper ----------
-// Combines an optional user-provided abort signal (from the research job)
+// withAbortSignal is imported from "./abort-utils" — see that file for docs.
+// It combines an optional user-provided abort signal (from the research job)
 // with a timeout signal. If either fires, the fetch is aborted.
-function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number): AbortSignal | undefined {
-  if (!userSignal) return AbortSignal.timeout(timeoutMs);
-  // If the user already aborted, return an already-aborted signal.
-  if (userSignal.aborted) return userSignal;
-  // AbortSignal.any() is available in Node 20+ — combines multiple signals.
-  // If not available, fall back to just the user signal (timeout is lost).
-  if (typeof AbortSignal.any === "function") {
-    return AbortSignal.any([userSignal, AbortSignal.timeout(timeoutMs)]);
-  }
-  return userSignal;
-}
 
 // ---------- Endpoint 1: HTML scraping (richest results) ----------
 async function ddgHtmlSearch(
@@ -629,10 +621,17 @@ async function duckduckgoSearch(
   const combined = dedupResults([...wikiResults, ...ddgResults, ...ghResults]).slice(0, num);
 
   if (envBool("DEBUG_SEARCH", false)) {
-    console.log(
-      `[search] "${query}": DDG=${ddgResults.length}, Wiki=${wikiResults.length}, ` +
-        `GitHub=${ghResults.length}, combined=${combined.length}. ` +
-        `Failures: ${errors.join(" | ") || "none"}`
+    logger.info(
+      {
+        module: "search",
+        query,
+        ddg: ddgResults.length,
+        wiki: wikiResults.length,
+        github: ghResults.length,
+        combined: combined.length,
+        errors: errors.join(" | ") || "none",
+      },
+      "Search summary"
     );
   }
 
@@ -665,9 +664,14 @@ export async function searchWeb(
   }
 
   if (envBool("DEBUG_SEARCH", false) && raw.length !== result.length) {
-    console.log(
-      `[search] Source quality: ${raw.length} raw → ${result.length} ranked ` +
-        `(dropped ${raw.length - result.length} low-quality sources)`
+    logger.info(
+      {
+        module: "search",
+        raw: raw.length,
+        ranked: result.length,
+        dropped: raw.length - result.length,
+      },
+      "Source quality filter applied"
     );
   }
 

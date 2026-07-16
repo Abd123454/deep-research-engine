@@ -39,6 +39,7 @@ import { SourcesList } from "@/components/research/SourcesList";
 import { ReportViewer, LiveActivity } from "@/components/research/ReportViewer";
 import { ActivityLogModal } from "@/components/research/ActivityLog";
 import { PlanPreviewLoading } from "@/components/research/PlanPreview";
+import { logger } from "@/lib/logger";
 
 // Auto-start flow.
 //   idle → planning → researching → done
@@ -301,7 +302,7 @@ export function DeepResearch() {
     const startFallback = (reason: string) => {
       if (fallbackStarted) return;
       fallbackStarted = true;
-      console.warn(`[stream] SSE failed (${reason}), falling back to polling.`);
+      logger.warn({ module: "stream", reason }, "SSE failed, falling back to polling");
       if (es) es.close();
       pollJob(id);
     };
@@ -407,7 +408,7 @@ export function DeepResearch() {
           }
         }
       } catch (err) {
-        console.error("poll error", err);
+        logger.error({ module: "stream", err: err instanceof Error ? err.message : String(err) }, "poll error");
       }
       await new Promise((r) => setTimeout(r, interval));
       interval = 1500;

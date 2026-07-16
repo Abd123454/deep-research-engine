@@ -13,6 +13,7 @@ import type { Database as SqliteDatabase } from "better-sqlite3";
 import path from "path";
 import fs from "fs";
 import type { PrismaClient } from "../generated/prisma/client";
+import { logger } from "./logger";
 
 // ---------- Type exports ----------
 // The Prisma client is only imported when Postgres is available.
@@ -42,7 +43,7 @@ function getSqlitePath(): string {
   const url = process.env.DATABASE_URL;
   if (url && url.startsWith("file:")) {
     const p = url.slice(5);
-    dbPath = path.isAbsolute(p) ? p : path.join(process.cwd(), p);
+    dbPath = path.isAbsolute(p) ? p : path.join(/*turbopackIgnore: true*/ process.cwd(), p);
   } else {
     dbPath = path.join(process.cwd(), "data", "research.db");
   }
@@ -189,7 +190,10 @@ function getSqlite(): SqliteDatabase {
     initSqliteSchema(sqliteInstance);
     activeDbType = "sqlite";
   } catch (err) {
-    console.warn("[db] SQLite failed, falling back to in-memory:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "db", err: err instanceof Error ? err.message : String(err) },
+      "SQLite failed, falling back to in-memory"
+    );
     const Database = loadBetterSqlite3();
     sqliteInstance = new Database(":memory:") as SqliteDatabase;
     initSqliteSchema(sqliteInstance);
@@ -215,7 +219,10 @@ export async function getPrismaDb(): Promise<PrismaClient | null> {
     activeDbType = "postgres";
     return prisma;
   } catch (err) {
-    console.warn("[db] Postgres failed, falling back to SQLite:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "db", err: err instanceof Error ? err.message : String(err) },
+      "Postgres failed, falling back to SQLite"
+    );
     return null;
   }
 }

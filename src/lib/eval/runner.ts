@@ -14,6 +14,7 @@ import { runResearch } from "../research-engine";
 import { runSwarm } from "../swarm";
 import { runCode } from "../code-sandbox";
 import { getLLM, type LLMMessage } from "../llm-provider";
+import { logger } from "../logger";
 
 export interface EvalResult {
   queryId: string;
@@ -239,11 +240,29 @@ export async function runEvalSuite(options?: {
   const results: EvalResult[] = [];
 
   for (const query of queries) {
-    console.log(`[eval] Running ${query.id} (${query.type}/${query.difficulty}): ${query.query.slice(0, 60)}...`);
+    logger.info(
+      {
+        module: "eval",
+        queryId: query.id,
+        type: query.type,
+        difficulty: query.difficulty,
+        query: query.query.slice(0, 60),
+      },
+      "Running eval query"
+    );
     const result = await runEval(query);
     results.push(result);
     const status = result.passed ? "PASS" : "FAIL";
-    console.log(`[eval] ${query.id}: ${status} (${result.score}%) ${result.details.error ? "— " + result.details.error.slice(0, 80) : ""}`);
+    logger.info(
+      {
+        module: "eval",
+        queryId: query.id,
+        status,
+        score: result.score,
+        error: result.details.error ? result.details.error.slice(0, 80) : undefined,
+      },
+      "Eval query finished"
+    );
   }
 
   const passed = results.filter((r) => r.passed).length;

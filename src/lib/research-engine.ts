@@ -20,6 +20,7 @@ import { getJob } from "./research-store";
 import { persistJob } from "./research-store";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt } from "./env";
+import { logger } from "./logger";
 import {
   checkPromptInjection,
   wrapUserQuery,
@@ -986,12 +987,17 @@ Write a comprehensive long-form Deep Research report answering the original quer
         temperature: 0.3,
       });
       trackLLMTokens(job, critiqueResult);
-      if (critiqueResult.content.length > result.content.length * 0.7) {
+      // Use the revision IF it's substantial (not degenerate).
+      // Length ratio must be between 0.7x and 1.5x of the original.
+      const lengthRatio = critiqueResult.content.length / result.content.length;
+      if (critiqueResult.content.length > 200 && lengthRatio > 0.7 && lengthRatio < 1.5) {
         finalReport = critiqueResult.content;
         const delta = finalReport.length - result.content.length;
         const deltaStr = delta >= 0 ? `+${delta}` : `${delta}`;
         log(job, "success", "synthesizing", `Self-critique pass revised report (${finalReport.length} chars, was ${result.content.length}, ${deltaStr})`);
         think(job, "synthesizing", `Report reviewed and revised. Final version: ${finalReport.length} characters.`);
+      } else {
+        log(job, "warn", "synthesizing", `Self-critique revision rejected (length ratio ${lengthRatio.toFixed(2)}), keeping original`);
       }
     } catch (err) {
       log(job, "warn", "synthesizing", `Self-critique pass failed: ${err instanceof Error ? err.message : String(err)}`);
@@ -1236,7 +1242,10 @@ export async function runResearch(jobId: string): Promise<void> {
           `Citation verification: ${job.verificationReport.verified}/${job.verificationReport.total} verified, ${job.verificationReport.unverified} unverified.`
         );
       } catch (e) {
-        console.warn("[citation] Verification failed:", e instanceof Error ? e.message : String(e));
+        logger.warn(
+          { module: "citation", err: e instanceof Error ? e.message : String(e) },
+          "Verification failed"
+        );
       }
     }
 
@@ -1270,7 +1279,10 @@ export async function runResearch(jobId: string): Promise<void> {
         "completed"
       );
     } catch (e) {
-      console.warn("[session-store] Failed to save research session:", e instanceof Error ? e.message : String(e));
+      logger.warn(
+        { module: "session-store", err: e instanceof Error ? e.message : String(e) },
+        "Failed to save research session"
+      );
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

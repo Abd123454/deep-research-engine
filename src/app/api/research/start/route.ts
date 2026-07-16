@@ -10,6 +10,7 @@ import { getRetriever } from "@/lib/retriever";
 import { checkStartRateLimit, getClientIP } from "@/lib/rate-limit";
 import { requireAuth } from "@/lib/auth";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import { logger } from "@/lib/logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -124,7 +125,10 @@ export async function POST(req: NextRequest) {
     // Fire-and-forget the research pipeline. We do NOT await it here —
     // the client polls /api/research/status/[id] for progress.
     runResearch(job.id).catch((err: unknown) => {
-      console.error(`[research] runResearch(${job.id}) threw:`, err);
+      logger.error(
+        { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
+        "runResearch threw"
+      );
     });
 
     return NextResponse.json({

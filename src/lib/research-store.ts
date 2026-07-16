@@ -18,6 +18,7 @@
 import { randomUUID } from "crypto";
 import type { ResearchJob, ResearchConfig, ResearchStatus } from "./types";
 import { getDb as getSqliteDb } from "./db";
+import { logger } from "./logger";
 
 const MAX_JOBS = 30;
 const JOB_TTL_MS = 1000 * 60 * 60;
@@ -94,7 +95,10 @@ export function persistJob(job: ResearchJob): void {
     });
   } catch (err) {
     // DB write failed — don't break the research. Just log.
-    console.warn("[research-store] persistJob failed:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+      "persistJob failed"
+    );
   }
 }
 
@@ -265,7 +269,10 @@ export function getJob(id: string): ResearchJob | undefined {
       return job;
     }
   } catch (err) {
-    console.warn("[research-store] getJob DB query failed:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+      "getJob DB query failed"
+    );
   }
 
   return undefined;
@@ -291,7 +298,10 @@ export function listJobs(): ResearchJob[] {
           }
         }
       } catch (err) {
-        console.warn("[research-store] listJobs DB query failed:", err instanceof Error ? err.message : String(err));
+        logger.warn(
+          { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+          "listJobs DB query failed"
+        );
       }
     }
   }

@@ -1,15 +1,27 @@
-// Code Execution Sandbox — runs user code safely with timeout + memory limits.
-//
-// Uses Node.js `vm` module for JavaScript/TypeScript execution.
-// For Python, uses subprocess with timeout (requires python3 installed).
-// For other languages, returns "not supported" gracefully.
-//
-// Security:
-// - No network access (no fetch, no http, no net module).
-// - No filesystem access (no fs, no path).
-// - 10-second timeout.
-// - 100MB memory limit (via --max-old-space-size for Node, ulimit for Python).
-// - Code runs in a sandboxed context with only safe globals.
+/**
+ * Code Execution Sandbox — runs user code safely with timeout + memory limits.
+ *
+ * SECURITY WARNING: The vm.runInContext fallback is NOT a security boundary.
+ * Node.js docs explicitly state: "The node:vm module is not a security mechanism.
+ * Do not use it to run untrusted code." (https://nodejs.org/api/vm.html)
+ *
+ * This fallback exists for DEVELOPMENT convenience only. In production:
+ *   1. Run Docker (preferred) — see code-sandbox-docker.ts
+ *   2. If Docker is unavailable, DISABLE code execution entirely by
+ *      setting ENABLE_CODE_EXEC=false in env
+ *   3. Never expose code execution to untrusted users without Docker
+ *
+ * Uses Node.js `vm` module for JavaScript/TypeScript execution.
+ * For Python, uses subprocess with timeout (requires python3 installed).
+ * For other languages, returns "not supported" gracefully.
+ *
+ * Security (vm fallback — NOT sufficient for untrusted code):
+ * - No network access (no fetch, no http, no net module).
+ * - No filesystem access (no fs, no path).
+ * - 10-second timeout.
+ * - 100MB memory limit (via --max-old-space-size for Node, ulimit for Python).
+ * - Code runs in a sandboxed context with only safe globals.
+ */
 
 import vm from "vm";
 import { execFileSync } from "child_process";
@@ -214,6 +226,17 @@ export function runPython(code: string): CodeResult {
 // ---------- Dispatcher ----------
 
 export async function runCode(language: string, code: string): Promise<CodeResult> {
+  // Production safety guard: block code execution in production without Docker.
+  // The vm sandbox is NOT a security boundary (see header warning).
+  if (process.env.NODE_ENV === "production" && process.env.ENABLE_CODE_EXEC !== "true") {
+    return {
+      success: false,
+      output: "",
+      error: "Code execution is disabled in production without Docker. Set ENABLE_CODE_EXEC=true to override (NOT RECOMMENDED) or configure Docker.",
+      executionTimeMs: 0,
+    };
+  }
+
   const lang = language.toLowerCase().trim();
 
   switch (lang) {

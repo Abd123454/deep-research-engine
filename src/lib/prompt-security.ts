@@ -17,19 +17,31 @@
 // (Ignore\u200bprevious), soft hyphens (Ignore\u00adprevious), combining
 // diacritics (Igno\u0301re), and case mixing (iGnOrE).
 
-// Cyrillic → Latin mapping for common homoglyphs.
-// Includes ALL visually identical Cyrillic letters that could be used
-// to bypass pattern matching (e.g., "Іgnore" with Cyrillic І U+0406).
-const CYRILLIC_TO_LATIN: Record<string, string> = {
+// Homoglyph → Latin mapping for ALL visually identical characters.
+// Covers Cyrillic (Russian, Ukrainian, Belarusian, Serbian) and Greek.
+// This prevents bypass attacks like "Іgnore" (Cyrillic І) or "Ιgnore" (Greek Ι).
+const HOMOGLYPH_TO_LATIN: Record<string, string> = {
+  // --- Cyrillic (Russian) ---
   о: "o", е: "e", а: "a", р: "p", с: "c", у: "y", х: "x",
   О: "O", Е: "E", А: "A", Р: "P", С: "C", У: "Y", Х: "X",
-  // Byelorussian-Ukrainian I (visually identical to Latin I)
-  І: "I", і: "i",
-  // Cyrillic small/i capital Dze (looks like Latin S/s)
-  Ѕ: "S", ѕ: "s",
-  // Cyrillic Iota (looks like Latin I)
-  Ӏ: "I",
+  // --- Cyrillic (Ukrainian/Belarusian/Serbian) ---
+  І: "I", і: "i", Ѕ: "S", ѕ: "s", Ӏ: "I",
+  // --- Greek (lowercase + uppercase) ---
+  α: "a", Α: "A", β: "b", Β: "B", γ: "g", ε: "e", Ε: "E",
+  ζ: "z", Ζ: "Z", η: "h", Η: "H", ι: "i", Ι: "I", κ: "k", Κ: "K",
+  μ: "m", Μ: "M", ν: "n", Ν: "N", ο: "o", Ο: "O", ρ: "p", Ρ: "P",
+  τ: "t", Τ: "T", υ: "y", Υ: "Y", χ: "x", Χ: "X",
 };
+
+// Build regex from all homoglyph keys (escapes each char to \uXXXX).
+const HOMOGLYPH_REGEX = new RegExp(
+  "[" +
+    Object.keys(HOMOGLYPH_TO_LATIN)
+      .map((c) => "\\u" + c.charCodeAt(0).toString(16).padStart(4, "0").toUpperCase())
+      .join("") +
+    "]",
+  "g"
+);
 
 function normalizeUnicode(input: string): string {
   // NFKC normalization: compatibility decomposition + canonical composition.
@@ -45,9 +57,8 @@ function normalizeUnicode(input: string): string {
   // Remove combining diacritics (e.g. ì → i).
   s = s.replace(/[\u0300-\u036f]/g, "");
 
-  // Convert Cyrillic homoglyphs to Latin.
-  // The regex must include ALL keys from CYRILLIC_TO_LATIN.
-  s = s.replace(/[оеарсухОЕАРСУХІіЅѕӀ]/g, (c) => CYRILLIC_TO_LATIN[c] || c);
+  // Convert ALL homoglyphs (Cyrillic + Greek) to Latin.
+  s = s.replace(HOMOGLYPH_REGEX, (c) => HOMOGLYPH_TO_LATIN[c] || c);
 
   // Lowercase for case-insensitive matching.
   return s.toLowerCase();

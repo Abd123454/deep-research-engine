@@ -1,0 +1,861 @@
+openapi: 3.1.0
+info:
+  title: Quaesitor API
+  version: "1.0.0"
+  description: |
+    Quaesitor is a self-hostable research, chat, and multi-agent swarm platform
+    with a dual-mode database (SQLite + Postgres), cross-provider LLM fallback
+    (NVIDIA → OpenAI → Anthropic → Ollama), and a 5-layer memory system.
+
+    Most POST endpoints that stream LLM output use Server-Sent Events
+    (`text/event-stream`) with `data: {json}\n\n` framing.
+
+    Authentication is optional and controlled by the `AUTH_USERNAME` and
+    `AUTH_PASSWORD` environment variables. When both are set, protected
+    endpoints require HTTP Basic auth. When unset, all endpoints are open.
+    Rate limiting is applied per-IP via Redis when available, otherwise via
+    an in-memory counter.
+  contact:
+    url: https://github.com/Abd123454/deep-research-engine
+
+servers:
+  - url: /
+    description: Same-origin (default for the bundled Next.js app)
+
+tags:
+  - name: Health
+    description: Service health & readiness probes
+  - name: Chat
+    description: Streaming chat with memory injection and ReAct tool use
+  - name: Research
+    description: Async deep-research pipeline (plan → search → read → write)
+  - name: Swarm
+    description: Multi-agent cluster (orchestrator + parallel workers + synth)
+  - name: Modal
+    description: Quick-mode single-shot LLM responses
+  - name: Media
+    description: Vision (image analysis), TTS, ASR
+  - name: Files
+    description: Office document generation
+  - name: Sessions
+    description: Persisted user sessions (history)
+  - name: Eval
+    description: Evaluation harness
+  - name: Docs
+    description: This OpenAPI spec
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      summary: Liveness & readiness probe
+      description: |
+        Returns the process uptime, configured LLM provider, and the status of
+        dependent services (Redis, database, Docker sandbox). Used by the
+        Docker HEALTHCHECK and by uptime monitors.
+      operationId: getHealth
+      security: []
+      responses:
+        "200":
+          description: Service is up (may be healthy, degraded, or unhealthy).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                healthy:
+                  value:
+                    status: healthy
+                    uptime: 12483
+                    uptimeHuman: "12s"
+                    version: "1.4.0"
+                    timestamp: "2026-07-16T12:00:00.000Z"
+                    checks:
+                      redis: true
+                      database: true
+                      docker: true
+                    details: {}
+                    redis: connected
+                    database: connected
+
+  /api/chat:
+    post:
+      tags: [Chat]
+      summary: Streaming chat with memory injection
+      description: |
+        Conversational chat endpoint. The server:
+        1. Gets or creates a conversation row.
+        2. Saves the user message.
+        3. Recalls relevant memories (vector search or SQLite LIKE fallback).
+        4. Streams the LLM response token-by-token as SSE.
+        5. Saves the assistant message.
+        6. Fire-and-forgets memory extraction for the next turn.
+
+        Requires at least one LLM provider to be configured
+        (`NVIDIA_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or
+        `OLLAMA_URL`).
+      operationId: postChat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                conversationId:
+                  type: string
+                  format: uuid
+                  description: Existing conversation to append to. If omitted a new conversation is created.
+                message:
+                  type: string
+                  minLength: 1
+                  description: The user's message. Sanitised for prompt-injection patterns before reaching the LLM.
+      responses:
+        "200":
+          description: SSE stream of chat tokens.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: |
+                  Lines of `data: {json}\n\n`. Token events have shape
+                  `{ "token": "..." }`; the terminal event has shape
+                  `{ "done": true, "conversationId": "...", "tokensUsed": 123 }`;
+                  errors are surfaced in-stream as `{ "error": "..." }`.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          description: No LLM provider configured.
+
+  /api/chat/agent:
+    post:
+      tags: [Chat]
+      summary: ReAct chat with tool use
+      description: |
+        Like `/api/chat` but the assistant can call tools (`web_search`,
+        `run_code`) in a 5-iteration ReAct loop. Optional `skill` selects a
+        system-prompt + tool whitelist preset (default is `"default"`).
+      operationId: postChatAgent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                conversationId:
+                  type: string
+                  format: uuid
+                message:
+                  type: string
+                  minLength: 1
+                skill:
+                  type: string
+                  default: default
+      responses:
+        "200":
+          description: SSE stream with `token`, `tool_call`, `tool_result`, and `done` events.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          description: No LLM provider configured.
+
+  /api/modes/quick:
+    post:
+      tags: [Modal]
+      summary: Quick-mode single LLM call (no research pipeline)
+      description: |
+        One-shot streaming LLM response. No memory recall, no search, no
+        history. Use this when the user wants a fast answer without a full
+        research cycle. Accepts `message` or `query` for compatibility.
+      operationId: postQuickMode
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  maxLength: 10000
+                query:
+                  type: string
+                  maxLength: 10000
+                  description: Alias for `message`.
+      responses:
+        "200":
+          description: SSE stream of `{ "token": "..." }` events followed by `{ "done": true, "tokensUsed": 123 }`.
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          description: No LLM provider configured.
+
+  /api/research/start:
+    post:
+      tags: [Research]
+      summary: Start an async deep-research job
+      description: |
+        Validates the query, applies prompt-injection sanitisation, rate-limits
+        per-IP, creates a job in the in-memory research store, then fires the
+        `runResearch` pipeline in the background. Returns immediately with the
+        job id — the client polls `/api/research/status/{id}` for progress.
+
+        An optional pre-approved `plan` (from the Plan Preview step) can be
+        supplied to skip plan generation.
+      operationId: startResearch
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [query]
+              properties:
+                query:
+                  type: string
+                  minLength: 1
+                  maxLength: 100000
+                depth:
+                  type: string
+                  enum: [standard, deep, advanced]
+                numSubQueries:
+                  type: integer
+                  minimum: 2
+                  maximum: 12
+                maxLinksPerQuery:
+                  type: integer
+                  minimum: 3
+                  maximum: 25
+                reportMaxTokens:
+                  type: integer
+                  minimum: 1000
+                  maximum: 32000
+                plan:
+                  $ref: "#/components/schemas/ResearchPlan"
+      responses:
+        "200":
+          description: Job created and started.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                  status:
+                    type: string
+                  config:
+                    type: object
+                  retriever:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+
+  /api/research/status/{id}:
+    get:
+      tags: [Research]
+      summary: Poll research job status
+      description: |
+        Returns the live status (phase, progress counters, current sub-query,
+        etc.) of a research job. Use this for polling; for streaming progress
+        use `/api/research/stream/{id}` instead.
+      operationId: getResearchStatus
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Current job snapshot.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  job:
+                    $ref: "#/components/schemas/ResearchJob"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/research/result/{id}:
+    get:
+      tags: [Research]
+      summary: Get final research report + sources
+      description: |
+        Returns the final markdown report, sources list, and sub-queries for a
+        completed job. If the job is still running, returns its current
+        snapshot (same shape as `/api/research/status/{id}`).
+      operationId: getResearchResult
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Final job result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  job:
+                    $ref: "#/components/schemas/ResearchJob"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /api/swarm:
+    post:
+      tags: [Swarm]
+      summary: Multi-agent swarm (SSE)
+      description: |
+        Runs the three-stage swarm pipeline:
+        1. Orchestrator breaks the task into 2–4 role-tagged subtasks.
+        2. Workers run in parallel (each with role-specific prompt + tools).
+        3. Synthesiser merges worker outputs into a single markdown report.
+
+        All events are streamed as SSE. Closing the connection aborts the
+        swarm.
+      operationId: postSwarm
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [task]
+              properties:
+                task:
+                  type: string
+                  maxLength: 2000
+      responses:
+        "200":
+          description: SSE stream of swarm events (`swarm_start`, `agent_start`, `agent_token`, `agent_tool`, `agent_result`, `agent_done`, `synth_start`, `synth_token`, `swarm_done`, `error`).
+          content:
+            text/event-stream:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "503":
+          description: No LLM provider configured.
+
+  /api/vision:
+    post:
+      tags: [Media]
+      summary: Analyse an image with a vision LLM
+      description: |
+        Sends a base64-encoded image to the configured vision provider
+        (NVIDIA / OpenAI / Anthropic). Returns a text description of the
+        image and optional structured fields.
+      operationId: postVision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [image, mimeType]
+              properties:
+                image:
+                  type: string
+                  format: byte
+                  description: Base64-encoded image bytes (no `data:` prefix).
+                mimeType:
+                  type: string
+                  examples:
+                    - image/png
+                    - image/jpeg
+                    - image/webp
+                prompt:
+                  type: string
+                  description: Optional question or instruction about the image.
+      responses:
+        "200":
+          description: Vision analysis result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  description:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/tts:
+    post:
+      tags: [Media]
+      summary: Synthesize speech from text
+      description: |
+        Generates spoken audio for the given text. Returns either a base64
+        audio payload (for client-side playback) or a URL, depending on the
+        provider response shape.
+      operationId: postTts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [text]
+              properties:
+                text:
+                  type: string
+                  maxLength: 4000
+                voice:
+                  type: string
+                  description: Optional voice ID/name hint.
+                speed:
+                  type: number
+                  format: float
+                  minimum: 0.5
+                  maximum: 2.0
+      responses:
+        "200":
+          description: TTS result with audio payload.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  audio:
+                    type: string
+                    format: byte
+                  format:
+                    type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/files/generate:
+    post:
+      tags: [Files]
+      summary: Generate an office document (PDF/DOCX/PPTX/XLSX/MD)
+      description: |
+        Renders the given `content` (markdown or plain text) into a binary
+        office document and streams it back as a download. The `Content-Type`
+        and `Content-Disposition` headers are set accordingly.
+      operationId: postFileGenerate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, title, content]
+              properties:
+                type:
+                  type: string
+                  enum: [pdf, docx, pptx, xlsx, md]
+                title:
+                  type: string
+                  minLength: 1
+                content:
+                  type: string
+                  maxLength: 500000
+      responses:
+        "200":
+          description: Binary file download.
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Type:
+              schema:
+                type: string
+            Content-Disposition:
+              schema:
+                type: string
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/sessions:
+    get:
+      tags: [Sessions]
+      summary: List recent sessions
+      description: |
+        Returns the 50 most recently updated sessions from the persistent
+        store, plus any in-progress research jobs that have not yet been
+        persisted.
+      operationId: listSessions
+      responses:
+        "200":
+          description: Session list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  sessions:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Session"
+                  activeJobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ActiveJob"
+                  total:
+                    type: integer
+    delete:
+      tags: [Sessions]
+      summary: Delete all sessions
+      operationId: deleteAllSessions
+      responses:
+        "200":
+          description: Deletion summary.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  deleted:
+                    type: integer
+
+  /api/eval:
+    get:
+      tags: [Eval]
+      summary: List evaluation dataset (metadata only)
+      description: |
+        Returns the list of evaluation queries in the bundled dataset with
+        their type, difficulty, and expected-source/keyword counts. Does not
+        execute any LLM calls.
+      operationId: getEvalDataset
+      responses:
+        "200":
+          description: Dataset metadata.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queries:
+                    type: array
+                    items:
+                      type: object
+                  total:
+                    type: integer
+    post:
+      tags: [Eval]
+      summary: Run the evaluation suite
+      description: |
+        Runs the full evaluation suite (real research jobs + LLM scoring).
+        Admin-only (HTTP Basic auth) and rate-limited to 1 run per 10 minutes
+        per IP. Optional `queries` array selects a subset of the dataset by
+        id; omit to run all.
+      operationId: runEvalSuite
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                queries:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Eval results.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  summary:
+                    type: object
+                  results:
+                    type: array
+                    items:
+                      type: object
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/docs:
+    get:
+      tags: [Docs]
+      summary: Serve this OpenAPI spec as YAML
+      description: |
+        Returns the raw `openapi.yaml` file with `Content-Type: application/yaml`.
+        Point Swagger UI / Redoc at this URL to render interactive docs.
+      operationId: getOpenApiSpec
+      security: []
+      responses:
+        "200":
+          description: OpenAPI 3.1 YAML document.
+          content:
+            application/yaml:
+              schema:
+                type: string
+
+components:
+  parameters:
+    JobIdPath:
+      name: id
+      in: path
+      required: true
+      description: Research job id (returned by `POST /api/research/start`).
+      schema:
+        type: string
+
+  responses:
+    BadRequest:
+      description: Malformed or invalid request body.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Unauthorized:
+      description: HTTP Basic auth required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    RateLimited:
+      description: Per-IP rate limit exceeded. Honours `Retry-After`.
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    InternalError:
+      description: Unexpected server error.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+      description: |
+        HTTP Basic auth. Only enforced when both `AUTH_USERNAME` and
+        `AUTH_PASSWORD` are set as environment variables. When unset, the
+        endpoint is open.
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        ok:
+          type: boolean
+          default: false
+        error:
+          type: string
+        reason:
+          type: string
+          description: Optional structured reason (e.g. injection-detection reason).
+
+    HealthResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [healthy, degraded, unhealthy]
+        uptime:
+          type: integer
+          description: Process uptime in milliseconds.
+        uptimeHuman:
+          type: string
+        version:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        checks:
+          type: object
+          properties:
+            redis:
+              type: boolean
+            database:
+              type: boolean
+            docker:
+              type: boolean
+        details:
+          type: object
+          additionalProperties: true
+        redis:
+          type: string
+          enum: [connected, not_configured]
+        database:
+          type: string
+          enum: [connected, memory_fallback]
+
+    ResearchPlan:
+      type: object
+      required: [title, summary, sections]
+      properties:
+        title:
+          type: string
+          minLength: 1
+        summary:
+          type: string
+          minLength: 1
+        sections:
+          type: array
+          minItems: 1
+          maxItems: 9
+          items:
+            type: object
+            required: [id, title, description]
+            properties:
+              id:
+                type: string
+              title:
+                type: string
+                minLength: 1
+              description:
+                type: string
+
+    ResearchJob:
+      type: object
+      properties:
+        id:
+          type: string
+        query:
+          type: string
+        status:
+          type: string
+          enum: [pending, planning, searching, reading, writing, completed, failed, cancelled]
+        startedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        phase:
+          type: string
+        plan:
+          $ref: "#/components/schemas/ResearchPlan"
+        subQueries:
+          type: array
+          items:
+            type: string
+        sources:
+          type: array
+          items:
+            type: object
+        report:
+          type: string
+          description: Final markdown report (empty until status is `completed`).
+        stats:
+          type: object
+          properties:
+            totalPagesRead:
+              type: integer
+            totalPagesSucceeded:
+              type: integer
+            roundsCompleted:
+              type: integer
+        error:
+          type: string
+          nullable: true
+
+    Session:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    ActiveJob:
+      type: object
+      properties:
+        id:
+          type: string
+        query:
+          type: string
+        status:
+          type: string
+        startedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        stats:
+          type: object
+          properties:
+            totalPagesRead:
+              type: integer
+            totalPagesSucceeded:
+              type: integer
+            roundsCompleted:
+              type: integer

@@ -124,7 +124,7 @@ export const EVAL_DATASET: EvalQuery[] = [
     type: "coding",
     codingTest: {
       language: "javascript",
-      test: "console.assert(binarySearch([1,2,3,4,5], 3) === 2, 'test 1')\nconsole.assert(binarySearch([1,2,3,4,5], 6) === -1, 'test 2')\nconsole.assert(binarySearch([1,2,3,4,5], 1) === 0, 'test 3')\nconsole.assert(binarySearch([], 1) === -1, 'test 4')\nconsole.log('All tests passed')",
+      test: "console.assert(binarySearch([1,2,3,4,5], 3) === 2, 'test 1')\nconsole.assert(binarySearch([1,2,3,4,5], 6) === -1, 'test 2')\nconsole.assert(binarySearch([1,2,3,4,5], 1) === 0, 'test 3')\nconsole.assert(binarySearch([], 1) === -1, 'test 4')",
     },
     difficulty: "medium",
   },
@@ -144,7 +144,7 @@ export const EVAL_DATASET: EvalQuery[] = [
     type: "coding",
     codingTest: {
       language: "javascript",
-      test: "console.assert(isPalindrome('racecar') === true, 'test 1')\nconsole.assert(isPalindrome('hello') === false, 'test 2')\nconsole.assert(isPalindrome('A man a plan a canal Panama') === true, 'test 3')\nconsole.assert(isPalindrome('') === true, 'test 4')\nconsole.log('All tests passed')",
+      test: "console.assert(isPalindrome('racecar') === true, 'test 1')\nconsole.assert(isPalindrome('hello') === false, 'test 2')\nconsole.assert(isPalindrome('A man a plan a canal Panama') === true, 'test 3')\nconsole.assert(isPalindrome('') === true, 'test 4')",
     },
     difficulty: "medium",
   },

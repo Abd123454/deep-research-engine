@@ -7,6 +7,7 @@
 // (LIKE) is used as a fallback for recall.
 
 import { env } from "./env";
+import { logger } from "./logger";
 
 const MAX_TOKENS_PER_CHUNK = 8000; // ~32K chars per chunk
 const MAX_BATCH_SIZE = 64;
@@ -144,7 +145,10 @@ export async function embed(text: string): Promise<EmbedResult> {
       vectors.push(vec);
       continue;
     } catch (err) {
-      console.warn(`[embeddings] NVIDIA failed: ${err instanceof Error ? err.message : String(err)}. → OpenAI`);
+      logger.warn(
+        { module: "embeddings", provider: "nvidia", err: err instanceof Error ? err.message : String(err) },
+        "NVIDIA embeddings failed -> OpenAI"
+      );
     }
 
     // Fallback to OpenAI.
@@ -153,7 +157,10 @@ export async function embed(text: string): Promise<EmbedResult> {
       vectors.push(vec);
       continue;
     } catch (err) {
-      console.warn(`[embeddings] OpenAI failed: ${err instanceof Error ? err.message : String(err)}. → skip`);
+      logger.warn(
+        { module: "embeddings", provider: "openai", err: err instanceof Error ? err.message : String(err) },
+        "OpenAI embeddings failed -> skip"
+      );
     }
 
     // Both failed — skip this chunk.

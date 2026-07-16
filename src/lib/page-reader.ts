@@ -13,6 +13,8 @@
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
 import type { PageReadResult } from "./types";
+import { logger } from "./logger";
+import { withAbortSignal } from "./abort-utils";
 
 const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
 const MAX_TEXT_CHARS = 6000; // cap per-page text to save tokens
@@ -92,15 +94,7 @@ function wikipediaTitleFromUrl(url: string): string {
 }
 
 // ---------- Cancellation helper ----------
-// Combines an optional user-provided abort signal with a timeout.
-function withAbortSignal(userSignal: AbortSignal | undefined, timeoutMs: number): AbortSignal | undefined {
-  if (!userSignal) return AbortSignal.timeout(timeoutMs);
-  if (userSignal.aborted) return userSignal;
-  if (typeof AbortSignal.any === "function") {
-    return AbortSignal.any([userSignal, AbortSignal.timeout(timeoutMs)]);
-  }
-  return userSignal;
-}
+// withAbortSignal is imported from "./abort-utils" — see that file for docs.
 
 async function readWikipediaViaApi(url: string, userSignal?: AbortSignal): Promise<PageReadResult> {
   const title = wikipediaTitleFromUrl(url);
@@ -227,7 +221,7 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
       const result = await readWikipediaViaApi(url, signal);
       // Indirect injection scan: block if malicious content detected.
       if (result.success && scanForIndirectInjection(result.text)) {
-        console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
+        logger.warn({ module: "page-reader", url }, "Indirect injection detected in Wikipedia content — content blocked");
         return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
       }
       return result;
@@ -239,7 +233,7 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
     const result = await readPageDirect(url, signal);
     // Indirect injection scan for direct-fetched pages too.
     if (result.success && scanForIndirectInjection(result.text)) {
-      console.warn(`[page-reader] Indirect injection detected in ${url} — content blocked.`);
+      logger.warn({ module: "page-reader", url }, "Indirect injection detected in direct-fetched content — content blocked");
       return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
     }
 
@@ -253,7 +247,7 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
         if (jsResult.success && jsResult.text.length > result.text.length) {
           // Check the JS-rendered content for injection too.
           if (scanForIndirectInjection(jsResult.text)) {
-            console.warn(`[page-reader] Indirect injection detected in JS-rendered ${url} — blocked.`);
+            logger.warn({ module: "page-reader", url, source: "js" }, "Indirect injection detected in JS-rendered content — content blocked");
             return { url, title: jsResult.title, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked", tokensUsed: 0, wordCount: 0 };
           }
           return {

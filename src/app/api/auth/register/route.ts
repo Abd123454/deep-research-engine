@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
+import { createRequestLogger, generateRequestId } from "@/lib/logger";
 
 const RegisterSchema = z.object({
   email: z.string().email("Invalid email."),
@@ -14,6 +15,8 @@ const RegisterSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  const requestId = generateRequestId();
+  const log = createRequestLogger(requestId, { module: "auth/register" });
   try {
     const body = await req.json();
     const parsed = RegisterSchema.safeParse(body);
@@ -42,7 +45,7 @@ export async function POST(req: NextRequest) {
           return NextResponse.json({ ok: true });
         }
       } catch (err) {
-        console.warn("[auth/register] Postgres failed:", err instanceof Error ? err.message : String(err));
+        log.warn({ err: err instanceof Error ? err.message : String(err) }, "Postgres failed");
       }
     }
 
@@ -72,7 +75,7 @@ export async function POST(req: NextRequest) {
       );
       return NextResponse.json({ ok: true });
     } catch (err) {
-      console.error("[auth/register] SQLite failed:", err instanceof Error ? err.message : String(err));
+      log.error({ err: err instanceof Error ? err.message : String(err) }, "SQLite failed");
       return NextResponse.json({ ok: false, error: "Registration failed." }, { status: 500 });
     }
   } catch {

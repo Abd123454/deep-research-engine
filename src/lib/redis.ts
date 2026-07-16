@@ -2,6 +2,7 @@
 // Returns null if REDIS_URL is not set (falls back to in-memory rate limiting).
 
 import { Redis } from "ioredis";
+import { logger } from "./logger";
 
 let redisInstance: Redis | null = null;
 let connectionFailed = false;
@@ -17,14 +18,17 @@ export function getRedis(): Redis | null {
         retryStrategy: (times) => Math.min(times * 500, 2000),
       });
       redisInstance.on("error", (err) => {
-        console.warn("[redis] connection error:", err.message);
+        logger.warn({ module: "redis", err: err.message }, "connection error");
         connectionFailed = true;
       });
       redisInstance.on("connect", () => {
         connectionFailed = false;
       });
     } catch (err) {
-      console.warn("[redis] init failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "redis", err: err instanceof Error ? err.message : String(err) },
+        "init failed"
+      );
       connectionFailed = true;
       return null;
     }

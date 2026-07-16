@@ -8,6 +8,7 @@ import type {
   LLMCompletionResult,
 } from "./types";
 import { env, envList } from "../env";
+import { logger } from "../logger";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -163,7 +164,10 @@ export class OpenAIProvider implements LLMProviderInterface {
         lastErr = err;
         const msg = err instanceof Error ? err.message : String(err);
         if (isAuthError(msg)) throw new Error(`OpenAI API key invalid. Skipping fallback. Error: ${msg}`);
-        console.warn(`[openai] Model "${model}" failed: ${msg.slice(0, 100)}`);
+        logger.warn(
+          { module: "openai", model, err: msg.slice(0, 100) },
+          "Model failed"
+        );
       }
     }
     throw new Error(`All OpenAI models failed. Last: ${lastErr instanceof Error ? lastErr.message : String(lastErr)}`);

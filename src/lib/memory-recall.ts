@@ -13,6 +13,7 @@
 import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 import type { LongTermMemoryRow, RawVectorSearchRow } from "./sqlite-types";
+import { logger } from "./logger";
 
 const DEFAULT_USER_ID = "default";
 
@@ -95,7 +96,10 @@ export async function recallRelevantMemories(
         return results.sort((a, b) => b.score - a.score);
       }
     } catch (err) {
-      console.warn("[memory-recall] Vector search failed:", err instanceof Error ? err.message : String(err));
+      logger.warn(
+        { module: "memory-recall", err: err instanceof Error ? err.message : String(err) },
+        "Vector search failed"
+      );
     }
   }
 
@@ -143,7 +147,10 @@ export async function recallRelevantMemories(
     // Sort by score and take top `limit`.
     return results.sort((a, b) => b.score - a.score).slice(0, limit);
   } catch (err) {
-    console.warn("[memory-recall] SQLite search failed:", err instanceof Error ? err.message : String(err));
+    logger.warn(
+      { module: "memory-recall", err: err instanceof Error ? err.message : String(err) },
+      "SQLite search failed"
+    );
     return [];
   }
 }

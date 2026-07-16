@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import path from "path";
 
 const nextConfig: NextConfig = {
   output: "standalone",
@@ -12,6 +13,14 @@ const nextConfig: NextConfig = {
   experimental: {
     serverActions: { bodySizeLimit: "50mb" },
     proxyClientMaxBodySize: "50mb",
+  },
+  // Turbopack needs an explicit project root so its NFT (Node File Trace)
+  // does not walk up out of the repo (which previously produced the
+  // "Turbopack only supports root: ... at the moment" warning and could
+  // pull in unrelated node_modules from parent directories). In Next.js 16
+  // this lives at the top level (not under `experimental`).
+  turbopack: {
+    root: path.join(process.cwd()),
   },
   // better-sqlite3 is a native addon (C++ binding to libsqlite3). Next.js's
   // bundler (Turbopack/Webpack) tries to bundle it, which breaks the native
