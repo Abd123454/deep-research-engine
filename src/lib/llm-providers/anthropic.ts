@@ -1,6 +1,8 @@
 // Anthropic provider — Claude 3.5 Sonnet, Claude 3.5 Haiku.
 // Cost: $3/1M input, $15/1M output (sonnet).
 // Streaming support via SSE.
+import * as Sentry from "@sentry/nextjs";
+
 
 import type {
   LLMProviderInterface,
@@ -121,7 +123,10 @@ export class AnthropicProvider implements LLMProviderInterface {
               fullContent += chunk.delta.text;
               opts.onToken?.(chunk.delta.text);
             }
-          } catch { /* skip */ }
+          } catch (err) {
+  Sentry.captureException(err);
+/* skip */ 
+}
         }
       }
       const tokens = Math.ceil(fullContent.length / 4);

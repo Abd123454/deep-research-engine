@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // ChatCard — multi-turn conversational chat in the unified interface.
 // Unlike QuickCard (single Q&A), ChatCard supports follow-up questions
@@ -80,7 +81,10 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                   if (data.tokensUsed) setTokens(data.tokensUsed);
                 }
                 if (data.error) setError(data.error);
-              } catch { /* skip */ }
+              } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */ 
+}
             }
           }
         }
@@ -146,7 +150,10 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               if (data.done && data.conversationId) setConversationId(data.conversationId);
               if (data.done && data.tokensUsed) setTokens((t) => t + (data.tokensUsed ?? 0));
               if (data.error) setError(data.error);
-            } catch { /* skip */ }
+            } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */ 
+}
           }
         }
       }

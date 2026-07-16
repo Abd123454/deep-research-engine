@@ -9,6 +9,8 @@
 // route is effectively a placeholder that exercises the email pipeline. The
 // reset link's token is a random UUID the front-end can post back to
 // /api/auth/reset-password for shape-validation.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
@@ -41,9 +43,11 @@ async function findUserByEmail(email: string): Promise<FoundUser | null> {
         }
         return null;
       }
-    } catch {
-      /* fall through to SQLite */
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through to SQLite */
+    
+}
   }
 
   // SQLite fallback.
@@ -55,9 +59,11 @@ async function findUserByEmail(email: string): Promise<FoundUser | null> {
     if (row) {
       return { id: row.id, email: row.email, name: row.name };
     }
-  } catch {
-    /* ignore */
-  }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */
+  
+}
   return null;
 }
 
@@ -68,10 +74,12 @@ export async function POST(req: NextRequest) {
   let body: unknown;
   try {
     body = await req.json();
-  } catch {
-    // Still 200 — don't leak parse errors.
+  } catch (err) {
+  Sentry.captureException(err);
+// Still 200 — don't leak parse errors.
     return NextResponse.json({ ok: true });
-  }
+  
+}
 
   const parsed = ForgotSchema.safeParse(body);
   if (!parsed.success) {

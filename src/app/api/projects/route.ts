@@ -1,5 +1,7 @@
 // GET  /api/projects — list user's projects.
 // POST /api/projects — create a new project.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -27,7 +29,10 @@ export async function GET() {
           updatedAt: p.updatedAt?.toISOString?.() || String(p.updatedAt),
         })) });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   // SQLite fallback.
   try {
@@ -70,7 +75,10 @@ export async function POST(req: NextRequest) {
           });
           return NextResponse.json({ ok: true, project: { ...project, createdAt: project.createdAt?.toISOString?.(), updatedAt: project.updatedAt?.toISOString?.() } });
         }
-      } catch { /* fall through */ }
+      } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
     }
     // SQLite fallback.
     try {

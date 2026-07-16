@@ -1,3 +1,5 @@
+import * as Sentry from "@sentry/nextjs";
+
 /**
  * Code Execution Sandbox — runs user code safely with timeout + memory limits.
  *
@@ -219,7 +221,10 @@ export function runPython(code: string): CodeResult {
       executionTimeMs: Date.now() - start,
     };
   } finally {
-    try { fs.unlinkSync(tmpFile); } catch { /* ignore */ }
+    try { fs.unlinkSync(tmpFile); } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   }
 }
 

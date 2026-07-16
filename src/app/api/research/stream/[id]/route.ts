@@ -11,6 +11,8 @@
 //   es.addEventListener("update", (e) => setJob(JSON.parse(e.data)));
 //   es.addEventListener("report_token", (e) => appendToken(JSON.parse(e.data).token));
 //   es.addEventListener("done", () => es.close());
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest } from "next/server";
 import { getJob } from "@/lib/research-store";
@@ -130,9 +132,11 @@ export async function GET(
         if (currentInterval) clearInterval(currentInterval);
         try {
           controller.close();
-        } catch {
-          // already closed
-        }
+        } catch (err) {
+  Sentry.captureException(err);
+// already closed
+        
+}
       }
 
       _req.signal.addEventListener("abort", () => {

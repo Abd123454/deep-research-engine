@@ -1,4 +1,6 @@
 // POST /api/billing/portal — create Customer Portal session
+import * as Sentry from "@sentry/nextjs";
+
 import { NextRequest, NextResponse } from "next/server";
 import { stripe, createPortalSession } from "@/lib/stripe";
 
@@ -13,7 +15,10 @@ export async function POST(req: NextRequest) {
   try {
     const customers = await stripe.customers.list({ limit: 1 });
     if (customers.data[0]) customerId = customers.data[0].id;
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 
   if (!customerId) {
     return NextResponse.json({ error: "No subscription found" }, { status: 404 });

@@ -14,6 +14,7 @@
 // 8. Non-blocking: extract memories
 
 import { NextRequest } from "next/server";
+import { trackEvent } from "@/lib/analytics";
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
@@ -89,6 +90,7 @@ export async function POST(req: NextRequest) {
 
   // Save user message.
   await saveMessage(conversationId, "user", message);
+  trackEvent(userId, "chat_message_sent", { conversationId, messageLength: message.length });
 
   // Get conversation history.
   const history = await getHistory(conversationId);

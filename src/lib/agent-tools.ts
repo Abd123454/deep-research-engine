@@ -8,6 +8,8 @@
 //
 // The ReAct loop in /api/chat reads the LLM's response, detects tool calls,
 // executes them, and feeds results back to the LLM.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { runCode, type CodeResult } from "./code-sandbox";
 import { searchWeb } from "./retriever";
@@ -174,7 +176,10 @@ export function detectToolCall(response: string): ToolCall | null {
       if (parsed.tool && AGENT_TOOLS[parsed.tool]) {
         return { tool: parsed.tool, params: parsed.params || {} };
       }
-    } catch { /* not valid JSON */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* not valid JSON */ 
+}
   }
 
   // Pattern 2: [TOOL: name] params: {...}
@@ -183,7 +188,10 @@ export function detectToolCall(response: string): ToolCall | null {
     try {
       const params = JSON.parse(inlineMatch[2]);
       return { tool: inlineMatch[1], params };
-    } catch { /* ignore */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   }
 
   return null;

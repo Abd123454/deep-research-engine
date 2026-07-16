@@ -8,6 +8,8 @@
 //   - context: "User is writing a thesis about AI"
 //
 // Extracted memories are embedded and stored for semantic recall.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { embed } from "./embeddings";
@@ -244,7 +246,10 @@ export async function deleteMemory(id: string): Promise<boolean> {
         await prisma.longTermMemory.delete({ where: { id } });
         return true;
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   try {
     const db = getDb();

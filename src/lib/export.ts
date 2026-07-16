@@ -7,6 +7,8 @@
 // - DOCX: docx library creates a Word document with paragraphs and
 //   headings parsed from the markdown.
 // - MD: direct download of the markdown source.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { PDFDocument, StandardFonts, PDFFont, rgb } from "pdf-lib";
 import { Document as DocxDocument, Packer, Paragraph, HeadingLevel, TextRun } from "docx";
@@ -171,10 +173,12 @@ async function exportPdfAsync(
         } else {
           line = testLine;
         }
-      } catch {
-        // Skip unmeasurable characters.
+      } catch (err) {
+  Sentry.captureException(err);
+// Skip unmeasurable characters.
         line = testLine;
-      }
+      
+}
     }
     if (line) lines.push(line);
 
@@ -192,9 +196,11 @@ async function exportPdfAsync(
           font: activeFont,
           color: rgb(0, 0, 0),
         });
-      } catch {
-        // Skip characters that can't be encoded in Helvetica (e.g. emoji).
-      }
+      } catch (err) {
+  Sentry.captureException(err);
+// Skip characters that can't be encoded in Helvetica (e.g. emoji).
+      
+}
       y -= size + 4;
     }
 

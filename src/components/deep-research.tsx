@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -223,9 +224,11 @@ export function DeepResearch() {
     try {
       await fetch(`/api/research/stop/${jobId}`, { method: "POST" });
       toast.info("Research cancelled");
-    } catch {
-      /* ignore — client-side stop is enough */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore — client-side stop is enough */
+    
+}
     setPhase("idle");
     setJob(null);
     currentJobIdRef.current = null;
@@ -250,9 +253,11 @@ export function DeepResearch() {
       setPolling(false);
       try {
         await fetch(`/api/research/stop/${oldJobId}`, { method: "POST" });
-      } catch {
-        /* ignore */
-      }
+      } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+      
+}
     }
 
     // Start new research with edited plan.
@@ -319,9 +324,11 @@ export function DeepResearch() {
         try {
           const data = JSON.parse(e.data) as { ok: boolean; job?: ResearchJob };
           if (data.ok && data.job) setJob(data.job);
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       // listen for streaming report tokens.
@@ -331,9 +338,11 @@ export function DeepResearch() {
           if (data.tokens) {
             setStreamingReport((prev) => prev + data.tokens);
           }
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       es.addEventListener("done", (e: MessageEvent) => {
@@ -349,9 +358,11 @@ export function DeepResearch() {
           } else {
             toast.error("Research failed", { description: data.error || "Unknown" });
           }
-        } catch {
-          /* ignore */
-        }
+        } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+        
+}
       });
 
       es.addEventListener("error", () => {

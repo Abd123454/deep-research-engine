@@ -9,6 +9,8 @@
 // any environment.
 //
 // For all other URLs, we fetch the HTML directly and extract via Readability.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { Readability } from "@mozilla/readability";
 import { JSDOM } from "jsdom";
@@ -89,7 +91,10 @@ function wikipediaTitleFromUrl(url: string): string {
     // pathname is like /wiki/RISC-V — take the segment after /wiki/.
     const m = u.pathname.match(/^\/wiki\/(.+)$/);
     if (m) return decodeURIComponent(m[1]).replace(/_/g, " ");
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   return "";
 }
 
@@ -169,7 +174,10 @@ async function readPageDirect(url: string, userSignal?: AbortSignal): Promise<Pa
       text = article.textContent.slice(0, MAX_TEXT_CHARS);
       if (article.title) title = article.title;
     }
-  } catch { /* fall through */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
 
   if (text.length < 100) {
     text = htmlToText(html).slice(0, MAX_TEXT_CHARS);
@@ -225,9 +233,11 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
         return { ...result, text: "[CONTENT BLOCKED: potential indirect prompt injection]", success: false, error: "injection_blocked" };
       }
       return result;
-    } catch {
-      // Fall through to direct fetch as a last resort.
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+// Fall through to direct fetch as a last resort.
+    
+}
   }
   try {
     const result = await readPageDirect(url, signal);
@@ -259,9 +269,11 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
             wordCount: jsResult.wordCount,
           };
         }
-      } catch {
-        // Playwright not installed or failed — return the original result.
-      }
+      } catch (err) {
+  Sentry.captureException(err);
+// Playwright not installed or failed — return the original result.
+      
+}
     }
 
     return result;

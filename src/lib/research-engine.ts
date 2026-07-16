@@ -11,6 +11,8 @@
 //
 // The multi-round gap-filling is the key differentiator vs. ChatGPT/Grok/
 // Perplexity single-pass research.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { searchWeb } from "./retriever";
@@ -220,26 +222,32 @@ function extractQuestionsJson(text: string): string[] {
     const parsed = JSON.parse(text);
     if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
     if (Array.isArray(parsed)) return parsed.map(String);
-  } catch {
-    /* fall through */
-  }
+  } catch (err) {
+  Sentry.captureException(err);
+/* fall through */
+  
+}
   const jsonMatch = text.match(/\{[\s\S]*"questions"[\s\S]*\}/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
       if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
-    } catch {
-      /* fall through */
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */
+    
+}
   }
   const arrayMatch = text.match(/\[[\s\S]*\]/);
   if (arrayMatch) {
     try {
       const parsed = JSON.parse(arrayMatch[0]);
       if (Array.isArray(parsed)) return parsed.map(String);
-    } catch {
-      /* fall through */
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */
+    
+}
   }
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) {
@@ -247,9 +255,11 @@ function extractQuestionsJson(text: string): string[] {
       const parsed = JSON.parse(fenceMatch[1].trim());
       if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
       if (Array.isArray(parsed)) return parsed.map(String);
-    } catch {
-      /* fall through */
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */
+    
+}
   }
   const lines = text
     .split(/\n+/)
@@ -387,9 +397,11 @@ function tryParsePlan(text: string): ResearchPlan | null {
   const candidates: string[] = [];
   try {
     candidates.push(text);
-  } catch {
-    /* noop */
-  }
+  } catch (err) {
+  Sentry.captureException(err);
+/* noop */
+  
+}
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) candidates.push(fenceMatch[1]);
   const objMatch = text.match(/\{[\s\S]*\}/);
@@ -413,9 +425,11 @@ function tryParsePlan(text: string): ResearchPlan | null {
           sections,
         };
       }
-    } catch {
-      /* try next */
-    }
+    } catch (err) {
+  Sentry.captureException(err);
+/* try next */
+    
+}
   }
   return null;
 }
@@ -830,10 +844,12 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
           .map((q: unknown) => truncateQuestion(String(q)))
           .filter((q: string) => q.length > 0);
       }
-    } catch {
-      // Fallback: use the raw text as the gap analysis.
+    } catch (err) {
+  Sentry.captureException(err);
+// Fallback: use the raw text as the gap analysis.
       gapAnalysis = result.content.slice(0, 1000);
-    }
+    
+}
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log(job, "warn", "analyzing_gaps", `Gap analysis failed: ${msg}`);
@@ -1021,8 +1037,14 @@ Write a comprehensive long-form Deep Research report answering the original quer
       if (Array.isArray(parsed)) {
         job.followUpQuestions = parsed.map(String).slice(0, 3);
       }
-    } catch { /* ignore parse errors */ }
-  } catch { /* ignore — follow-ups are nice-to-have */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* ignore parse errors */ 
+}
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore — follow-ups are nice-to-have */ 
+}
 
   return finalReport;
 }
@@ -1131,7 +1153,10 @@ export async function runResearch(jobId: string): Promise<void> {
         sq.pagesSucceeded = 0;
         try {
           await processSubQuery(job, sq, job.config, jobSeenUrls);
-        } catch { /* ignore retry failures */ }
+        } catch (err) {
+  Sentry.captureException(err);
+/* ignore retry failures */ 
+}
       }
       log(job, "info", "searching", `Adaptive retry complete. ${failedRound1.filter(sq => sq.status === "done").length}/${failedRound1.length} recovered.`);
     }
@@ -1195,11 +1220,13 @@ export async function runResearch(jobId: string): Promise<void> {
           log(job, "info", "analyzing_gaps", "No follow-up questions generated; skipping round 2.");
         }
       } catch (err) {
-        // Don't swallow cancellation errors.
+  Sentry.captureException(err);
+// Don't swallow cancellation errors.
         if (err instanceof Error && err.message === "Cancelled by user") throw err;
         const msg = err instanceof Error ? err.message : String(err);
         log(job, "warn", "analyzing_gaps", `Multi-round phase skipped due to error: ${msg}`);
-      }
+      
+}
     }
 
     // Stage 6: Synthesize final report.

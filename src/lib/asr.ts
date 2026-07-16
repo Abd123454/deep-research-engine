@@ -1,4 +1,6 @@
 // ASR — Speech-to-Text via NVIDIA → OpenAI Whisper → Browser fallback.
+import * as Sentry from "@sentry/nextjs";
+
 
 export interface ASRResult {
   text: string;
@@ -9,10 +11,16 @@ export async function transcribeAudio(audioBase64: string, format: string, langu
   if (!audioBase64) return { text: "", provider: "none" };
 
   if (process.env.NVIDIA_API_KEY) {
-    try { return await nvidiaASR(audioBase64, format, language); } catch { /* fall through */ }
+    try { return await nvidiaASR(audioBase64, format, language); } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   if (process.env.OPENAI_API_KEY) {
-    try { return await openaiWhisper(audioBase64, format, language); } catch { /* fall through */ }
+    try { return await openaiWhisper(audioBase64, format, language); } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
   return { text: "", provider: "browser" };
 }

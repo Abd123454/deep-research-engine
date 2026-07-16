@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // SwarmCard — multi-agent swarm visualization.
 //
@@ -149,9 +150,11 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
                 const evt = JSON.parse(line.slice(6)) as SwarmEvent;
                 if (cancelled) return;
                 handleEvent(evt);
-              } catch {
-                /* skip */
-              }
+              } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */
+              
+}
             }
           }
         }

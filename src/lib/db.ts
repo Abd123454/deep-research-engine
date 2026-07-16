@@ -8,6 +8,8 @@
 //   - Production: full 5-layer memory system with Postgres + pgvector
 //   - Development: SQLite fallback (no Postgres needed to run locally)
 //   - Sandbox/CI: in-memory fallback (no filesystem writes needed)
+import * as Sentry from "@sentry/nextjs";
+
 
 import type { Database as SqliteDatabase } from "better-sqlite3";
 import path from "path";
@@ -49,7 +51,10 @@ function getSqlitePath(): string {
   }
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
-    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* ignore */ }
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
   }
   return dbPath;
 }

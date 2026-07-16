@@ -2,6 +2,7 @@
 // Starts a new deep research job. Runs asynchronously in the background.
 
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent } from "@/lib/analytics";
 import { z } from "zod";
 import { createJob } from "@/lib/research-store";
 import { resolveConfig, runResearch } from "@/lib/research-engine";
@@ -115,6 +116,7 @@ export async function POST(req: NextRequest) {
     });
 
     const job = createJob(cleanedQuery, config, clientIP);
+    trackEvent("default", "research_started", { jobId: job.id, queryLength: cleanedQuery.length });
 
     // If a pre-approved plan was provided (Plan Preview step), attach it
     // so the engine skips plan generation.

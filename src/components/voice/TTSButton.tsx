@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 import * as React from "react";
 import { Volume2, Loader2, Square } from "lucide-react";
 
@@ -35,7 +36,10 @@ export function TTSButton({ text, voice }: { text: string; voice?: "male" | "fem
         setPlaying(true);
         audio.onended = () => setPlaying(false);
       }
-    } catch { /* ignore */ } finally {
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */ 
+} finally {
       setLoading(false);
     }
   }

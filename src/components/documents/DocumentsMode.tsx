@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // DocumentsMode — document upload + Q&A interface.
 //
@@ -58,9 +59,11 @@ export function DocumentsMode() {
         const data = await res.json();
         setDocs(data.documents || []);
       }
-    } catch {
-      /* ignore — non-critical */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore — non-critical */
+    
+}
   }, []);
 
   React.useEffect(() => {
@@ -104,9 +107,11 @@ export function DocumentsMode() {
         setAnswer("");
       }
       await loadDocs();
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
   }
 
   async function sendQA() {
@@ -158,9 +163,11 @@ export function DocumentsMode() {
               if (data.token) setAnswer((a) => a + data.token);
               if (data.done && data.tokensUsed) setTokens(data.tokensUsed);
               if (data.error) setQaError(data.error);
-            } catch {
-              /* skip */
-            }
+            } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* skip */
+            
+}
           }
         }
       }

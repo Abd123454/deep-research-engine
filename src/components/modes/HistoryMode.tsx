@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // HistoryMode — persisted sessions list + viewer.
 //
@@ -82,9 +83,11 @@ export function HistoryMode() {
         const data = await res.json();
         setSessions(data.sessions || []);
       }
-    } catch {
-      /* ignore */
-    } finally {
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+} finally {
       setLoading(false);
     }
   }, []);
@@ -103,9 +106,11 @@ export function HistoryMode() {
         const data = await res.json();
         setFullSession(data.session);
       }
-    } catch {
-      /* ignore */
-    } finally {
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+} finally {
       setLoadingSession(false);
     }
   }
@@ -119,9 +124,11 @@ export function HistoryMode() {
         setFullSession(null);
       }
       await loadList();
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
   }
 
   async function clearAll() {
@@ -131,9 +138,11 @@ export function HistoryMode() {
       setSelectedId(null);
       setFullSession(null);
       await loadList();
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
   }
 
   return (

@@ -4,6 +4,7 @@
 import { createResearchWorker } from "../lib/queue";
 import { runResearch } from "../lib/research-engine";
 import { logger } from "../lib/logger";
+import { trackEvent } from "../lib/analytics";
 
 export const researchWorker = createResearchWorker(async (data) => {
   const { jobId, query } = data;
@@ -21,6 +22,7 @@ export const researchWorker = createResearchWorker(async (data) => {
 if (researchWorker) {
   researchWorker.on("completed", (job) => {
     logger.info({ jobId: job.data.jobId }, "Research job completed");
+    trackEvent(job.data.userId, "research_completed", { jobId: job.data.jobId });
   });
   researchWorker.on("failed", (job, err) => {
     logger.error({ err, jobId: job?.data.jobId }, "Research job failed");

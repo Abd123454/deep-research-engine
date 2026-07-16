@@ -1,5 +1,7 @@
 // GET /api/preferences — get user preferences.
 // PUT /api/preferences — update preferences.
+import * as Sentry from "@sentry/nextjs";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
@@ -23,7 +25,10 @@ export async function GET() {
         const prefs = await prisma.userPreference.findUnique({ where: { userId: "default" } });
         return NextResponse.json({ ok: true, preferences: prefs || DEFAULT_PREFS });
       }
-    } catch { /* fall through */ }
+    } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
   }
 
   // SQLite fallback.
@@ -42,7 +47,10 @@ export async function GET() {
         },
       });
     }
-  } catch { /* ignore */ }
+  } catch (err) {
+  Sentry.captureException(err);
+/* ignore */ 
+}
 
   return NextResponse.json({ ok: true, preferences: DEFAULT_PREFS });
 }
@@ -70,7 +78,10 @@ export async function PUT(req: NextRequest) {
           });
           return NextResponse.json({ ok: true, preferences: prefs });
         }
-      } catch { /* fall through */ }
+      } catch (err) {
+  Sentry.captureException(err);
+/* fall through */ 
+}
     }
 
     // SQLite fallback.

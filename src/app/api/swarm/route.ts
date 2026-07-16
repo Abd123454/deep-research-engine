@@ -9,6 +9,9 @@
 //   data: {"type":"swarm_done","finalReport":"..."}
 //
 // Cancellation: client closes connection → AbortController fires.
+import * as Sentry from "@sentry/nextjs";
+import { trackEvent } from "@/lib/analytics";
+
 
 import { NextRequest } from "next/server";
 import { runSwarm, serializeSSE, type SwarmEvent } from "@/lib/swarm";
@@ -48,6 +51,7 @@ export async function POST(req: NextRequest) {
 
   // Sanitize input (blocks prompt injection).
   const task = sanitizeInput(rawTask);
+  trackEvent("default", "feature_used", { feature: "swarm" });
   if (!task) {
     return Response.json({ error: "Invalid input." }, { status: 400 });
   }
@@ -71,9 +75,11 @@ export async function POST(req: NextRequest) {
       const emit = (event: SwarmEvent) => {
         try {
           controller.enqueue(encoder.encode(serializeSSE(event)));
-        } catch {
-          // controller already closed.
-        }
+        } catch (err) {
+  Sentry.captureException(err);
+// controller already closed.
+        
+}
       };
 
       try {
@@ -85,9 +91,11 @@ export async function POST(req: NextRequest) {
         releaseConcurrency(ip);
         try {
           controller.close();
-        } catch {
-          // already closed
-        }
+        } catch (err) {
+  Sentry.captureException(err);
+// already closed
+        
+}
       }
     },
     cancel() {

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { trackEvent } from "@/lib/analytics";
 import { synthesizeSpeech } from "@/lib/tts";
 
 export async function POST(req: NextRequest) {
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
     if (text.length > 4000) {
       return NextResponse.json({ ok: false, error: "Text exceeds 4000 character limit." }, { status: 400 });
     }
+  trackEvent("default", "feature_used", { feature: "tts" });
     const result = await synthesizeSpeech({ text, voice, speed });
     return NextResponse.json({ ok: true, ...result });
   } catch {

@@ -1,4 +1,5 @@
 "use client";
+import * as Sentry from "@sentry/nextjs";
 
 // HistoryDrawer — slide-in panel from the right showing past sessions.
 // Replaces the old HistoryMode tab. Users click a session to load it.
@@ -69,9 +70,11 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
         const data = await res.json();
         setSessions(data.sessions || []);
       }
-    } catch {
-      /* ignore */
-    } finally {
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+} finally {
       setLoading(false);
     }
   }, []);
@@ -94,9 +97,11 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
         });
         onClose();
       }
-    } catch {
-      /* ignore */
-    } finally {
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+} finally {
       setLoadingId(null);
     }
   }
@@ -106,9 +111,11 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
     try {
       await fetch(`/api/sessions/${id}`, { method: "DELETE" });
       await loadList();
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
   }
 
   async function handleClearAll() {
@@ -116,9 +123,11 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
     try {
       await fetch("/api/sessions", { method: "DELETE" });
       await loadList();
-    } catch {
-      /* ignore */
-    }
+    } catch (err) {
+  if (process.env.NODE_ENV === "production") Sentry.captureException(err);
+/* ignore */
+    
+}
   }
 
   return (
