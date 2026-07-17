@@ -7,7 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, Square, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface ChatMessage {
@@ -30,7 +30,9 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const [followUp, setFollowUp] = React.useState("");
   const [error, setError] = React.useState("");
   const [tokens, setTokens] = React.useState(0);
+  const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
+  const abortRef = React.useRef<AbortController | null>(null);
 
   React.useEffect(() => {
     if (scrollRef.current) {
@@ -40,6 +42,9 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
 
   React.useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let fullResponse = "";
     (async () => {
       setStreaming(true);
       try {
@@ -47,6 +52,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: initialMessage, conversationId: initialConvId }),
+          signal: controller.signal,
         });
         if (!res.ok) {
           const data = await res.json().catch(() => ({}));
@@ -79,7 +85,10 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                   tokensUsed?: number; error?: string;
                 };
                 if (cancelled) return;
-                if (data.token) setStreamingResponse((r) => r + data.token);
+                if (data.token) {
+                  fullResponse += data.token;
+                  setStreamingResponse((r) => r + data.token);
+                }
                 if (data.done) {
                   if (data.conversationId) setConversationId(data.conversationId);
                   if (data.tokensUsed) setTokens(data.tokensUsed);
@@ -92,21 +101,33 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
           }
         }
       } catch (err) {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Request failed");
+        if (err instanceof DOMException && err.name === "AbortError") {
+          // User clicked stop — use whatever was streamed so far
+        } else if (!cancelled) {
+          setError(err instanceof Error ? err.message : "Request failed");
+        }
       } finally {
         if (!cancelled) {
           setStreaming(false);
           setMessages((prev) => [
             ...prev,
-            { role: "assistant", content: streamingResponse || "(empty response)" },
+            { role: "assistant", content: fullResponse || (streamingResponse || "(empty response)") },
           ]);
           setStreamingResponse("");
+          abortRef.current = null;
         }
       }
     })();
-    return () => { cancelled = true; };
+    return () => { cancelled = true; controller.abort(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function stopStreaming() {
+    if (abortRef.current) {
+      abortRef.current.abort();
+      abortRef.current = null;
+    }
+  }
 
   async function sendFollowUp() {
     if (!followUp.trim() || streaming) return;
@@ -116,11 +137,15 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setStreaming(true);
     setStreamingResponse("");
+    const controller = new AbortController();
+    abortRef.current = controller;
+    let fullResponse = "";
     try {
       const res = await fetch("/api/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: userMsg, conversationId }),
+        signal: controller.signal,
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -131,7 +156,6 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
-      let fullResponse = "";
       if (reader) {
         for (;;) {
           const { done, value } = await reader.read();
@@ -159,10 +183,26 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
       setMessages((prev) => [...prev, { role: "assistant", content: fullResponse || "(empty)" }]);
       setStreamingResponse("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Follow-up failed");
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // User clicked stop — use whatever was streamed so far
+        if (fullResponse) {
+          setMessages((prev) => [...prev, { role: "assistant", content: fullResponse }]);
+        }
+        setStreamingResponse("");
+      } else {
+        setError(err instanceof Error ? err.message : "Follow-up failed");
+      }
     } finally {
       setStreaming(false);
+      abortRef.current = null;
     }
+  }
+
+  function copyMessage(index: number, content: string) {
+    navigator.clipboard.writeText(content).then(() => {
+      setCopiedIndex(index);
+      setTimeout(() => setCopiedIndex(null), 2000);
+    });
   }
 
   const fullConversation = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
@@ -202,9 +242,23 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               </div>
             </div>
           ) : (
-            <div key={i} className="mb-6">
+            <div key={i} className="mb-6 group/msg">
+              {/* Assistant label — Claude shows "Claude" above first assistant message */}
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="font-sans text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Quaesitor</span>
+              </div>
               <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
                 <ReactMarkdown components={claudeMarkdownComponents}>{msg.content}</ReactMarkdown>
+              </div>
+              {/* Action bar — appears on hover (Claude pattern) */}
+              <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+                <button
+                  onClick={() => copyMessage(i, msg.content)}
+                  className="flex size-7 items-center justify-center rounded-md text-[#87867f] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+                  aria-label="Copy"
+                >
+                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#c96442]" /> : <Copy className="h-3.5 w-3.5" />}
+                </button>
               </div>
             </div>
           )
@@ -212,6 +266,9 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
 
         {streaming && streamingResponse && (
           <div className="mb-6">
+            <div className="flex items-center gap-2 mb-1.5">
+              <span className="font-sans text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Quaesitor</span>
+            </div>
             <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
               <ReactMarkdown components={claudeMarkdownComponents}>{streamingResponse}</ReactMarkdown>
               <span className="inline-block h-4 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
@@ -234,36 +291,45 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         </div>
       )}
 
-      {!streaming && (
-        <div className="mt-4">
-          <form className="flex items-center gap-2 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
-            <textarea
-              value={followUp}
-              onChange={(e) => setFollowUp(e.target.value)}
-              placeholder="Ask a follow-up..."
-              rows={1}
-              className="flex-1 resize-none bg-transparent border-0 font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] focus:outline-none placeholder:text-[#87867f] py-1 min-h-[24px] max-h-[100px]"
-              style={{ boxShadow: "none" }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  sendFollowUp();
-                }
-              }}
-            />
+      <div className="mt-4">
+        <form className="flex items-center gap-2 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
+          <textarea
+            value={followUp}
+            onChange={(e) => setFollowUp(e.target.value)}
+            placeholder="Ask a follow-up..."
+            rows={1}
+            className="flex-1 resize-none bg-transparent border-0 font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] focus:outline-none placeholder:text-[#87867f] py-1 min-h-[24px] max-h-[100px]"
+            style={{ boxShadow: "none" }}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                sendFollowUp();
+              }
+            }}
+          />
+          {streaming ? (
+            <button
+              onClick={(e) => { e.preventDefault(); stopStreaming(); }}
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#141413] dark:bg-[#faf9f5] text-[#faf9f5] dark:text-[#141413] hover:bg-[#3d3d3a] dark:hover:bg-[#e8e6dc] transition-colors"
+              aria-label="Stop generating"
+            >
+              <Square className="h-3.5 w-3.5 fill-current" />
+            </button>
+          ) : (
             <button
               onClick={(e) => { e.preventDefault(); sendFollowUp(); }}
-              disabled={!followUp.trim() || streaming}
+              disabled={!followUp.trim()}
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c96442] dark:bg-[#d97757] text-[#faf9f5] hover:bg-[#b5563a] dark:hover:bg-[#c6613f] disabled:opacity-30 transition-colors"
+              aria-label="Send"
             >
               <ArrowRight className="h-4 w-4" />
             </button>
-          </form>
-          {tokens > 0 && (
-            <p className="text-[10px] text-[#87867f] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
           )}
-        </div>
-      )}
+        </form>
+        {tokens > 0 && (
+          <p className="text-[10px] text-[#87867f] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
+        )}
+      </div>
     </motion.div>
   );
 

@@ -199,7 +199,10 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
         {error && <p className="text-xs text-[#c44848] mb-2">{error}</p>}
 
         {/* Composer — Claude structure: textarea on top, bottom toolbar (attach+mode left, send right) */}
-        <form className="flex w-full flex-col rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
+        <form
+          onSubmit={(e) => e.preventDefault()}
+          className="flex w-full flex-col rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors"
+        >
           {/* Active tool chips — shown above textarea when tools are selected */}
           {tools.length > 0 && (
             <div className="flex flex-wrap gap-1.5 mb-2">
@@ -228,7 +231,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
             </div>
           )}
 
-          {/* Textarea — transparent, serif, 16px */}
+          {/* Textarea — transparent, serif, 16px. Claude behavior: Enter sends, Shift+Enter newline. */}
           <textarea
             ref={textareaRef}
             value={text}
@@ -238,7 +241,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
             className="w-full resize-none bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] placeholder:text-[#87867f] min-h-[24px] max-h-[200px]"
             style={{ boxShadow: "none" }}
             onKeyDown={(e) => {
-              if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+              // Claude.ai behavior: Enter sends, Shift+Enter inserts newline.
+              if (e.key === "Enter" && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
                 e.preventDefault();
                 handleSend();
               }

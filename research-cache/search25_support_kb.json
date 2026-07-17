@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://support.claude.com/en/articles/14553413-claude-code-cheatsheet",
+    "name": "Claude Code cheatsheet",
+    "snippet": "Keyboard shortcuts ; Ctrl + C. Cancel the current input, or exit on an empty prompt. ; Ctrl + R. Reverse search through your prompt history. ; Ctrl ...",
+    "host_name": "support.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/12626668-use-quick-entry-with-claude-desktop-on-mac",
+    "name": "Use quick entry with Claude Desktop on Mac",
+    "snippet": "Enable the chat shortcut ... Once enabled, double-tapping Option will open a text box where you can type your message and start a new chat. You ...",
+    "host_name": "support.claude.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/10263469-use-claude-app-intents-shortcuts-and-widgets-on-ios",
+    "name": "Use Claude app intents, shortcuts, and widgets on iOS",
+    "snippet": "The Claude widget provides quick access to chat and voice features directly from your Home Screen or Today View. The widget includes buttons for ...",
+    "host_name": "support.claude.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14555877-claude-code-communications-kit",
+    "name": "Claude Code communications kit",
+    "snippet": "Keyboard shortcuts ⌨️ Tip: Five shortcuts that pay rent every day. Shift+Tab → cycle permission modes",
+    "host_name": "support.claude.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/10534883-use-the-claude-widget-on-android",
+    "name": "Use the Claude widget on Android",
+    "snippet": "The widget offers three quick-access buttons: A primary chat button (with Claude's spark icon) to start a new conversation",
+    "host_name": "support.claude.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/13345190-get-started-with-claude-cowork",
+    "name": "Get started with Claude Cowork",
+    "snippet": "On any surface, find the message box and select \"Cowork,\" then describe your task. To go back to a regular conversation, select \"Chat.\"",
+    "host_name": "support.claude.com",
+    "rank": 5,
+    "date": "Jul 14, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/9797557-usage-limit-best-practices",
+    "name": "Usage limit best practices | Claude Help Center",
+    "snippet": "Be specific and concise Provide clear, detailed instructions or questions in each message. Use phrases like \"As mentioned earlier\" to build on ... Missing: shortcuts | Show results with: shortcuts",
+    "host_name": "support.claude.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.google.com/chat/answer/7649271?hl=en&co=GENIE.Platform%3DDesktop",
+    "name": "Use Google Chat keyboard shortcuts - Computer",
+    "snippet": "To make the shortcuts “/,” “h then c,” “h then r,” and “q” available, enable keyboard shortcuts in the “?” dialog.",
+    "host_name": "support.google.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.google.com/chat/answer/7649271?hl=en&co=GENIE.Platform%3DAndroid",
+    "name": "Use Google Chat keyboard shortcuts - Android",
+    "snippet": "You can use keyboard shortcuts in Google Chat on Android, Chrome OS, macOS, and Windows. To access shortcuts in Chat, type ? anytime, except when you enter ...",
+    "host_name": "support.google.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=jBnK-Ca0K6I",
+    "name": "Google Chat Keyboard Shortcuts - YouTube",
+    "snippet": "Want to work faster in Google Chat? In this tutorial, you will learn the most useful keyboard shortcuts in Google Chat step by step.",
+    "host_name": "www.youtube.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -91,7 +91,6 @@ const EXAMPLES = [
 
 // ---------- Main component ----------
 export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a: Artifact | null) => void }) {
-  const t = useT();
   const [cards, setCards] = React.useState<CardEntry[]>([]);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
@@ -104,6 +103,14 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   } | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const textareaFocusRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // Time-based greeting (Claude.ai pattern: "Good morning/afternoon/evening")
+  const greeting = React.useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good morning";
+    if (hour < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
 
   // Auto-scroll to bottom when new cards are added.
   React.useEffect(() => {
@@ -221,10 +228,10 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
           {cards.length === 0 && !loadedSession && (
             <div className="flex grow flex-col items-center justify-center px-4 min-h-[60vh]">
               <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-5">
-                {/* Hero — centered, serif, with Sparkle */}
+                {/* Hero — centered, serif, with Sparkle. Time-based greeting (Claude pattern). */}
                 <h1 className="flex items-center justify-center gap-3 font-serif text-3xl text-[#141413] dark:text-[#faf9f5] sm:text-4xl">
                   <Sparkles className="fill-[#c96442] text-[#c96442] h-7 w-7" />
-                  {t("hello")}
+                  {greeting}
                 </h1>
 
                 {/* Composer */}

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1neaeff/press_enter_for_a_new_line_shiftctrlcmd_enter_to",
+    "name": "r/ClaudeAI on Reddit: Press Enter for a new line, Shift/Ctrl/Cmd + Enter to",
+    "snippet": "Enter → create a new line Shift / Ctrl / Cmd + Enter → send the prompt. OPTION+ENTER is the keyboard shortcut for newline. where enter sends ... Am I the only one sending half prompt by typing enter instead of shift+enter \"Enter\" key creating new line instead of sending message : r/ClaudeAI More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://code.claude.com/docs/en/keybindings",
+    "name": "Customize keyboard shortcuts - Claude Code Docs",
+    "snippet": "Customize keyboard shortcuts in Claude Code :submit to send a message or app:toggleTodos. Enter Submit message chat:newline Ctrl+J",
+    "host_name": "code.claude.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/coding-nexus/12-claude-shortcuts-that-cut-my-workflow-in-half-928550deb4ab",
+    "name": "12 Claude Shortcuts That Cut My Workflow in Half - Medium",
+    "snippet": "Shift+Enter — New Line Without Sending. Shift+Enter creates a new line and keeps your message in the input field until you're ready.",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/27465",
+    "name": "[BUG] Shift enter sends new message, instead of adding newline",
+    "snippet": "The keyboard input handling was changed so that Shift+Enter now triggers message submission (same as Enter) instead of inserting a newline ... Missing: shortcuts | Show results with: shortcuts",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/richardbray/why-shiftenter-doesnt-work-in-claude-code-and-how-to-fix-it-10f7",
+    "name": "Why Shift+Enter doesn't work in Claude Code (and how to fix it)",
+    "snippet": "Shift+Enter just submits your message. The fix is to enable a newer keyboard protocol that can distinguish between modified keys. The fix Step ...",
+    "host_name": "dev.to",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://explainx.ai/blog/claude-code-keyboard-shortcuts-complete-reference-2026",
+    "name": "Claude Code Keyboard Shortcuts: The Complete Reference (2026)",
+    "snippet": "Enter Submit your message Shift+Enter. Enter Send message Newline Shift+Enter Add line in prompt History Up / Down Arrow Navigate history ...",
+    "host_name": "explainx.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aiskill.market/blog/claude-code-keyboard-shortcuts",
+    "name": "Claude Code Keyboard Shortcuts: Speed Up Your Workflow 10x",
+    "snippet": "Shift+Enter, New line (don't submit) ; Enter, Submit message ; Ctrl+Enter, Submit message (alternative) ; Tab, Indent in multi-line mode.",
+    "host_name": "aiskill.market",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://linuru.com/documents/ai-power-users",
+    "name": "Keyboard Shortcuts for AI Power Users: Claude, ChatGPT & Cursor",
+    "snippet": "Enter to send, Shift + Enter for a new line, Cmd + K to search, Esc to stop ... The single most-used shortcut in any AI tool is sending a message. The ...",
+    "host_name": "linuru.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://x.com/hanakoxbt/article/2042242394557464896",
+    "name": "12 Claude Shortcuts That Slashed My Workflow in Half. Here's the Full List.",
+    "snippet": "Shift+Enter creates a new line. Your message stays in the input field until you actually press Enter alone. > accidental sends per day before learning this: 4-5.",
+    "host_name": "x.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/10635",
+    "name": "[FEATURE] Configurable Enter Key Behavior for Message Submission",
+    "snippet": "Currently, Claude Code uses the following keyboard shortcuts for chat input: Enter → Send message; Shift+Enter or Option+Enter → New line. This ...",
+    "host_name": "github.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

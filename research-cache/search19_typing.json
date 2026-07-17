@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/24587",
+    "name": "[BUG] [CRITICAL] Cursor invisible in input field - cannot see typing position",
+    "snippet": "The cursor/caret is invisible in the input field, making it impossible to see where you're typing. Cursor should be visible and blinking Text ... Missing: streaming | Show results with: streaming",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://be-curious-not-judgmental.com/2026/02/01/blinking-cursor-ai-agents",
+    "name": "The Blinking Cursor Returns: Finding My Childhood in the AI Agent Era",
+    "snippet": "There's a cursor blinking at me from my terminal. It started with Claude Code, Anthropic's command-line tool for delegating coding tasks. ... Missing: indicator caret response",
+    "host_name": "be-curious-not-judgmental.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1u8ize3/is_it_common_knowledge_that_claude_can_see_what",
+    "name": "Is it common knowledge that claude can see what you're typing before",
+    "snippet": "The consensus is this is normal behavior specifically for Claude's integration with IDEs like VS Code. The extension needs to see your unsent ... My cursor sprouts a Claude logo the moment Claude Code is waiting on ... Anyone else seeing screen flashes when using Claude Code? - Reddit More results from www.reddit.com Missing: indicator streaming caret blinking",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://yanivnoema.medium.com/why-i-stopped-typing-prompts-into-claude-code-99d7e0d35a36",
+    "name": "Why I Stopped Typing Prompts Into Claude Code | by Yaniv Noema",
+    "snippet": "Wherever your cursor is blinking, that is where your words appear. The definitive guide to agent skills that change how Claude Code, Cursor, ...",
+    "host_name": "yanivnoema.medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/46374",
+    "name": "Text cursor (blinking caret) invisible in light mode — can't see typing position",
+    "snippet": "The text input cursor (caret) is invisible when using Claude Code. This confirms the issue is in Claude Code's rendering, not the terminal ... Missing: streaming response",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://stackoverflow.com/questions/75886276/text-cursor-bug-in-my-chrome-browser-that-causes-the-blinking-cursor-to-appear-e",
+    "name": "Text cursor bug in my Chrome browser that causes the blinking",
+    "snippet": "There is an annoying bug in my chrome that causes a blinking cursor also known as \"the text cursor,\" or \"the insertion point\" to appear wherever I click.",
+    "host_name": "stackoverflow.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://code.claude.com/docs/en/changelog",
+    "name": "Claude Code changelog - Claude Code Docs",
+    "snippet": "Fixed the terminal freezing and keystrokes lagging while streaming responses containing very long lists, tables, paragraphs, or code blocks … cursor not ...",
+    "host_name": "code.claude.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/p/DaRZDPgmbC5",
+    "name": "How to Stop the Blinking Cursor (Text Caret | ) in #Zoom Docs and AI for",
+    "snippet": "Press H and you jump heading to heading. Then paste the answer right where your cursor is. AI voice typing in any app: troubleshooting help ...",
+    "host_name": "www.instagram.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/pulse/blinking-cursor-makes-non-technical-folks-feel-stupid-vikram-aditya-rscoc",
+    "name": "The blinking cursor that makes non-technical folks feel stupid",
+    "snippet": "A complete, honest, end to end, as-layman-as-it-can-be guide to Terminal for people who feel scared to experiment with AI as soon as they ... Missing: indicator caret",
+    "host_name": "www.linkedin.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.shadcn.io/text/typing-text",
+    "name": "Typing Text - shadcn.io",
+    "snippet": "The cursor blinks with GSAP animation and can be hidden during typing for different aesthetics. Built with GSAP for cursor animation and vanilla React state for ...",
+    "host_name": "www.shadcn.io",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

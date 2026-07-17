@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://support.claude.com/en/articles/9519177-how-can-i-create-and-manage-projects",
+    "name": "How can I create and manage projects? | Claude Help Center",
+    "snippet": "To add project instructions to your project knowledge base. Click on \"Set project instructions.\" Add instructions for how you'd like Claude to behave and ...",
+    "host_name": "support.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=gVsjjUIbE9k&vl=en",
+    "name": "Master Claude AI Projects: The Ultimate Custom  - YouTube",
+    "snippet": "Master Claude AI Projects: The Ultimate Custom Workspace & Knowledge Base Setup Guide for 2026! · Comments.",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://kaizenaiconsulting.com/how-to-use-claude-projects-custom-ai-knowledge-base-business",
+    "name": "How to Use Claude Projects to Build a Custom AI Knowledge Base for",
+    "snippet": "Claude Projects are saved workspaces inside Claude where you upload documents, add custom instructions once, and then reuse that setup across ...",
+    "host_name": "kaizenaiconsulting.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1erwe2r/this_is_how_i_am_using_claude_projects_since_many",
+    "name": "This is how I am using Claude projects. Since many people asked for tips",
+    "snippet": "Each chat has access to your Project Knowledge and follows your Custom Instructions, allowing them to provide tailored advice and solutions.",
+    "host_name": "www.reddit.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=GJ5jTgcbRHA",
+    "name": "Getting started with projects in Claude.ai - YouTube",
+    "snippet": "... Claude to organize your work with persistent context and custom ... first project, adding a knowledge base, setting up project instructions ...",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.graduateschool.edu/learn/ai/claude-project-setup",
+    "name": "Setting Up a Claude Project: Instructions, Files, and Persistent",
+    "snippet": "Custom instructions are the most important part of a project setup. They tell Claude who you are, what this project is about, and how you want ... Missing: base | Show results with: base",
+    "host_name": "www.graduateschool.edu",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.producingparadise.com/articles/the-claude-custom-instructions-i-use-with-a-copy-paste-template",
+    "name": "The Claude custom instructions I use (copy-paste template)",
+    "snippet": "Claude Projects adds a dedicated workspace with an uploaded knowledge base and its own instructions, separate from your global settings.",
+    "host_name": "www.producingparadise.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://freeacademy.ai/lessons/projects-and-custom-instructions",
+    "name": "Claude Projects and Custom Instructions - FreeAcademy.ai",
+    "snippet": "Step 1: Navigate to Projects. On claude.ai, click on Projects in the left sidebar. Then click Create Project. Step 2: Name and Describe Your Project.",
+    "host_name": "freeacademy.ai",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.anthropic.com/news/projects",
+    "name": "Collaborate with Claude on Projects - Anthropic",
+    "snippet": "Claude.ai Pro and Team users can now organize their chats into Projects, bringing together curated sets of knowledge and chat activity in one place.",
+    "host_name": "www.anthropic.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://sidsaladi.substack.com/p/claude-projects-and-artifacts-101",
+    "name": "Claude Projects & Artifacts 101: Build Custom AI Workspaces (60+",
+    "snippet": "Piece 1: Your Knowledge Base (The Files Section) This is where you upload all the files that Claude needs to know about for this specific ...",
+    "host_name": "sidsaladi.substack.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

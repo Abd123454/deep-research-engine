@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1sno7vi/enter_key_creating_new_line_instead_of_sending",
+    "name": "\"Enter\" key creating new line instead of sending message : r/ClaudeAI",
+    "snippet": "For me, forever when I click \"enter\" on the browser it makes a new line, i tested shift+enter, it does the same thing as enter does. I dont know ... Anthropic: Allow us to switch enter and shift-enter in Claude Web - Reddit In Claude Code anyone else annoyed that Option+Enter is the new line ... More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/2054",
+    "name": "Insert a new line with Enter key instead of sending a message #2054",
+    "snippet": "Currently we can only add new line with shift+enter by /terminal-setup command, but it does not support enter to add new line. React with 130 Missing: interface | Show results with: interface",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/richardbray/why-shiftenter-doesnt-work-in-claude-code-and-how-to-fix-it-10f7",
+    "name": "Why Shift+Enter doesn't work in Claude Code (and how to fix it)",
+    "snippet": "Claude Code does support a chat:newline action, but the reason Shift+Enter doesn't trigger it comes down to how your terminal handles key input. Missing: interface | Show results with: interface",
+    "host_name": "dev.to",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/54433",
+    "name": "[Feature Request] Option to disable Enter key sending messages (use",
+    "snippet": "Add a toggle in Settings that lets users choose their preferred send behavior: Enter = new line, Ctrl+Enter or Shift+Enter = send (new option)",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://code.claude.com/docs/en/terminal-config",
+    "name": "Configure your terminal for Claude Code",
+    "snippet": "Fix Shift+Enter for newlines, get a terminal bell when Claude finishes, configure tmux, match the color theme, and enable Vim mode in the Claude Code CLI.",
+    "host_name": "code.claude.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://connect.mozilla.org/t5/discussions/enter-key-doesn-t-send-messages-in-the-ai-chatbot-sidebar-please/td-p/131156",
+    "name": "Enter key doesn't send messages in the AI Chatbot sidebar",
+    "snippet": "Every other chat tool I use — Slack, Discord, even claude.ai and ChatGPT in a regular tab — lets me press Enter to send and Shift+Enter for a ... Missing: interface | Show results with: interface",
+    "host_name": "connect.mozilla.org",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://chromewebstore.google.com/detail/claude-enter-key-control/nncddajefaaobipknchbjmnadldajbdn?hl=en",
+    "name": "Claude Enter Key Control (by marusin) - Chrome Web Store",
+    "snippet": "Claude Enter Key Control is a browser extension that lets you use the Enter key to insert line breaks, just like in a regular text editor. Missing: interface | Show results with: interface",
+    "host_name": "chromewebstore.google.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=mkBN__bsCNQ",
+    "name": "How to Go to the Next Line in Claude AI Without Sending Your Message",
+    "snippet": "Quick guide on how to add a new line in Claude without accidentally sending your message. By default, pressing Enter sends the prompt — but ... Missing: interface key",
+    "host_name": "www.youtube.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/9321",
+    "name": "Shift+Enter Doesn't Insert Newline in CLI (Non-intuitive Key Binding) #9321",
+    "snippet": "What's Wrong? Pressing Shift+Enter does not insert a newline in the Claude Code CLI input. Instead, it outputs \"OM\" character(s). Missing: interface | Show results with: interface",
+    "host_name": "github.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://youtrack.jetbrains.com/projects/IJPL/issues/IJPL-221848/Make-ShiftEnter-insert-a-new-line-in-ClaudeCode",
+    "name": "Make Shift+Enter insert a new line in ClaudeCode - JetBrains YouTrack",
+    "snippet": "Shift+Enter now inserts a new line in Claude code session, making it easier to write multi-line prompts and commands directly in the Terminal. This behavior can ...",
+    "host_name": "youtrack.jetbrains.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

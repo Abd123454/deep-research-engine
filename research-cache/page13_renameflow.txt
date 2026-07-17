@@ -1,0 +1,1072 @@
+TITLE: How to rename a chat from the sidebar in Claude.ai
+URL: https://www.guideflow.com/tutorial/how-to-rename-a-chat-from-the-sidebar-in-claudeai
+
+How to rename a chat from the sidebar in Claude.ai - Guideflow Tutorials 
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ Products
+
+ Interactive demo
+ Showcase your product
+
+ Sandbox
+ Build your demo environment
+
+ Live demo
+ Replicate your product
+
+ Mobile demo
+ Your mobile product in action
+
+ 
+ 
+ Demo pages
+ Let prospects explore your product
+
+ Demo center
+ Adapt your sales pitch
+
+ Integrations
+ Integrated with the tools you love
+
+ 
+ 
+
+ Build for Enterprise
+ Everything you need to scale: SSO, admin management, security
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Features
+
+ EASY
+ 
+ Capture
+
+ Capture demos in seconds
+
+ 
+ Edit
+
+ Customize your demos
+
+ 
+ 
+ 
+ 
+ 
+ 
+ Personalize
+
+ Powerful no-code editor
+
+ 
+ Share
+
+ With everyone, anywhere
+
+ 
+ 
+ PEASY
+ 
+ 
+ 
+ Analyze
+
+ Detailed engagement data
+
+ 
+ AI
+
+ Your demo under AI-steroids
+
+ 
+ Collaborate
+
+ With your entire team
+
+ 
+ Integrate
+
+ Connect to your stack
+
+ 
+ 
+
+ +3000 integrations
+ Discover our integrations with all your favorite tools
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Solutions
+
+ DEMO
+ 
+ 
+ 
+ Product Marketing
+
+ Boost product adoption at scale
+
+ 
+ Pre-Sales
+
+ Craft & customize demos in minutes
+
+ 
+ Sales
+
+ Close more deals, get more sales
+
+ 
+ 
+ GUIDE
+ 
+ Customer Success
+
+ Reduce tickets & boost user retention
+
+ 
+ Partnerships
+
+ Engage & nurture your partners
+
+ 
+ Training & enablement
+
+ Reduce tickets & boost user retention
+
+ 
+ 
+ Security & compliance
+ Enterprise-grade security & privacy rules
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Use cases
+
+ USE CASES
+ 
+ 
+ 
+ 
+ Customer Stories
+
+ See how our customers use Guideflow
+
+ 
+ 
+ 
+ 
+ Demo Showcase
+
+ Get inspiration from other brands
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Sharing 101
+
+ Discover where & how to share demos
+
+ 
+ Tutorials
+
+ Interactive guides & tutorials
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ +20% signup
+ Colin - Growth Marketing
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ We use it everywhere
+ Henri - Project manager
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ +150 demos created
+ Jordan - Product Marketing
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Killer for documentation
+ Oceane - Head of Documentation
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Games changing for Demo
+ Sarah - Head of Sales
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ x3 Closing rate
+ Brian - Solution Engineer
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Our PLG secret weapon
+ Benjamin - CEO
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ x5 velocity to sign deals
+ Marc - COO
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ Resources
+
+ RESOURCES
+ 
+ 
+ 
+ Knowledge base
+
+ Find answer to your questions
+
+ 
+ 
+ 
+ Changelog
+
+ What’s new
+
+ 
+ Partner program
+
+ Become a partner
+
+ 
+ 
+ 
+ Blog & articles
+
+ Everything about interactive demos
+
+ 
+ 
+ 
+ 
+ Book an expert session
+
+ We will be happy to advise you
+
+ 
+ 
+ COMPANY
+ 
+ 
+ 
+ 
+ About us
+
+ Learn more about us
+
+ 
+ 
+ 
+ 
+ Security & Compliance
+
+ Enterprise-grade security level
+
+ 
+ 
+ 
+ Careers
+
+ Join the team
+
+ 
+ Press kit
+
+ Everything you need about us
+
+ 
+ 
+ 
+ 
+ 
+ 
+ Some custom needs?
+
+ Our team is here to help you
+
+ 
+ Download
+ Chrome extension, Figma plugin, Windows & MacOS app
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ Pricing Let's talk
+ Get started
+ 
+ 
+ 
+ 
+ 
+ 
+
+ Talk to us
+ Start for free
+ 
+ 
+ 
+
+ 
+ 
+ Claude
+ Claude is an AI assistant that helps users write, analyze information, and solve problems through natural language conversations.
+
+ 
+ Website
+ claude.ai
+
+ 
+ Industry
+ Marketing
+
+ 
+ Linkedin
+ linkedin.com/
+ Claude
+ 
+
+ Share this article:
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ Tutorials 
+ 
+ 
+ Claude 
+ How to rename a chat from the sidebar in Claude.ai
+
+ 
+
+ Here is how to rename a chat from the sidebar in claude.ai
+ First locate the chat you want to rename in the left sidebar
+
+ Hover and click on the three-dot menu button next to the chat name
+
+ Next select the "Rename" option from the dropdown menu
+
+ Then enter the new name for the chat in the "Rename chat" dialog box
+
+ Finally click on the "Save" button to confirm the chat rename
+ 
+ Create your own interactive guide with Guideflow
+ 
+ 
+ 
+ Why should you rename a chat from the sidebar in Claude.ai
+ Claude.ai is a powerful AI assistant designed to enhance productivity through seamless interaction.
+
+ Renaming a chat from the sidebar in Claude.ai is a simple yet efficient feature that helps in organizing your conversations.
+
+ This tool allows users to quickly identify and access their desired discussions without confusion, thereby streamlining workflow.
+
+ By clearly labeling each chat, you ensure an intuitive and personalized workspace that caters to your unique needs, optimizing overall user experience.
+
+ Last update
+ March 4, 2026
+
+ Tutorials
+
+ Built to impress
+ Why leading companies build with Guideflow
+
+ More tutorials
+ 
+ 
+ 
+ 
+
+ 
+
+ How to update your work role in your Claude.ai profile
+ How to update your work role in your Claude.ai profile
+
+ 
+
+ 
+ 
+
+ 
+
+ How to select the learning preset style in a chat in Claude.ai
+ How to select the learning preset style in a chat in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to enable web search in a chat in Claude.ai
+ How to enable web search in a chat in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to sort projects by activity in Claude.ai
+ How to sort projects by activity in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to delete a project in Claude.ai
+ How to delete a project in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to delete multiple conversations at once in Claude.ai
+ How to delete multiple conversations at once in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to unstar a chat from the sidebar in Claude.ai
+ How to unstar a chat from the sidebar in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to make a shared chat private in Claude.ai
+ How to make a shared chat private in Claude.ai
+
+ 
+
+ 
+ 
+
+ 
+
+ How to view version history of an artifact in Claude.ai
+ How to view version history of an artifact in Claude.ai
+
+ 
+
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+ 
+ 
+
+ 
+
+ Create your first demo in less than  30 seconds.
+ Get started now
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+
+ Made in Paris & San Francisco.
+
+ 
+ 
+ 
+ 
+ 
+ 
+
+ Features
+ Capture 
+ Edit 
+ Personalize 
+ Share 
+ Analyze 
+ AI 
+ Collaborate 
+ Integrate 
+ 
+ Product
+ Interactive demo 
+ Demo page 
+ Demo center 
+ Sandbox 
+ Live demo 
+ Mobile demo 
+ 
+ Platform
+ What's new 
+ Security & Privacy 
+ Chrome extension 
+ Status page 
+ Trust center 
+ Integrations 
+ Pricing 
+ 
+ Company
+ About us 
+ Careers 
+ Demo showcase 
+ Tutorials 
+ Enterprise-ready 
+ Partner program 
+ Join our community 
+ Data Management 
+ 
+ 
+ Resources
+ Blog 
+ Press Kit 
+ Customer stories 
+ Knowledge base 
+ Download 
+ 
+
+ 
+ Guideflow.com - 2025
+ 
+ Privacy policy    Terms & Conditions

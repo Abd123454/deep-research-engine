@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.reddit.com/r/ClaudeCode/comments/1t85vx1/opensource_tool_that_turns_one_thumbsdown_into_a",
+    "name": "Open-source tool that turns one thumbs-down into a permanent pre",
+    "snippet": "Open-source tool that turns one thumbs-down into a permanent pre-action block for repeat AI agent mistakes (local-first, works with Claude Code ... Do the little thumb up and thumb down buttons actually do anything? Is there a way to send feedback (thumbs up/down) from an API ... More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://hannahstulberg.substack.com/p/claude-code-for-everything-30-claude-code-tips-and-tricks",
+    "name": "30 Claude Code Tips and Tricks (After 1,500+ Hours of Use)",
+    "snippet": "Text Claude from anywhere with Claude Code Channels: Set up the Telegram or Discord plugin and you can message a running laptop session by chat. Missing: regenerate | Show results with: regenerate",
+    "host_name": "hannahstulberg.substack.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.guideflow.com/tutorial/how-to-regenerate-a-response-in-a-chat-in-claudeai",
+    "name": "How to regenerate a response in a chat in Claude.ai - Guideflow",
+    "snippet": "First open the chat containing the response you want to regenerate · Hover over your original prompt and click the \"Retry\" icon · Alternatively, ...",
+    "host_name": "www.guideflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/4569",
+    "name": "Feature Request: Add thumbs up/down feedback command #4569",
+    "snippet": "Add simple thumbs up/down feedback command to Claude Code, This would allow users to quickly provide both positive and negative feedback on  ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=OL7H9DBzj-U",
+    "name": "10 NEW Hidden Claude Features You Didn't Know Existed (use",
+    "snippet": "This video shows you 10 new hidden Claude features and to slack, automat tasks with claude, create social media content with Claude or more ...",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://community.openai.com/t/thumbs-down-feedback-and-automatic-regeneration-counts-against-gpt-4-use-limit-discouraging-use/341556",
+    "name": "\"Thumbs-Down\" feedback and automatic regeneration counts",
+    "snippet": "Whenever I provide negative feedback by clicking on the “thumbs-down” button, not only does GPT-4 automatically generate a new message side-by-side with the ...",
+    "host_name": "community.openai.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://generativeai.pub/mind-reading-claude-ais-complete-system-prompt-bb498276fe3d",
+    "name": "Mind-reading Claude AI's Complete System Prompt - Generative AI",
+    "snippet": "Claude can respond normally but can also let the person know that they can press the 'thumbs down' button below any of Claude's responses to ...",
+    "host_name": "generativeai.pub",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/61590551554663/videos/ran-out-of-claude-messages-mid-build-again-its-not-really-a-message-cap-its-toke/851824370875008",
+    "name": "ran out of claude messages mid-build again? it's not  - Facebook",
+    "snippet": "1️⃣ edit, don't reply again hit the pencil and rewrite your message instead of sending a follow-up. editing regenerates clean. a new reply makes ...",
+    "host_name": "www.facebook.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.instagram.com/reel/DWgiNAQkrov",
+    "name": "AI Hand Gesture Movements #aicoding #handgestures  - Instagram",
+    "snippet": "I trained a real-time AI system using Python, OpenCV, and Computer Vision to detect a Finger Heart gesture and instantly generate floating ...",
+    "host_name": "www.instagram.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://academy.techpresso.co/prompts/claude-prompts-design",
+    "name": "35 Best Claude Prompts for Design (2026) - AI Academy",
+    "snippet": "35 copy-paste Claude AI prompts for UI/UX design, brand systems, design critiques, wireframing, accessibility & design tokens.",
+    "host_name": "academy.techpresso.co",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

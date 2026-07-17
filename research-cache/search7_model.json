@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://platform.claude.com/docs/en/about-claude/models/choosing-a-model",
+    "name": "Choosing the right model - Claude Platform Docs",
+    "snippet": "Selecting the optimal Claude model for your application involves balancing three key considerations: capabilities, speed, and cost. This guide helps you ... Missing: 3.5 | Show results with: 3.5",
+    "host_name": "platform.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.sitepoint.com/claude-model-selection-framework",
+    "name": "Claude Model Selection Guide | Sonnet vs Opus vs Haiku - SitePoint",
+    "snippet": "This article provides a systematic decision framework for selecting between Claude 3.5 Haiku, Claude 3.5 Sonnet, and Claude 3 Opus based on four ... Missing: picker | Show results with: picker",
+    "host_name": "www.sitepoint.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.anthropic.com/news/claude-3-5-sonnet",
+    "name": "Introducing Claude 3.5 Sonnet - Anthropic",
+    "snippet": "Claude 3.5 Sonnet raises the industry bar for intelligence, outperforming competitor models and Claude 3 Opus on a wide range of evaluations. Missing: selector picker",
+    "host_name": "www.anthropic.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/shorts/93stSh29xnA",
+    "name": "Which Claude model to use? Opus vs Sonnet vs Haiku  - YouTube",
+    "snippet": "claudeai #claude #claudesonnet #claudeopus #claudehaiku Choosing between Claude 3 models: Opus vs Sonnet vs Haiku. Missing: selector 3.5 picker",
+    "host_name": "www.youtube.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.designveloper.com/blog/best-claude-model",
+    "name": "Best Claude Model In 2026: How to Choose The Right One?",
+    "snippet": "Compare Claude Opus 4.8, Sonnet 4.6, Haiku 4.5, and older Claude models to choose the best option for coding, writing, workflows, and more. Missing: picker | Show results with: picker",
+    "host_name": "www.designveloper.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.agentx.so/post/understand-claude3-5-sonnet-3-7-opus",
+    "name": "Between Claude 3.5 Haiku, 3.7 Sonnet, and 3 Opus - AgentX AI",
+    "snippet": "Claude 3.5 Haiku: The fastest and most lightweight model, ideal for real-time applications where response time is critical. Missing: selector picker",
+    "host_name": "www.agentx.so",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://datrick.com/claude-models-comparison",
+    "name": "Claude Models Compared: Fable, Opus, Sonnet & Haiku - Datrick",
+    "snippet": "Compare Claude Fable 5, Opus 4.8, Sonnet 5, and Haiku 4.5 by pricing, context, speed, reasoning, agents, coding, and production use case.",
+    "host_name": "datrick.com",
+    "rank": 6,
+    "date": "Jul 16, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://daily.dev/posts/claude-model-selection-guide-pjwnkk9or",
+    "name": "Claude Model Selection Guide | daily.dev",
+    "snippet": "A systematic decision framework for selecting between Claude 3.5 Haiku, Claude 3.5 Sonnet, and Claude 3 Opus across four dimensions: task ...",
+    "host_name": "daily.dev",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.secondtalent.com/resources/every-claude-ai-model-explained-compared",
+    "name": "Every Claude AI Model Compared & Explained (Jul, 2026) | Second Talent",
+    "snippet": "Claude has four tiers in 2026: Haiku, Sonnet, Opus, and Fable 5. Compare prices, context windows, and which model to use, in 10 minutes. Missing: selector | Show results with: selector",
+    "host_name": "www.secondtalent.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/codex/claude-models-explained-opus-vs-sonnet-vs-haiku-and-how-to-switch-them-22d52e529c9c",
+    "name": "Claude Models Explained: Opus vs Sonnet vs Haiku (And How to",
+    "snippet": "A simple, practical guide to choosing the right Claude model and switching it easily in Claude Code CLI. Hemanth Raju Koneti.",
+    "host_name": "medium.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

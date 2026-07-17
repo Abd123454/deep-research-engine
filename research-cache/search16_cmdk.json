@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://code.claude.com/docs/en/keybindings",
+    "name": "Customize keyboard shortcuts - Claude Code Docs",
+    "snippet": "Customize keyboard shortcuts in Claude Code :copy Ctrl+Shift+C / Cmd+C … use ctrl ctrl+k Ctrl + K shift+tab Shift + Tab meta+p Option + P on macOS, Alt + P ... Missing: slash | Show results with: slash",
+    "host_name": "code.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://claudedirectory.org/blog/claude-code-cheat-sheet",
+    "name": "Claude Code Cheat Sheet: Every Command, Shortcut, and Slash",
+    "snippet": "Every slash command, keyboard shortcut, This is the complete Claude Code reference. Search it with Ctrl/Cmd+F. Shortcut Action Enter Submit the ... Missing: K | Show results with: K",
+    "host_name": "claudedirectory.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeCode/comments/1tsb3y5/the_claude_code_shortcuts_most_people_never",
+    "name": "The Claude Code shortcuts most people never discover (all verified",
+    "snippet": "The ones that actually changed my workflow: Esc Esc to rewind code+chat to an earlier point, Ctrl+B to background a long command instead of ...",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blakecrosley.com/guides/claude-code-cheatsheet",
+    "name": "Claude Code Cheat Sheet 2026: Shortcuts, Commands & Flags",
+    "snippet": "Paste image from clipboard ; Ctrl+B · Background current operation ; Ctrl+X Ctrl+K · Stop all agents (changed from Ctrl+F in v2.1.83).",
+    "host_name": "blakecrosley.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://x.com/hanakoxbt/article/2042242394557464896",
+    "name": "12 Claude Shortcuts That Slashed My Workflow in Half. Here's the",
+    "snippet": "1. Cmd+K / Ctrl+K — Start New Chat · 2. Arrow Up (↑) — Edit Last Message · 3. Cmd+. / ... Missing: slash | Show results with: slash",
+    "host_name": "x.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/luongnv89/claude-howto/blob/main/01-slash-commands/README.md",
+    "name": "claude-howto/01-slash-commands/README.md at main - GitHub",
+    "snippet": "Slash commands are shortcuts that control Claude's behavior during an interactive session. Both create /command-name shortcuts. for common ...",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "Jul 11, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/881330171044518/posts/1042119811632219",
+    "name": "Claude Code keyboard shortcuts and slash commands guide 2026",
+    "snippet": "Shortcuts every shortcut, slash command, context. Control Ctrl+c deing EOF) pauses /init sends Slash Commands Core. Prompt Editing Ctri+A picks ... Missing: Cmd menu",
+    "host_name": "www.facebook.com",
+    "rank": 6,
+    "date": "Jul 16, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://thomaskidu.medium.com/claude-shortcuts-that-actually-save-you-time-web-desktop-and-claude-code-f272020c3bc4",
+    "name": "You're Using Claude Wrong: The Shortcut Layer Nobody Talks About",
+    "snippet": "On both Web and Desktop, you can type / at the start of any message field to pull up a command menu. This is how you access saved slash commands ...",
+    "host_name": "thomaskidu.medium.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/charlie-hills_you-are-using-claude-code-the-slow-way-activity-7474763135380430848--49_",
+    "name": "53 Claude Code Shortcuts for Faster Productivity - LinkedIn",
+    "snippet": "Edit Your Prompt Ctrl+A / Ctrl+E - start or end of line Option + arrows - jump word by word Ctrl+W - delete the last word Ctrl+K - delete to end ... Missing: slash quick",
+    "host_name": "www.linkedin.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://eliteaiadvantage.com/blog/claude-keyboard-shortcuts-slash-commands",
+    "name": "How to Use Claude Keyboard Shortcuts and Slash Commands",
+    "snippet": "Cmd/Ctrl + K: Opens the quick navigation menu to jump between chats, projects, or search your conversation history. This is your most-used ...",
+    "host_name": "eliteaiadvantage.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

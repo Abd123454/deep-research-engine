@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://claude.ai/settings",
+    "name": "Claude.ai Settings",
+    "snippet": "Learn why Missing: profile UI",
+    "host_name": "claude.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://johnnybilotta.com/post/claude-profile-settings-guide",
+    "name": "How to Use Claude's Profile Settings to Get Better Responses Every Time",
+    "snippet": "Finding the settings is straightforward: click your initials in the lower-left corner of Claude.ai, select Settings, then General. There you ... Missing: UI | Show results with: UI",
+    "host_name": "johnnybilotta.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=TjrB5pej0uQ",
+    "name": "The Most Important Step in Claude AI Setup | Personal Preferences",
+    "snippet": "... setting up an architectural firm's Claude Pro account. You'll learn the difference between profile preferences and project instructions, and ... Missing: UI | Show results with: UI",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1rpv7fp/optimal_use_of_personal_preferences_how_can_i",
+    "name": "Optimal use of Personal Preferences - how can I improve my instructions?",
+    "snippet": "I love using Claude however I find it mostly ignores the instructions I provide in the Personal Preferences action within Settings. Missing: UI | Show results with: UI",
+    "host_name": "www.reddit.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/10185728-understanding-claude-s-personalization-features",
+    "name": "Understanding Claude's personalization features",
+    "snippet": "Claude offers several ways to personalize your experience: profile instructions, project instructions, and styles.",
+    "host_name": "support.claude.com",
+    "rank": 4,
+    "date": "Jul 10, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=O3pRpCUsPTE",
+    "name": "Claude Settings From Scratch: How To Set Up Claude Properly - YouTube",
+    "snippet": "Before you start using Claude AI, you need to configure your account settings ... preferences to notification controls and account security ... Missing: UI | Show results with: UI",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/codarney_everyone-uses-ai-a-little-differently-just-activity-7417234268063477760-Xkto",
+    "name": "Customize Claude's AI Preferences for Personalized Results - LinkedIn",
+    "snippet": "In the General Settings section, you'll see a text area for your personal preferences. What should you put in? That all depends on how you use ...",
+    "host_name": "www.linkedin.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.aiuxplayground.com/gallery/claude-settings",
+    "name": "Claude AI UX Case Study - Settings",
+    "snippet": "Claude offers a comprehensive settings interface with a strong focus on AI personalization, allowing users to customize their profile, work context, personal ... Missing: UI | Show results with: UI",
+    "host_name": "www.aiuxplayground.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://university.forwardfuture.ai/lessons/getting-started-with-claude-setup-first-steps",
+    "name": "Getting Started with Claude AI | Setup Guide & First Steps",
+    "snippet": "Account Settings Access your account settings through the menu in the top-right corner. Display preferences Access help and support",
+    "host_name": "university.forwardfuture.ai",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@jelmar_10xbetter.ai/general-preferences-the-overlooked-power-tool-in-claude-b3b2c74c4dc8",
+    "name": "General Preferences: The Overlooked Power Tool in Claude - Medium",
+    "snippet": "General personal preferences, found under Settings, affect every conversation you have with Claude. This cross-conversation influence makes them both powerful ...",
+    "host_name": "medium.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

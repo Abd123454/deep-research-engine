@@ -1,0 +1,138 @@
+TITLE: Settings · Claude AI UX Case Study | AI UX Playground
+URL: https://www.aiuxplayground.com/gallery/claude-settings
+
+Settings · Claude AI UX Case Study | AI UX Playground 
+ 
+ 
+ 
+ 
+
+ Home Learn 
+ Build 
+ Get inspired 
+
+ Newsletter Subscribe 
+
+ Home Screenshot gallery Settings Claude 
+ Settings
+ Claude offers a comprehensive settings interface with a strong focus on AI personalization, allowing users to customize their profile, work context, personal preferences, appearance (including dyslexic-friendly fonts), and notification controls.
+ 
+ Claude profile dropdown menu showing Settings entry point with keyboard shortcut (⌘+Ctrl+,), along with Language, Help, Upgrade, and account management options
+ 1 / 2
+
+ 
+
+ What's happening
+ Claude emphasizes AI personalization as a core settings feature, providing a dedicated "Profile" section where users can describe their work and personal preferences in natural language. This enables Claude to tailor responses to individual user contexts, going beyond basic settings to true AI customization.
+
+ Patterns
+ AI Personality Customization Free-form text areas for users to describe work context and personal preferences that Claude considers in all responses
+
+ Open playground 
+
+ Organized categories including Privacy, Billing, Capabilities, Connectors, and Account controls
+
+ UX Insights
+ • Natural language preference setting rather than checkboxes makes customization more expressive 
+ • Profile asks "What should Claude call you?" and "What best describes your work?" to establish context 
+ • Personal preferences field explicitly states it applies to "all conversations, within Anthropic's guidelines" 
+ • Accessibility prioritized with dyslexic-friendly font option alongside standard choices 
+ • Visual previews for color modes (Light/Auto/Dark) reduce cognitive load 
+ • Response completion notifications acknowledge long-running tasks (tool calls, Research) 
+ • Keyboard shortcut (⌘+Ctrl+,) prominently displayed for power users 
+ • Settings organized into 8 clear categories (General, Account, Privacy, Billing, Capabilities, Connectors, Claude Code, Account) 
+ 
+ Design Decisions
+ Claude treats personalization as a first-class feature by surfacing it prominently in settings. Rather than expecting users to adjust AI behavior through system prompts or per-message instructions, Claude lets users define their context once in natural language. This approach positions Claude as a personalized assistant that understands user context across all interactions, while still maintaining Anthropic's guidelines and safety standards.
+
+ More case studies
+ 
+ ChatGPT 
+ Settings
+ ChatGPT presents settings through a centered modal interface with extensive controls for appearance, voice customization, data management, and parental controls, emphasizing both personalization and safety features.
+
+ 
+ ChatGPT 
+ Personalization & memory
+ ChatGPT separates AI behavior customization from technical settings. Users pick named tone presets, fine-tune characteristics, declare profile fields, and manage inferred memories with search, deprioritize, and version restore.
+
+ 
+ Google Gemini 
+ Settings
+ Gemini presents settings as a left sidebar menu with categories for activity tracking, personal context, connected apps, scheduling, theming, subscription management, and ecosystem integrations like NotebookLM.
+
+ 
+ Grok 
+ Personalization
+ Grok provides personalization settings that allow users to customize their AI experience, including conversation preferences, response style, and contextual behavior settings.
+
+ 
+
+ Captured: December 29, 2025 Type: desktop settings privacy customization personalization accessibility data-control 
+
+ 
+ More real-world AI UX in your inbox
+ Weekly gallery picks, interface patterns, and notes on how products ship AI - no spam, unsubscribe anytime.
+
+ Subscribe on Substack 
+
+ AI UX Playground Patterns, frameworks, teardowns, prompts, skills, and vibe-coded inspiration for AI product design.
+
+ Subscribe to newsletter Follow on LinkedIn 
+
+ Learn
+ Teardowns Case studies of how shipped AI products solve UX problems
+
+ Patterns Interactive UX patterns for chat and agentic AI
+
+ Frameworks Mental models for designing AI experiences
+
+ Glossary Plain-English AI terms for UX designers and product teams
+
+ Guides Tutorials, deep dives, and industry takes
+
+ 
+ Build
+ Prompts Copy-ready prompts for design workflows
+
+ Workflows Multi-step playbooks for design sprints
+
+ Skills Agent skills for Cursor and Claude
+
+ 
+ Teardowns
+ All teardowns 
+ input bar, tools & voice design 
+ model picker, skills & attachments 
+ tabs, follow-ups & export 
+ tools, Drive & thinking modes 
+ 
+ Prompts
+ UX design 
+ Visual design 
+ Product 
+ Research 
+ Content 
+ Career 
+ 
+ Skills
+ All skills 
+ UX Design 
+ Product 
+ Engineering 
+ Visual Design 
+ Brand 
+ Design Systems 
+ Accessibility 
+ Content 
+ Marketing 
+ Career 
+ 
+
+ © 2026 AI UX Playground.
+ Dark mode 
+
+ 
+
+ 
+ Feedback

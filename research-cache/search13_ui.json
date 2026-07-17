@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.anthropic.com/news/claude-design-anthropic-labs",
+    "name": "Introducing Claude Design by Anthropic Labs",
+    "snippet": "Today, we're launching Claude Design, a new Anthropic Labs product that lets you collaborate with Claude to create polished visual work like ...",
+    "host_name": "www.anthropic.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14604416-get-started-with-claude-design",
+    "name": "Get started with Claude Design",
+    "snippet": "Screenshots, images, or existing assets: Upload screenshots of existing designs, competitor products, wireframes, or visual inspiration.",
+    "host_name": "support.claude.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1spxi2f/claude_design_is_incredible",
+    "name": "Claude Design is Incredible : r/ClaudeAI - Reddit",
+    "snippet": "You should feed the screenshots TO the design system. Provide a strict design system with your own colors, fonts, and components. deleteing UI ... How do UI designers use Claude for design workflows? : r/UXDesign Claude Design just launched, this one looks interesting : r/ClaudeAI More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://naimur-reza.vercel.app/blog/claude-design-launch-how-its-changing-ui-ux",
+    "name": "Claude Just Launched a New Design Tool—Here's How It Changes",
+    "snippet": "Anthropic just launched Claude Design, a new AI‑powered product that turns simple prompts into full‑blown UIs, landing pages, marketing decks, ...",
+    "host_name": "naimur-reza.vercel.app",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ai.plainenglish.io/how-claudes-new-generative-ui-works-and-how-to-build-it-yourself-99b3170c346b",
+    "name": "How Claude's New Generative UI Works (And How to Build It Yourself)",
+    "snippet": "Claude introduced something called Generative UI. It builds the interface itself. Not screenshots.",
+    "host_name": "ai.plainenglish.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mindstudio.ai/blog/build-design-system-claude-design-no-ai-aesthetics",
+    "name": "How to Build a Design System in Claude Design That Doesn't Look",
+    "snippet": "Claude Design defaults to generic AI aesthetics. Here's how to build a real design system using reference screenshots, Skill UI, and the Taste ...",
+    "host_name": "www.mindstudio.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.muz.li/i-designed-and-built-a-ui-using-only-claude-ai-no-figma-no-code-almost-be45194b76ef",
+    "name": "I Designed and Built a UI Using Only Claude AI — No Figma, No",
+    "snippet": "Screenshot of the first version of the EchoJournal AI journaling app UI created solely with Claude. No layers. No alignment struggles. Missing: 2024 | Show results with: 2024",
+    "host_name": "medium.muz.li",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=VtD-KTeyxaU",
+    "name": "Claude Design Just Changed Everything (New Update) - YouTube",
+    "snippet": "... ai/griffin-wooldridge 00:00 – Intro 00:40 – Overview 02:00 – design ... Claude Design Just Changed Everything (New Update). Missing: 2024 sidebar components screenshot",
+    "host_name": "www.youtube.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://designerup.co/blog/how-to-use-claude-design-for-ux-ui",
+    "name": "How to Use Claude Design for UX/UI - DesignerUp",
+    "snippet": "Here's what you need to know to start using Claude Design for UX/UI and Product Design Work. Missing: 2024 sidebar",
+    "host_name": "designerup.co",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/design-bootcamp/claude-design-is-here-full-breakdown-a32767258fb9",
+    "name": "Claude Design is Here: Full Breakdown | by Victoria Okwuokenye",
+    "snippet": "So what is Claude Design? Claude Design is an interface generator powered by AI. · How it actually works in practice · Where it genuinely helps.",
+    "host_name": "medium.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

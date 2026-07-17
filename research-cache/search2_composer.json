@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://ssahuupgrad-93226.medium.com/how-stop-button-works-in-conversational-ai-fd8ce984be2d",
+    "name": "How STOP button works in Conversational AI - Shuchismita Sahu",
+    "snippet": "The moment the client disconnects, the server-side stream writer gets a broken pipe signal and the inference worker can be signalled to halt. Missing: behavior | Show results with: behavior",
+    "host_name": "ssahuupgrad-93226.medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/nexu-io/open-design/issues/446",
+    "name": "feat(web): allow composing follow-up messages while a run is in flight",
+    "snippet": "Add the ability to compose and queue a follow-up message while a Claude run is still streaming. Today the chat input is locked during a run — ...",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1izwro0/lets_talk_about_claudes_stop_button",
+    "name": "Let's talk about Claude's \"stop\" button. : r/ClaudeAI - Reddit",
+    "snippet": "The stop button never did work in the most useful way. It seems to stop only the current output at that moment, if Claude was going to say something else, it ... Claude finally has a stop generating button! : r/ClaudeAI - Reddit Is there an option for 'Enter' to not send message in web interface? More results from www.reddit.com Missing: composer behavior streaming",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/claudecommunity/posts/1042779014929430",
+    "name": "Claude needs a stop button like ChatGPT - Facebook",
+    "snippet": "Claude doesn't have a stop button to halt the execution of chat responses, like chatGPT does. It often performs many unnecessary or unwanted ... Claude AI chatbot continuous bug-like responses issue How to make Claude stay relatively silent while working? More results from www.facebook.com Missing: composer streaming",
+    "host_name": "www.facebook.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/handle-streaming-refusals",
+    "name": "Handle streaming refusals - Claude Platform Docs",
+    "snippet": "This page covers how refusals appear in streaming responses. For every stop_reason value and how to handle it, see Stop reasons and fallback. To retry refused ... Missing: button",
+    "host_name": "platform.claude.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.guvi.in/blog/how-to-stream-claude-responses",
+    "name": "How to Stream Claude Responses with the API - HCL GUVI",
+    "snippet": "By enabling “stream”: true and handling Server-Sent Events (SSE), you can display responses in real time, improving the experience for users.",
+    "host_name": "www.guvi.in",
+    "rank": 5,
+    "date": "Jul 15, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.tomsguide.com/ai/you-can-finally-make-claude-3-shut-up-anthropic-adds-stop-button-to-its-chatbot",
+    "name": "You can finally make Claude 3 shut up — Anthropic adds stop button to its",
+    "snippet": "Users can now stop Claude 3 in its tracks when the chatbot starts droning on. Claude 3 AI chatbot will now offer a \"stop generating\" option to ... Missing: behavior | Show results with: behavior",
+    "host_name": "www.tomsguide.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/whoffagents/streaming-ai-responses-in-nextjs-claude-openai-and-the-vercel-ai-sdk-1gm3",
+    "name": "Streaming AI Responses in Next.js: Claude, OpenAI, and the Vercel AI",
+    "snippet": "You call the OpenAI or Claude API with stream: true . The response streams. But your UI freezes, chunks arrive garbled, or the stream silently ...",
+    "host_name": "dev.to",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.anablock.com/blog/response-streaming-claude",
+    "name": "Response Streaming in Claude: Improving User Experience",
+    "snippet": "Learn how to implement response streaming in Claude to improve user experience. Display text chunk by chunk as it's generated instead of ...",
+    "host_name": "blog.anablock.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aiuxplayground.com/teardowns/claude/composer",
+    "name": "Claude composer UX: model picker, skills & attachments",
+    "snippet": "Listening state is unmistakable once you are in: blue treatment, label, and a dedicated Stop button. Conversation mode feels live. Dictation ...",
+    "host_name": "aiuxplayground.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

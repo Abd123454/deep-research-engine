@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://forum.cursor.com/t/cursor-stops-generating/15251",
+    "name": "Cursor stops generating - Bug Reports",
+    "snippet": "It usually stops streaming in the first sentence of the generated code. It's definitely related to the 'code generating' part of a response.",
+    "host_name": "forum.cursor.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.claude.com/docs/en/build-with-claude/handling-stop-reasons",
+    "name": "Stop reasons and fallback - Claude Platform Docs",
+    "snippet": "Every Messages API response includes a stop_reason field that tells you why Claude stopped generating. Check this field to decide whether to use the response ...",
+    "host_name": "platform.claude.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1n2gn3z/claude_doesnt_stop_generating_even_when_the",
+    "name": "Claude doesnt stop generating, even when the answer is completed.",
+    "snippet": "Close Claude completely (from tasktray), restart it you'll notices a [Continue] button it's getting stuck since the continue button not showing ... Stop claude response almost never works : r/ClaudeAI - Reddit Claude Dev v2.0: renamed to Cline, responses now stream into ... - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/anthropics/claude-code/issues/37569",
+    "name": "Feature request: option to disable streamed response output #37569",
+    "snippet": "Add an option to disable real-time streaming of responses in the interactive CLI, instead displaying the complete response once generation ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.cursor.com/t/stuck-generating-response/44933",
+    "name": "Stuck generating response - Bug Reports - Cursor - Community Forum",
+    "snippet": "Composer suddenly stopped responding. I cancelled and retried several times. Claude was down. deleting some config folders, then reinstalling. ...",
+    "host_name": "forum.cursor.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/allanheo_aicoding-cursorai-promptengineering-activity-7387833909809594368-sImH",
+    "name": "How to avoid code generation with Cursor AI | Allan Heo posted on the",
+    "snippet": "Specifying the intent helps streamline the response and avoid getting sidetracked into unwanted code generation. Adding this constraint ensures ...",
+    "host_name": "www.linkedin.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://parix.ai/blog/claude-ai-stops-responding-fix",
+    "name": "Why Claude AI Stops Responding in Long Chats (Fix) - Parix.ai",
+    "snippet": "Claude AI stops responding or freezing in long chats? Learn why context overload causes it and simple fixes to keep Claude fast, accurate, ...",
+    "host_name": "parix.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://sdrmike.medium.com/cursor-rules-why-your-ai-agent-is-ignoring-you-and-how-to-fix-it-5b4d2ac0b1b0",
+    "name": "Cursor Rules: Why Your AI Agent Is Ignoring You (and How to Fix It)",
+    "snippet": "Frustrated with inconsistent project rules? Here's how to make Cursor behave. Press enter or click to view image in full size ... Missing: streaming | Show results with: streaming",
+    "host_name": "sdrmike.medium.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://community.make.com/t/claude-ai-stops-generation-and-asking-for-continuation/62758",
+    "name": "Claude AI stops generation and asking for continuation",
+    "snippet": "Claude asks me if I want to continue with the generation. Claude always stops at 300-400 words, although there is much more information and headings in the ...",
+    "host_name": "community.make.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.claude.com/docs/en/test-and-evaluate/strengthen-guardrails/handle-streaming-refusals",
+    "name": "Handle streaming refusals - Claude Platform Docs",
+    "snippet": "You can remove or rephrase the turn that triggered the refusal, or clear the conversation history entirely. Attempting to continue without resetting will result ...",
+    "host_name": "platform.claude.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

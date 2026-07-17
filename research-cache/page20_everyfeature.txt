@@ -1,0 +1,1056 @@
+TITLE: How I use every Claude feature (and how to set them up)
+URL: https://charliehills.substack.com/p/how-i-use-every-claude-feature-and
+
+How I use every Claude feature (and how to set them up) 
+ 
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ 
+
+ 
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ 
+
+ 
+ 
+
+ 
+
+ 
+
+ 
+
+ 
+ MarTech AI 
+
+ 
+ Subscribe Sign in 
+
+ 
+
+ How I use every Claude feature (and how to set them up)
+ The complete breakdown across Chat, Cowork, and Code.
+ 
+
+ 
+
+ Charlie Hills 
+ Apr 05, 2026
+ ∙ Paid
+
+ 125
+ 
+ 2
+ 14
+ 
+ Share
+ 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+
+ I took one week off Claude. Now I’m back. If you missed last week’s newsletter, click below to find out how AI infographics generated me 7.5M+ impressions in 90 days on LinkedIn and how to do this yourself.
+ How AI infographics generated 7.5M+ impressions.
+ Charlie Hills 
+ ·
+ Mar 29
+
+ 
+ A few months ago, I wrote a newsletter called “How 3 ‘ugly’ graphics got me 480k impressions.” I shared three methods for creating hand-drawn whiteboard-style infographics using Gemini. Thousands of you tried them. Many of you are still using them.
+
+ Read full story 
+ 
+
+ Everything in this newsletter is tested. I ran every workflow, hit every error, and iterated until it worked.
+ This took me over 10 hours to put together. I covered every feature across Chat, Cowork, and Code. Every how-to. Every tip. Every workflow I actually use. Nothing I have not personally tested.
+ If you are new here, welcome. If you have been reading for a while, thank you. Your subscription is what makes issues like this possible.
+ MarTech AI is a reader-supported publication. To receive new posts and support my work, consider becoming a free or paid subscriber.
+
+ 
+
+ Subscribe 
+ 
+ 
+
+ I also recorded the full video version of this newsletter. If you would rather watch than read, everything is in there. Chat, Cowork, and Code, level by level.
+ 
+
+ Anthropic shipped 74 product releases in 52 days.
+ Revenue went from $9 billion to $19 billion in three months. Claude Code alone generates $2.5 billion a year. 8 of the Fortune 10 are customers. Software stocks crashed on launch day. Twice.
+ 
+
+ 
+ And most people are still using Claude like a chatbot.
+ Claude is three products. Not one.
+ Chat is where you think. Cowork is where you produce. Code is where you automate. 
+ Each product has its own set of features. Most people know Chat. Some have opened Cowork. Almost nobody outside of developers has touched Code.
+ Today I am walking through all three. Every feature. How to turn it on. How I use it.
+ 
+ Claude Chat 
+ 
+
+ This is where everyone starts.
+ 1. Go to claude.ai 
+ 2. Open the app 
+ 3. Type… 
+ But Chat has 12 built-in tools. Most people use 3.
+ Here is the full list:
+ 
+ Models + Extended Thinking 
+ 
+
+ Opus 4.6 is the most capable model. 1M token context window. Use it for strategy, legal analysis, financial modelling, and anything with multiple variables. 
+ Sonnet 4.6 handles 90% of your daily work. Faster. Cheaper. I use this for everything unless I have a reason not to. 
+ Haiku 4.5 is the lightweight option. Fast and cheap. Good for quick answers and bulk tasks where depth does not matter. 
+ My rule: start with Sonnet. Switch to Opus when the task demands it. Most people leave Opus on permanently and burn through their usage limit by Wednesday.
+ Below the model selector you will see Extended Thinking. Toggle it on. Claude reasons through your problem step by step before responding. Shows its working. Breaks complex questions into parts.
+ 
+
+ 
+ I never prompt Opus without Extended Thinking on. The difference is like asking someone to answer immediately versus giving them 5 minutes to think. Turn on Extended Thinking and Web Search at the same time. Two clicks that change everything.
+ How to access: model dropdown at the top of any conversation.
+ 
+ Memory 
+ 
+
+ Claude remembers you across conversations. Free for all users since March 2026.
+ Two settings to enable in Settings → Capabilities:
+ Search and reference chats → Claude searches your past conversations for relevant context. 
+ Generate memory from chat history → Claude remembers details about you across all chats and Projects. 
+ Turn both on. This is what makes Claude feel like it knows you.
+ 
+
+ 
+ If you are coming from ChatGPT, you can import your existing memory. Go to Settings → Capabilities → Memory and click Start Import. Claude gives you a prompt to fetch your memory from your other account. I wrote a full guide on how to do this, linked below.
+ How to quit ChatGPT
+ Charlie Hills 
+ ·
+ Mar 8
+
+ 
+ You have spent months teaching ChatGPT who you are. That context feels impossible to leave behind.
+
+ Read full story 
+ 
+
+ Clean up your memory regularly. 
+ Claude sometimes misinterprets things and adds random details about you. Old projects you are no longer working on, incorrect assumptions about your role, outdated preferences. Go into your memory, read through it, and remove anything that is wrong or stale.
+ 
+
+ 
+ You can also actively tell Claude what to remember. Say “remember that I now work at [company]” or “remember that I prefer responses in British English with short paragraphs” directly in any chat. Claude saves it to memory, as long as you have the settings enabled.
+ 
+
+ 
+ Tip: Treat your memory like a living document. Review it every few weeks. Remove what is outdated. Add what is missing. The cleaner your memory, the less time you spend correcting Claude in every conversation.
+ 
+ Web Search 
+ 
+
+ Claude searches the web mid-conversation and pulls live data into its response.
+ Two ways to trigger it:
+ → Toggle it on in Settings (stays on for every chat) 
+ → Or type “search the web for...” in your prompt (one-off) 
+ I keep mine toggled off by default to save tokens. When I need it, I type “search the web” directly in my message. That’s faster than enabling it, and I only burn the tokens when the task needs live data.
+ 
+
+ 
+ Tip: pair Web Search with Extended Thinking for your most complex questions. Claude pulls live data AND reasons through it step by step. Two toggles that change the quality of every response.
+ 
+ Deep Research 
+ 
+
+ This is different from Web Search. Deep Research runs a full multi-source investigation. Claude searches dozens of sources, cross-references them, and returns a structured report.
+ How to use:
+ → Click the Research button next to the message bar 
+ → Enter your topic 
+ → Wait for the full report (takes a few minutes) 
+ I sometimes use it before every newsletter. I give it a topic, it comes back with data points, competitor examples, and source links.
+ 
+
+ 
+ The key: be specific.
+ “Research LinkedIn growth strategies” → generic output.
+ “Research what strategies LinkedIn creators with 100K+ followers used in Q1 2026, with specific examples and engagement data” → something I can publish from.
+ Tip: Deep Research burns through tokens fast. Use it for the research phase, then switch to a normal chat to write from the findings. Do not research and write in the same thread.
+ 
+ File Upload 
+ 
+
+ Drag PDFs, images, spreadsheets, or documents directly into the chat. Claude reads the full content.
+ How to use:
+ → Click the paperclip icon 
+ → Or drag files directly into the chat window 
+ → Works with PDFs, CSVs, images, Word docs, and more 
+ Upload 2 or 3 documents at once and ask Claude to compare them. “Here are three competitor landing pages. What patterns do you see across all three?”
+ 
+
+ 
+ Tip: if you have a file on Google Drive, click the “From Drive” button instead of downloading and re-uploading. Claude pulls it directly from your connected Drive.
+ 
+ Artifacts 
+ 
+
+ Claude builds interactive files, dashboards, calculators, and tools inside the chat.
+ 
+
+ 
+ How to use:
+ → Ask Claude to build something 
+ → It creates the Artifact automatically 
+ → Use, edit, and download directly 
+ Ask for what you would normally build in a spreadsheet or Canva. Budget trackers, content planners, data visualisations, landing page mockups.
+ 
+
+ 
+ Ask for changes after it builds. “Make it dark mode.” “Add a column.” “Change the chart type.” Artifacts are live. You iterate inside the chat.
+ Tip: say “make this an Artifact” if Claude gives you code in the chat instead of building it. Sometimes it defaults to showing code. Telling it to make an Artifact forces it to render the live, interactive version.
+ 
+ Interactive Charts 
+ 
+
+ Added March 12. Claude now creates custom charts, diagrams, and visualisations inline in its responses. These are interactive, not static images.
+ 
+
+ 
+ How to trigger:
+ → Ask Claude to “create a chart” or “visualise this data” 
+ → Claude renders it inline in the conversation 
+ → You interact with it directly in the chat 
+ This is different from Analysis Tool. Analysis Tool runs code on your data. Interactive charts are visual outputs Claude builds from any information, not files only. Ask Claude to “create an org chart for my team” or “visualise this process as a flowchart” and it renders it live.
+ 
+
+ 
+ Tip: ask Claude to “make this interactive” after it generates a chart. You get hover states, zoom, and clickable elements instead of a flat image.
+ 
+ Interactive Questions 
+ 
+
+ Claude presents clickable options instead of asking questions in plain text. Single select, multi-select, and drag-to-rank.
+ 
+
+ 
+ You have seen this if Claude has ever asked you to choose between options and given you buttons instead of a text list.
+ Two ways to trigger it:
+ → Claude decides to use it automatically 
+ → Or type “AskUserQuestion:” in your prompt to force it 
+ “Which format do you want?” → clickable buttons. 
+ “Rank these in order of priority” → drag and drop. 
+ “Which of these apply?” → multi-select checkboxes. 
+ Tip: if Claude asks you a question in plain text and you would prefer clickable options, say “give me options to choose from.” Claude switches to the interactive format. Works the other way too. If you want to type a freeform answer instead of picking from options, ignore the buttons and type your response.
+ 
+ Projects 
+ 
+
+ Save files and instructions once. Every new chat inside a Project starts with full context. Claude reads everything before you type a word.
+ 
+
+ 
+ How to set up:
+ → Click “Create Project” in the left sidebar 
+ → Upload your key files and write custom instructions 
+ → Start new chats inside the Project 
+ I run 12 active Projects. One per client, one for this newsletter, one for LinkedIn content. Each has a custom instruction, 3 to 5 reference files, and zero filler.
+ Most people do everything in one Project. I do the opposite.
+ I take a piece of content and move it through different Projects depending on what I need. A newsletter becomes a LinkedIn post, which becomes an infographic, which becomes an email subject line.
+ Each Project has its own custom instructions, tone rules, and reference files. The output is tailored every time without me re-explaining anything.
+ I switch between Projects throughout the day depending on the task.
+ 
+
+ 
+ Tip: if you upload the same PDF across multiple chats, Claude re-counts those tokens every time. Projects cache your files once. Upload once. Reference forever.
+ Paid subscribers: scroll to the bottom of this newsletter for my full newsletter Project instructions. Copy them directly into your own setup. 
+ 
+ Skills 
+ 
+
+ Projects are great when you need reference material and baked-in context. But when you need Claude to follow a very specific process the same way every time, that is where Skills come in.
+ 
+
+ 
+ Think of them like GPTs, but you recall them inside any conversation whenever you need them.
+ How to set up:
+ → Go to Settings and enable Code Execution 
+ → Browse the pre-built Skills library 
+ → Install a Skill or create your own with a SKILL.md file 
+ I have Skills for newsletter writing, carousel creation, and client reporting.
+ 
+
+ 
+ Here is one example. I write my newsletter, then ask Claude to generate a prompt for the Substack cover image. I built a Skill for this so every cover image follows the same style, dimensions, and brand guidelines. Consistency without me thinking about it.
+ 
+
+ 
+ You do not need to write Skills manually. 
+ Claude has its own built-in Skill for creating Skills. You do not need to type out a SKILL.md file yourself.
+ Here is how it works in practice:
+ → Explain the problem you are trying to solve 
+ → Provide reference material of what you want 
+ → Claude creates the Skill for you 
+ Then you test it and refine it over time through natural language in chat. “Make the tone more casual.” “Add a step where you check for spelling.” “Always include a CTA at the end.” Claude updates the Skill based on your feedback.
+ 
+
+ 
+ That is exactly how I built my cover image Skill. I showed Claude a few examples of the style I wanted, described the dimensions and brand colours, and he wrote the full Skill. I have refined it a few times since, through conversation, and now it produces consistent results every time I run it.
+ Advanced: chaining multiple Skills inside a Project 
+ You can set up a Project that calls multiple Skills as part of one process.
+ → Create separate Skills for each stage (researcher, writer, reviewer) 
+ → Upload the empty SKILL.md files into your Project 
+ → Tell Claude in the Project instructions which Skill to call at each step 
+ One prompt kicks off the entire chain. Claude researches, writes, and reviews, all following different Skills in sequence.
+ I do not personally follow this approach yet, but my co-founder at Linked Agency recently started using it for client work and it has been a standout for outsourcing repetitive deliverables where the process stays the same but the content changes each week. 
+ 
+ Connectors (MCP) 
+ 
+
+ Connect Slack, Google Drive, Notion, Gmail, and 50+ tools. Claude searches them mid-chat.
+ How to connect:
+ → Click the connectors icon in any chat 
+ → Browse and authorise the tools you use 
+ → Claude pulls context without you uploading anything 
+ 
+
+ 
+ I have Drive, Slack, and Notion connected. Last week Claude found a client brief from November I had forgotten existed. Pulled it from Drive in 3 seconds.
+ Tip: Connectors do not sync live. Claude searches on demand. Think of it as search, not a dashboard. Also, every connected tool adds to your token usage per message. Only connect the tools you use regularly.
+ 
+ Claude in Chrome 
+ 
+
+ A browsing agent inside your Chrome browser. Reads pages, extracts information, completes web tasks.
+ 
+
+ 
+ How to install:
+ → Go to claude.ai/download 
+ → Install the Chrome extension 
+ → Claude reads the page you are on and takes actions 
+ 
+
+ 
+ Record a workflow and turn it into a shortcut. 
+ This is the feature most people overlook. You walk through a task once and Claude remembers the steps.
+ How it works:
+ → Click Record in the Chrome extension 
+ → Do the task manually while Claude watches 
+ → Claude captures every click, every navigation, every action 
+ → When you are done, it creates a reusable shortcut 
+ 
+
+ 
+ That shortcut gets a name (like /manage-connectors), a saved prompt describing each step, and a starting URL. Next time you need to run that task, you type the shortcut and Claude handles it.
+ 
+
+ 
+ You can also schedule these shortcuts to run on a recurring basis. Weekly browser reports, daily form checks, regular data pulls from dashboards that have no API.
+ Tip: Start by recording a simple task you do every week in the browser. Something repetitive that takes 5 minutes. Once you see Claude replay it without you touching anything, you will find more things to record.
+ 
+ Claude Cowork 
+ 
+
+ Cowork is where Claude moves from answering questions to doing work on your machine. It reads your files, creates real documents, and delivers finished outputs into your folders.
+ If Chat is the brain, Cowork is the hands.
+ You need the Claude Desktop app. Mac and Windows. Pro and Max plans.
+ → Open Claude Desktop. 
+ → Click the Cowork tab. 
+ That is your starting point.
+ 
+
+ 
+ 
+ File System Access 
+ 
+
+ Cowork reads and writes to your actual folders. Word docs, spreadsheets, PDFs, presentations. Real files, not copies inside a chat window.
+ How to start:
+ → Open Claude Desktop 
+ → Click the Cowork tab 
+ → Point it at a folder and give it a task 
+ “Read everything in this folder and create a summary report.” 
+ “Take these 5 client briefs and create a comparison table.” 
+ “Rename and organise these 200 files by date and type.” 
+ 
+
+ 
+ Tip: keep a .md file in every working folder that tells Claude who you are and what you need. Your role, your tone, your formatting rules. One file. Claude stops sounding generic.
+ 
+
+ 
+ 
+ Sub-agents 
+ 
+
+ For complex tasks, Cowork automatically coordinates multiple sub-agents working in parallel. You do not set this up. Claude handles it.
+ 
+
+ 
+ What makes it useful beyond the speed is that you can steer mid-task. If Claude is running a workflow and you want to add something or redirect it, jump in and it folds your instruction into the current run. No need to start again.
+ 
+
+ 
+ Where it makes a difference:
+ → Large tasks with independent components 
+ → Research across multiple sources at once 
+ → Anything sequential that takes too long 
+ Tip: be specific about the output you want upfront. There is less back and forth when sub-agents are running in parallel, so the clarity needs to be in the original prompt.
+ 
+ Plugins 
+ 
+
+ Skills are individual instruction files. Plugins bundle multiple Skills, connectors, slash commands, and sub-agents into one installable package for an entire role.
+ A sales Plugin connects to your CRM, adds prospecting workflows, and gives you /research and /outreach commands. A legal Plugin includes your NDA playbook, document management connector, and /triage-nda.
+ Cowork ships with 11 pre-built Plugins covering sales, finance, legal, marketing, HR, engineering, and more.
+ Four ways to add them:
+ Browse plugins → Pre-built library, one-click install. 
+ Add marketplace → Your organisation’s private plugins (Team/Enterprise). 
+ Upload plugin → Drop in one a colleague built. 
+ Create with Claude → Describe what you want, Claude builds it. 
+ 
+
+ 
+ How to access:
+ → Click Customize in the left sidebar 
+ → Type / in any Cowork conversation to see your commands 
+ 
+
+ 
+ Tip: Do not install all 11. Pick 1 or 2 that match your role. After installing, click Customize on any Plugin and Claude walks you through adjusting it to fit how you work.
+ 
+
+ 
+ 
+ Scheduled Tasks 
+ 
+
+ Recurring prompts that run on autopilot. Morning inbox summaries, weekly reports, daily data pulls. Claude runs them at the time you set and delivers the results.
+ How to set up:
+ → Go to Customize → Tasks 
+ → Write your prompt 
+ → Set the schedule and let it run 
+ 
+
+ 
+ Start with one simple task. “Every Monday at 8am, summarise my unread Slack messages and flag anything urgent.” Once it works, add a second.
+ Build the habit of delegating one recurring task before trying to automate everything at once.
+ Where it gets interesting is when you bring Connectors into it.
+ Connect your Slack, Google Drive, or Notion, and your Scheduled Tasks stop being static prompts. They become live workflows that pull real data from your tools on a schedule, without you touching anything.
+ Here is one of mine.
+ 
+
+ 
+ Every morning at 7am, Claude runs my pre-configured Apify scrapers across Instagram, LinkedIn, X, TikTok, Threads, Facebook, and YouTube. It collects the 5 most recent posts from each account I track, including captions and engagement metrics, and then compiles everything into a daily content briefing. I open my laptop and it is already done.
+ One caveat: your computer needs to be awake for Scheduled Tasks to run. Set them for a time when your laptop is already open, your morning routine, a lunch break, the end of your working day.
+ 
+ Dispatch 
+ 
+
+ Assign Claude a task from your phone. It runs on your desktop while you are away and messages you when the work is done. One continuous conversation across your phone and your computer.
+ How to set up:
+ → Open Cowork on your desktop 
+ → Click Dispatch in the sidebar 
+ → Scan the QR code with the Claude mobile app 
+ → Send tasks from your phone. Come back to finished work. 
+ 
+
+ 
+ I text Claude from my phone at 6am: “Compile yesterday’s LinkedIn metrics and draft this week’s client update.” By the time I sit down at my desk, the report is done.
+ 
+
+ 
+ Two things to know:
+ → Your Mac has to be awake. Claude Desktop has to be open. I leave my Mac running overnight for this reason.
+ → Dispatch is one continuous thread. You cannot start multiple threads. Everything lives in one conversation.
+ 
+
+ 
+ Tip: Dispatch gets more powerful when you combine it with Skills, Scheduled Tasks, and Connectors. Set up a morning briefing Skill, schedule it for 7am, check the results from your phone on the train. Your desktop does the work while you are not there.
+ 
+ Computer Use 
+ 
+
+ Claude controls your screen, mouse, and keyboard. It opens apps, navigates browsers, fills in forms. macOS only. Released March 23.
+ How to enable:
+ → Open Cowork 
+ → Go to Settings and enable Computer Use 
+ → Claude asks permission before accessing new apps 
+ 
+
+ 
+ Claude reaches for the most precise tool first. If a Connector exists for Slack, it uses the Connector. If no API or integration exists, it falls back to controlling your screen. Computer Use is the last resort, not the first option.
+ It works best for apps and workflows that have no other integration. Internal dashboards, legacy software, anything without an API.
+ Tip: Computer Use runs outside the Cowork sandbox. When Claude uses your apps through screen control, it operates on your actual machine. Set up global instructions in Cowork like “never delete files without confirmation” and they carry over to Computer Use sessions.
+ 
+ Claude in Excel 
+ 
+
+ An add-in that reads your entire workbook. Understands nested formulas, multi-tab dependencies, and provides cell-level citations for every explanation.
+ How to install:
+ → Open Excel 
+ → Home → Add-ins 
+ → Search “Claude by Anthropic” 
+ → Open sidebar: Ctrl+Alt+C (Windows) or Ctrl+Option+C (Mac) 
+ Ask Claude to trace errors first. “Why is cell B4 showing #REF? Trace the error.” Claude navigates across tabs, finds the broken reference, and fixes it while preserving dependencies. Every change is highlighted with explanatory comments.
+ 
+
+ 
+ Tip: Claude in Excel supports MCP connectors. Claude pulls live market data directly into your spreadsheet without leaving Excel. If you have connectors set up in your Claude settings, those same connections work in the add-in automatically.
+ 
+ Claude in PowerPoint 
+ 
+
+ Load your company template and describe what you need. Claude reads your fonts, colours, and layouts, and builds a complete presentation from scratch.
+ 
+
+ How to install:
+ → Open PowerPoint 
+ → Home → Add-ins 
+ → Search “Claude by Anthropic” 
+ “Create a 10-slide quarterly review using the data from my Excel file.”
+ That is one prompt. Claude handles the structure, the copy, the charts, and the formatting. You review and refine.
+ Go to Settings in the sidebar and add your Instructions. Tell Claude your brand colours, preferred fonts, and whether you want speaker notes on every slide. It applies these rules to every session automatically.
+ 
+
+ 
+ Toggle on “Let Claude work across files” and Claude references all your open presentations at once. Combined with the Excel add-in, Claude reads your workbook and builds the deck in a single session. No copying. No pasting. No switching between apps.
+ Where it goes further is the fine-tuning. Select any slide and tell Claude what to change. “Make this bullet point shorter.” “Convert this table into a bar chart.” “Add a transition slide before the financials.” Claude edits in place and preserves everything around it.
+ PowerPoint is not dead. It just needed a better co-pilot.
+ Tip: Claude in PowerPoint comes with pre-built Skills you can trigger with a slash command. Type / in the sidebar to see what is available. Skills you have already set up in your Claude account work here too.
+ 
+
+ 
+ 
+ Claude Code 
+ 
+
+ Claude Code runs in your terminal. It reads your entire codebase, writes code, runs tests, and ships changes autonomously.
+ 4% of all GitHub public commits are now authored by Claude Code. That number is projected to hit 20% by year end. Claude Code generates $2.5 billion in annual revenue on its own.
+ You do not need to be a developer to understand what Code does. But you do need a terminal to run it.
+ 
+ Installation 
+ 
+
+ Three options:
+ → Mac/Linux: curl -fsSL https://claude.ai/install.sh | sh 
+ → Windows: irm https://claude.ai/install.ps1 | iex 
+ → VS Code: Extensions → search “Claude Code” → install → click the Claude icon in the sidebar 
+ 
+
+ 
+ Once installed, open your terminal, navigate to your project folder, and type claude.
+ 
+
+ 
+ That is it.
+ Tip: the VS Code extension is the easiest way to start. You get Claude Code inside your editor with a visual interface. No terminal experience needed. Click the Claude icon in the sidebar and start prompting.
+ 
+
+ 
+ 
+ CLAUDE.md 
+ 
+
+ CLAUDE.md is a file that sits in your project folder and loads automatically every time you open Claude Code. It is your standing brief. Claude reads it before doing anything, every session. You never repeat yourself.
+ Think of it as the brief you would give a new team member, but you only write it once.
+ How to create:
+ → Open terminal in your project folder 
+ → Run /init and Claude generates a CLAUDE.md 
+ → Edit it to add your own rules, preferences, and context 
+ What to include:
+ → Who you are and what you do 
+ → Your brand voice and style rules 
+ → The specific project you are working on 
+ → Formats, tools, and file structures you use 
+ → Things Claude should never do 
+ Keep it 200 to 500 lines. Front-load the most important instructions. Claude has primacy bias, so what comes first gets weighted most.
+ 
+
+ 
+ I have been using Claude Code to generate infographics and carousels, and I have spent a serious amount of time refining and testing this workflow to get it to a standard I am happy with.
+ 
+
+ 
+ Running it out of the box produces mediocre results. The difference is in how the CLAUDE.md is configured, how the prompts are structured, and how the outputs are iterated.
+ 
+
+ 
+ If you want to do this yourself, everything you need is in this newsletter. But if you want the workflow handed to you, I am building it directly into Vislo . 
+ 60 of the first 100 early adopter spots are taken. Once we hit 100, the price increases. Everyone in that first public beta cohort locks in at $19 a month permanently, including when we add these infographic and carousel workflows.
+ 
+
+ 
+ 
+ I am a content creator with time to sit and test things all day. You probably are not. That is what Vislo is for. 
+ Sign up at vislo.ai before the price goes up.
+ Tip: update your CLAUDE.md when Claude repeats a mistake. If it keeps doing something wrong, add a rule at the top of the file. Your CLAUDE.md gets sharper the more you use it.
+ 
+ Slash Commands 
+ 
+
+ Type / in Claude Code to see every available command. Here are the ones that matter:
+ → /init: Scans your codebase and generates a CLAUDE.md 
+ → /plan: Creates a step-by-step plan before writing code 
+ → /compact: Compresses your session to save context 
+ → /context: Check how much session memory you have used 
+ → /review: Review code changes before committing 
+ → /clear: Wipe and start fresh 
+ → /model: Switch between Opus, Sonnet, and Haiku 
+ → /doctor: Diagnose issues with your setup 
+ → /find-skills: Browse and install pre-built Skills 
+ → /add-dir: Add another folder to your session 
+ → /agents: View sub-agents running in the background 
+ → /config: Open your settings 
+ → /loop: Run a recurring schedule 
+ → /rewind: Undo last action 
+ → /permissions: Pre-allow specific commands 
+ 
+
+ 
+ Tip: /plan is the most important command. A minute of planning saves ten minutes of debugging. Type /plan, describe what you want, review the steps, approve it, then let Claude execute. This single command changed how I use Code.
+ 
+
+ 
+ 
+ Auto Mode 
+ 
+
+ Every time Claude Code writes a file or runs a command, it asks for your approval. On a small task that is fine. On anything complex, you spend half the session clicking approve on things you have stopped reading.
+ Before Auto Mode existed, the only way around this was running:
+ claude --dangerously-skip-permissions
+ The name tells you everything. It removes all permission checks entirely. Fast, but reckless on a real machine with real files, API keys, and credentials sitting around.
+ 
+
+ 
+ Auto Mode sits between the two. Claude makes permission decisions on your behalf, with a safety classifier reviewing each action before it runs. Safe actions proceed automatically. Risky ones get blocked, and Claude tries a different approach without interrupting you.
+ How to enable:
+ → Run claude --enable-auto-mode in your terminal 
+ → Press Shift+Tab to cycle to Auto Mode in your session 
+ → The current mode shows in the status bar 
+ Tip: Auto Mode does not mean fully unattended. If the classifier repeatedly blocks an action, it will still pause and ask you. Think of it as Claude handling the routine approvals so you only get interrupted when something genuinely needs your attention.
+ 
+ The Optimal Workflow 
+ 
+
+ Most people jump straight into prompting. That is the wrong approach.
+ The workflow: 
+ 
+
+ /plan: Describe what you want. Review the plan before approving anything.
+
+ Be specific about the outcome. Name the format, the structure, the file type.
+
+ Let Claude break it into steps. Read them. This is where you catch misunderstandings before they cost you time.
+
+ Make one or two changes, then approve.
+
+ Let Claude run the whole task without interrupting it.
+
+ Refine the output in the same session.
+
+ This is what this looks like in practice. Start simple, then layer in as much as you want.
+ Step 1: The basic version. 
+ 
+
+ /plan Scrape my last 20 LinkedIn posts using Apify, identify the 5 with the highest engagement, and rewrite each one as a 60-second Instagram Reel script. Format each script with a hook, three key points, and a CTA. Save each as a separate file in my Reels folder.
+ 
+
+ 
+ Claude returns the plan. I added one instruction: “Keep the hook under 5 seconds and make it a pattern interrupt.” Approved. Claude ran the whole task without asking me anything.
+ 
+
+ 
+ Five scripts. Each one built from a post that already proved it could get engagement on LinkedIn. The top post had 2,830 reactions. That signal feeds directly into the script.
+ 
+
+ 
+ 
+
+ 
+ Step 2: Go deeper with your own Instagram data. 
+ 
+
+ Add one line:
+ Also scrape my last 10 Instagram Reels using Apify, pull the hook and structure from each, reverse engineer what made the top 3 perform, and apply those patterns to the new scripts.
+ Now your scripts are not just repurposed LinkedIn content. They are LinkedIn content rebuilt around what is already working on your own Instagram.
+ 
+
+ 
+ Step 3: Cross-reference against trending topics. 
+ 
+
+ Add another line:
+ Cross-reference against the top 20 trending Reels in my niche this week. Flag any scripts where my content overlaps with what is trending right now and prioritise those.
+ 
+
+ 
+ 
+
+ 
+ 
+ Step 4: Build your own dashboard. 
+ 
+
+ Add a final line:
+ Build me a simple Reel tracker as an HTML file. I want to see each script, its status (to record, recorded, posted), target posting date, and a notes column.
+ 
+
+ 
+ Claude builds it to your exact spec. Not Notion, not a generic tool. Yours.
+ Each step builds on the last. You run the same basic workflow and add layers depending on how much signal you want feeding into the output.
+ The reason all of this works is the CLAUDE.md. Claude already knows your voice, your audience, and your content style before it writes a word. The plan keeps the task scoped. The approval step means no surprises.
+ And if the output is not quite right, you do not edit the file manually. You just tell Claude what you did not like in plain language. “The hooks are too long.” “Stop using bullet points in the scripts.” “Always include a posting time suggestion.” Claude updates the CLAUDE.md there and then. Every future run reflects the change.
+ Tip: type /effort high before a complex task. Claude reasons more deeply before acting. For quick fixes, leave it on default.
+ 
+ Skills and Automations 
+ 
+
+ The workflow above took one session to build. Skills turn it into one command you run forever.
+ A SKILL.md file defines the entire workflow. Every step, every instruction, every output format. You run it once to build it, then trigger it anytime with a single command.
+ So instead of typing that full /plan prompt every week, you type:
+ /linkedin-to-reels
+ Claude runs the whole thing. Scrapes your posts, ranks by engagement, writes the scripts, saves the files. Same output every time, without you typing a word.
+ How to create the Skill from the session you just ran: 
+ 
+
+ At the end of any session that produced a workflow you want to repeat, type:
+ Write a Skill for this workflow.
+ Claude writes the SKILL.md based on exactly what you both just built together. Save it to ./claude/skills/ and it is ready to run in any future session.
+ 
+
+ 
+ How to find pre-built Skills:
+ → Type /find-skills in any session 
+ → Or browse github.com/anthropics/awesome-skills 
+ 
+
+ 
+ 
+
+ 
+ Find one close to what you need and edit it rather than starting from zero.
+ Tip: once you have your Skill working, combine it with /loop to run it on a schedule. Your top LinkedIn posts become Reel scripts automatically, every week, without opening a terminal.
+ 
+
+ 
+ 
+ MCP Servers 
+ 
+
+ 
+
+ 
+ Connect external services directly into Claude Code. GitHub, Notion, Slack, Figma, Airtable, and hundreds more. Claude reads, writes, and takes actions across all connected services from your terminal.
+ How to connect:
+ → Run: claude mcp add --transport http [server-name] [server-url] 
+ → Browse available servers at https://code.claude.com/docs/en/mcp 
+ 
+
+ 
+ Every MCP server you add gives Claude another surface to work across. The workflow stays the same. The reach gets wider.
+ To see which servers are connected and manage them at any time, type /mcp in any Claude Code session.
+ 
+
+ 
+ Tip: start with two or three servers and get them working before adding more. Every connected server adds context Claude has to manage in each session. More is not better. Connect the tools you open every day and ignore the rest.
+ 
+ Parallel Agents 
+ 
+
+ Split tasks across multiple agents running at the same time. Add “use subagents” to your prompt and Claude spawns parallel workers.
+ How it works:
+ → One orchestrator agent manages the task 
+ → Sub-agents work on separate components simultaneously 
+ → Results merge back into the main session 
+ Building on the Reels workflow, this is where it gets fast. Instead of Claude scraping LinkedIn, then scraping Instagram, then researching trending Reels one after another, you add “use subagents” and all three run at the same time.
+ /plan Use subagents to run these three research streams in parallel: scrape my last 20 LinkedIn posts via Apify, scrape my last 10 Instagram Reels via Apify, and pull the top 20 trending Reels in my niche this week. When all three are done, cross-reference the findings and write the top 5 scripts.
+ 
+
+ 
+ Three research streams running simultaneously. Claude synthesises the results when all three finish. The whole job takes a fraction of the time.
+ Tip: combine parallel agents with /plan. Plan the task first, then let Claude decompose it into parallel sub-tasks automatically. This is where Code starts feeling like a team, not a tool.
+ 
+ Remote Control and Channels 
+ 
+
+ Control your Claude Code session from your phone or another device. Similar to Dispatch in Cowork, but for coding sessions.
+ → Remote Control: Monitor and interact with sessions from Desktop, iOS, or Android 
+ → Channels: Control Claude Code via Discord and Telegram as an alternative to the terminal 
+ With the /linkedin-to-reels workflow running on your desktop, Remote Control means you can kick it off from your phone on the way to a meeting and check in on progress without sitting at your Mac. If something needs steering mid-run, you handle it from wherever you are.
+ 
+
+ 
+ I can generate an Instagram Reel script by sending one message to a Telegram bot. That is it. Claude scrapes my LinkedIn posts, picks the best performer, writes the script, and sends it back.
+ 
+
+ 
+ Channels connect Claude Code to Telegram or Discord. You message the bot, it scrapes your LinkedIn posts, asks a couple of quick questions about format and length, and delivers a finished Reel script straight into the chat. Two messages. Done.
+ That is one example. The broader point is that once Claude Code is set up, almost anything repetitive, automatable, or delegatable can be handled this way. You do not need to be at your desk. You do not need to open a terminal. You send a message and come back to finished work.
+ If you have a task that needs automating, there is a good chance Claude Code can do it.
+ Tip: If you manage a team, run Claude Code from a shared Discord or Telegram channel. Everyone sees what Claude is building without needing terminal access.
+ 
+ For reference, every major Claude release this year:
+ → Jan 7: Claude Code 2.1.0 shipped 
+ → Jan 12: Cowork launched (Mac, Max plan) 
+ → Jan 16: Cowork opened to Pro users 
+ → Feb 5: Opus 4.6 launched (1M context) 
+ → Feb 17: Sonnet 4.6 launched 
+ → Feb 19: Claude in PowerPoint launched 
+ → Feb 20: Claude Code Security launched 
+ → Feb 24: Remote Control launched 
+ → Feb 24: Plugin marketplace launched 
+ → Feb 25: Scheduled Tasks in Cowork 
+ → Mar 2: Memory became free for all users 
+ → Mar 6: Enterprise Marketplace launched 
+ → Mar 11: Excel and PowerPoint sync 
+ → Mar 12: Interactive charts in chat 
+ → Mar 17: Dispatch (phone to desktop) 
+ → Mar 23: Computer Use went live (macOS) 
+ → Mar 24: Claude Code Auto Mode launched 
+ 17 releases in under 3 months. And they are not slowing down.
+ Most people read a list like that and feel behind. I want you to feel the opposite. Every feature in this newsletter is available to you today. The gap between where you are and where you could be is not about access. It is about setup.
+ Pick one thing from this newsletter and set it up this week.
+ The people pulling the furthest ahead are not using some secret version of Claude. They are using more of the product than everyone else.
+ This is the most comprehensive breakdown of Claude I have published. If it saved you time or changed how you think about the product, share it with someone who is still typing into a chat box and calling it an AI strategy.
+ Stay curious, stay human, and start treating Claude like the operating system it has become. 
+ — Charlie
+ 
+ Events 
+ 
+
+ If you want to meet in person, I have two coming up.
+ AI in the Creator Economy is on April 9 at the FUJIFILM House of Photography. A panel discussion and AI hackathon for creators. Limited to 60 tickets at £23. 
+ Book your spot: https://www.influencerstrategists.com/creator-events/fuji 
+ Undeniable London is on April 18 to 19 at Bang Studios. Two days with founders, consultants, and coaches building real businesses. I am speaking on using AI to get time back in your business. Tickets are £100. 
+ Book your spot: https://justundeniable.com/event/london-2026 
+ 
+ Ways we can work together 
+ 
+
+ Become a paid subscriber: Get full access to every past issue of MarTech AI and support future ones. 
+ Try Vislo AI: Create stunning on-brand social media designs in seconds. Join the public beta. 
+ Book a Power Hour: One focused session to pressure-test your prompts, workflows, or content system and fix what’s actually holding things back. 
+ Book an intro call for my content agency : For founders and teams who want LinkedIn handled end to end, from strategy to execution. 
+ 
+ My Newsletter Project Instructions 
+ 
+
+ 
+
+ 
+
+ Continue reading this post for free, courtesy of Charlie Hills.
+ Claim my free post 
+ Or purchase a paid subscription. 
+
+ 
+
+ 
+
+ 
+ 
+ © 2026 Charlie Hills · Privacy ∙ Terms ∙ Collection notice 
+ Start your Substack Get the app 
+ Substack is the home for great culture

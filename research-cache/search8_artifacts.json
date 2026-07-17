@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://code.claude.com/docs/en/artifacts",
+    "name": "Share session output as artifacts - Claude Code Docs",
+    "snippet": "Artifacts turn Claude Code's work into live, interactive pages on claude.ai that you can keep private, share with your organization, or publish to a public link ...\nAn artifact is a live, interactive web page that Claude Code publishes from your session to a private URL on claude.ai. You open it in a browser, and it updates in place as the session continues.",
+    "host_name": "code.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=qr7m_HWA9Rg",
+    "name": "Artifacts in Claude: The Side Panel That Renders Your Code, Docs",
+    "snippet": "Artifacts is the claude.ai feature that pulls long code, documents ... side panel where you can preview them live. In about three minutes ...",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.guideflow.com/tutorial/how-to-preview-a-code-artifact-in-claudeai",
+    "name": "How to preview a code Artifact in Claude.ai - Guideflow Tutorials",
+    "snippet": "Learn to preview a code Artifact in Claude.ai: Click \"Artifacts\" in sidebar, select \"Your artifacts\", choose code, toggle preview, review Missing: panel | Show results with: panel",
+    "host_name": "www.guideflow.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.eigent.ai/blog/claude-live-artifacts-guide",
+    "name": "Claude Live Artifacts: Persistent AI Workspace Guide (2026) - Eigent AI",
+    "snippet": "Claude Artifacts first appeared alongside Claude 3.5 Sonnet as a way to render code, documents, and web pages in a dedicated side panel next to ...",
+    "host_name": "www.eigent.ai",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/keinsaasforever/better-chatbot/discussions/305",
+    "name": "Artifact Preview Panel (Canvas View) #305 - GitHub",
+    "snippet": "When the AI generates an artifact (code, document, visualization, etc.), it appears in the preview panel where users can: View formatted content (syntax ...",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1f008jv/how_to_access_the_code_sidewindow_in_claude",
+    "name": "How to access the code side-window in Claude? : r/ClaudeAI - Reddit",
+    "snippet": "Claude wrote code simultaneously into a window to the right-side of the main chat box. How to access the code side-window in Claude? It is ... Can you explain to me what artifacts are? Claude 4.0 artifacts not working More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.coupler.io/claude-ai-artifacts",
+    "name": "Claude.ai Artifacts for Live Analytics Dashboards - Coupler.io Blog",
+    "snippet": "Claude.ai Artifacts are interactive outputs that appear in a side panel next to your conversation. you get a rendered chart, dashboard, web ...",
+    "host_name": "blog.coupler.io",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://albato.com/blog/publications/how-to-use-claude-artifacts-guide",
+    "name": "What Are Claude Artifacts and How to Use Them (2026) - Albato Embedded",
+    "snippet": "Claude Artifacts are a built-in feature of Claude AI that lets you create, preview, and interact with generated content (code, graphics, ...\nClaude Artifacts are a built-in feature of Claude AI that lets you create, preview, and interact with generated content (code, graphics, documents, web pages, and interactive applications) in a dedicated side panel right next to your conversation.",
+    "host_name": "albato.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=bTHafl_KGe0",
+    "name": "How To Use Claude AI Artifacts Preview (2026 Guide) - YouTube",
+    "snippet": "How To Use Claude AI Artifacts Preview (2026 Guide) How to use Claude AI Artifacts preview, Claude AI Artifacts tutorial, Claude Artifacts ... Missing: side document",
+    "host_name": "www.youtube.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/9487310-what-are-artifacts-and-how-do-i-use-them",
+    "name": "What are artifacts and how do I use them? | Claude Help Center",
+    "snippet": "Artifacts are available in Claude, Claude Desktop, and Claude Code. This article focuses on Claude and Claude Desktop. To learn how to create, update, and share artifacts in Claude Code, see the artifacts documentation on Claude Code Docs.",
+    "host_name": "support.claude.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

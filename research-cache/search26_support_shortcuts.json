@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://support.claude.com/en/articles/10263469-use-claude-app-intents-shortcuts-and-widgets-on-ios",
+    "name": "Use Claude app intents, shortcuts, and widgets on iOS",
+    "snippet": "The widget includes buttons for: Starting a new chat. Instantly opening the app in dictation mode. Taking a photo to share ...",
+    "host_name": "support.claude.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/12626668-use-quick-entry-with-claude-desktop-on-mac",
+    "name": "Use quick entry with Claude Desktop on Mac",
+    "snippet": "Once enabled, double-tapping Option will open a text box where you can type your message and start a new chat. You can also click \"New chat\" to ...",
+    "host_name": "support.claude.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14553413-claude-code-cheatsheet",
+    "name": "Claude Code cheatsheet",
+    "snippet": "This page collects the vocabulary, commands, and keyboard shortcuts. Keyboard shortcuts Key Action Shift + Tab Cycle permission mode: default → ...",
+    "host_name": "support.claude.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14729294-open-claude-desktop-with-a-link",
+    "name": "Open Claude Desktop with a link",
+    "snippet": "How deep links work · Start a new chat · Open an existing chat or project · Start a Claude Code session · Start a Claude Cowork session · Test a deep ...",
+    "host_name": "support.claude.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/11101966-use-voice-mode",
+    "name": "Use voice mode | Claude Help Center",
+    "snippet": "Log in to your Claude account and start a new chat. · Tap the sound wave symbol in the lower right corner of the chat window to activate voice ...",
+    "host_name": "support.claude.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/10534883-use-the-claude-widget-on-android",
+    "name": "Use the Claude widget on Android",
+    "snippet": "Tap the camera button to start a new chat and immediately open your camera. You can capture an image and share it with Claude for analysis ...",
+    "host_name": "support.claude.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14479591-use-dictation-in-office-agents",
+    "name": "Use dictation in Office agents | Claude Help Center",
+    "snippet": "Click the microphone icon in the chat input, speak, and your words appear in the composer as you talk. Dictation is available for ...",
+    "host_name": "support.claude.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/12260368-use-incognito-chats",
+    "name": "Use incognito chats | Claude Help Center",
+    "snippet": "When starting a new chat with Claude outside of a project, you'll see a ghost icon in the upper right corner of your screen: Click the ghost icon to enable ...",
+    "host_name": "support.claude.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/14898120-open-the-claude-mobile-app-with-a-link",
+    "name": "Open the Claude mobile app with a link",
+    "snippet": "Third-party apps, shortcuts, and web pages can use these links to open the Code tab, jump to an existing session, or prefill the new-session ...",
+    "host_name": "support.claude.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://support.claude.com/en/articles/11176164-use-connectors-to-extend-claude-s-capabilities",
+    "name": "Use connectors to extend Claude's capabilities",
+    "snippet": "Click the \"+\" button in the lower left corner of your chat, or type \"/\" to open the menu. · Hover over “Connectors.” · Select “Manage connectors.”.",
+    "host_name": "support.claude.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

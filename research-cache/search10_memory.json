@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://support.claude.com/en/articles/11817273-use-claude-s-chat-search-and-memory-to-build-on-previous-context",
+    "name": "Use Claude's chat search and memory to build on previous context",
+    "snippet": "Additionally, Claude can remember context from previous chats, creating continuity across your conversations. This article introduces Claude's chat search and ...\nAdditionally, Claude can remember context from previous chats, creating continuity across your conversations. This article introduces Claude’s chat search and memory capabilities and explains how they work, what Claude can and can’t remember, and how you can toggle the features on/off.",
+    "host_name": "support.claude.com",
+    "rank": 0,
+    "date": "Jul 16, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1hr0tif/does_claude_remember_between_individual_chats_in",
+    "name": "Does Claude 'remember' between individual chats in the same project? - Reddit",
+    "snippet": "Claude has no memory between chats, so you either need to put those facts in the project or use a MCP memory server/Obsidian vault etc. Claude retains memory between chats - weird? : r/claudexplorers Claude can now reference your previous conversations : r/ClaudeAI More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@christianaistudio/activate-claudes-hidden-memory-it-will-remember-your-style-clients-and-projects-9475d1c5175f",
+    "name": "How to Enable Claude Memory: A Practical Guide to Search, Manage, and Import Your Context | Medium",
+    "snippet": "Claude Memory is the feature that stops you from re-explaining yourself every time you open a new chat: enable memory in Claude once, and the AI ...\nClaude Memory is the feature that stops you from re-explaining yourself every time you open a new chat: enable memory in Claude once, and the AI starts retaining your preferences,...",
+    "host_name": "medium.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=3C-_SSc9TUM",
+    "name": "Claude AI Now Remembers EVERYTHING | MEMORY | Here's How to Set It Up - YouTube",
+    "snippet": "Claude AI just made its Memory feature FREE for everyone — and added a one-click import tool that transfers everything ChatGPT knows about ... Missing: preferences | Show results with: preferences",
+    "host_name": "www.youtube.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/claudeaicommunity/posts/1251772113656620",
+    "name": "How to give Claude persistent memory across chats using a hidden URL? - Facebook",
+    "snippet": "✏️ You can tell Claude what to remember mid- conversation - no need to go into settings - and it updates immediately. If you want more control, ... Does Claude remember past conversations like Chat GPT? - Facebook Is there a way to set Claude to remember info across chats? I'm new, but am wondering if it's ... More results from www.facebook.com",
+    "host_name": "www.facebook.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://techgenies.com/ai-chatbot-conversations-archive",
+    "name": "How AI Chatbot Memory and Archiving Work - TechGenies",
+    "snippet": "Claude can remember within a session and may store archived chats, but does not automatically recall history across sessions unless configured.",
+    "host_name": "techgenies.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=Gl00-jFmKCM&vl=en",
+    "name": "How to Use Memory in Claude AI (Step-by-Step Guide) - YouTube",
+    "snippet": "... Memory feature in Claude to create a ... Claude AI to remember useful preferences, workflows, and ongoing projects across conversations.",
+    "host_name": "www.youtube.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://lumichats.com/blog/claude-memory-2026-complete-guide-how-to-use",
+    "name": "Claude Memory 2026: Complete Guide — What It Stores, How to Control It, and Whether to Trust It | LumiChats",
+    "snippet": "Claude now remembers your preferences, ongoing projects, and working style across every conversation — automatically. This is the complete ...\nClaude remembers your preferences and projects across chats. Exactly what it stores, how to view or delete memories, and the privacy facts.",
+    "host_name": "lumichats.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://siliconangle.com/2025/09/11/anthropic-lets-claude-remember-previous-interactions-streamline-work",
+    "name": "Anthropic lets Claude remember previous interactions to streamline work - SiliconANGLE",
+    "snippet": "One month ago, Anthropic gave Claude the ability to remember past chats when prompted to do so, but now users won't need to ask. Claude's memory ...",
+    "host_name": "siliconangle.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://claude.com/blog/memory",
+    "name": "Bringing memory to teams | Claude by Anthropic",
+    "snippet": "To see memory in action, enable the feature in Settings, and let Claude generate memory with your past chats at initial set-up. Ask Claude questions like “what were we working on last week?” to see what Claude remembers across your existing chats and connected tools.",
+    "host_name": "claude.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
