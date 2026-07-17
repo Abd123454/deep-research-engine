@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getDb } from "@/lib/db";
 import { logger } from "@/lib/logger";
+import { getUserId, requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -23,7 +24,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const userId = "default"; // TODO: get from session
+  // Refuse anonymous access when auth is configured.
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
+  // SECURITY: resolve userId from auth (was hardcoded "default").
+  const userId = getUserId(req);
   const { action, key, value, shared = false, prefix } = body;
 
   if (!action) return NextResponse.json({ error: "Action required" }, { status: 400 });

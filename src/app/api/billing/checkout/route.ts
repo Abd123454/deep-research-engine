@@ -1,6 +1,7 @@
 // POST /api/billing/checkout — create Stripe Checkout Session
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckoutSession, PLANS } from "@/lib/stripe";
+import { getUserId, requireAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   let body: { plan?: string };
@@ -18,7 +19,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "This plan has no Stripe price (contact sales for Enterprise)" }, { status: 400 });
   }
 
-  const userId = "default"; // TODO: get from session
+  // Refuse anonymous access when auth is configured.
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
+  // SECURITY: resolve userId from auth (was hardcoded "default").
+  const userId = getUserId(req);
   const origin = req.headers.get("origin") || "http://localhost:3000";
 
   const url = await createCheckoutSession(userId, priceId, `${origin}/billing?success=true`, `${origin}/billing?canceled=true`);

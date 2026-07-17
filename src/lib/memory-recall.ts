@@ -85,12 +85,34 @@ export async function recallRelevantMemories(
           };
         });
 
-        // Update access count for recalled memories.
-        for (const r of results) {
-          await prisma.longTermMemory.update({
-            where: { id: r.id },
-            data: { accessCount: { increment: 1 }, lastAccessed: new Date() },
-          }).catch(() => {});
+        // PERFORMANCE: was N+1 — one `prisma.longTermMemory.update` per
+        // recalled memory inside a sequential await loop. Now batched
+        // into a single transaction. All updates bump `accessCount` by 1
+        // and set `lastAccessed` to now, so we use `updateMany` per id
+        // (Prisma can't yet do a single updateMany with per-row data,
+        // but a $transaction of updateMany calls is still much cheaper
+        // than N round-trips — the DB executes them in one transaction).
+        if (results.length > 0) {
+          try {
+            const now = new Date();
+            await prisma.$transaction(
+              results.map((r) =>
+                prisma.longTermMemory.updateMany({
+                  where: { id: r.id },
+                  data: {
+                    accessCount: { increment: 1 },
+                    lastAccessed: now,
+                  },
+                })
+              )
+            );
+          } catch (err) {
+            // Non-fatal — recall results are still returned to the caller.
+            logger.warn(
+              { module: "memory-recall", err: err instanceof Error ? err.message : String(err) },
+              "Failed to batch-update memory access counters"
+            );
+          }
         }
 
         return results.sort((a, b) => b.score - a.score);

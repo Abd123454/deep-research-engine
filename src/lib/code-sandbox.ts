@@ -199,11 +199,17 @@ export function runPython(code: string): CodeResult {
       maxBuffer: 1024 * 1024,
       encoding: "utf-8",
       cwd: tmpDir,
+      // SECURITY: minimal env ONLY — never spread process.env (would leak
+      // NVIDIA_API_KEY, OPENAI_API_KEY, AUTH_PASSWORD, etc. to user code).
       env: {
-        ...process.env,
         PATH: "/usr/bin:/usr/local/bin",
+        HOME: tmpDir,
         PYTHONIOENCODING: "utf-8",
         PYTHONDONTWRITEBYTECODE: "1",
+        PYTHONUNBUFFERED: "1",
+        LANG: "en_US.UTF-8",
+        LC_ALL: "en_US.UTF-8",
+        TZ: "UTC",
       } as unknown as NodeJS.ProcessEnv,
     }) as string;
 

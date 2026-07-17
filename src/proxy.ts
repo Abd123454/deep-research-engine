@@ -7,9 +7,13 @@
 // explicitly-allowed domain (via ALLOWED_ORIGINS env var).
 //
 // Same-origin requests (the normal case: browser → same server) always pass.
-// Non-browser requests (curl, no Origin header) are allowed for DX/testing.
+// Non-browser requests without Origin header are allowed ONLY for safe
+// methods (GET, HEAD, OPTIONS) — POST/PUT/DELETE without Origin are rejected
+// to prevent CSRF bypass via curl/forged requests.
 
 import { NextRequest, NextResponse } from "next/server";
+
+const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
 function isAllowedOrigin(origin: string): boolean {
   // Same-origin is always allowed — we check against the Host header.
@@ -40,9 +44,37 @@ export function proxy(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // Handle CORS preflight
+  if (req.method === "OPTIONS") {
+    const origin = req.headers.get("origin");
+    if (origin && isAllowedOrigin(origin)) {
+      const res = new NextResponse(null, { status: 204 });
+      res.headers.set("Access-Control-Allow-Origin", origin);
+      res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+      res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
+      res.headers.set("Access-Control-Max-Age", "86400");
+      return res;
+    }
+    return new NextResponse(null, { status: 403 });
+  }
+
   const origin = req.headers.get("origin");
-  // No Origin header = non-browser request (curl, server-to-server). Allow.
+
+  // No Origin header = non-browser request (curl, server-to-server).
+  // Allow only for safe methods (GET, HEAD) — block POST/PUT/DELETE to
+  // prevent CSRF-style bypass where an attacker forges a request without Origin.
   if (!origin) {
+    if (SAFE_METHODS.includes(req.method)) {
+      return NextResponse.next();
+    }
+    // State-changing methods without Origin header — reject in production
+    if (process.env.NODE_ENV === "production") {
+      return new NextResponse(
+        JSON.stringify({ error: "Missing Origin header for state-changing request" }),
+        { status: 403, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    // Dev: allow for DX
     return NextResponse.next();
   }
 
@@ -50,10 +82,7 @@ export function proxy(req: NextRequest) {
     const res = NextResponse.next();
     res.headers.set("Access-Control-Allow-Origin", origin);
     res.headers.set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-    res.headers.set(
-      "Access-Control-Allow-Headers",
-      "Content-Type, Authorization"
-    );
+    res.headers.set("Access-Control-Allow-Headers", "Content-Type, Authorization");
     res.headers.set("Access-Control-Max-Age", "86400");
     return res;
   }

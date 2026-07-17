@@ -28,7 +28,18 @@ export async function POST(req: NextRequest) {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
+        // SECURITY: the userId here comes from the checkout session that
+        // *we* created (see /api/billing/checkout). It is populated from
+        // our auth-resolved userId at checkout time. The fallback to
+        // "default" only triggers if a checkout was created without our
+        // client_reference_id/metadata — log a warning so that's visible.
         const userId = session.client_reference_id || session.metadata?.userId || "default";
+        if (userId === "default") {
+          logger.warn(
+            { module: "billing-webhook", sessionId: session.id },
+            "Stripe checkout.session.completed has no userId — falling back to 'default'"
+          );
+        }
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
 

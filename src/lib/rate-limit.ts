@@ -18,9 +18,20 @@ interface RateLimitResult {
 }
 
 const WINDOW_MS = 60_000; // 1 minute
+const DAILY_WINDOW_MS = 86_400_000; // 24 hours
 const MAX_STARTS = 5;
 const MAX_CONCURRENT = 3;
 const MAX_DAILY = 50;
+
+// Memory-leak protection: hard cap on the in-memory Map. When exceeded,
+// we aggressively prune entries with no recent activity (older than the
+// shorter window — WINDOW_MS, which is 1 minute). Anything still active
+// within the last minute is preserved so we don't drop rate-limit state
+// for ongoing bursts.
+const MAX_MAP_SIZE = 10_000;
+// Periodic cleanup interval (5 minutes). Also runs lazily on every check
+// when the Map exceeds MAX_MAP_SIZE.
+const CLEANUP_INTERVAL_MS = 5 * 60_000;
 
 // ---------- In-memory fallback ----------
 
@@ -28,6 +39,8 @@ interface MemoryBucket {
   starts: number[];
   concurrent: number;
   daily: number[];
+  /** Last time this bucket was touched (used for cleanup ordering). */
+  lastTouched: number;
 }
 
 const memoryBuckets = new Map<string, MemoryBucket>();
@@ -35,17 +48,84 @@ const memoryBuckets = new Map<string, MemoryBucket>();
 function getMemoryBucket(ip: string): MemoryBucket {
   let b = memoryBuckets.get(ip);
   if (!b) {
-    b = { starts: [], concurrent: 0, daily: [] };
+    b = { starts: [], concurrent: 0, daily: [], lastTouched: Date.now() };
     memoryBuckets.set(ip, b);
   }
   return b;
 }
 
+/**
+ * Drop buckets that have no activity within the cleanup window.
+ *
+ * A bucket is "stale" when ALL of:
+ *   - no starts within WINDOW_MS
+ *   - no daily entries within DAILY_WINDOW_MS
+ *   - concurrent === 0
+ *
+ * Concurrent counters are preserved (a long-running research shouldn't be
+ * forgotten just because it's been >1 min since it started).
+ */
+function cleanupStaleBuckets(now: number): number {
+  let deleted = 0;
+  for (const [ip, bucket] of memoryBuckets) {
+    bucket.starts = bucket.starts.filter((t) => now - t < WINDOW_MS);
+    bucket.daily = bucket.daily.filter((t) => now - t < DAILY_WINDOW_MS);
+    if (
+      bucket.starts.length === 0 &&
+      bucket.daily.length === 0 &&
+      bucket.concurrent === 0
+    ) {
+      memoryBuckets.delete(ip);
+      deleted++;
+    }
+  }
+  return deleted;
+}
+
+/**
+ * Aggressive prune used when the Map exceeds MAX_MAP_SIZE.
+ *
+ * Drops the oldest buckets first (by `lastTouched`), preserving any with
+ * a non-zero `concurrent` count (so we never lose track of an in-flight
+ * research's releaseConcurrency() call).
+ */
+function pruneOldestBuckets(targetSize: number): number {
+  if (memoryBuckets.size <= targetSize) return 0;
+  // Sort by lastTouched ascending; preserve concurrent > 0.
+  const entries = Array.from(memoryBuckets.entries())
+    .filter(([, b]) => b.concurrent === 0)
+    .sort((a, b) => a[1].lastTouched - b[1].lastTouched);
+  const toDelete = Math.max(0, memoryBuckets.size - targetSize);
+  let deleted = 0;
+  for (const [ip] of entries) {
+    if (deleted >= toDelete) break;
+    memoryBuckets.delete(ip);
+    deleted++;
+  }
+  return deleted;
+}
+
 function memoryRateLimit(ip: string): RateLimitResult {
   const now = Date.now();
+
+  // Lazy cleanup: if the Map has grown past the hard cap, prune oldest
+  // entries first, then run a full stale-bucket sweep. This bounds
+  // memory usage under sustained traffic from many distinct IPs.
+  if (memoryBuckets.size > MAX_MAP_SIZE) {
+    const pruned = pruneOldestBuckets(Math.floor(MAX_MAP_SIZE * 0.9));
+    const stale = cleanupStaleBuckets(now);
+    if (pruned > 0 || stale > 0) {
+      logger.warn(
+        { module: "rate-limit", pruned, stale, remaining: memoryBuckets.size },
+        "Rate-limit memory bucket map exceeded cap — pruned"
+      );
+    }
+  }
+
   const bucket = getMemoryBucket(ip);
+  bucket.lastTouched = now;
   bucket.starts = bucket.starts.filter((t) => now - t < WINDOW_MS);
-  bucket.daily = bucket.daily.filter((t) => now - t < 86400000);
+  bucket.daily = bucket.daily.filter((t) => now - t < DAILY_WINDOW_MS);
 
   if (bucket.daily.length >= MAX_DAILY) {
     return { ok: false, reason: `Daily limit exceeded (${MAX_DAILY}/day).`, retryAfterSec: 86400 };
@@ -132,7 +212,10 @@ export function releaseConcurrency(ip: string): void {
     return;
   }
   const bucket = memoryBuckets.get(ip);
-  if (bucket && bucket.concurrent > 0) bucket.concurrent--;
+  if (bucket) {
+    if (bucket.concurrent > 0) bucket.concurrent--;
+    bucket.lastTouched = Date.now();
+  }
 }
 
 /** Extract client IP from a Next.js request. */
@@ -142,15 +225,24 @@ export function getClientIP(req: Request): string {
   return req.headers.get("x-real-ip") || "unknown";
 }
 
-// Periodic cleanup of stale memory buckets.
+// Periodic cleanup of stale memory buckets (every 5 minutes).
+// Drops any bucket with no starts in the last minute, no daily entries
+// in the last 24h, and zero in-flight concurrent researches.
+//
+// This bounds the Map's growth even under sustained traffic from many
+// distinct IPs (DoS / scrapers). A lazy size-cap prune also runs inside
+// `memoryRateLimit` whenever `MAX_MAP_SIZE` is exceeded, so we're
+// protected even if the interval timer is delayed (e.g. by event-loop
+// starvation).
 if (typeof setInterval !== "undefined") {
   setInterval(() => {
     const now = Date.now();
-    for (const [ip, bucket] of memoryBuckets) {
-      bucket.starts = bucket.starts.filter((t) => now - t < WINDOW_MS);
-      if (bucket.starts.length === 0 && bucket.concurrent === 0) {
-        memoryBuckets.delete(ip);
-      }
+    const deleted = cleanupStaleBuckets(now);
+    if (deleted > 0) {
+      logger.debug(
+        { module: "rate-limit", deleted, remaining: memoryBuckets.size },
+        "Periodic cleanup of stale rate-limit buckets"
+      );
     }
-  }, 5 * 60_000).unref?.();
+  }, CLEANUP_INTERVAL_MS).unref?.();
 }

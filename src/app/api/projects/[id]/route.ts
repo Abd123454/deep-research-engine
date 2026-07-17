@@ -7,6 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { ProjectRow } from "@/lib/sqlite-types";
+import { decryptCredentials } from "@/lib/credentials";
 
 export async function GET(
   _req: NextRequest,
@@ -28,7 +29,16 @@ export async function GET(
           },
         });
         if (!project) return NextResponse.json({ error: "Not found." }, { status: 404 });
-        return NextResponse.json({ ok: true, project });
+        // Decrypt connector credentials before returning (they're stored
+        // encrypted at rest — see src/lib/credentials.ts).
+        const projectWithSafeConnectors = {
+          ...project,
+          connectors: project.connectors.map((c) => ({
+            ...c,
+            credentials: decryptCredentials(c.credentials),
+          })),
+        };
+        return NextResponse.json({ ok: true, project: projectWithSafeConnectors });
       }
     } catch (err) {
   Sentry.captureException(err);
