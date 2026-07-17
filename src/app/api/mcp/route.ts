@@ -14,11 +14,17 @@
 // }
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdminAccess } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
+  // IP allowlist guard for admin/operational tooling (no-op when
+  // ADMIN_IP_ALLOWLIST is unset — see src/lib/auth.ts).
+  const adminFail = requireAdminAccess(req);
+  if (adminFail) return adminFail;
+
   let body: { method?: string; params?: Record<string, unknown> };
   try { body = await req.json(); } catch {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
@@ -102,7 +108,11 @@ export async function POST(req: NextRequest) {
 }
 
 // GET: return MCP server info
-export async function GET() {
+export async function GET(req: NextRequest) {
+  // IP allowlist guard (no-op when ADMIN_IP_ALLOWLIST is unset).
+  const adminFail = requireAdminAccess(req);
+  if (adminFail) return adminFail;
+
   return NextResponse.json({
     server: "quaesitor",
     version: "2.1.0",

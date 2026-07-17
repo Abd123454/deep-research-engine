@@ -26,6 +26,10 @@ import {
   PenLine,
   Wrench,
   Layers,
+  Shield,
+  Zap,
+  ShieldCheck,
+  Scale,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ExportMenu } from "@/components/export/ExportMenu";
@@ -33,7 +37,16 @@ import { CompassLogo } from "@/components/CompassLogo";
 
 // ---------- Types ----------
 
-type AgentRole = "researcher" | "coder" | "analyst" | "writer" | "generalist";
+type AgentRole =
+  | "researcher"
+  | "coder"
+  | "analyst"
+  | "writer"
+  | "generalist"
+  | "security_analyst"
+  | "electrical_engineer"
+  | "fact_checker"
+  | "bias_auditor";
 
 interface Subtask {
   id: string;
@@ -85,6 +98,10 @@ const ROLE_ICON: Record<AgentRole, React.ElementType> = {
   analyst: BarChart3,
   writer: PenLine,
   generalist: CompassLogo,
+  security_analyst: Shield,
+  electrical_engineer: Zap,
+  fact_checker: ShieldCheck,
+  bias_auditor: Scale,
 };
 
 const ROLE_COLOR: Record<AgentRole, string> = {
@@ -93,6 +110,10 @@ const ROLE_COLOR: Record<AgentRole, string> = {
   analyst: "text-[#a37a3f] bg-[#f4f1ea] dark:bg-[#322e28]",
   writer: "text-[#9b6b5c] bg-[#f4f1ea] dark:bg-[#322e28]",
   generalist: "text-[#6b6358] bg-[#f4f1ea] dark:bg-[#322e28]",
+  security_analyst: "text-[#7a5a3a] bg-[#f4f1ea] dark:bg-[#322e28]",
+  electrical_engineer: "text-[#9b6b3f] bg-[#f4f1ea] dark:bg-[#322e28]",
+  fact_checker: "text-[#8b6f47] bg-[#f4f1ea] dark:bg-[#322e28]",
+  bias_auditor: "text-[#a37a3f] bg-[#f4f1ea] dark:bg-[#322e28]",
 };
 
 const ROLE_LABEL: Record<AgentRole, string> = {
@@ -101,6 +122,10 @@ const ROLE_LABEL: Record<AgentRole, string> = {
   analyst: "Analyst",
   writer: "Writer",
   generalist: "Generalist",
+  security_analyst: "Security Analyst",
+  electrical_engineer: "Electrical Engineer",
+  fact_checker: "Fact Checker",
+  bias_auditor: "Bias Auditor",
 };
 
 // ---------- Component ----------

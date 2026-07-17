@@ -15,6 +15,15 @@ interface ChatMessage {
   content: string;
 }
 
+/** Provider attribution shown next to the "Quaesitor" label. */
+interface ProviderAttribution {
+  provider: string;       // machine name (e.g. "nvidia")
+  displayName: string;    // human name (e.g. "NVIDIA")
+  region: string;         // e.g. "US", "local"
+  model: string;          // e.g. "meta/llama-3.1-70b-instruct"
+  expected?: boolean;     // true for the pre-stream meta event (may differ from actual)
+}
+
 interface ChatCardProps {
   initialMessage: string;
   conversationId?: string;
@@ -31,6 +40,9 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const [error, setError] = React.useState("");
   const [tokens, setTokens] = React.useState(0);
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
+  // Provider attribution: populated from the SSE `meta` event (expected,
+  // pre-stream) and corrected by the `done` event (actual post-stream).
+  const [providerInfo, setProviderInfo] = React.useState<ProviderAttribution | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
@@ -39,6 +51,12 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingResponse]);
+
+  // Build the "Quaesitor · <model> via <Provider> (<region>)" subtitle.
+  const providerSubtitle = React.useMemo(() => {
+    if (!providerInfo) return null;
+    return `${providerInfo.model} via ${providerInfo.displayName} (${providerInfo.region})`;
+  }, [providerInfo]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -81,10 +99,25 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               if (!line.startsWith("data: ")) continue;
               try {
                 const data = JSON.parse(line.slice(6)) as {
-                  token?: string; done?: boolean; conversationId?: string;
+                  type?: string; token?: string; done?: boolean; conversationId?: string;
                   tokensUsed?: number; error?: string;
+                  provider?: string; providerDisplayName?: string; region?: string;
+                  model?: string; expected?: boolean;
                 };
                 if (cancelled) return;
+                // Provider transparency: meta event arrives BEFORE the first
+                // token so the UI can show attribution immediately. The done
+                // event carries the ACTUAL provider/model (may differ if
+                // cross-provider fallback kicked in).
+                if (data.type === "meta" && data.provider) {
+                  setProviderInfo({
+                    provider: data.provider,
+                    displayName: data.providerDisplayName || data.provider,
+                    region: data.region || "unknown",
+                    model: data.model || "unknown",
+                    expected: data.expected === true,
+                  });
+                }
                 if (data.token) {
                   fullResponse += data.token;
                   setStreamingResponse((r) => r + data.token);
@@ -92,6 +125,17 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                 if (data.done) {
                   if (data.conversationId) setConversationId(data.conversationId);
                   if (data.tokensUsed) setTokens(data.tokensUsed);
+                  // Correct the attribution with the ACTUAL provider/model
+                  // used (post-fallback). Skipped only if the meta event
+                  // already matched — but it's cheaper to just overwrite.
+                  if (data.provider) {
+                    setProviderInfo({
+                      provider: data.provider,
+                      displayName: data.providerDisplayName || data.provider,
+                      region: data.region || "unknown",
+                      model: data.model || "unknown",
+                    });
+                  }
                 }
                 if (data.error) setError(data.error);
               } catch (err) {
@@ -137,6 +181,8 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
     setMessages((prev) => [...prev, { role: "user", content: userMsg }]);
     setStreaming(true);
     setStreamingResponse("");
+    // Reset provider attribution — it'll be re-populated by the meta event.
+    setProviderInfo(null);
     const controller = new AbortController();
     abortRef.current = controller;
     let fullResponse = "";
@@ -167,12 +213,31 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
             if (!line.startsWith("data: ")) continue;
             try {
               const data = JSON.parse(line.slice(6)) as {
-                token?: string; done?: boolean; conversationId?: string;
+                type?: string; token?: string; done?: boolean; conversationId?: string;
                 tokensUsed?: number; error?: string;
+                provider?: string; providerDisplayName?: string; region?: string;
+                model?: string; expected?: boolean;
               };
+              if (data.type === "meta" && data.provider) {
+                setProviderInfo({
+                  provider: data.provider,
+                  displayName: data.providerDisplayName || data.provider,
+                  region: data.region || "unknown",
+                  model: data.model || "unknown",
+                  expected: data.expected === true,
+                });
+              }
               if (data.token) { fullResponse += data.token; setStreamingResponse((r) => r + data.token); }
               if (data.done && data.conversationId) setConversationId(data.conversationId);
               if (data.done && data.tokensUsed) setTokens((t) => t + (data.tokensUsed ?? 0));
+              if (data.done && data.provider) {
+                setProviderInfo({
+                  provider: data.provider,
+                  displayName: data.providerDisplayName || data.provider,
+                  region: data.region || "unknown",
+                  model: data.model || "unknown",
+                });
+              }
               if (data.error) setError(data.error);
             } catch (err) {
               if (process.env.NODE_ENV === "production") Sentry.captureException(err);
@@ -243,9 +308,20 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
             </div>
           ) : (
             <div key={i} className="mb-6 group/msg">
-              {/* Assistant label — Claude shows "Claude" above first assistant message */}
-              <div className="flex items-center gap-2 mb-1.5">
+              {/* Assistant label — "Quaesitor" + provider attribution for the latest assistant message */}
+              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
                 <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
+                {/* Provider transparency: only the most recent assistant
+                    message gets the attribution subtitle (older history
+                    isn't retroactively annotated). */}
+                {i === messages.length - 1 && providerSubtitle && (
+                  <span
+                    className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
+                    title={providerSubtitle}
+                  >
+                    · {providerSubtitle}
+                  </span>
+                )}
               </div>
               <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
                 <ReactMarkdown components={quaesitorMarkdownComponents}>{msg.content}</ReactMarkdown>
@@ -266,8 +342,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
 
         {streaming && streamingResponse && (
           <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1.5">
+            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
               <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
+              {providerSubtitle && (
+                <span
+                  className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
+                  title={providerSubtitle}
+                >
+                  · {providerSubtitle}
+                </span>
+              )}
             </div>
             <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
               <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
@@ -277,10 +361,24 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         )}
 
         {streaming && !streamingResponse && (
-          <div className="mb-6 space-y-2 animate-pulse">
-            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
-            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
-            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
+          <div className="mb-6">
+            {/* Even before the first token, show the provider attribution if the meta event has arrived. */}
+            {providerSubtitle && (
+              <div className="flex items-center gap-2 mb-1.5">
+                <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
+                <span
+                  className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
+                  title={providerSubtitle}
+                >
+                  · {providerSubtitle}
+                </span>
+              </div>
+            )}
+            <div className={`space-y-2 animate-pulse ${providerSubtitle ? "" : "mt-0"}`}>
+              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
+              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
+              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
+            </div>
           </div>
         )}
       </div>

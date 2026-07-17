@@ -113,15 +113,25 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
 
               {/* Citation verification badge */}
               {job.verificationReport && job.verificationReport.total > 0 && (
-                <div className="flex items-center gap-1.5 text-[10px]">
+                <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
                   {job.verificationReport.unverified === 0 && job.verificationReport.contradicts === 0 ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-[#8b4513]/10 text-[#8b4513] px-2 py-0.5 font-medium">
                       ✓ {job.verificationReport.verified}/{job.verificationReport.total} citations verified
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#d4a574]/15 text-[#a37a3f] dark:text-[#d4a574] px-2 py-0.5 font-medium">
-                      ⚠ {job.verificationReport.unverified} unverified / {job.verificationReport.total} total
-                    </span>
+                    <>
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[#d4a574]/15 text-[#a37a3f] dark:text-[#d4a574] px-2 py-0.5 font-medium">
+                        ⚠ {job.verificationReport.unverified} unverified / {job.verificationReport.total} total
+                      </span>
+                      {job.verificationReport.contradicts > 0 && (
+                        <span
+                          className="inline-flex items-center gap-1 rounded-full bg-[#a33a3a]/10 text-[#a33a3a] px-2 py-0.5 font-medium"
+                          title={job.verificationReport.warnings?.join("\n\n")}
+                        >
+                          ✕ {job.verificationReport.contradicts} contradiction{job.verificationReport.contradicts === 1 ? "" : "s"}
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               )}

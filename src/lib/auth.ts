@@ -121,3 +121,63 @@ export function requireAuth(req: NextRequest): NextResponse | null {
     }
   );
 }
+
+/**
+ * Routes that expose sensitive admin/operational tooling. These are gated
+ * by `requireAdminAccess` in addition to `requireAuth` so operators can
+ * further restrict them to a known IP allowlist (e.g. corporate NAT or
+ * bastion hosts) even when auth credentials have been issued.
+ */
+const ADMIN_ROUTES = ["/api/mcp", "/api/audit-logs"];
+
+/**
+ * IP allowlist guard for sensitive admin routes.
+ *
+ * If `ADMIN_IP_ALLOWLIST` is unset (the default), this function is a no-op:
+ * admin routes fall back to whatever `requireAuth` enforces (Basic Auth in
+ * production, open in dev). This preserves existing behavior.
+ *
+ * If `ADMIN_IP_ALLOWLIST` is set (comma-separated IPs/CIDRs — CIDR matching
+ * is intentionally NOT implemented; only exact IP string match is supported
+ * to keep the surface minimal), the client IP (from `x-forwarded-for` first
+ * hop, falling back to `x-real-ip`) must appear in the allowlist. Otherwise
+ * a 403 is returned.
+ *
+ * Call this BEFORE `requireAuth` in admin route handlers so the allowlist
+ * check fires even when no credentials are sent (defense in depth):
+ *
+ *   const adminFail = requireAdminAccess(req);
+ *   if (adminFail) return adminFail;
+ *   const authFail = requireAuth(req);
+ *   if (authFail) return authFail;
+ *
+ * NOTE: CIDR matching is not implemented — operators should list explicit
+ * IPs or use a reverse proxy (Caddy/Nginx) to normalize egress IPs. This
+ * matches the audit's exact-string-match recommendation.
+ */
+export function requireAdminAccess(req: NextRequest): NextResponse | null {
+  const path = req.nextUrl.pathname;
+  if (!ADMIN_ROUTES.some((r) => path.startsWith(r))) return null;
+
+  // No allowlist configured = defer to auth (existing behavior).
+  const allowlist = process.env.ADMIN_IP_ALLOWLIST;
+  if (!allowlist) return null;
+
+  const clientIp =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  const allowed = allowlist
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (!allowed.includes(clientIp)) {
+    return NextResponse.json(
+      { ok: false, error: "Admin access denied from this IP address." },
+      { status: 403 }
+    );
+  }
+  return null;
+}

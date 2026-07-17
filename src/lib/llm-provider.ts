@@ -532,3 +532,41 @@ export async function getLLM(): Promise<LLMProviderApi> {
     smart: (opts) => nvidiaCompleteWithFallback(opts, smartModels),
   };
 }
+
+/**
+ * Provider display info for transparency/disclosure in chat UI.
+ *
+ * Returns a human-readable provider name and a best-effort region label
+ * for the given provider. Used by the chat SSE stream to emit a `meta`
+ * event so users can see which backend served their request (e.g.
+ * "Quaesitor · meta/llama-3.1-70b-instruct via NVIDIA (US)").
+ *
+ * Region is the data-center region of the provider's default API endpoint:
+ *   - nvidia    → US  (NVIDIA NIM at integrate.api.nvidia.com is US-hosted)
+ *   - openai    → US  (default OpenAI API, api.openai.com)
+ *   - anthropic → US  (Anthropic API, api.anthropic.com)
+ *   - ollama    → local (self-hosted on the operator's server)
+ *
+ * Operators with a custom OPENAI_BASE_URL / ANTHROPIC_BASE_URL pointing
+ * to a non-US region should override this mapping or extend it.
+ */
+export interface ProviderDisplayInfo {
+  provider: string;
+  displayName: string;
+  region: string;
+}
+
+export function getProviderDisplayInfo(provider: string): ProviderDisplayInfo {
+  switch (provider) {
+    case "nvidia":
+      return { provider, displayName: "NVIDIA", region: "US" };
+    case "openai":
+      return { provider, displayName: "OpenAI", region: "US" };
+    case "anthropic":
+      return { provider, displayName: "Anthropic", region: "US" };
+    case "ollama":
+      return { provider, displayName: "Ollama", region: "local" };
+    default:
+      return { provider, displayName: provider, region: "unknown" };
+  }
+}

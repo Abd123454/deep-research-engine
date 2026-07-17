@@ -5,6 +5,15 @@
 //   - nature.com, science.org, ieee.org, arxiv.org
 //   - reuters.com, bbc.com, nytimes.com
 //   - wikipedia.org (trusted reference)
+//   - Multi-cultural academic repositories:
+//       CNKI (中国知网), Baidu Scholar, Chinese Academy of Sciences,
+//       J-STAGE, CiNii (Japan), Al-Manhal (دار المنهل),
+//       Dar Al-Mandumah, JSTOR Arabic
+//   - Open-access aggregators:
+//       DOAJ, OpenAlex, CORE, PubMed Central
+//   - Regional news of record:
+//       Al Jazeera English, South China Morning Post,
+//       Nikkei Asia, The Wire (India)
 //
 // Tier 2 (60-89): Industry, reputable blogs, documentation
 //   - github.com, stackoverflow.com, stackexchange.com
@@ -20,6 +29,13 @@
 //   -20 Sponsored/advertisement indicators
 //
 // Sources scoring below 30 are dropped from results.
+//
+// The Tier 1 list is intentionally multi-cultural: a query about
+// Chinese AI policy or Arabic literature should not be penalised just
+// because the best sources publish in a non-Western language or under
+// a non-Western domain. Each entry was selected because it is a
+// peer-reviewed index, a national academy, or a long-standing news
+// outlet of record in its region.
 
 export type SourceTier = "tier1" | "tier2" | "tier3";
 
@@ -51,6 +67,7 @@ export interface RankResult {
 // ---------- Domain lists ----------
 
 const TIER1_DOMAINS = [
+  // Western reference
   "wikipedia.org",
   "nature.com",
   "science.org",
@@ -66,6 +83,45 @@ const TIER1_DOMAINS = [
   "sciencedirect.com",
   "springer.com",
   "wiley.com",
+
+  // ── Multi-cultural academic repositories ──────────────────────────
+  // Arabic
+  "manhal.com",           // Al-Manhal (دار المنهل) — Arabic e-books & journals
+  "almanhal.com",
+  "mandumah.com",         // Dar Al-Mandumah — Arabic peer-reviewed journals
+  "search.mandumah.com",
+  "jstor.org",            // JSTOR (Arabic + multilingual archive)
+  // Chinese
+  "cnki.net",             // 中国知网 — China National Knowledge Infrastructure
+  "kns.cnki.net",
+  "oversea.cnki.net",
+  "xueshu.baidu.com",     // Baidu Scholar (百度学术)
+  "cas.cn",               // Chinese Academy of Sciences (中国科学院)
+  "english.cas.cn",
+  // Japanese
+  "jstage.jst.go.jp",     // J-STAGE — Japan's largest academic platform
+  "ci.nii.ac.jp",         // CiNii — Japanese academic search
+
+  // ── Open-access aggregators ────────────────────────────────────────
+  "doaj.org",             // Directory of Open Access Journals
+  "openalex.org",         // OpenAlex — open scholarly graph
+  "core.ac.uk",           // CORE — open-access research papers
+  "ncbi.nlm.nih.gov",     // PubMed Central host (NLH)
+  "pmc.ncbi.nlm.nih.gov",
+
+  // ── Regional news of record ────────────────────────────────────────
+  "aljazeera.com",        // Al Jazeera English (Arabic + English)
+  "scmp.com",             // South China Morning Post (Hong Kong)
+  "asia.nikkei.com",      // Nikkei Asia (Japan)
+  "nikkei.com",
+  "thewire.in",           // The Wire (India)
+  "thehindu.com",         // The Hindu — India newspaper of record
+  "yonhapnews.co.kr",     // Yonhap News Agency — South Korea
+  "haaretz.com",          // Haaretz — Israel / Middle East
+
+  // ── Korean academic ───────────────────────────────────────────────
+  "dbpia.co.kr",          // DBpia — Korean academic database
+  "riss.kr",              // RISS — Research Information Sharing Service (Korea)
 ];
 
 const TIER1_SUFFIXES = [".edu", ".gov", ".mil"];

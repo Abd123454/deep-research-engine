@@ -1,0 +1,263 @@
+# Terms of Service
+
+> **Disclaimer.** This document is a template provided by the Quaesitor
+> Project for general informational purposes only. It is not legal
+> advice and does not create an attorney–client relationship. Before
+> relying on, publishing, or enforcing this document, have a qualified
+> lawyer admitted in your jurisdiction review and adapt it to your
+> specific deployment, customer base, and applicable law.
+
+**Version:** 1.0
+**Last updated:** 2026-07-17
+**Issuer:** Quaesitor Project
+
+---
+
+## 1. Acceptance of Terms
+
+These Terms of Service ("**Terms**") govern your access to and use of
+Quaesitor, including the hosted Software-as-a-Service edition (the
+"**SaaS Edition**"), the self-hosted edition (the "**Self-Hosted
+Edition**"), the source code, documentation, and any related services
+(collectively, the "**Service**"). The Service is licensed under the
+GNU Affero General Public License v3.0 ("**AGPL-3.0**") and is offered
+by the Quaesitor Project ("**Quaesitor**", "**we**", "**us**", or
+"**our**").
+
+By creating an account, deploying the Self-Hosted Edition, or otherwise
+accessing or using the Service, you ("**you**" or "**User**") agree to
+be bound by these Terms. If you are using the Service on behalf of an
+organisation, you represent that you have authority to bind that
+organisation, and the terms "you" and "User" refer to both you and that
+organisation. If you do not agree to these Terms, do not access or use
+the Service.
+
+Where the SaaS Edition and Self-Hosted Edition require different
+treatment, the relevant section is annotated with
+"`[Self-Hosted Edition]`" or "`[SaaS Edition]`".
+
+## 2. Eligibility
+
+You must be at least thirteen (13) years of age, or the minimum age of
+digital consent in your jurisdiction, to use the Service. If you are
+between 13 and the age of majority in your jurisdiction, you represent
+that your parent or legal guardian has reviewed and agreed to these
+Terms on your behalf. The Service is not directed to children under 13,
+and we do not knowingly collect personal data from them as detailed in
+the Privacy Policy.
+
+## 3. Accounts
+
+### 3.1 Account creation
+To access the SaaS Edition you must register an account using a valid
+email address and credentials. You agree to provide accurate, current,
+and complete information and to keep it updated.
+
+### 3.2 Account security
+You are responsible for safeguarding your authentication credentials,
+for configuring authentication (e.g. `AUTH_USERNAME` / `AUTH_PASSWORD`
+or NextAuth providers) where the Self-Hosted Edition is exposed beyond
+a single trusted user, and for all activity that occurs under your
+account. Notify us immediately of any unauthorised use. We are not
+liable for losses arising from compromised credentials you failed to
+secure.
+
+### 3.3 `[Self-Hosted Edition]` You are the operator
+When you deploy the Self-Hosted Edition you are the **operator** of the
+Service, not a customer of the Quaesitor Project. You assume all
+responsibilities of a data controller (see the Privacy Policy), are
+responsible for configuring authentication, encryption keys
+(`CREDENTIALS_ENCRYPTION_KEY`), backups, network exposure, and for
+complying with these Terms with respect to any end-users you permit to
+access your deployment. The Quaesitor Project has no access to, control
+over, or liability for your self-hosted instance or its data.
+
+## 4. Acceptable Use
+
+You agree to use the Service only in accordance with the Acceptable
+Use Policy, incorporated by reference. In summary, you will not use
+the Service to process unlawful content, distribute malware, attempt
+prompt-injection or other attacks against the Service or third parties,
+harass others, generate or distribute child sexual abuse material
+("CSAM"), dox individuals, infringe intellectual property, scrape
+outputs to train competing models, reverse engineer the Service except
+as permitted by AGPL-3.0, bypass rate limits, or share accounts in
+violation of your plan.
+
+## 5. Intellectual Property
+
+### 5.1 Quaesitor software
+The Quaesitor source code is free software licensed under AGPL-3.0.
+Your rights to use, modify, and redistribute the source code are
+governed by the terms of AGPL-3.0, reproduced in the `LICENSE` file
+of the source repository. Nothing in these Terms restricts rights
+granted under AGPL-3.0.
+
+### 5.2 Your content
+You retain all right, title, and interest in the content you submit,
+upload, or generate with the Service ("**User Content**"), including
+conversations, memories, documents, research jobs, and artifacts. By
+using the Service, you grant Quaesitor a non-exclusive, worldwide,
+royalty-free licence to process User Content solely as necessary to
+provide, secure, and improve the Service for you. This licence
+terminates when your User Content is deleted, except where retention
+is required by law (e.g. billing records) or as described in the
+Privacy Policy.
+
+### 5.3 Model outputs
+Outputs generated by third-party model providers (NVIDIA NIM, OpenAI,
+Anthropic, Ollama) are subject to the terms of the applicable provider.
+You are responsible for reviewing the relevant provider terms for any
+commercial use of model outputs.
+
+### 5.4 Feedback
+If you submit feedback, suggestions, or improvements to Quaesitor, you
+grant us a perpetual, royalty-free, irrevocable licence to use and
+incorporate that feedback without restriction or compensation.
+
+## 6. AI Output and Disclaimers
+
+The Service uses large language models to generate text, code,
+research, voice, and image outputs. **AI outputs may be inaccurate,
+incomplete, biased, or fabricated.** You are solely responsible for
+reviewing and validating any output before relying on it, particularly
+for decisions with legal, medical, financial, safety, or other
+significant consequences. Outputs do not constitute professional
+advice. Always verify citations and source claims against the original
+sources using the source-tier indicators and citation footnotes
+provided in the Service.
+
+## 7. Billing and Subscriptions (SaaS Edition)
+
+### 7.1 Fees
+Fees for paid plans are described on the pricing page. By subscribing
+you authorise us to charge the applicable fees through our payment
+processor, Stripe, to your designated payment method.
+
+### 7.2 Renewal and cancellation
+Paid plans renew automatically at the end of each billing cycle unless
+cancelled. You may cancel at any time via the billing portal; access
+continues until the end of the current billing period. Refunds, where
+applicable, are issued at our discretion in accordance with applicable
+law.
+
+### 7.3 Taxes
+Fees are exclusive of applicable taxes, which you are responsible for
+paying unless a valid exemption certificate is provided.
+
+### 7.4 `[Self-Hosted Edition]`
+The Self-Hosted Edition has no billing relationship with the Quaesitor
+Project. You are solely responsible for any costs incurred with
+infrastructure providers, model providers, or other third parties used
+in your deployment.
+
+## 8. Disclaimers
+
+To the maximum extent permitted by law, the Service is provided "AS
+IS" and "AS AVAILABLE" without warranties of any kind, whether express,
+implied, statutory, or otherwise. We disclaim all implied warranties,
+including merchantability, fitness for a particular purpose,
+title, and non-infringement. We do not warrant that the Service will
+be uninterrupted, error-free, secure, or that outputs will be accurate
+or reliable.
+
+## 9. Limitation of Liability
+
+To the maximum extent permitted by law, in no event will the Quaesitor
+Project, its contributors, or licensors be liable for any indirect,
+incidental, special, consequential, or punitive damages, or any loss
+of profits, data, business, or goodwill, arising out of or related to
+the Service, whether in contract, tort, or any other theory, even if
+advised of the possibility of such damages.
+
+To the extent permitted by law, the total aggregate liability of the
+Quaesitor Project for any claim arising out of or related to the
+Service will not exceed the greater of (a) the amounts you paid to us
+for the Service in the twelve (12) months preceding the claim, or
+(b) USD 50. This limitation applies even if a remedy fails of its
+essential purpose.
+
+### 9.1 `[Self-Hosted Edition]`
+Because the Quaesitor Project provides the source code free of charge
+and has no operational role in your deployment, the Project's liability
+for any claim arising from the Self-Hosted Edition is limited to the
+maximum extent permitted by law, and to the extent not so limited, is
+excluded entirely.
+
+## 10. Indemnification
+
+You agree to indemnify, defend, and hold harmless the Quaesitor
+Project, its contributors, and licensors from and against any claims,
+liabilities, damages, and expenses (including reasonable legal fees)
+arising out of or related to your User Content, your violation of
+these Terms or the Acceptable Use Policy, or your violation of any
+third-party rights or applicable law.
+
+## 11. Termination
+
+### 11.1 By you
+You may stop using the Service at any time. SaaS subscribers may
+cancel via the billing portal. You may delete your account and all
+associated data via `DELETE /api/account` (GDPR Article 17).
+
+### 11.2 By us
+We may suspend or terminate your access to the SaaS Edition at any
+time, with or without cause, including for violation of these Terms
+or the Acceptable Use Policy. On termination we will provide a
+reasonable opportunity to export your data via
+`GET /api/account/export`, except where prohibited by law or where
+your account was terminated for serious abuse.
+
+### 11.3 `[Self-Hosted Edition]`
+Because the Self-Hosted Edition runs on infrastructure you control,
+the Quaesitor Project cannot terminate your deployment. Your right to
+continue using the source code is governed by AGPL-3.0.
+
+### 11.4 Survival
+Sections regarding intellectual property, disclaimers, limitation of
+liability, indemnification, and governing law survive termination.
+
+## 12. Governing Law and Dispute Resolution
+
+### 12.1 `[Self-Hosted Edition]`
+Because you are the operator, any dispute arising from your
+self-hosted deployment is governed by the laws of your jurisdiction of
+operation, and you are solely responsible for compliance with local
+law applicable to your end-users. The Quaesitor Project disclaims any
+role in such disputes.
+
+### 12.2 `[SaaS Edition]`
+Disputes arising from the SaaS Edition are governed by the laws of the
+jurisdiction in which the operator of the SaaS Edition is established,
+without regard to conflict-of-laws principles. The parties will
+attempt to resolve disputes informally for at least thirty (30) days
+before initiating litigation.
+
+## 13. Changes to These Terms
+
+We may update these Terms from time to time. We will provide notice of
+material changes via the Service or by email to the address on file.
+Continued use after the effective date constitutes acceptance of the
+revised Terms. If you do not agree, you may terminate as described
+above.
+
+## 14. Third-Party Services and Links
+
+The Service may integrate with third-party services (model providers,
+payment processors, email delivery, source-control connectors). Your
+use of such services is subject to their terms and privacy policies.
+We are not responsible for the practices of third-party services.
+
+## 15. General Provisions
+
+These Terms constitute the entire agreement between you and Quaesitor
+regarding the Service. If any provision is held unenforceable, the
+remaining provisions remain in effect. You may not assign these Terms
+without our consent; we may assign them freely. No waiver is a further
+or continuing waiver.
+
+## 16. Contact
+
+Questions about these Terms may be directed to
+**legal@quaesitor.local** (placeholder — configure a monitored address
+for your deployment). For privacy requests, see the Privacy Policy.

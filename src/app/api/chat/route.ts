@@ -15,7 +15,7 @@
 
 import { NextRequest } from "next/server";
 import { trackEvent } from "@/lib/analytics";
-import { getLLM, type LLMMessage } from "@/lib/llm-provider";
+import { getLLM, getProviderDisplayInfo, type LLMMessage } from "@/lib/llm-provider";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
@@ -115,8 +115,30 @@ export async function POST(req: NextRequest) {
   const llm = await getLLM();
   const encoder = new TextEncoder();
 
+  // Provider transparency: emit a `meta` event BEFORE the first token so
+  // the UI can display "Quaesitor · <model> via <Provider> (<region>)".
+  // This uses the EXPECTED provider + first smart model — if fallback
+  // kicks in mid-stream, the actual provider/model is included in the
+  // final `done` event (see below) and the UI updates accordingly.
+  const expectedDisplay = getProviderDisplayInfo(llm.provider);
+  const expectedModel = llm.smartModels[0] || "unknown";
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
+      // Emit meta first — clients ignore unknown event types so existing
+      // parsers (e.g. older ChatCard builds) keep working.
+      controller.enqueue(
+        encoder.encode(
+          `data: ${JSON.stringify({
+            type: "meta",
+            provider: llm.provider,
+            providerDisplayName: expectedDisplay.displayName,
+            region: expectedDisplay.region,
+            model: expectedModel,
+            expected: true,
+          })}\n\n`
+        )
+      );
       try {
         const result = await llm.smart({
           messages: llmMessages,
@@ -131,9 +153,23 @@ export async function POST(req: NextRequest) {
         // Save assistant message.
         await saveMessage(conversationId, "assistant", result.content, result.tokensUsed, result.model);
 
+        // Build the actual provider display info from the result — this
+        // may differ from the expected meta if cross-provider fallback
+        // (NVIDIA → OpenAI → Anthropic → Ollama) kicked in. The UI uses
+        // this to correct the displayed provider after streaming ends.
+        const actualDisplay = getProviderDisplayInfo(result.provider);
+
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ done: true, conversationId, tokensUsed: result.tokensUsed })}\n\n`
+            `data: ${JSON.stringify({
+              done: true,
+              conversationId,
+              tokensUsed: result.tokensUsed,
+              provider: result.provider,
+              providerDisplayName: actualDisplay.displayName,
+              region: actualDisplay.region,
+              model: result.model,
+            })}\n\n`
           )
         );
         controller.close();
