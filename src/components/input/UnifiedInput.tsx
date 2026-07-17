@@ -121,15 +121,15 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
   const modeLabel = mode === "auto" ? "Auto" : mode === "research" ? t("modeResearch") : mode === "chat" ? "Chat" : mode === "swarm" ? "Swarm" : t("modeQuick");
 
   return (
-    <div className="shrink-0 z-30 border-t border-border/40 bg-background/80 backdrop-blur-xl shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-      <div className="mx-auto max-w-3xl px-4 sm:px-6 py-3">
+    <div className="shrink-0 z-30 px-4 pb-4">
+      <div className="mx-auto max-w-2xl">
         {/* Attached files */}
         {files.length > 0 && (
           <div className="flex flex-wrap gap-1.5 mb-2">
             {files.map((f) => (
               <span
                 key={f.id}
-                className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1"
+                className="inline-flex items-center gap-1 rounded-full bg-[#E5E0D6] dark:bg-[#393937] text-[#1a1a18] dark:text-[#eee] text-xs px-2.5 py-1"
               >
                 <Paperclip className="h-3 w-3" />
                 {f.file.name}
@@ -147,8 +147,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
 
         {error && <p className="text-xs text-destructive mb-2">{error}</p>}
 
-        {/* Input row — Anthropic composer style: border + bg-card, NO shadow */}
-        <div className="flex items-center gap-1.5 rounded-xl border border-border bg-card focus-within:border-primary transition-colors p-1.5">
+        {/* Input row — Claude composer structure */}
+        <form className="flex w-full flex-col gap-2 rounded-2xl border border-[#E5E0D6] bg-white dark:border-[#3d3a35] dark:bg-[#1f1e1b] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
           {/* Attach button */}
           <Button
             variant="ghost"
@@ -239,7 +239,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
               <ArrowRight className="h-4 w-4" />
             )}
           </Button>
-        </div>
+        </form>
       </div>
     </div>
   );

@@ -13,6 +13,7 @@ import { Sparkles, Menu, Lightbulb, FileSearch, Brain, Layers } from "lucide-rea
 import { Brain as BrainIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { useT } from "@/components/i18n/locale-provider";
 import {
@@ -92,6 +93,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   const t = useT();
   const [cards, setCards] = React.useState<CardEntry[]>([]);
   const [historyOpen, setHistoryOpen] = React.useState(false);
+  const [sidebarOpen, setSidebarOpen] = React.useState(true);
   const [_memoryOpen, setMemoryOpen] = React.useState(false);
   const [inputText, setInputText] = React.useState("");
   const [loadedSession, setLoadedSession] = React.useState<{
@@ -108,6 +110,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [cards, loadedSession]);
+
+  function handleNewChat() {
+    setCards([]);
+    setLoadedSession(null);
+    setInputText("");
+  }
 
   function handleSend(text: string, files: AttachedFile[], mode: InputMode) {
     setLoadedSession(null);
@@ -148,143 +156,161 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   }
 
   return (
-    <div className="h-screen flex flex-col bg-background overflow-hidden">
-      {/* Header */}
-      <header className="shrink-0 z-30 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-gradient shadow-sm">
-              <Sparkles className="h-4 w-4 text-white" />
-            </div>
-            <h1 className="text-sm font-semibold">{t("appName")}</h1>
-            <span className="inline-block h-2 w-2 rounded-full bg-emerald-500 ml-1" title="Online" />
+    <div className="flex h-screen overflow-hidden bg-[#F0ECE0] dark:bg-[#2b2a27]">
+      {/* Sidebar */}
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        onNewChat={handleNewChat}
+        onSelectConversation={() => {}}
+        conversations={[]}
+        activeId={undefined}
+      />
+
+      {/* Main column */}
+      <div className="flex flex-1 flex-col overflow-hidden">
+        {/* Topbar — h-14, NO blur, transparent bg */}
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E0D6] dark:border-[#3d3a35] px-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors lg:hidden"
+              aria-label="Toggle sidebar"
+            >
+              <Menu className="h-4 w-4" />
+            </button>
+            <span className="font-serif text-base text-[#1a1a18] dark:text-[#eee]">New Conversation</span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMemoryOpen(true)}
               aria-label="Memory"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors"
             >
               <BrainIcon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setHistoryOpen(true)}
-              aria-label={t("historyPlaceholder")}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+              aria-label="History"
+              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors"
             >
               <Menu className="h-4 w-4" />
             </button>
             <LanguageToggle />
             <ThemeToggle />
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Content area — scrollable, with bottom padding for input bar */}
-      <main
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto"
-        id="main-content"
-      >
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-8 pb-40 space-y-4">
-          {/* Empty state */}
+        {/* Content area — scrollable */}
+        <main
+          ref={scrollRef}
+          className="flex-1 overflow-y-auto"
+          id="main-content"
+        >
+          {/* Empty state — centered, max-w-2xl, Claude structure */}
           {cards.length === 0 && !loadedSession && (
-            <div className="text-center max-w-2xl mx-auto pt-16 sm:pt-24 pb-8">
-              <div className="inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-brand-gradient shadow-lg mb-6">
-                <Sparkles className="h-8 w-8 text-white" />
-              </div>
-              <h2 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+            <div className="flex grow flex-col items-center justify-center px-4 min-h-[60vh]">
+              <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-5">
+                {/* Hero — centered, serif, with Sparkle */}
+                <h1 className="flex items-center justify-center gap-3 font-serif text-3xl text-[#1a1a18] dark:text-[#eee] sm:text-4xl">
+                  <Sparkles className="fill-[#d97757] text-[#d97757] h-7 w-7" />
                   {t("hello")}
-                </span>
-              </h2>
-              <p className="mt-3 text-muted-foreground text-base sm:text-lg">
-                {t("quickSubtitle")}
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-10 text-left">
-                {EXAMPLES.map((ex, i) => (
-                  <button
-                    key={i}
-                    onClick={() => handleSuggestionClick(ex.text)}
-                    className="group flex items-start gap-3 rounded-2xl border border-border/60 bg-card px-5 py-4 transition-all hover:border-primary/30 hover:shadow-md hover:-translate-y-0.5"
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                </h1>
+
+                {/* Composer */}
+                <UnifiedInput
+                  onSend={handleSend}
+                  value={inputText}
+                  onValueChange={setInputText}
+                  textareaRef={textareaFocusRef}
+                />
+
+                {/* Mode tabs */}
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  {EXAMPLES.map((ex, i) => (
+                    <button
+                      key={i}
+                      onClick={() => handleSuggestionClick(ex.text)}
+                      className="flex items-center gap-2 rounded-lg border border-[#E5E0D6] bg-transparent px-3 py-1.5 font-sans text-sm text-[#1a1a18] hover:bg-[#1a1a18]/5 dark:border-[#3d3a35] dark:text-[#eee] dark:hover:bg-[#eee]/5 transition-colors"
+                    >
                       <ex.icon className="h-4 w-4" />
-                    </div>
-                    <span className="text-sm leading-snug text-muted-foreground group-hover:text-foreground">
-                      {ex.text}
-                    </span>
-                  </button>
-                ))}
+                      {ex.text.slice(0, 40)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           )}
 
-          {/* Loaded session from history */}
-          {loadedSession && (
-            <LoadedSession
-              title={loadedSession.title}
-              content={loadedSession.content}
-              type={loadedSession.type}
-            />
-          )}
+          {/* Cards / messages */}
+          {cards.length > 0 || loadedSession ? (
+            <div className="mx-auto w-full max-w-2xl px-4 py-8 pb-40 space-y-4">
+              {loadedSession && (
+                <LoadedSession
+                  title={loadedSession.title}
+                  content={loadedSession.content}
+                  type={loadedSession.type}
+                />
+              )}
+              <AnimatePresence mode="popLayout">
+                {cards.map((card) => {
+                  if (card.type === "research") {
+                    return (
+                      <ErrorBoundary key={card.id}>
+                        <ResearchCard
+                          query={card.query}
+                          onStop={() => {
+                            setCards((prev) => prev.filter((c) => c.id !== card.id));
+                          }}
+                        />
+                      </ErrorBoundary>
+                    );
+                  }
+                  if (card.type === "document" && card.file) {
+                    return (
+                      <ErrorBoundary key={card.id}>
+                        <DocumentCard
+                          file={card.file}
+                          initialQuestion={card.query}
+                        />
+                      </ErrorBoundary>
+                    );
+                  }
+                  if (card.type === "chat") {
+                    return (
+                      <ErrorBoundary key={card.id}>
+                        <ChatCard initialMessage={card.query} />
+                      </ErrorBoundary>
+                    );
+                  }
+                  if (card.type === "swarm") {
+                    return (
+                      <ErrorBoundary key={card.id}>
+                        <SwarmCard task={card.query} />
+                      </ErrorBoundary>
+                    );
+                  }
+                  return (
+                    <ErrorBoundary key={card.id}>
+                      <QuickCard question={card.query} />
+                    </ErrorBoundary>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          ) : null}
+        </main>
 
-          {/* Cards */}
-          <AnimatePresence mode="popLayout">
-            {cards.map((card) => {
-              if (card.type === "research") {
-                return (
-                  <ErrorBoundary key={card.id}>
-                    <ResearchCard
-                      query={card.query}
-                      onStop={() => {
-                        setCards((prev) => prev.filter((c) => c.id !== card.id));
-                      }}
-                    />
-                  </ErrorBoundary>
-                );
-              }
-              if (card.type === "document" && card.file) {
-                return (
-                  <ErrorBoundary key={card.id}>
-                    <DocumentCard
-                      file={card.file}
-                      initialQuestion={card.query}
-                    />
-                  </ErrorBoundary>
-                );
-              }
-              if (card.type === "chat") {
-                return (
-                  <ErrorBoundary key={card.id}>
-                    <ChatCard initialMessage={card.query} />
-                  </ErrorBoundary>
-                );
-              }
-              if (card.type === "swarm") {
-                return (
-                  <ErrorBoundary key={card.id}>
-                    <SwarmCard task={card.query} />
-                  </ErrorBoundary>
-                );
-              }
-              return (
-                <ErrorBoundary key={card.id}>
-                  <QuickCard question={card.query} />
-                </ErrorBoundary>
-              );
-            })}
-          </AnimatePresence>
-        </div>
-      </main>
-
-      {/* Input bar — sticky bottom with backdrop blur */}
-      <UnifiedInput
-        onSend={handleSend}
-        value={inputText}
-        onValueChange={setInputText}
-        textareaRef={textareaFocusRef}
-      />
+        {/* Input bar — only shown when there are cards (not in empty state) */}
+        {cards.length > 0 && (
+          <UnifiedInput
+            onSend={handleSend}
+            value={inputText}
+            onValueChange={setInputText}
+            textareaRef={textareaFocusRef}
+          />
+        )}
+      </div>
 
       {/* History drawer */}
       <React.Suspense fallback={null}>
