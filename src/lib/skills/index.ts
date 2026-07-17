@@ -113,3 +113,23 @@ export function getSkill(name: string): Skill {
 export function getDefaultSkill(): Skill {
   return SKILLS[0]!;
 }
+
+// Load SKILL.md from src/skills/ directory and append to skill's system prompt.
+// This connects the SKILL.md files created in v2.5.0 to the actual agent pipeline.
+import { readFileSync } from "fs";
+import { join } from "path";
+
+function loadSkillMarkdown(name: string): string | null {
+  try {
+    return readFileSync(join(process.cwd(), "src", "skills", name, "SKILL.md"), "utf-8");
+  } catch { return null; }
+}
+
+export function getSkillWithMarkdown(name: string): Skill {
+  const skill = getSkill(name);
+  const md = loadSkillMarkdown(name);
+  if (md) {
+    return { ...skill, systemPrompt: skill.systemPrompt + "\n\n## Skill Guidelines\n" + md };
+  }
+  return skill;
+}

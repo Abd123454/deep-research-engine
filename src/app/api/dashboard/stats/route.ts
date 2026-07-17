@@ -16,7 +16,7 @@ export async function GET() {
   let recentActivity: Array<{ id: string; query: string; status: string; createdAt: string }> = [];
   try {
     const db = getDb();
-    const rows = db.prepare("SELECT id, query, status, created_at FROM research_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 10").all(userId) as any[];
+    const rows = db.prepare("SELECT id, query, status, created_at FROM research_jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT 10").all(userId) as Array<{ id: string; query: string; status: string; created_at: string }>;
     recentActivity = rows.map((r) => ({ id: r.id, query: r.query, status: r.status, createdAt: r.created_at }));
   } catch { /* ignore */ }
 

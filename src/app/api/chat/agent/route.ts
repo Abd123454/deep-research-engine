@@ -2,7 +2,7 @@
 
 import { NextRequest } from "next/server";
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
-import { getSkill } from "@/lib/skills";
+import { getSkillWithMarkdown } from "@/lib/skills";
 import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agent-tools";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const rl = await checkStartRateLimit(ip);
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
-  const skill = getSkill(body.skill || "default");
+  const skill = getSkillWithMarkdown(body.skill || "default");
   const userId = DEFAULT_USER_ID;
   const conversationId = await getOrCreateConversation(body.conversationId || null, userId, message);
 

@@ -1,0 +1,105 @@
+// Enterprise Docker Compose — air-gapped, self-hosted Quaesitor.
+// All services on-premise. Ollama for LLM (no cloud). MinIO for S3. Postgres + Redis.
+
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://quaesitor:${POSTGRES_PASSWORD:-quaesitor}@postgres:5432/quaesitor
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-quaesitor}
+      - S3_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-quaesitor123}
+      - S3_BUCKET=quaesitor
+      - S3_REGION=us-east-1
+      - ENABLE_CODE_EXEC=true
+      - LLM_PROVIDER=ollama
+      - OLLAMA_URL=http://ollama:11434
+      - AIR_GAPPED=true
+    depends_on: [postgres, redis, minio, ollama]
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    command: bun run worker
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://quaesitor:${POSTGRES_PASSWORD:-quaesitor}@postgres:5432/quaesitor
+      - REDIS_URL=redis://redis:6379
+      - S3_ENDPOINT=http://minio:9000
+      - S3_ACCESS_KEY_ID=${MINIO_ACCESS_KEY:-quaesitor}
+      - S3_SECRET_ACCESS_KEY=${MINIO_SECRET_KEY:-quaesitor123}
+      - S3_BUCKET=quaesitor
+      - LLM_PROVIDER=ollama
+      - OLLAMA_URL=http://ollama:11434
+      - AIR_GAPPED=true
+    depends_on: [postgres, redis]
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_DB=quaesitor
+      - POSTGRES_USER=quaesitor
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-quaesitor}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-quaesitor}
+      - MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-quaesitor123}
+    volumes:
+      - minio_data:/data
+    ports:
+      - "9001:9001"
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./config/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  ollama_data:
+  grafana_data:

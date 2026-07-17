@@ -8,7 +8,7 @@ import { ArrowLeft, Save, Brain } from "lucide-react";
 export default function ProjectDetailPage() {
   const params = useParams<{ id: string }>();
   const projectId = params.id;
-  const [project, setProject] = React.useState<any>(null);
+  const [project, setProject] = React.useState<{ name: string; description: string | null; customInstructions?: string; conversations?: Array<{ id: string; title: string }> } | null>(null);
   const [instructions, setInstructions] = React.useState("");
   const [saving, setSaving] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
@@ -74,9 +74,9 @@ export default function ProjectDetailPage() {
         {/* Conversations in this project */}
         <div className="bg-[#faf9f5] dark:bg-[#1f1e1b] border border-[#cccbc8] dark:border-[#3d3a35] rounded-3xl p-6">
           <h2 className="font-sans text-sm font-medium text-[#141413] dark:text-[#eeeeee] mb-4">Conversations</h2>
-          {project.conversations?.length > 0 ? (
+          {project.conversations && project.conversations.length > 0 ? (
             <div className="space-y-2">
-              {project.conversations.map((conv: any) => (
+              {project.conversations.map((conv: { id: string; title: string }) => (
                 <div key={conv.id} className="px-4 py-3 rounded-lg hover:bg-[#e3dacc] dark:hover:bg-[#393937] transition-colors">
                   <p className="font-sans text-sm text-[#141413] dark:text-[#eeeeee]">{conv.title || "Untitled"}</p>
                 </div>

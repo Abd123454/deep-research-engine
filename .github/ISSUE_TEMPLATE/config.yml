@@ -1,0 +1,24 @@
+# GitHub issue template configuration
+# https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/configuring-issue-templates-for-your-repository#configuring-the-template-chooser
+
+# Disable the "blank issue" option so contributors must use a template.
+# This helps us collect the info we need to triage effectively.
+blank_issues_enabled: false
+
+# Show these links at the bottom of the issue chooser.
+contact_links:
+  - name: 💬 Ask a question
+    url: https://github.com/Abd123454/deep-research-engine/discussions/new?category=q-a
+    about: Have a "how do I..." question? Ask in GitHub Discussions instead of opening an issue.
+  - name: 📚 Read the docs
+    url: https://github.com/Abd123454/deep-research-engine#readme
+    about: Check the README, ROADMAP, CONTRIBUTING, and SECURITY docs first.
+  - name: 🔒 Report a security vulnerability
+    url: https://github.com/Abd123454/deep-research-engine/security/advisories/new
+    about: Found a security issue? Do NOT open a public issue — use a private advisory. See SECURITY.md.
+  - name: 🗺️ View the roadmap
+    url: https://github.com/Abd123454/deep-research-engine/blob/main/ROADMAP.md
+    about: See what's planned and what's shipping next.
+  - name: 💡 Suggest a feature in Discussions
+    url: https://github.com/Abd123454/deep-research-engine/discussions/new?category=ideas
+    about: Want to gauge interest before filing a formal feature request? Start an Ideas discussion.

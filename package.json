@@ -1,9 +1,9 @@
 {
   "name": "quaesitor",
-  "version": "2.5.0",
+  "version": "3.0.0",
   "private": true,
   "author": "Abd",
-  "license": "MIT",
+  "license": "AGPL-3.0",
   "description": "Quaesitor — Self-hosted AI Workstation with deep research, agent swarm, code execution, vision, and voice.",
   "engines": {
     "node": ">=20"

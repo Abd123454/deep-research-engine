@@ -1,0 +1,20 @@
+# GitHub Sponsors / Funding configuration
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+# Sponsor the maintainer directly via GitHub Sponsors.
+github: [Abd123454]
+
+# One-time or recurring support via these platforms.
+patreon: # replace with Patreon username if applicable
+open_collective: # replace with Open Collective slug if applicable
+ko_fi: # replace with Ko-fi username if applicable
+tidelift: # replace with Tidelift package name (e.g. npm/quaesitor) if applicable
+community_bridge: # replace with Community Bridge project name if applicable
+liberapay: # replace with Liberapay username if applicable
+issuehunt: # replace with IssueHunt username if applicable
+otechie: # replace with Otechie username if applicable
+lfx_crowdfunding: # replace with LFX Crowdfunding project name if applicable
+
+# Custom funding links (shown as buttons on the sponsor page).
+# These appear in the order listed.
+custom: # replace with custom URLs if needed, e.g. ['https://your-site.com/support', 'https://buymeacoffee.com/yourname']

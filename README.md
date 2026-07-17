@@ -202,7 +202,7 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+AGPL-3.0 — see [LICENSE](LICENSE). In short: you can use, modify, and distribute Quaesitor (including as a network service), but any modifications you share or serve over a network must also be released under AGPL-3.0 with full source code.
 
 ## Acknowledgments
 
