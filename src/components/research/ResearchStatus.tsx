@@ -58,7 +58,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
   const elapsed = job.stats.elapsedMs || Date.now() - (job.startedAt || Date.now());
 
   return (
-    <Card className="overflow-hidden border-border/70 shadow-lg shadow-primary/5">
+    <Card className="overflow-hidden border-border/70">
       <CardContent className="p-5 space-y-4">
         {/* Top row: status label + actions */}
         <div className="flex items-start justify-between gap-3">
@@ -67,7 +67,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
               {isRunning ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
               ) : job.status === "completed" ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-[#c96442] dark:text-[#d97757]" />
               ) : (
                 <AlertCircle className="h-3.5 w-3.5 text-destructive" />
               )}
@@ -135,7 +135,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
                     active
                       ? "text-primary"
                       : done
-                        ? "text-emerald-600 dark:text-emerald-400"
+                        ? "text-[#c96442] dark:text-[#d97757]"
                         : "text-muted-foreground/50"
                   )}
                 >
@@ -152,7 +152,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
                   <div
                     className={cn(
                       "h-px flex-1",
-                      done ? "bg-emerald-500/30" : "bg-border"
+                      done ? "bg-[#c96442]/30 dark:bg-[#d97757]/30" : "bg-border"
                     )}
                   />
                 )}

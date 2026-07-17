@@ -5,7 +5,7 @@
 // Layout:
 //   Header: logo + history toggle (☰) + lang + theme
 //   Content: scrollable list of cards (max-w-4xl for reports)
-//   Input bar (sticky bottom, backdrop-blur): UnifiedInput
+//   Input bar (sticky bottom, solid bg): UnifiedInput
 //   History drawer (slide-in from right)
 
 import * as React from "react";

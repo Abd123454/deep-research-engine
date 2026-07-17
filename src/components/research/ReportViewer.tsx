@@ -24,7 +24,7 @@ interface ReportViewerProps {
 export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, streaming }: ReportViewerProps) {
   const t = useT();
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardContent className="p-0">
         <div className="flex items-center justify-between gap-2 px-5 py-3 border-b border-border/60">
           <div className="flex items-center gap-2">
@@ -33,7 +33,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, 
               {streaming ? t("writingReport") : t("finalReport")}
             </h3>
             {streaming && (
-              <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+              <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
             )}
           </div>
           <div className="flex gap-1 items-center">
@@ -60,7 +60,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, 
               the entire string on every token = browser freeze on long reports).
               Switch to ReactMarkdown only when streaming is done. */}
           {streaming ? (
-            <pre className="whitespace-pre-wrap text-sm font-sans not-prose">{report}<span className="inline-block h-4 w-2 bg-primary animate-pulse align-text-bottom" /></pre>
+            <pre className="whitespace-pre-wrap text-sm font-sans not-prose">{report}<span className="inline-block h-4 w-2 bg-[#c96442] dark:bg-[#d97757] animate-pulse align-text-bottom" /></pre>
           ) : (
             <ReactMarkdown>{report}</ReactMarkdown>
           )}

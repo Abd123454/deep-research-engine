@@ -572,7 +572,7 @@ table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8p
               {/* Collapsed plan card */}
               {job.plan && job.plan.sections.length > 0 && (
                 <Collapsible open={planExpanded} onOpenChange={setPlanExpanded}>
-                  <Card className="border-border/70 shadow-sm">
+                  <Card className="border-border/70">
                     <CollapsibleTrigger asChild>
                       <button className="w-full flex items-center justify-between gap-2 px-5 py-3 hover:bg-muted/40 transition-colors">
                         <div className="flex items-center gap-2 min-w-0">
@@ -781,8 +781,8 @@ function EditPlanModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-2xl max-h-[85vh] overflow-y-auto shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+      <Card className="w-full max-w-2xl max-h-[85vh] overflow-y-auto">
         <CardContent className="p-5 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">

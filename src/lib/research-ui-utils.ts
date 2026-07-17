@@ -59,10 +59,10 @@ export const SQ_STATUS_META: Record<
   { label: string; cls: string; icon: React.ElementType }
 > = {
   pending: { label: "Pending", cls: "bg-muted text-muted-foreground", icon: Clock },
-  searching: { label: "Searching", cls: "bg-sky-100 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300", icon: Globe },
-  reading: { label: "Reading", cls: "bg-violet-100 text-violet-700 dark:bg-violet-950/60 dark:text-violet-300", icon: BookOpen },
-  extracting: { label: "Extracting", cls: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300", icon: Sparkles },
-  done: { label: "Done", cls: "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300", icon: Check },
+  searching: { label: "Searching", cls: "bg-[#c96442]/10 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757]", icon: Globe },
+  reading: { label: "Reading", cls: "bg-[#c96442]/15 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]", icon: BookOpen },
+  extracting: { label: "Extracting", cls: "bg-[#c96442]/20 dark:bg-[#d97757]/25 text-[#c96442] dark:text-[#d97757]", icon: Sparkles },
+  done: { label: "Done", cls: "bg-[#c96442]/10 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757]", icon: Check },
   failed: { label: "Failed", cls: "bg-destructive/10 text-destructive", icon: AlertCircle },
 };
 
@@ -97,9 +97,9 @@ export function dedupeSources(sources: { url: string; title: string; host: strin
 
 export const LOG_COLORS: Record<LogEntry["level"], string> = {
   info: "text-muted-foreground",
-  warn: "text-amber-600 dark:text-amber-400",
+  warn: "text-[#c96442] dark:text-[#d97757]",
   error: "text-destructive",
-  success: "text-emerald-600 dark:text-emerald-400",
+  success: "text-[#c96442] dark:text-[#d97757]",
 };
 
 export const LOG_PREFIX: Record<LogEntry["level"], string> = {

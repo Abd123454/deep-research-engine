@@ -96,7 +96,8 @@ export type StringKey =
   | "deleteSession"
   | "clearAllSessions"
   | "sessionContent"
-  | "confirmDeleteAll";
+  | "confirmDeleteAll"
+  | "disclaimer";
 
 type Dictionary = Record<StringKey, string>;
 
@@ -181,6 +182,7 @@ export const STRINGS: Record<Locale, Dictionary> = {
     clearAllSessions: "Clear all",
     sessionContent: "Session content",
     confirmDeleteAll: "Delete all sessions? This cannot be undone.",
+    disclaimer: "Quaesitor can make mistakes. Please double-check responses.",
   },
   ar: {
     appName: "كويسيتور",
@@ -262,6 +264,7 @@ export const STRINGS: Record<Locale, Dictionary> = {
     clearAllSessions: "مسح الكل",
     sessionContent: "محتوى الجلسة",
     confirmDeleteAll: "حذف كل الجلسات؟ لا يمكن التراجع.",
+    disclaimer: "قد تخطئ كويسيتور. يرجى التحقق من الردود مرتين.",
   },
 };
 

@@ -28,11 +28,11 @@ export function ActivityLogModal({ logs, open, onOpenChange }: ActivityLogModalP
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
       onClick={() => onOpenChange(false)}
     >
       <Card
-        className="w-full max-w-2xl max-h-[80vh] overflow-hidden shadow-2xl"
+        className="w-full max-w-2xl max-h-[80vh] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <CardContent className="p-0 flex flex-col max-h-[80vh]">

@@ -190,8 +190,8 @@ export function HistoryMode() {
                   className={cn(
                     "w-full text-left rounded-lg p-3 transition-colors group flex items-start gap-2",
                     selectedId === s.id
-                      ? "bg-primary/10 border border-primary/30"
-                      : "hover:bg-accent border border-transparent"
+                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/10 border border-[#c96442]/30 dark:border-[#d97757]/30"
+                      : "hover:bg-[#f0eee6] dark:hover:bg-[#393937] border border-transparent"
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -230,7 +230,7 @@ export function HistoryMode() {
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
             </div>
           ) : fullSession ? (
-            <div className="rounded-2xl border border-border/60 p-5 shadow-sm">
+            <div className="rounded-2xl border border-border/60 p-5">
               <div className="flex items-center gap-2 mb-3">
                 {(() => {
                   const Icon = TYPE_ICON[fullSession.type] || FileText;

@@ -61,11 +61,11 @@ export default function BillingPage() {
                   <span className="text-sm text-muted-foreground font-normal">/mo</span>
                 </p>
                 <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" /> {plan.limits.researchPerMonth === Infinity ? "Unlimited" : plan.limits.researchPerMonth} research/mo</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" /> {plan.limits.chatPerDay === Infinity ? "Unlimited" : plan.limits.chatPerDay} chat/day</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" /> {(plan.limits.tokensPerMonth / 1_000_000).toFixed(1)}M tokens/mo</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {plan.limits.researchPerMonth === Infinity ? "Unlimited" : plan.limits.researchPerMonth} research/mo</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {plan.limits.chatPerDay === Infinity ? "Unlimited" : plan.limits.chatPerDay} chat/day</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {(plan.limits.tokensPerMonth / 1_000_000).toFixed(1)}M tokens/mo</li>
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-emerald-500" /> {f.replace(/_/g, " ")}</li>
+                    <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {f.replace(/_/g, " ")}</li>
                   ))}
                 </ul>
                 {isCurrent ? (
@@ -75,7 +75,7 @@ export default function BillingPage() {
                 ) : (
                   <button
                     onClick={() => upgrade(key)}
-                    className="mt-4 w-full rounded-lg bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90"
+                    className="mt-4 w-full rounded-lg bg-[#c96442] dark:bg-[#d97757] text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90"
                   >
                     Upgrade to {plan.name}
                   </button>
@@ -128,7 +128,7 @@ function UsageBar({ label, remaining, limit }: { label: string; remaining: numbe
         <span className="text-muted-foreground">{used.toLocaleString()} / {limit === Infinity ? "∞" : limit.toLocaleString()}</span>
       </div>
       <div className="h-2 rounded-full bg-secondary overflow-hidden">
-        <div className="h-full bg-primary transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
+        <div className="h-full bg-[#c96442] dark:bg-[#d97757] transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
   );

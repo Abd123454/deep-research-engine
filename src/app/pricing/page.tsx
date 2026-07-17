@@ -77,14 +77,14 @@ export default function PricingPage() {
             return (
               <div
                 key={plan.key}
-                className={`relative rounded-2xl border p-6 ${plan.popular ? "border-primary ring-2 ring-primary/20" : "border-border"} ${isCurrent ? "bg-primary/5" : ""}`}
+                className={`relative rounded-2xl border p-6 ${plan.popular ? "border-primary ring-2 ring-primary/20" : "border-border"} ${isCurrent ? "bg-[#c96442]/5 dark:bg-[#d97757]/5" : ""}`}
               >
                 {plan.popular && (
-                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-[#c96442] dark:bg-[#d97757] px-3 py-1 text-xs font-medium text-primary-foreground">
                     Most Popular
                   </span>
                 )}
-                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 ${plan.color} mb-3`}>
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-[#c96442]/10 dark:bg-[#d97757]/10 ${plan.color} mb-3`}>
                   <Icon className="h-5 w-5" />
                 </div>
                 <h3 className="text-lg font-semibold">{plan.name}</h3>
@@ -95,7 +95,7 @@ export default function PricingPage() {
                 <ul className="mt-4 space-y-2 text-sm">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2">
-                      <Check className="h-4 w-4 text-emerald-500 shrink-0 mt-0.5" />
+                      <Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757] shrink-0 mt-0.5" />
                       <span>{f}</span>
                     </li>
                   ))}
@@ -105,7 +105,7 @@ export default function PricingPage() {
                 ) : (
                   <Link
                     href={plan.href}
-                    className={`mt-4 block text-center rounded-lg px-4 py-2 text-sm font-medium ${plan.popular ? "bg-primary text-primary-foreground hover:bg-primary/90" : "border border-border hover:bg-accent"}`}
+                    className={`mt-4 block text-center rounded-lg px-4 py-2 text-sm font-medium ${plan.popular ? "bg-[#c96442] dark:bg-[#d97757] text-primary-foreground hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90" : "border border-border hover:bg-accent"}`}
                   >
                     {plan.cta}
                   </Link>

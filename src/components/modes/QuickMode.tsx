@@ -93,7 +93,7 @@ export function QuickMode() {
       </div>
 
       {/* Input */}
-      <div className="rounded-2xl bg-secondary shadow-sm focus-within:shadow-md transition-shadow">
+      <div className="rounded-2xl bg-secondary transition-colors">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -111,7 +111,7 @@ export function QuickMode() {
             onClick={send}
             disabled={!input.trim() || streaming}
             size="icon"
-            className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 border-0"
+            className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
             aria-label={t("quickSend")}
           >
             {streaming ? (
@@ -132,14 +132,14 @@ export function QuickMode() {
 
       {/* Response */}
       {(response || streaming) && (
-        <div className="rounded-2xl border border-border/60 p-5 shadow-sm">
+        <div className="rounded-2xl border border-border/60 p-5">
           <div className="flex items-center gap-2 mb-3">
             <Sparkles className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold">
               {streaming ? t("quickThinking") : t("quickResponse")}
             </span>
             {streaming && (
-              <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+              <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
             )}
           </div>
           {response ? (

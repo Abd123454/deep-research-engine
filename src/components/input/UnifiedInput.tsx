@@ -385,7 +385,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
 
         {/* Disclaimer — Claude signature */}
         <p className="text-center text-xs text-[#87867f] dark:text-[#a3a098] mt-2 font-sans">
-          {t("disclaimer") || "Quaesitor can make mistakes. Please double-check responses."}
+          {t("disclaimer")}
         </p>
       </div>
     </div>

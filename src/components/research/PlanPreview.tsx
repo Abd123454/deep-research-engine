@@ -64,7 +64,7 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
       transition={{ duration: 0.3 }}
       className="mx-auto max-w-3xl space-y-4"
     >
-      <Card className="border-border/70 shadow-lg shadow-primary/5">
+      <Card className="border-border/70">
         <CardContent className="p-5 sm:p-6 space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between gap-2">
@@ -213,7 +213,7 @@ export function PlanPreview({ plan: initialPlan, onStart, onCancel }: PlanPrevie
 export function PlanPreviewLoading() {
   return (
     <div className="mx-auto max-w-3xl">
-      <Card className="border-border/70 shadow-sm">
+      <Card className="border-border/70">
         <CardContent className="p-6 flex items-center gap-3">
           <Loader2 className="h-5 w-5 animate-spin text-primary" />
           <div>

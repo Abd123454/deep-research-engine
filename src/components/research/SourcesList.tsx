@@ -13,18 +13,18 @@ interface SourcesListProps {
 function getSourceQuality(host: string): { label: string; color: string } {
   const h = host.toLowerCase();
   if (h.endsWith(".edu") || h.endsWith(".gov") || h.endsWith(".mil"))
-    return { label: "High", color: "text-emerald-600" };
+    return { label: "High", color: "text-[#c96442] dark:text-[#d97757]" };
   if (h.endsWith(".org") || h.includes("wikipedia.org") || h.includes("arxiv.org") || h.includes("nature.com") || h.includes("ieee.org"))
-    return { label: "High", color: "text-emerald-600" };
+    return { label: "High", color: "text-[#c96442] dark:text-[#d97757]" };
   if (h.endsWith(".com") || h.endsWith(".net"))
-    return { label: "Medium", color: "text-amber-600" };
+    return { label: "Medium", color: "text-[#c96442] dark:text-[#d97757]" };
   return { label: "Low", color: "text-muted-foreground" };
 }
 
 export function SourcesList({ sources }: SourcesListProps) {
   const deduped = dedupeSources(sources);
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="h-3.5 w-3.5 text-primary" />

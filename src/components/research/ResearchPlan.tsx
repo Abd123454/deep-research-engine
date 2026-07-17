@@ -9,7 +9,7 @@ interface ResearchPlanProps {
 export function ResearchPlan({ plan }: ResearchPlanProps) {
   if (plan.sections.length === 0) return null;
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardContent className="p-5">
         <div className="flex items-center gap-2 mb-3">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">

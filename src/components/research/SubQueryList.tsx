@@ -23,14 +23,14 @@ function SubQueryCard({ index, sq }: { index: number; sq: SubQuery }) {
             className={cn(
               "flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold",
               sq.round === 2
-                ? "bg-amber-500/20 text-amber-600 dark:text-amber-400"
-                : "bg-primary/15 text-primary"
+                ? "bg-[#c96442]/20 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
+                : "bg-[#c96442]/15 dark:bg-[#d97757]/15 text-[#c96442]"
             )}
           >
             {index + 1}
           </span>
           {sq.round === 2 && (
-            <Badge className="bg-amber-500/15 text-amber-600 dark:text-amber-400 text-[8px] px-1 py-0 rounded">
+            <Badge className="bg-[#c96442]/15 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757] text-[8px] px-1 py-0 rounded">
               R2
             </Badge>
           )}
@@ -57,7 +57,7 @@ function SubQueryCard({ index, sq }: { index: number; sq: SubQuery }) {
 
 export function SubQueryList({ subQueries }: SubQueryListProps) {
   return (
-    <Card className="border-border/70 shadow-sm">
+    <Card className="border-border/70">
       <CardContent className="p-4">
         <div className="flex items-center gap-2 mb-3">
           <GitBranch className="h-3.5 w-3.5 text-primary" />

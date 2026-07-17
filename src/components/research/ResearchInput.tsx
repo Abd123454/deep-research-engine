@@ -95,7 +95,7 @@ export function ResearchInput({
 
       {/* input box */}
       <div className="mx-auto max-w-3xl">
-        <div className="rounded-3xl bg-secondary shadow-sm transition-shadow focus-within:shadow-md">
+        <div className="rounded-3xl bg-secondary transition-colors">
           <Textarea
             ref={textareaRef}
             value={query}
@@ -123,7 +123,7 @@ export function ResearchInput({
                   <Paperclip className="h-3 w-3" />
                   <span className="hidden sm:inline">Attach</span>
                   {attachedDocs.length > 0 && (
-                    <span className="ml-0.5 rounded-full bg-primary/20 text-primary text-[9px] px-1.5">
+                    <span className="ml-0.5 rounded-full bg-[#c96442]/20 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757] text-[9px] px-1.5">
                       {attachedDocs.length}
                     </span>
                   )}
@@ -135,8 +135,8 @@ export function ResearchInput({
                   className={cn(
                     "rounded-full text-[10px] gap-1 px-2 py-0.5",
                     isMega
-                      ? "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-950/60 dark:text-fuchsia-300"
-                      : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
+                      : "bg-[#c96442]/10 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
                   )}
                 >
                   <Sparkles className="h-2.5 w-2.5" />
@@ -158,7 +158,7 @@ export function ResearchInput({
                 onClick={startResearch}
                 disabled={starting || !query.trim() || isOverLimit}
                 size="icon"
-                className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 border-0"
+                className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
                 aria-label={t("startResearch")}
               >
                 {starting ? (
@@ -186,7 +186,7 @@ export function ResearchInput({
             onClick={() => setQuery(ex.text)}
             className="group flex items-start gap-3 rounded-2xl bg-secondary px-4 py-3 text-left transition-colors hover:bg-accent"
           >
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-[#c96442] dark:group-hover:bg-[#d97757] group-hover:text-primary-foreground transition-colors">
               <ex.icon className="h-3.5 w-3.5" />
             </div>
             <span className="text-[13px] leading-snug text-muted-foreground group-hover:text-foreground">
@@ -202,7 +202,7 @@ export function ResearchInput({
           {attachedDocs.map((d) => (
             <span
               key={d.id}
-              className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1"
+              className="inline-flex items-center gap-1 rounded-full bg-[#c96442]/10 dark:bg-[#d97757]/10 text-[#c96442] text-xs px-2.5 py-1"
             >
               <Paperclip className="h-3 w-3" />
               {d.filename}

@@ -247,8 +247,8 @@ export function DocumentsMode() {
                   className={cn(
                     "w-full text-left rounded-lg p-2.5 transition-colors group flex items-start gap-2",
                     selectedId === d.id
-                      ? "bg-primary/10 border border-primary/30"
-                      : "hover:bg-accent border border-transparent"
+                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/10 border border-[#c96442]/30 dark:border-[#d97757]/30"
+                      : "hover:bg-[#f0eee6] dark:hover:bg-[#393937] border border-transparent"
                   )}
                 >
                   <FileText className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -319,7 +319,7 @@ export function DocumentsMode() {
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
                       qaMode === m
-                        ? "bg-primary text-primary-foreground"
+                        ? "bg-[#c96442] dark:bg-[#d97757] text-primary-foreground"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -334,7 +334,7 @@ export function DocumentsMode() {
 
               {/* Question input (only for qa mode) */}
               {qaMode === "qa" && (
-                <div className="rounded-2xl bg-secondary shadow-sm focus-within:shadow-md transition-shadow">
+                <div className="rounded-2xl bg-secondary transition-colors">
                   <Textarea
                     value={question}
                     onChange={(e) => setQuestion(e.target.value)}
@@ -352,7 +352,7 @@ export function DocumentsMode() {
                       onClick={sendQA}
                       disabled={!question.trim() || streaming}
                       size="icon"
-                      className="h-8 w-8 rounded-full bg-primary hover:bg-primary/90 border-0"
+                      className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
                       aria-label={t("quickSend")}
                     >
                       {streaming ? (
@@ -391,14 +391,14 @@ export function DocumentsMode() {
 
               {/* Answer */}
               {(answer || streaming) && (
-                <div className="rounded-2xl border border-border/60 p-5 shadow-sm">
+                <div className="rounded-2xl border border-border/60 p-5">
                   <div className="flex items-center gap-2 mb-3">
                     <Sparkles className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">
                       {streaming ? t("quickThinking") : t("answer")}
                     </span>
                     {streaming && (
-                      <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+                      <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
                     )}
                     {!streaming && answer && (
                       <div className="ml-auto">

@@ -62,7 +62,7 @@ export function DocumentPicker({ open, onClose, onAttach }: DocumentPickerProps)
       onClick={onClose}
     >
       <div
-        className="bg-background rounded-2xl border border-border shadow-xl max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
+        className="bg-background rounded-2xl border border-border max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Select document"
