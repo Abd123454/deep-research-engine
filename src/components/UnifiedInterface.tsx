@@ -21,6 +21,7 @@ import {
   detectCardType,
   type InputMode,
   type AttachedFile,
+  type ToolKey,
 } from "@/components/input/UnifiedInput";
 import { QuickCard } from "@/components/cards/QuickCard";
 import { ResearchCard } from "@/components/cards/ResearchCard";
@@ -61,19 +62,19 @@ function LoadedSession({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
+      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
     >
-      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 border-b border-border/40">
-        <p className="text-xs font-semibold text-muted-foreground">{typeLabel}</p>
-        <p className="text-sm font-medium text-foreground">{title}</p>
+      <div className="px-5 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35]">
+        <p className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">{typeLabel}</p>
+        <p className="font-serif text-sm font-medium text-[#141413] dark:text-[#faf9f5]">{title}</p>
       </div>
       <div className="px-5 py-4">
         {content ? (
-          <article className="prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+          <article className="prose prose-claude font-serif max-w-none dark:prose-invert">
             <ReactMarkdown>{content}</ReactMarkdown>
           </article>
         ) : (
-          <p className="text-sm text-muted-foreground italic">No content saved.</p>
+          <p className="text-sm text-[#87867f] dark:text-[#a3a098] italic">No content saved.</p>
         )}
       </div>
     </motion.div>
@@ -117,9 +118,18 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     setInputText("");
   }
 
-  function handleSend(text: string, files: AttachedFile[], mode: InputMode) {
+  function handleSend(text: string, files: AttachedFile[], mode: InputMode, tools: ToolKey[] = []) {
     setLoadedSession(null);
     setInputText(""); // Clear input after send.
+
+    // Tools override the card type if specific tools are selected.
+    function resolveCardType(): CardEntry["type"] {
+      if (files.length > 0) return "document";
+      // Tool-based routing: deep-research → research, swarm → swarm, image-gen → chat (handled in card)
+      if (tools.includes("deep-research")) return "research";
+      if (tools.includes("swarm")) return "swarm";
+      return detectCardType(text, false, mode);
+    }
 
     if (files.length > 0) {
       for (const f of files) {
@@ -129,7 +139,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
         ]);
       }
     } else {
-      const cardType = detectCardType(text, false, mode);
+      const cardType = resolveCardType();
       setCards((prev) => [
         ...prev,
         { id: crypto.randomUUID(), type: cardType, query: text },
@@ -156,7 +166,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F0ECE0] dark:bg-[#2b2a27]">
+    <div className="flex h-screen overflow-hidden bg-[#f0eee6] dark:bg-[#1a1a18]">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -170,29 +180,29 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       {/* Main column */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — h-14, NO blur, transparent bg */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#E5E0D6] dark:border-[#3d3a35] px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#e8e6dc] dark:border-[#3d3a35] px-4">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors lg:hidden"
+              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors lg:hidden"
               aria-label="Toggle sidebar"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <span className="font-serif text-base text-[#1a1a18] dark:text-[#eee]">New Conversation</span>
+            <span className="font-serif text-base text-[#141413] dark:text-[#faf9f5]">New Conversation</span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMemoryOpen(true)}
               aria-label="Memory"
-              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors"
+              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
             >
               <BrainIcon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setHistoryOpen(true)}
               aria-label="History"
-              className="flex size-8 items-center justify-center rounded-md text-[#5b5950] hover:bg-[#1a1a18]/5 dark:text-[#a3a098] dark:hover:bg-[#eee]/5 transition-colors"
+              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -212,8 +222,8 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
             <div className="flex grow flex-col items-center justify-center px-4 min-h-[60vh]">
               <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-5">
                 {/* Hero — centered, serif, with Sparkle */}
-                <h1 className="flex items-center justify-center gap-3 font-serif text-3xl text-[#1a1a18] dark:text-[#eee] sm:text-4xl">
-                  <Sparkles className="fill-[#d97757] text-[#d97757] h-7 w-7" />
+                <h1 className="flex items-center justify-center gap-3 font-serif text-3xl text-[#141413] dark:text-[#faf9f5] sm:text-4xl">
+                  <Sparkles className="fill-[#c96442] text-[#c96442] h-7 w-7" />
                   {t("hello")}
                 </h1>
 
@@ -231,12 +241,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                     <button
                       key={i}
                       onClick={() => handleSuggestionClick(ex.text)}
-                      className="group flex items-start gap-3 rounded-2xl border border-[#E5E0D6] bg-white px-4 py-3 text-left hover:border-[#c96442]/30 hover:bg-[#F0ECE0]/50 transition-all dark:border-[#3d3a35] dark:bg-[#1f1e1b] dark:hover:bg-[#393937]/50"
+                      className="group flex items-start gap-3 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] px-4 py-3 text-left hover:border-[#c96442]/30 hover:bg-[#f0eee6]/50 transition-all dark:border-[#3d3a35] dark:bg-[#1a1a18] dark:hover:bg-[#393937]/50"
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F0ECE0] text-[#c96442] dark:bg-[#393937]">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0eee6] text-[#c96442] dark:bg-[#393937]">
                         <ex.icon className="h-4 w-4" />
                       </div>
-                      <span className="font-serif text-sm text-[#1a1a18] dark:text-[#eee] leading-snug">
+                      <span className="font-serif text-sm text-[#141413] dark:text-[#faf9f5] leading-snug">
                         {ex.text}
                       </span>
                     </button>

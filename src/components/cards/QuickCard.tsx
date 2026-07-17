@@ -104,26 +104,26 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
+      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
     >
       {/* Question */}
-      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 flex items-start gap-2 border-b border-border/40">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-          <Zap className="h-3.5 w-3.5 text-primary" />
+      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 flex items-start gap-2 border-b border-[#e8e6dc] dark:border-[#3d3a35]">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#f0eee6] dark:bg-[#393937]">
+          <Zap className="h-3.5 w-3.5 text-[#c96442]" />
         </div>
-        <p className="text-sm font-medium text-foreground">{question}</p>
+        <p className="text-sm font-medium text-[#141413] dark:text-[#faf9f5]">{question}</p>
       </div>
 
       {/* Answer */}
       <div className="px-5 py-4">
         {error ? (
-          <div className="flex items-start gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3">
-            <AlertCircle className="h-4 w-4 shrink-0 text-destructive mt-0.5" />
+          <div className="flex items-start gap-2 rounded-xl border border-[#c44848]/30 bg-[#c44848]/5 p-3">
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#c44848] mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-destructive">{error}</p>
+              <p className="text-sm text-[#c44848]">{error}</p>
               <button
                 onClick={() => { setError(""); setStreaming(true); setResponse(""); }}
-                className="text-xs text-primary hover:underline mt-1"
+                className="text-xs text-[#c96442] hover:underline mt-1"
               >
                 Try again
               </button>
@@ -132,12 +132,12 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
         ) : response ? (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-primary" />
-              <span className="text-xs font-semibold text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-[#c96442]" />
+              <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">
                 {streaming ? t("quickThinking") : t("answer")}
               </span>
               {streaming && (
-                <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+                <span className="inline-block h-3 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
               )}
               {!streaming && (
                 <div className="ml-auto">
@@ -145,19 +145,19 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
                 </div>
               )}
             </div>
-            <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+            <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
               <ReactMarkdown>{response}</ReactMarkdown>
             </article>
             {!streaming && tokens > 0 && (
-              <p className="text-[10px] text-muted-foreground/50 mt-3 font-mono">~{tokens} tokens</p>
+              <p className="text-[10px] text-[#87867f] mt-3 font-mono">~{tokens} tokens</p>
             )}
           </>
         ) : (
           <div className="space-y-2 animate-pulse">
-            <div className="h-4 bg-muted rounded w-3/4" />
-            <div className="h-4 bg-muted rounded w-full" />
-            <div className="h-4 bg-muted rounded w-5/6" />
-            <div className="h-4 bg-muted rounded w-2/3" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-3/4" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-full" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-5/6" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-2/3" />
           </div>
         )}
       </div>

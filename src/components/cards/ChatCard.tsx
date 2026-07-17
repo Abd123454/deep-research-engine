@@ -9,7 +9,6 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { ExportMenu } from "@/components/export/ExportMenu";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -167,51 +166,44 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   }
 
   const fullConversation = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
+  void fullConversation;
 
   // Claude markdown components — serif, warm colors, persistent underlines
   const claudeMarkdownComponents: Record<string, React.ComponentType<any>> = {
     p: ({ children }: any) => <p className="mb-4">{children}</p>,
     code: ({ inline, children }: any) =>
       inline
-        ? <code className="font-mono text-[14px] bg-[#E5E0D6] dark:bg-[#393937] px-1 py-0.5 rounded">{children}</code>
-        : <pre className="font-mono text-[14px] bg-[#E5E0D6] dark:bg-[#393937] p-4 rounded-lg overflow-x-auto my-4"><code>{children}</code></pre>,
+        ? <code className="font-mono text-[14px] bg-[#e8e6dc] dark:bg-[#393937] px-1 py-0.5 rounded">{children}</code>
+        : <pre className="font-mono text-[14px] bg-[#f0eee6] dark:bg-[#1a1a18] p-4 rounded-lg overflow-x-auto my-4 border border-[#e8e6dc] dark:border-[#3d3a35]"><code>{children}</code></pre>,
     a: ({ href, children }: any) => <a href={href} className="text-[#c96442] underline underline-offset-2 hover:text-[#b5563a]">{children}</a>,
-    h1: ({ children }: any) => <h1 className="font-serif text-2xl font-semibold mt-6 mb-3 text-[#1a1a18] dark:text-[#eee]">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="font-serif text-xl font-semibold mt-6 mb-3 text-[#1a1a18] dark:text-[#eee]">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="font-serif text-lg font-semibold mt-4 mb-2 text-[#1a1a18] dark:text-[#eee]">{children}</h3>,
+    h1: ({ children }: any) => <h1 className="font-serif text-2xl font-semibold mt-6 mb-3 text-[#141413] dark:text-[#faf9f5]">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="font-serif text-xl font-semibold mt-6 mb-3 text-[#141413] dark:text-[#faf9f5]">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="font-serif text-lg font-semibold mt-4 mb-2 text-[#141413] dark:text-[#faf9f5]">{children}</h3>,
     ul: ({ children }: any) => <ul className="list-disc pl-6 my-4 space-y-1">{children}</ul>,
     ol: ({ children }: any) => <ol className="list-decimal pl-6 my-4 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="font-serif text-[16px] leading-[1.65rem]">{children}</li>,
-    blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#E5E0D6] dark:border-[#3d3a35] pl-4 italic my-4 text-[#5b5950] dark:text-[#a3a098]">{children}</blockquote>,
-    strong: ({ children }: any) => <strong className="font-semibold text-[#1a1a18] dark:text-[#eee]">{children}</strong>,
+    li: ({ children }: any) => <li className="font-serif text-[16px] leading-[1.6]">{children}</li>,
+    blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#e8e6dc] dark:border-[#3d3a35] pl-4 italic my-4 text-[#5e5d59] dark:text-[#b0aea5]">{children}</blockquote>,
+    strong: ({ children }: any) => <strong className="font-semibold text-[#141413] dark:text-[#faf9f5]">{children}</strong>,
   };
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#E5E0D6] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1f1e1b]"
+      className="break-words"
     >
-      {/* Header */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-[#E5E0D6] dark:border-[#3d3a35]">
-        <span className="font-serif text-sm font-medium text-[#1a1a18] dark:text-[#eee]">Conversation</span>
-        {!streaming && messages.length > 1 && (
-          <ExportMenu content={fullConversation} filename="conversation" />
-        )}
-      </div>
-
-      {/* Messages — Claude structure */}
-      <div ref={scrollRef} className="max-h-[500px] overflow-y-auto px-5 py-6 space-y-6">
+      {/* Messages — Claude structure: no card header, messages flow directly */}
+      <div ref={scrollRef} className="space-y-6">
         {messages.map((msg, i) => (
           msg.role === "user" ? (
             <div key={i} className="flex flex-col items-end gap-1">
-              <div className="max-w-[80%] rounded-2xl bg-[#E5E0D6] px-4 py-2.5 wrap-break-word whitespace-pre-wrap font-serif text-[16px] leading-[24px] text-[#1a1a18] dark:bg-[#393937] dark:text-[#eee]">
+              <div className="max-w-[80%] rounded-2xl bg-[#e8e6dc] dark:bg-[#393937] px-4 py-2.5 break-words whitespace-pre-wrap font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5]">
                 {msg.content}
               </div>
             </div>
           ) : (
             <div key={i} className="mb-6">
-              <div className="prose prose-claude font-serif leading-[1.65rem] wrap-break-word text-[#1a1a18] dark:text-[#eee] max-w-none">
+              <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
                 <ReactMarkdown components={claudeMarkdownComponents}>{msg.content}</ReactMarkdown>
               </div>
             </div>
@@ -220,7 +212,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
 
         {streaming && streamingResponse && (
           <div className="mb-6">
-            <div className="prose prose-claude font-serif leading-[1.65rem] wrap-break-word text-[#1a1a18] dark:text-[#eee] max-w-none">
+            <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
               <ReactMarkdown components={claudeMarkdownComponents}>{streamingResponse}</ReactMarkdown>
               <span className="inline-block h-4 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
             </div>
@@ -229,28 +221,28 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
 
         {streaming && !streamingResponse && (
           <div className="mb-6 space-y-2 animate-pulse">
-            <div className="h-4 bg-[#E5E0D6] dark:bg-[#393937] rounded w-3/4" />
-            <div className="h-4 bg-[#E5E0D6] dark:bg-[#393937] rounded w-full" />
-            <div className="h-4 bg-[#E5E0D6] dark:bg-[#393937] rounded w-5/6" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-3/4" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-full" />
+            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-5/6" />
           </div>
         )}
       </div>
 
       {error && (
-        <div className="px-5 py-2 text-sm text-[#c44848] border-t border-[#c44848]/20">
+        <div className="mt-4 py-2 text-sm text-[#c44848] border-t border-[#c44848]/20">
           {error}
         </div>
       )}
 
       {!streaming && (
-        <div className="p-3 border-t border-[#E5E0D6] dark:border-[#3d3a35]">
-          <form className="flex items-center gap-2 rounded-2xl border border-[#E5E0D6] bg-white dark:border-[#3d3a35] dark:bg-[#1f1e1b] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
+        <div className="mt-4">
+          <form className="flex items-center gap-2 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
             <textarea
               value={followUp}
               onChange={(e) => setFollowUp(e.target.value)}
               placeholder="Ask a follow-up..."
               rows={1}
-              className="flex-1 resize-none bg-transparent border-0 font-serif text-[16px] leading-[1.5] text-[#1a1a18] dark:text-[#eee] focus:outline-none placeholder:text-[#9a9893] py-1 min-h-[24px] max-h-[100px]"
+              className="flex-1 resize-none bg-transparent border-0 font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] focus:outline-none placeholder:text-[#87867f] py-1 min-h-[24px] max-h-[100px]"
               style={{ boxShadow: "none" }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -262,13 +254,13 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
             <button
               onClick={(e) => { e.preventDefault(); sendFollowUp(); }}
               disabled={!followUp.trim() || streaming}
-              className="flex size-8 shrink-0 items-center justify-center rounded-md bg-[#c96442] text-white hover:bg-[#b5563a] disabled:opacity-30 transition-colors"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c96442] dark:bg-[#d97757] text-[#faf9f5] hover:bg-[#b5563a] dark:hover:bg-[#c6613f] disabled:opacity-30 transition-colors"
             >
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
           {tokens > 0 && (
-            <p className="text-[10px] text-[#9a9893] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
+            <p className="text-[10px] text-[#87867f] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
           )}
         </div>
       )}

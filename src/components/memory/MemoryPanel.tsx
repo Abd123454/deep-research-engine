@@ -79,28 +79,28 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-background border-l border-border z-50 overflow-y-auto"
+            className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-[#faf9f5] dark:bg-[#1a1a18] border-l border-[#e8e6dc] dark:border-[#3d3a35] z-50 overflow-y-auto"
           >
-            <div className="sticky top-0 bg-background border-b border-border px-5 py-4 flex items-center justify-between z-10">
+            <div className="sticky top-0 bg-[#faf9f5] dark:bg-[#1a1a18] border-b border-[#e8e6dc] dark:border-[#3d3a35] px-5 py-4 flex items-center justify-between z-10">
               <div className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-primary" />
+                <Brain className="h-5 w-5 text-[#c96442]" />
                 <h2 className="text-sm font-semibold">Memory</h2>
               </div>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+              <button onClick={onClose} className="flex size-8 items-center justify-center rounded-md text-[#87867f] hover:text-[#141413] dark:text-[#a3a098] dark:hover:text-[#faf9f5] hover:bg-[#141413]/5 dark:hover:bg-[#faf9f5]/5 transition-colors">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="flex border-b border-border">
+            <div className="flex border-b border-[#e8e6dc] dark:border-[#3d3a35]">
               <button
                 onClick={() => setTab("memories")}
-                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${tab === "memories" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}
+                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${tab === "memories" ? "border-b-2 border-[#c96442] text-[#c96442]" : "text-[#87867f] dark:text-[#a3a098]"}`}
               >
                 Memories ({memories.length})
               </button>
               <button
                 onClick={() => setTab("preferences")}
-                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${tab === "preferences" ? "border-b-2 border-primary text-primary" : "text-muted-foreground"}`}
+                className={`flex-1 px-4 py-2.5 text-sm font-medium transition-colors ${tab === "preferences" ? "border-b-2 border-[#c96442] text-[#c96442]" : "text-[#87867f] dark:text-[#a3a098]"}`}
               >
                 Preferences
               </button>
@@ -109,34 +109,35 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
             <div className="p-5">
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#87867f] dark:text-[#a3a098]" />
                 </div>
               ) : tab === "memories" ? (
                 <div className="space-y-3">
                   {memories.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-8">
+                    <p className="text-sm text-[#87867f] dark:text-[#a3a098] text-center py-8">
                       No memories yet. The system will learn about you as you interact.
                     </p>
                   ) : (
                     memories.map((m) => (
-                      <div key={m.id} className="rounded-xl border border-border/60 p-3 group">
+                      <div key={m.id} className="rounded-xl border border-[#e8e6dc]/60 dark:border-[#3d3a35]/60 p-3 group">
                         <div className="flex items-start justify-between gap-2">
                           <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                            m.type === "fact" ? "bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300" :
-                            m.type === "preference" ? "bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300" :
-                            "bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300"
-                          }`}>
+                            m.type === "fact" ? "bg-[#d4a574]/15 text-[#a37a3f]" :
+                            m.type === "preference" ? "bg-[#c96442]/15 text-[#c96442]" :
+                            "bg-[#f0eee6] text-[#5e5d59]"
+                          }`}
+                          >
                             {m.type}
                           </span>
                           <button
                             onClick={() => deleteMemory(m.id)}
-                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity"
+                            className="opacity-0 group-hover:opacity-100 text-[#87867f] hover:text-[#c44848] transition-opacity"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
-                        <p className="text-sm mt-2">{m.content}</p>
-                        <p className="text-[10px] text-muted-foreground mt-1">
+                        <p className="text-sm mt-2 text-[#141413] dark:text-[#faf9f5]">{m.content}</p>
+                        <p className="text-[10px] text-[#87867f] mt-1">
                           confidence: {Math.round(m.confidence * 100)}% · accessed {m.accessCount}x
                         </p>
                       </div>
@@ -148,11 +149,11 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
                   {prefs && (
                     <>
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">Language</label>
+                        <label className="text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Language</label>
                         <select
                           value={prefs.preferredLanguage}
                           onChange={(e) => updatePrefs({ ...prefs, preferredLanguage: e.target.value })}
-                          className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                          className="w-full mt-1 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] px-3 py-2 text-sm text-[#141413] dark:text-[#faf9f5]"
                         >
                           <option value="auto">Auto-detect</option>
                           <option value="en">English</option>
@@ -160,11 +161,11 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">Research Depth</label>
+                        <label className="text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Research Depth</label>
                         <select
                           value={prefs.preferredDepth}
                           onChange={(e) => updatePrefs({ ...prefs, preferredDepth: e.target.value })}
-                          className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                          className="w-full mt-1 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] px-3 py-2 text-sm text-[#141413] dark:text-[#faf9f5]"
                         >
                           <option value="standard">Standard</option>
                           <option value="deep">Deep</option>
@@ -172,11 +173,11 @@ export function MemoryPanel({ open, onClose }: { open: boolean; onClose: () => v
                         </select>
                       </div>
                       <div>
-                        <label className="text-xs font-medium text-muted-foreground">LLM Provider</label>
+                        <label className="text-xs font-medium text-[#87867f] dark:text-[#a3a098]">LLM Provider</label>
                         <select
                           value={prefs.preferredProvider}
                           onChange={(e) => updatePrefs({ ...prefs, preferredProvider: e.target.value })}
-                          className="w-full mt-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                          className="w-full mt-1 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] px-3 py-2 text-sm text-[#141413] dark:text-[#faf9f5]"
                         >
                           <option value="auto">Auto</option>
                           <option value="nvidia">NVIDIA (free)</option>

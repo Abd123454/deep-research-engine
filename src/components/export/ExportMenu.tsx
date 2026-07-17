@@ -98,22 +98,22 @@ export function ExportMenu({ content, filename, className }: ExportMenuProps) {
         <ChevronDown className="h-3 w-3" />
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1 z-20 rounded-lg border border-border bg-background shadow-lg py-1 min-w-[160px]">
+        <div className="absolute right-0 top-full mt-1 z-20 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] py-1 min-w-[160px]">
           {formats.map((f) => (
             <button
               key={f.key}
               onClick={() => doExport(f.key)}
               disabled={exporting !== null}
-              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-accent disabled:opacity-50 text-left"
+              className="flex w-full items-center gap-2 px-3 py-2 text-xs hover:bg-[#f0eee6] dark:hover:bg-[#393937] disabled:opacity-50 text-left text-[#141413] dark:text-[#faf9f5]"
             >
-              <FileText className="h-3 w-3 text-muted-foreground" />
+              <FileText className="h-3 w-3 text-[#87867f] dark:text-[#a3a098]" />
               {t(f.labelKey)}
             </button>
           ))}
         </div>
       )}
       {error && (
-        <p className="absolute top-full right-0 mt-1 text-[10px] text-destructive whitespace-nowrap">
+        <p className="absolute top-full right-0 mt-1 text-[10px] text-[#c44848] whitespace-nowrap">
           {error}
         </p>
       )}

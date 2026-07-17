@@ -56,18 +56,18 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
       animate={{ x: 0, opacity: 1 }}
       exit={{ x: "100%", opacity: 0 }}
       transition={{ type: "spring", damping: 30, stiffness: 300 }}
-      className="hidden lg:flex flex-col w-[40%] min-w-[400px] max-w-[600px] border-l border-border bg-background"
+      className="hidden lg:flex flex-col w-[40%] min-w-[400px] max-w-[600px] border-l border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18]"
     >
       {/* Header */}
-      <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-border bg-gradient-to-r from-secondary to-background">
-        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary/10">
-          <TypeIcon className="h-3.5 w-3.5 text-primary" />
+      <div className="shrink-0 flex items-center gap-2 px-4 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18]">
+        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[#f0eee6] dark:bg-[#393937]">
+          <TypeIcon className="h-3.5 w-3.5 text-[#c96442]" />
         </div>
-        <span className="text-sm font-medium truncate">{artifact.title || "Artifact"}</span>
-        <span className="text-[10px] text-muted-foreground uppercase tracking-wide">{artifact.type}</span>
+        <span className="text-sm font-medium truncate text-[#141413] dark:text-[#faf9f5]">{artifact.title || "Artifact"}</span>
+        <span className="text-[10px] text-[#87867f] dark:text-[#a3a098] uppercase tracking-wide">{artifact.type}</span>
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={copyContent} className="h-7 w-7" aria-label="Copy">
-            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            {copied ? <Check className="h-3.5 w-3.5 text-[#c96442]" /> : <Copy className="h-3.5 w-3.5" />}
           </Button>
           {(artifact.type === "research_report" || artifact.type === "markdown") && (
             <ExportMenu content={artifact.content} filename={artifact.title || "artifact"} />
@@ -98,13 +98,13 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
         )}
 
         {artifact.type === "code" && (
-          <pre className="p-4 text-sm font-mono overflow-x-auto bg-muted/30">
+          <pre className="p-4 text-sm font-mono overflow-x-auto bg-[#f0eee6]/30 dark:bg-[#393937]/30">
             <code>{artifact.content}</code>
           </pre>
         )}
 
         {(artifact.type === "research_report" || artifact.type === "markdown") && (
-          <article className="p-5 prose prose-sm sm:prose-base max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+          <article className="p-5 prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
             <ReactMarkdown>{artifact.content}</ReactMarkdown>
           </article>
         )}
@@ -156,8 +156,8 @@ function MermaidRenderer({ content }: { content: string }) {
   if (error) {
     return (
       <div className="p-4">
-        <p className="text-sm text-destructive mb-2">Mermaid render error:</p>
-        <pre className="text-xs text-muted-foreground bg-muted p-2 rounded">{content}</pre>
+        <p className="text-sm text-[#c44848] mb-2">Mermaid render error:</p>
+        <pre className="text-xs text-[#87867f] dark:text-[#a3a098] bg-[#f0eee6] dark:bg-[#393937] p-2 rounded">{content}</pre>
       </div>
     );
   }

@@ -138,38 +138,38 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-border/60 shadow-md overflow-hidden"
+      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
     >
       {/* Document header */}
-      <div className="bg-gradient-to-r from-secondary to-background px-5 py-3 border-b border-border/40 flex items-center gap-2">
-        <FileText className="h-4 w-4 shrink-0 text-primary" />
-        <span className="text-sm font-medium truncate flex-1">{file.name}</span>
-        <span className="text-[10px] text-muted-foreground shrink-0">{fmtSize(file.size)}</span>
+      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35] flex items-center gap-2">
+        <FileText className="h-4 w-4 shrink-0 text-[#c96442]" />
+        <span className="text-sm font-medium truncate flex-1 text-[#141413] dark:text-[#faf9f5]">{file.name}</span>
+        <span className="text-[10px] text-[#87867f] shrink-0">{fmtSize(file.size)}</span>
       </div>
 
       <div className="px-5 py-4 space-y-3">
         {/* Upload status */}
         {uploading ? (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-[#87867f] dark:text-[#a3a098]">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t("uploading")}
           </div>
         ) : uploadError ? (
-          <p className="text-sm text-destructive">{uploadError}</p>
+          <p className="text-sm text-[#c44848]">{uploadError}</p>
         ) : (
           <>
-            <p className="text-[10px] text-muted-foreground">
+            <p className="text-[10px] text-[#87867f]">
               {textLength.toLocaleString()} chars extracted
             </p>
 
             {/* Question input (if no initial question or for follow-up) */}
             {!answer && !streaming && (
-              <div className="rounded-xl bg-secondary focus-within:shadow-sm transition-shadow">
+              <div className="rounded-xl bg-[#e8e6dc] dark:bg-[#393937]">
                 <Textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder={t("askPlaceholder")}
-                  className="min-h-[50px] resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60"
+                  className="min-h-[50px] resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm font-serif text-[16px] focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-[#87867f]"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendQA(question, "qa");
                   }}
@@ -197,7 +197,7 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
                     onClick={() => sendQA(question, "qa")}
                     disabled={!question.trim() || streaming}
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-primary hover:bg-primary/90 border-0"
+                    className="h-7 w-7 rounded-full bg-[#c96442] hover:bg-[#b5563a] dark:bg-[#d97757] dark:hover:bg-[#c6613f] border-0 text-[#faf9f5] hover:text-[#faf9f5]"
                     aria-label={t("quickSend")}
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -208,19 +208,19 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
 
             {/* Error */}
             {qaError && (
-              <p className="text-sm text-destructive">{qaError}</p>
+              <p className="text-sm text-[#c44848]">{qaError}</p>
             )}
 
             {/* Answer */}
             {(answer || streaming) && (
-              <div className="rounded-xl border border-border/40 p-4">
+              <div className="rounded-xl border border-[#e8e6dc] dark:border-[#3d3a35] p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  <span className="text-xs font-semibold text-muted-foreground">
+                  <Sparkles className="h-3.5 w-3.5 text-[#c96442]" />
+                  <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">
                     {streaming ? t("quickThinking") : t("answer")}
                   </span>
                   {streaming && (
-                    <span className="inline-block h-3 w-1.5 bg-primary animate-pulse ml-0.5" />
+                    <span className="inline-block h-3 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
                   )}
                   {!streaming && answer && (
                     <div className="ml-auto">
@@ -229,19 +229,19 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
                   )}
                 </div>
                 {answer ? (
-                  <article className="prose prose-sm max-w-none dark:prose-invert prose-headings:font-semibold prose-a:text-primary prose-code:text-primary prose-code:bg-muted prose-code:px-1 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none">
+                  <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
                     <ReactMarkdown>{answer}</ReactMarkdown>
                   </article>
                 ) : (
                   !qaError && (
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-sm text-[#87867f] dark:text-[#a3a098]">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("quickThinking")}
                     </div>
                   )
                 )}
                 {!streaming && tokens > 0 && (
-                  <p className="text-[10px] text-muted-foreground/50 mt-3 font-mono">~{tokens} tokens</p>
+                  <p className="text-[10px] text-[#87867f] mt-3 font-mono">~{tokens} tokens</p>
                 )}
               </div>
             )}
