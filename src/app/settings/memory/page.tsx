@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Brain, Trash2, Plus, Download } from "lucide-react";
+import { Brain, Trash2, Plus, Download, Shield } from "lucide-react";
 
 interface Memory {
   id: string;
@@ -21,6 +21,53 @@ export default function MemoryPage() {
   const [newContent, setNewContent] = React.useState("");
   const [editingId, setEditingId] = React.useState<string | null>(null);
   const [editContent, setEditContent] = React.useState("");
+
+  // ---------- Memory extraction consent (Ethical #4) ----------
+  // Opt-in toggle. Default state is OFF — Quaesitor will NOT auto-extract
+  // memories from conversations until the user explicitly turns this on.
+  // Toggling calls POST /api/preferences/memory, which writes to the
+  // user_preferences.memory_consent column AND logs to the audit trail
+  // (GDPR Art. 7 — demonstrable consent).
+  const [memoryEnabled, setMemoryEnabled] = React.useState(false);
+  const [memoryLoading, setMemoryLoading] = React.useState(true);
+  const [memorySaving, setMemorySaving] = React.useState(false);
+  const [memoryError, setMemoryError] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    fetch("/api/preferences/memory")
+      .then((r) => r.json())
+      .then((data) => {
+        if (typeof data?.enabled === "boolean") {
+          setMemoryEnabled(data.enabled);
+        }
+      })
+      .catch(() => {
+        // Non-fatal — default to OFF (opt-in).
+      })
+      .finally(() => setMemoryLoading(false));
+  }, []);
+
+  async function toggleMemory(next: boolean) {
+    setMemorySaving(true);
+    setMemoryError(null);
+    try {
+      const res = await fetch("/api/preferences/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ enabled: next }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        setMemoryError(data?.error || "Failed to update memory consent.");
+        return;
+      }
+      setMemoryEnabled(next);
+    } catch {
+      setMemoryError("Failed to update memory consent. Please try again.");
+    } finally {
+      setMemorySaving(false);
+    }
+  }
 
   React.useEffect(() => {
     fetch("/api/memories")
@@ -90,6 +137,56 @@ export default function MemoryPage() {
             </button>
           </div>
         </div>
+
+        {/* ---------- Memory extraction consent toggle (Ethical #4) ----------
+            Opt-in. Default OFF. Calls POST /api/preferences/memory to flip
+            the user_preferences.memory_consent flag, which the chat /
+            agent / extract routes consult via isMemoryExtractionEnabled. */}
+        <section
+          aria-labelledby="memory-extraction-label"
+          className="mb-8 bg-[#faf8f3] dark:bg-[#252220] border border-[#d9d4c7] dark:border-[#3d3830] rounded-3xl p-6"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start gap-3 min-w-0">
+              <div className="shrink-0 mt-0.5 h-9 w-9 rounded-xl bg-[#e0d9c8] dark:bg-[#322e28] flex items-center justify-center">
+                <Shield className="h-4 w-4 text-[#8b4513] dark:text-[#d9d4c7]" aria-hidden="true" />
+              </div>
+              <div className="min-w-0">
+                <h2 id="memory-extraction-label" className="font-ui text-base font-medium text-[#2a2620] dark:text-[#e8e3d8]">
+                  Memory extraction
+                </h2>
+                <p className="font-body text-sm text-[#6b6358] mt-1 leading-relaxed">
+                  When enabled, Quaesitor will automatically extract and store key facts from your conversations to provide personalized responses. You can delete all memories at any time. See{" "}
+                  <a href="/privacy" className="text-[#8b4513] hover:underline" target="_blank" rel="noreferrer">Privacy Policy</a>.
+                </p>
+                {memoryError && (
+                  <p role="alert" className="font-ui text-xs text-[#a33a3a] mt-2">{memoryError}</p>
+                )}
+                {memorySaving && (
+                  <p className="font-ui text-xs text-[#6b6358] mt-2" aria-live="polite">Saving…</p>
+                )}
+              </div>
+            </div>
+
+            {/* Toggle switch — #8b4513 when ON, #d9d4c7 when OFF.
+                The whole switch is a button for keyboard accessibility. */}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={memoryEnabled}
+              aria-labelledby="memory-extraction-label"
+              disabled={memoryLoading || memorySaving}
+              onClick={() => toggleMemory(!memoryEnabled)}
+              className="relative shrink-0 inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 outline-none focus-visible:ring-2 focus-visible:ring-[#8b4513] focus-visible:ring-offset-2 focus-visible:ring-offset-[#faf8f3] dark:focus-visible:ring-offset-[#252220] disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{ backgroundColor: memoryEnabled ? "#8b4513" : "#d9d4c7" }}
+            >
+              <span
+                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${memoryEnabled ? "translate-x-6" : "translate-x-1"}`}
+              />
+              <span className="sr-only">{memoryEnabled ? "Memory extraction is ON" : "Memory extraction is OFF"}</span>
+            </button>
+          </div>
+        </section>
 
         {showAdd && (
           <div className="mb-6 bg-[#faf8f3] dark:bg-[#252220] border border-[#d9d4c7] dark:border-[#3d3830] rounded-3xl p-6">

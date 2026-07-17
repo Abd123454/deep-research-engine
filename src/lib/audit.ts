@@ -43,6 +43,11 @@ export const SENSITIVE_ACTIONS = {
   "research.delete": "research",
   "code.execute": "code",
   "admin.access": "admin",
+  // GDPR Art. 7 — demonstrable consent. Every grant / revoke of a consent
+  // key (termsOfService, privacyPolicy, memoryExtraction, marketing,
+  // ageConfirmation) is logged with this slug so the consent ledger is
+  // fully auditable. See /api/consent.
+  "consent.update": "consent",
 } as const;
 
 export type SensitiveAction = keyof typeof SENSITIVE_ACTIONS;

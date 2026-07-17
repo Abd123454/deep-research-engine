@@ -28,9 +28,9 @@ import {
   getHistory,
   type ChatMessage,
 } from "@/lib/chat-store";
+import { requireAuth, getUserId } from "@/lib/auth";
 
 const MAX_HISTORY = 20;
-const DEFAULT_USER_ID = "default";
 
 function buildChatSystemPrompt(history: ChatMessage[], memories: Awaited<ReturnType<typeof recallRelevantMemories>>): string {
   let prompt = QUAESITOR_CHARACTER;
@@ -43,6 +43,11 @@ function buildChatSystemPrompt(history: ChatMessage[], memories: Awaited<ReturnT
 }
 
 export async function POST(req: NextRequest) {
+  // Auth: require valid credentials. Per-user isolation (no more DEFAULT_USER_ID).
+  const authError = requireAuth(req);
+  if (authError) return authError;
+  const userId = getUserId(req);
+
   let body: { conversationId?: string; message?: string };
   try {
     body = await req.json();
@@ -70,8 +75,6 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) {
     return Response.json({ error: rl.reason }, { status: 429 });
   }
-
-  const userId = DEFAULT_USER_ID;
 
   // ---------- Plan limit enforcement (402 Payment Required) ----------
   // Free plan: 500 chat messages/month — generous enough that no test or

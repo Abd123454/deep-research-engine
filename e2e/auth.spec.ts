@@ -20,6 +20,10 @@ test.describe("Auth — signup, login, reset", () => {
     await page.locator("#email").fill(uniqueEmail);
     await page.locator("#password").fill("password123");
 
+    // COPPA / GDPR Art. 8 age gate — the submit button stays disabled
+    // until the user checks the "I am at least 13 years old" box.
+    await page.locator("#ageConfirmed").check({ timeout: 10_000 });
+
     // Submit the form.
     await page.locator('button[type="submit"]').click();
 

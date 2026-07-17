@@ -23,13 +23,39 @@ const DEV_FALLBACK_KEY = "quaesitor-dev-key-change-me";
 /**
  * Resolve the 32-byte AES key from env. SHA-256 normalises any-length
  * inputs to the required 32 bytes; we never store the raw secret.
+ *
+ * SECURITY: In production, we fail-closed if no key source is configured
+ * (no CREDENTIALS_ENCRYPTION_KEY and no AUTH_PASSWORD). The dev fallback
+ * is ONLY available when NODE_ENV !== "production".
  */
 function getKey(): Buffer {
   const raw =
     process.env.CREDENTIALS_ENCRYPTION_KEY ||
-    process.env.AUTH_PASSWORD ||
-    DEV_FALLBACK_KEY;
+    process.env.AUTH_PASSWORD;
+  if (!raw) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        "Credentials encryption key not configured. Set CREDENTIALS_ENCRYPTION_KEY (recommended) or AUTH_PASSWORD. " +
+          "Production deployments MUST NOT use the dev fallback key."
+      );
+    }
+    // Dev only — loud warning logged at module load (see below)
+    return crypto.createHash("sha256").update(DEV_FALLBACK_KEY).digest();
+  }
   return crypto.createHash("sha256").update(raw).digest();
+}
+
+// Loud warning when the dev fallback is in use
+if (
+  process.env.NODE_ENV !== "production" &&
+  !process.env.CREDENTIALS_ENCRYPTION_KEY &&
+  !process.env.AUTH_PASSWORD
+) {
+  // eslint-disable-next-line no-console
+  console.warn(
+    "[SECURITY] Using dev fallback key for credentials encryption. " +
+      "Set CREDENTIALS_ENCRYPTION_KEY or AUTH_PASSWORD for production."
+  );
 }
 
 /**

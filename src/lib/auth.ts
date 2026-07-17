@@ -110,16 +110,52 @@ export function requireAuth(req: NextRequest): NextResponse | null {
       { status: 503 }
     );
   }
-  if (validateAuth(req.headers.get("authorization"))) return null;
-  return NextResponse.json(
-    { ok: false, error: "Authentication required." },
-    {
-      status: 401,
-      headers: {
-        "WWW-Authenticate": `Basic realm="${REALM}", charset="UTF-8"`,
-      },
+  if (!validateAuth(req.headers.get("authorization"))) {
+    return NextResponse.json(
+      { ok: false, error: "Authentication required." },
+      {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": `Basic realm="${REALM}", charset="UTF-8"`,
+        },
+      }
+    );
+  }
+
+  // MFA enforcement: when MFA_REQUIRED=true (enterprise deployments), the
+  // request must also carry a valid X-MFA-Token header. The token is verified
+  // against the MFA secret stored for the authenticated user.
+  // In dev/basic deployments (MFA_REQUIRED not set), MFA is optional and
+  // routes work with just Basic Auth.
+  if (process.env.MFA_REQUIRED === "true") {
+    const mfaToken = req.headers.get("x-mfa-token");
+    if (!mfaToken) {
+      return NextResponse.json(
+        { ok: false, error: "MFA token required. Provide X-MFA-Token header." },
+        { status: 401 }
+      );
     }
-  );
+    // Verify the token against the user's MFA secret (stored in env or DB).
+    // For single-user Basic Auth, the secret comes from MFA_SECRET env var.
+    const mfaSecret = process.env.MFA_SECRET;
+    if (!mfaSecret) {
+      return NextResponse.json(
+        { ok: false, error: "MFA is required but MFA_SECRET is not configured." },
+        { status: 503 }
+      );
+    }
+    // Lazy-load to avoid pulling crypto into client bundle
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { verifyTotp } = require("./mfa");
+    if (!verifyTotp(mfaToken, mfaSecret)) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid or expired MFA token." },
+        { status: 401 }
+      );
+    }
+  }
+
+  return null;
 }
 
 /**

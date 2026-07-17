@@ -44,24 +44,47 @@ export async function POST(req: NextRequest) {
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
 
+        // Read the actual plan from the Stripe price lookup_key (not hardcoded).
+        // The checkout session's line items reference a price; the price has a
+        // lookup_key we set when creating products (e.g. "pro", "team", "enterprise").
+        let plan = "free";
+        try {
+          if (subscriptionId && stripe) {
+            const sub = await stripe.subscriptions.retrieve(subscriptionId, {
+              expand: ["items.data.price"],
+            });
+            const lookupKey = sub.items.data[0]?.price?.lookup_key;
+            if (lookupKey && ["free", "pro", "team", "enterprise"].includes(lookupKey)) {
+              plan = lookupKey;
+            } else if (session.metadata?.plan && ["free", "pro", "team", "enterprise"].includes(session.metadata.plan)) {
+              plan = session.metadata.plan;
+            }
+          }
+        } catch (err) {
+          logger.warn({ err: err instanceof Error ? err.message : String(err) }, "Failed to read plan from Stripe subscription, falling back to metadata");
+          if (session.metadata?.plan && ["free", "pro", "team", "enterprise"].includes(session.metadata.plan)) {
+            plan = session.metadata.plan;
+          }
+        }
+
         // Store subscription in DB
         try {
           const db = getDb();
           db.prepare(`
             INSERT OR REPLACE INTO subscriptions (id, user_id, stripe_customer_id, stripe_subscription_id, plan, status, created_at, updated_at)
-            VALUES (?, ?, ?, ?, 'pro', 'active', datetime('now'), datetime('now'))
-          `).run(crypto.randomUUID(), userId, customerId, subscriptionId);
-          logger.info({ userId, customerId, subscriptionId }, "Subscription created via checkout");
+            VALUES (?, ?, ?, ?, ?, 'active', datetime('now'), datetime('now'))
+          `).run(crypto.randomUUID(), userId, customerId, subscriptionId, plan);
+          logger.info({ userId, customerId, subscriptionId, plan }, "Subscription created via checkout");
         } catch (err) {
           logger.error({ err }, "Failed to store subscription");
         }
-        trackEvent(userId, "plan_upgraded", { plan: "pro", customerId });
+        trackEvent(userId, "plan_upgraded", { plan, customerId });
         // SENSITIVE ACTION: subscription activated. Logged against the
         // userId embedded in the checkout session (set by /billing/checkout
         // from getUserId(req) at creation time).
         logSensitiveAction("billing.subscribe", userId, req, {
           phase: "completed",
-          plan: "pro",
+          plan,
           customerId,
           subscriptionId,
         });
