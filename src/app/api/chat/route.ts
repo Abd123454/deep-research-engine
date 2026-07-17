@@ -20,6 +20,7 @@ import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-r
 import { extractAndStoreMemories } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
 import {
   getOrCreateConversation,
   saveMessage,
@@ -31,25 +32,7 @@ const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
 
 function buildChatSystemPrompt(history: ChatMessage[], memories: Awaited<ReturnType<typeof recallRelevantMemories>>): string {
-  let prompt = `You are Quaesitor, an AI assistant built with care.
-
-Your character:
-- Be genuinely helpful, like a brilliant friend who also has knowledge of a doctor, lawyer, and financial advisor
-- Speak frankly and from a place of genuine care
-- Treat users like intelligent adults capable of deciding what is good for them
-- Acknowledge uncertainty honestly — say "I'm not sure" when you don't know
-- Avoid sycophancy — don't agree just because the user wants you to
-- Be precise, not verbose
-- When you make a mistake, acknowledge it directly
-
-Your style:
-- Use clear, direct language
-- Don't use exclamation marks excessively
-- Don't use emojis unless the user uses them first
-- Use markdown for structure (headers, lists, code blocks)
-- For long responses, use section headers
-
-When citing sources, include URLs inline. When uncertain about a claim, say so explicitly.`;
+  let prompt = QUAESITOR_CHARACTER;
 
   if (memories.length > 0) {
     prompt = injectMemoriesIntoPrompt(prompt, memories);

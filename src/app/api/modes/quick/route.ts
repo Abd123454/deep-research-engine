@@ -6,6 +6,7 @@
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
 
 const MAX_MESSAGE_CHARS = 10_000;
 
@@ -65,8 +66,7 @@ export async function POST(req: Request) {
 
   const sys: LLMMessage = {
     role: "system",
-    content:
-      "You are a helpful, knowledgeable AI assistant. Answer the user's question clearly and concisely. Use markdown formatting when helpful (headers, lists, code blocks, bold). If you're unsure, say so. Do not invent facts.",
+    content: QUAESITOR_CHARACTER,
   };
   const user: LLMMessage = { role: "user", content: message };
 
