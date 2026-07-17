@@ -34,6 +34,43 @@ const nextConfig: NextConfig = {
   // Without this, the preview iframe gets cross-origin errors.
   allowedDevOrigins: ["*.space-z.ai", "*.z.ai", "localhost", "127.0.0.1"],
   async headers() {
+    // Security headers — applied to every route. The CSP is dev-compatible:
+    // 'unsafe-inline' + 'unsafe-eval' are required for Next.js dev mode
+    // (HMR, fast refresh, eval-based source maps). Production deployments
+    // should tighten this further by removing 'unsafe-eval' and using
+    // nonces for inline scripts — see the comment on `script-src` below.
+    const isDev = process.env.NODE_ENV !== "production";
+    const scriptSrc = isDev
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      // Production: 'unsafe-eval' removed. 'unsafe-inline' kept because
+      // Next.js still emits some inline style/script tags without nonces
+      // (the metadata, the __next_f push chunks). Nonce-based CSP is the
+      // eventual goal — see docs/adr for the migration plan.
+      : "script-src 'self' 'unsafe-inline'";
+    const csp = [
+      "default-src 'self'",
+      scriptSrc,
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: https:",
+      "font-src 'self' data:",
+      "connect-src 'self' https:",
+      // frame-ancestors 'none' = site cannot be iframed (defense vs.
+      // clickjacking). Combined with X-Frame-Options: DENY for legacy
+      // browsers that don't honour CSP frame-ancestors.
+      "frame-ancestors 'none'",
+      // form-action restricted to same-origin by default; Stripe
+      // Checkout redirects the browser to checkout.stripe.com so we
+      // allow that explicitly.
+      "form-action 'self' https://checkout.stripe.com",
+      // base-uri locked to 'self' to prevent <base> hijack.
+      "base-uri 'self'",
+      // object-src 'none' — no Flash/Java/PDF plugins.
+      "object-src 'none'",
+      // upgrade-insecure-requests — browsers rewrite http:// → https://
+      // for same-origin requests.
+      "upgrade-insecure-requests",
+    ].join("; ");
+
     return [
       {
         // Apply security headers to all routes.
@@ -47,12 +84,20 @@ const nextConfig: NextConfig = {
             value: "camera=(), microphone=(), geolocation=()",
           },
           {
+            // HSTS: 2-year max-age, includeSubDomains, preload-list
+            // eligible. (Preload submission to hstspreload.org is a
+            // separate operational step — the header is harmless even
+            // before submission.)
             key: "Strict-Transport-Security",
-            value: "max-age=31536000; includeSubDomains; preload",
+            value: "max-age=63072000; includeSubDomains; preload",
           },
           {
             key: "X-XSS-Protection",
             value: "1; mode=block",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: csp,
           },
         ],
       },

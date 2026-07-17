@@ -5,7 +5,7 @@ import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { getSkillWithMarkdown } from "@/lib/skills";
 import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agent-tools";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
-import { extractAndStoreMemories } from "@/lib/memory-extractor";
+import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import {
   getOrCreateConversation,
@@ -106,7 +106,14 @@ export async function POST(req: NextRequest) {
         await saveMessage(conversationId, "assistant", fullResponse);
         send({ done: true, conversationId, tokensUsed: 0 });
         controller.close();
-        extractAndStoreMemories(userId, `user: ${message}\nassistant: ${fullResponse}`).catch(() => {});
+        // Memory consent gate (Ethical #4) + explicit memory command (Ethical #5).
+        // Explicit "remember that..." commands bypass the opt-in gate.
+        const memoryCmd = detectMemoryCommand(message);
+        if (memoryCmd.isMemoryCommand && memoryCmd.content) {
+          storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
+        } else if (isMemoryExtractionEnabled(userId)) {
+          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${fullResponse}`).catch(() => {});
+        }
       } catch (err) {
         send({ error: err instanceof Error ? err.message : String(err) });
         controller.close();

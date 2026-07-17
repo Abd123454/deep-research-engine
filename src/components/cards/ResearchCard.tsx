@@ -5,7 +5,7 @@
 // synthesize), shows progress, then the final report.
 
 import { motion } from "framer-motion";
-import { Search, Square, CheckCircle2, AlertCircle } from "lucide-react";
+import { Search, Square, CheckCircle2, AlertCircle, Leaf, Lightbulb, AlertTriangle } from "lucide-react";
 import { useT } from "@/components/i18n/locale-provider";
 import { useResearchFlow } from "@/hooks/useResearchFlow";
 import { ReportViewer } from "@/components/research/ReportViewer";
@@ -17,6 +17,11 @@ import { ChevronDown } from "lucide-react";
 import * as React from "react";
 import { stageProgress, fmtTime } from "@/lib/research-ui-utils";
 import { cn } from "@/lib/utils";
+import { estimateResearchCarbon, formatCarbon, inferModelSize } from "@/lib/carbon-footprint";
+import {
+  getCriticalThinkingPrompt,
+  shouldShowCriticalThinkingPrompt,
+} from "@/lib/critical-thinking";
 
 interface ResearchCardProps {
   query: string;
@@ -28,8 +33,33 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
   const { phase, job, streamingReport, error, stop } = useResearchFlow(query);
   const [planExpanded, setPlanExpanded] = React.useState(false);
   const [activityExpanded, setActivityExpanded] = React.useState(false);
+  const [limitationsExpanded, setLimitationsExpanded] = React.useState(false);
+
+  // Critical-thinking prompt — set ONCE when the research completes.
+  // Uses useState lazy initializer + a ref guard so we don't reshuffle
+  // the prompt on every re-render (the gating function returns true
+  // for "research", so this WILL show — unlike in ChatCard).
+  const [criticalThinkingPrompt] = React.useState<string | null>(() =>
+    shouldShowCriticalThinkingPrompt("research") ? getCriticalThinkingPrompt() : null
+  );
 
   const isRunning = phase === "planning" || phase === "researching";
+
+  // Carbon footprint estimate — computed once the job is done.
+  // Research defaults to "large" model size (the smart chain's first model
+  // is meta/llama-3.1-70b-instruct). When NEXT_PUBLIC_LLM_PROVIDER=ollama,
+  // the LLM emissions drop to 0 (local inference).
+  const carbonEstimate = React.useMemo(() => {
+    if (phase !== "done" || !job) return null;
+    const local = process.env.NEXT_PUBLIC_LLM_PROVIDER === "ollama";
+    return estimateResearchCarbon({
+      tokensGenerated: job.stats.outputTokens || job.stats.totalTokensUsed,
+      pagesRead: job.stats.totalPagesRead,
+      searchQueries: job.subQueries.length,
+      modelSize: inferModelSize("meta/llama-3.1-70b-instruct"),
+      local,
+    });
+  }, [phase, job]);
 
   async function handleStop() {
     await stop();
@@ -180,6 +210,124 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
               />
             )}
           </>
+        )}
+
+        {/* Carbon footprint indicator — shown when the job is done.
+            Quaesitor palette: text-[#6b6358] (faded ink), Leaf icon. */}
+        {phase === "done" && carbonEstimate && (
+          <div
+            className="flex items-center gap-1.5 pt-3 mt-2 border-t border-[#d9d4c7]/60 dark:border-[#3d3830]/60 text-[11px] text-[#6b6358] dark:text-[#9a9080] font-ui"
+            title={
+              carbonEstimate.local
+                ? "Local inference (Ollama) — 0g remote CO₂. See docs/ENVIRONMENTAL.md."
+                : `Estimated CO₂ breakdown:\n${carbonEstimate.breakdown
+                    .map((b) => `  ${b.category}: ${b.grams}g`)
+                    .join("\n")}\n\nSee docs/ENVIRONMENTAL.md.`
+            }
+          >
+            <Leaf className="h-3 w-3 shrink-0" />
+            <span>
+              {carbonEstimate.local
+                ? "0g CO₂ (local)"
+                : `${formatCarbon(carbonEstimate.grams)} estimated`}
+              {" · "}
+              <span className="underline-offset-2 hover:underline cursor-help">
+                See impact
+              </span>
+            </span>
+          </div>
+        )}
+
+        {/* Critical-thinking prompt — Quaesitor's signature nudge toward
+            intellectual humility. Shown after the report completes.
+            One prompt per report (random from the pool), stable across
+            re-renders. Warm, italic, muted — not a callout. */}
+        {phase === "done" && criticalThinkingPrompt && (
+          <div className="mt-3 flex items-start gap-2 px-1">
+            <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#8b4513] dark:text-[#b5673a]" aria-hidden="true" />
+            <p className="text-xs italic font-body text-[#6b6358] dark:text-[#9a9080] leading-relaxed">
+              <span className="font-medium not-italic">Critical thinking:</span>{" "}
+              {criticalThinkingPrompt}
+            </p>
+          </div>
+        )}
+
+        {/* Known limitations — collapsible honesty section.
+            Quaesitor models intellectual humility: every report
+            explicitly lists what it CANNOT guarantee. This builds
+            trust and reminds readers that AI research is a starting
+            point, not a final answer. */}
+        {phase === "done" && job && (
+          <Collapsible open={limitationsExpanded} onOpenChange={setLimitationsExpanded} className="mt-3">
+            <CollapsibleTrigger className="flex w-full items-center gap-1.5 text-xs text-[#6b6358] dark:text-[#9a9080] hover:text-[#2a2620] dark:hover:text-[#e8e3d8] transition-colors py-1">
+              <AlertTriangle className="h-3 w-3 shrink-0 text-[#a37a3f] dark:text-[#d4a574]" />
+              <span className="font-ui font-medium">Known limitations of this report</span>
+              <ChevronDown className={cn("h-3 w-3 transition-transform ml-auto", limitationsExpanded && "rotate-180")} />
+            </CollapsibleTrigger>
+            <CollapsibleContent>
+              <ul className="mt-2 space-y-1.5 text-[11px] font-body text-[#6b6358] dark:text-[#9a9080] leading-relaxed pl-1">
+                <li className="flex gap-1.5">
+                  <span className="text-[#a37a3f] dark:text-[#d4a574] shrink-0">•</span>
+                  <span>
+                    Sources are predominantly from English-language, Western-indexed
+                    web. Perspectives from the Global South, non-English scholarship,
+                    and oral traditions may be underrepresented.
+                  </span>
+                </li>
+                <li className="flex gap-1.5">
+                  <span className="text-[#a37a3f] dark:text-[#d4a574] shrink-0">•</span>
+                  <span>
+                    Citation verification checks URL reachability and basic
+                    contradiction — it does <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">not</strong> verify
+                    factual accuracy. A "verified" citation means the URL exists and
+                    the cited text appears in it, not that the claim is true.
+                  </span>
+                </li>
+                <li className="flex gap-1.5">
+                  <span className="text-[#a37a3f] dark:text-[#d4a574] shrink-0">•</span>
+                  <span>
+                    {job.verificationReport && job.verificationReport.total > 0 ? (
+                      <>
+                        The citation verifier flagged{" "}
+                        <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">
+                          {job.verificationReport.unverified} unverified
+                        </strong>{" "}
+                        and{" "}
+                        <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">
+                          {job.verificationReport.contradicts} contradicting
+                        </strong>{" "}
+                        citation{job.verificationReport.contradicts === 1 ? "" : "s"}.
+                        Review them in the citation badge above.
+                      </>
+                    ) : (
+                      <>No citation verification was performed for this report.</>
+                    )}
+                  </span>
+                </li>
+                <li className="flex gap-1.5">
+                  <span className="text-[#a37a3f] dark:text-[#d4a574] shrink-0">•</span>
+                  <span>
+                    This report was generated in{" "}
+                    <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8] font-mono">
+                      {job.stats.elapsedMs ? fmtTime(job.stats.elapsedMs) : "—"}
+                    </strong>
+                    . Deeper investigation — additional search rounds, expert
+                    consultation, primary-source review — may yield further insights.
+                  </span>
+                </li>
+                <li className="flex gap-1.5">
+                  <span className="text-[#a37a3f] dark:text-[#d4a574] shrink-0">•</span>
+                  <span>
+                    The <code className="font-mono text-[10px] bg-[#d9d4c7]/60 dark:bg-[#322e28]/60 px-1 py-0.5 rounded">bias_auditor</code>{" "}
+                    agent reviewed this output for cultural, geographic, and
+                    linguistic biases, but bias mitigation is not elimination.
+                    Seek additional perspectives before relying on this report for
+                    consequential decisions.
+                  </span>
+                </li>
+              </ul>
+            </CollapsibleContent>
+          </Collapsible>
         )}
       </div>
     </motion.div>

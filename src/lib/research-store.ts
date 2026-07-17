@@ -22,7 +22,17 @@ import type { ResearchJob, ResearchConfig, ResearchStatus } from "./types";
 import { getDb as getSqliteDb } from "./db";
 import { logger } from "./logger";
 
-const MAX_JOBS = 30;
+// In-memory job cap. Defaults to 100 (configurable via MAX_JOBS env var).
+//
+// When BullMQ + Redis is configured (REDIS_URL), jobs that exceed this limit
+// are NOT rejected — they remain queued in Redis and only the in-memory Map
+// (which holds runtime state: logs, thoughts, reportStream) is pruned. The
+// pruned job's essential fields survive in the SQLite `research_jobs` table
+// (see persistJob) so it can still be polled via /api/research/status/[id].
+//
+// Without Redis, this limit also does not reject — it evicts the oldest
+// inactive job from memory (same SQLite fallback applies).
+const MAX_JOBS = parseInt(process.env.MAX_JOBS || "100", 10);
 const JOB_TTL_MS = 1000 * 60 * 60;
 
 const ACTIVE_STATUSES: ReadonlySet<ResearchStatus> = new Set([

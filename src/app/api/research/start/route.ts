@@ -9,9 +9,14 @@ import { resolveConfig, runResearch } from "@/lib/research-engine";
 import { getLLMProvider, getSmartModels, getFastModel } from "@/lib/llm-provider";
 import { getRetriever } from "@/lib/retriever";
 import { checkStartRateLimit, getClientIP } from "@/lib/rate-limit";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getUserId } from "@/lib/auth";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { logger } from "@/lib/logger";
+import { logSensitiveAction } from "@/lib/audit";
+import { enqueueResearch, isQueueAvailable } from "@/lib/queue";
+import { getCachedResearch } from "@/lib/research-cache";
+import { persistJob } from "@/lib/research-store";
+import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -56,6 +61,12 @@ export async function POST(req: NextRequest) {
     // Auth check (no-op if AUTH_USERNAME/AUTH_PASSWORD are unset).
     const authFail = requireAuth(req);
     if (authFail) return authFail;
+
+    const userId = getUserId(req);
+    // SENSITIVE ACTION: research start kicks off a long-running pipeline
+    // that consumes API quotas and may produce/export artifacts. Logged
+    // at the start so even an attempted-but-failed start is recorded.
+    logSensitiveAction("research.start", userId, req);
 
     const raw = await req.json().catch(() => ({}));
     const parsed = StartBodySchema.safeParse(raw);
@@ -107,6 +118,27 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // ---------- Plan limit enforcement ----------
+    // Reject with 402 Payment Required when the user's plan quota for the
+    // current month is exhausted. The Free plan defaults to 10 research/mo
+    // — generous enough that a fresh in-memory DB (used by tests) never
+    // trips the gate. Cache hits do NOT bypass this check, because the
+    // cache is shared across users and the quota is per-user.
+    const planCheck = checkPlanLimit(userId, "research");
+    if (!planCheck.allowed) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Your plan's monthly research limit has been reached. Upgrade at /pricing to run more queries.",
+          plan: planCheck.plan,
+          limit: planCheck.limit,
+          remaining: planCheck.remaining,
+        },
+        { status: 402 }
+      );
+    }
+
     // Resolve config from env + validated client overrides.
     const config = resolveConfig(cleanedQuery, {
       depth: body.depth,
@@ -124,19 +156,91 @@ export async function POST(req: NextRequest) {
       job.plan = body.plan;
     }
 
-    // Fire-and-forget the research pipeline. We do NOT await it here —
-    // the client polls /api/research/status/[id] for progress.
-    runResearch(job.id).catch((err: unknown) => {
-      logger.error(
-        { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
-        "runResearch threw"
+    // ---------- Research result cache ----------
+    // Before enqueuing/running, check if we already have a cached result for
+    // this exact query (24h TTL). If hit AND no pre-approved plan was supplied
+    // (a custom plan means the user explicitly wants a different shape),
+    // hydrate the in-memory job as "completed" and return immediately.
+    // This avoids re-running the 5-15 min pipeline for repeat queries.
+    if (!body.plan) {
+      const cached = getCachedResearch(cleanedQuery);
+      if (cached) {
+        job.status = "completed";
+        job.report = cached.report;
+        job.sources = cached.sources;
+        job.plan = cached.plan;
+        // Merge cached stats (keep clientIP from the new job).
+        job.stats = { ...cached.stats };
+        job.finishedAt = Date.now();
+        job.updatedAt = Date.now();
+        persistJob(job);
+        trackEvent("default", "research_cache_hit", { jobId: job.id });
+        logger.info(
+          { module: "research", jobId: job.id, cacheAgeMs: Date.now() - cached.cachedAt },
+          "Research cache hit — returning cached result"
+        );
+        return NextResponse.json({
+          ok: true,
+          id: job.id,
+          status: job.status,
+          cached: true,
+          config: {
+            depth: config.depth,
+            numSubQueries: config.numSubQueries,
+            maxLinksPerQuery: config.maxLinksPerQuery,
+            reportMaxTokens: config.reportMaxTokens,
+            retriever: config.retriever,
+            llmProvider: getLLMProvider(),
+            smartModels: getSmartModels(),
+            fastModel: getFastModel(),
+            searchEngines: ["duckduckgo"],
+          },
+          retriever: getRetriever(),
+        });
+      }
+    }
+
+    // ---------- Dispatch: BullMQ (if Redis) or inline fallback ----------
+    // When REDIS_URL is set, enqueue the job — the worker process
+    // (worker.ts → research-worker.ts) picks it up and runs runResearch().
+    // Otherwise, fire-and-forget runResearch() inline. The inline path blocks
+    // the API route's event-loop slot for the duration of the pipeline
+    // (~5-15 min for advanced depth) but works without external dependencies.
+    if (isQueueAvailable()) {
+      try {
+        await enqueueResearch(job.id, cleanedQuery, "default");
+      } catch (err) {
+        // Enqueue failed (Redis down mid-request?) — fall back to inline
+        // so the user's request still completes.
+        logger.error(
+          { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
+          "enqueueResearch failed — falling back to inline execution"
+        );
+        runResearch(job.id).catch((e: unknown) => {
+          logger.error(
+            { module: "research", jobId: job.id, err: e instanceof Error ? e.message : String(e) },
+            "runResearch threw"
+          );
+        });
+      }
+    } else {
+      logger.warn(
+        { module: "research", jobId: job.id },
+        "REDIS_URL not set — running research inline. For production, set REDIS_URL and run `bun run worker` to use BullMQ."
       );
-    });
+      runResearch(job.id).catch((err: unknown) => {
+        logger.error(
+          { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
+          "runResearch threw"
+        );
+      });
+    }
 
     return NextResponse.json({
       ok: true,
       id: job.id,
       status: job.status,
+      cached: false,
       config: {
         depth: config.depth,
         numSubQueries: config.numSubQueries,

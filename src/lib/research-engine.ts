@@ -20,6 +20,7 @@ import { readPages } from "./page-reader";
 
 import { getJob } from "./research-store";
 import { persistJob } from "./research-store";
+import { setCachedResearch } from "./research-cache";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt } from "./env";
 import { logger } from "./logger";
@@ -1046,7 +1047,36 @@ Write a comprehensive long-form Deep Research report answering the original quer
 /* ignore — follow-ups are nice-to-have */ 
 }
 
-  return finalReport;
+  return appendBiasDisclaimer(finalReport);
+}
+
+// ---------- Bias disclaimer (Ethical #6) ----------
+//
+// Appended to EVERY research report regardless of source quality or
+// bias_auditor outcome. The disclaimer reminds readers that web-sourced
+// research inherits cultural, geographic, and linguistic biases from its
+// sources, and that Quaesitor's bias_auditor agent is a mitigation, not
+// a guarantee. Readers are urged to seek additional perspectives —
+// especially from underrepresented regions — before relying on the
+// report for consequential decisions.
+//
+// The disclaimer is added AFTER the self-critique pass so the LLM doesn't
+// "review" it (it would just delete it as redundant). It's appended to
+// `finalReport` only — the streamed tokens (job.reportStream) are the
+// LLM's raw output and don't include the disclaimer.
+const BIAS_DISCLAIMER = [
+  "",
+  "---",
+  "",
+  "⚠️ **Bias notice**: This report was generated from web sources that may reflect cultural, geographic, and linguistic biases. Quaesitor's `bias_auditor` agent has reviewed the output, but readers should critically evaluate sources and seek additional perspectives, especially from underrepresented regions.",
+  "",
+].join("\n");
+
+function appendBiasDisclaimer(report: string): string {
+  if (!report) return report;
+  // Don't double-append if a future code path calls this twice.
+  if (report.includes("⚠️ **Bias notice**")) return report;
+  return report.trimEnd() + "\n" + BIAS_DISCLAIMER;
 }
 
 // ---------- Orchestrator ----------
@@ -1285,6 +1315,26 @@ export async function runResearch(jobId: string): Promise<void> {
         (Date.now() - (job.startedAt || Date.now())) / 1000
       )}s across ${job.stats.roundsCompleted} round(s). Read ${job.stats.totalPagesRead} pages from ${job.subQueries.length} sub-questions.`
     );
+
+    // Cache the completed research result so an identical query within 24h
+    // is served from cache (see research-start/route.ts). Skipped if the
+    // report is empty (e.g. a guard tripped before synthesis).
+    if (job.report) {
+      try {
+        setCachedResearch(job.config.query, {
+          report: job.report,
+          sources: job.sources,
+          stats: job.stats,
+          plan: job.plan,
+        });
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.warn(
+          { module: "research-cache", err: err instanceof Error ? err.message : String(err) },
+          "setCachedResearch failed — non-fatal"
+        );
+      }
+    }
 
     // Auto-save the completed research to the session store (Phase D).
     try {

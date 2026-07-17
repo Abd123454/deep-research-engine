@@ -30,6 +30,9 @@
 | 5 | [Cookie Policy](./COOKIE_POLICY.md) | Lists cookies used (essential only) and consent approach | 2026-07-17 |
 | 6 | [Incident Response Plan](./INCIDENT_RESPONSE_PLAN.md) | Detection, classification, response, and breach notification | 2026-07-17 |
 | 7 | [Record of Processing Activities (RoPA)](./ROPA.md) | Art. 30 GDPR record of processing activities | 2026-07-17 |
+| 8 | [Service Level Agreement](./SLA.md) | Availability target, incident response, service credits | 2026-07-17 |
+| 9 | [Contributor License Agreement](./CLA.md) | Copyright + patent grant for project contributors (DCO sign-off) | 2026-07-17 |
+| 10 | [SOC 2 Type II Readiness Assessment](./SOC2_READINESS.md) | TSC mapping (CC1–CC9 + A/IP/C/P), gap analysis | 2026-07-17 |
 
 ## How to Use These Documents
 

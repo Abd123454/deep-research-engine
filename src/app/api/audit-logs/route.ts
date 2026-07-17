@@ -1,6 +1,6 @@
 // GET /api/audit-logs — retrieve audit logs for the current user.
 import { NextRequest, NextResponse } from "next/server";
-import { getAuditLogs } from "@/lib/audit";
+import { getAuditLogs, logSensitiveAction } from "@/lib/audit";
 import { getUserId, requireAuth, requireAdminAccess } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -15,6 +15,9 @@ export async function GET(req: NextRequest) {
 
   // SECURITY: resolve userId from auth (was hardcoded "default").
   const userId = getUserId(req);
+  // SENSITIVE ACTION: admin access — audit log reads are themselves
+  // auditable. (Resource: admin.)
+  logSensitiveAction("admin.access", userId, req, { route: "audit-logs" });
   const logs = getAuditLogs(userId, 100);
   return NextResponse.json({ logs, total: logs.length });
 }

@@ -10,7 +10,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/research-store";
 import { persistJob } from "@/lib/research-store";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getUserId } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,7 +23,11 @@ export async function POST(
   const authFail = requireAuth(req);
   if (authFail) return authFail;
 
+  const userId = getUserId(req);
   const { id } = await params;
+  // SENSITIVE ACTION: research stop cancels a running pipeline.
+  logSensitiveAction("research.stop", userId, req, { jobId: id });
+
   const job = getJob(id);
 
   if (!job) {

@@ -22,7 +22,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { logAudit } from "@/lib/audit";
+import { logSensitiveAction } from "@/lib/audit";
 import { decryptCredentials } from "@/lib/credentials";
 import type {
   ConversationRow,
@@ -46,6 +46,10 @@ export async function GET(req: NextRequest) {
   if (authFail) return authFail;
 
   const userId = getUserId(req);
+  // SENSITIVE ACTION: log at the start so even an attempted-but-failed
+  // export is recorded. The actual export is logged again below with
+  // the result counts.
+  logSensitiveAction("account.export", userId, req, { phase: "initiated" });
 
   // ---------- Postgres path ----------
   if (isPostgresAvailable()) {
@@ -112,11 +116,16 @@ export async function GET(req: NextRequest) {
           } },
           "Account exported (Postgres)"
         );
-        logAudit({
-          userId,
-          action: "account.export",
-          resource: "account",
-          userAgent: req.headers.get("user-agent") || undefined,
+        logSensitiveAction("account.export", userId, req, {
+          phase: "completed",
+          backend: "postgres",
+          counts: {
+            conversations: conversations.length,
+            memories: memories.length,
+            researchJobs: researchJobs.length,
+            documents: documents.length,
+            projects: projects.length,
+          },
         });
 
         return new NextResponse(JSON.stringify(payload, null, 2), {
@@ -273,11 +282,16 @@ export async function GET(req: NextRequest) {
       } },
       "Account exported (SQLite)"
     );
-    logAudit({
-      userId,
-      action: "account.export",
-      resource: "account",
-      userAgent: req.headers.get("user-agent") || undefined,
+    logSensitiveAction("account.export", userId, req, {
+      phase: "completed",
+      backend: "sqlite",
+      counts: {
+        conversations: conversations.length,
+        memories: memories.length,
+        researchJobs: researchJobs.length,
+        documents: documents.length,
+        projects: projects.length,
+      },
     });
 
     return new NextResponse(JSON.stringify(payload, null, 2), {

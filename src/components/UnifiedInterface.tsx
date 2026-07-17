@@ -30,6 +30,7 @@ import { DocumentCard } from "@/components/cards/DocumentCard";
 import { ChatCard } from "@/components/cards/ChatCard";
 import { SwarmCard } from "@/components/cards/SwarmCard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { OnboardingFlow } from "@/components/OnboardingFlow";
 import { detectArtifact as _detectArtifact, type Artifact } from "@/lib/artifact-detector";
 
 // Lazy load heavy drawers — they're only needed when opened.
@@ -104,6 +105,15 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   } | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const textareaFocusRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // Mobile-first: close the sidebar on small screens so it doesn't
+  // overlay the empty state on first paint. Desktop keeps it open.
+  // Runs once after mount (SSR-safe — window is unavailable on server).
+  React.useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+      setSidebarOpen(false);
+    }
+  }, []);
 
   // Time-based greeting (Claude.ai pattern: "Good morning/afternoon/evening")
   const greeting = React.useMemo(() => {
@@ -187,19 +197,23 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
 
       {/* Main column */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Topbar — h-14, NO blur, transparent bg */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#d9d4c7] dark:border-[#3d3830] px-4">
-          <div className="flex items-center gap-2">
+        {/* Topbar — h-14, NO blur, transparent bg. Mobile-first:
+            the menu button is only visible below lg (sidebar is fixed
+            on desktop). The "New Conversation" label truncates so the
+            right-side action cluster never gets crowded off-screen at
+            375px (iPhone SE) width. */}
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#d9d4c7] dark:border-[#3d3830] px-3 sm:px-4">
+          <div className="flex items-center gap-2 min-w-0">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex size-8 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors lg:hidden"
+              className="flex size-8 shrink-0 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors lg:hidden"
               aria-label="Toggle sidebar"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <span className="font-body text-base text-[#2a2620] dark:text-[#e8e3d8]">New Conversation</span>
+            <span className="font-body text-base text-[#2a2620] dark:text-[#e8e3d8] truncate">New Conversation</span>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 shrink-0">
             <button
               onClick={() => setMemoryOpen(true)}
               aria-label="Memory"
@@ -234,7 +248,6 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                   <CompassLogo className="fill-[#8b4513] text-[#8b4513] h-7 w-7" />
                   {greeting}
                 </h1>
-
                 {/* Composer */}
                 <UnifiedInput
                   onSend={handleSend}
@@ -342,6 +355,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
           onSelect={handleSelectSession}
         />
       </React.Suspense>
+
+      {/* Onboarding — shows on first visit (empty state only).
+          Mounted at the root so the backdrop covers the full viewport.
+          OnboardingFlow self-checks localStorage and renders null if
+          already completed. */}
+      {cards.length === 0 && !loadedSession && <OnboardingFlow />}
     </div>
   );
 }

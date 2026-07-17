@@ -15,6 +15,7 @@ import { stripe, createPortalSession } from "@/lib/stripe";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
+import { logSensitiveAction } from "@/lib/audit";
 
 /** Look up the Stripe customer ID stored against `userId` in our DB. */
 async function findLocalCustomerId(userId: string): Promise<string | null> {
@@ -54,6 +55,9 @@ export async function POST(req: NextRequest) {
   if (authFail) return authFail;
 
   const userId = getUserId(req);
+  // SENSITIVE ACTION: portal access lets the user cancel/upgrade billing
+  // — log every attempt. (Resource: billing.)
+  logSensitiveAction("billing.portal_access", userId, req, { phase: "initiated" });
   const origin = req.headers.get("origin") || "http://localhost:3000";
 
   // 1. Resolve customer ID for THIS user from our DB.
@@ -88,6 +92,13 @@ export async function POST(req: NextRequest) {
   if (!url) {
     return NextResponse.json({ error: "Failed to create portal session" }, { status: 500 });
   }
+
+  // SENSITIVE ACTION: portal session successfully created — user can
+  // now manage their subscription in Stripe's hosted UI.
+  logSensitiveAction("billing.portal_access", userId, req, {
+    phase: "session_created",
+    customerId,
+  });
 
   return NextResponse.json({ url });
 }

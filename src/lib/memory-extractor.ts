@@ -8,6 +8,18 @@
 //   - context: "User is writing a thesis about AI"
 //
 // Extracted memories are embedded and stored for semantic recall.
+//
+// ---------- Consent (Ethical #4) ----------
+// Memory extraction is OPT-IN. The default state for any user is "not
+// consented" — automatic extraction is skipped until the user explicitly
+// turns it on via /api/preferences/memory. Routes that perform automatic
+// extraction MUST call `isMemoryExtractionEnabled(userId)` first and skip
+// the extraction if it returns false.
+//
+// The opt-in gate does NOT apply to explicit memory commands ("remember
+// that...") — those go through `storeExplicitMemory()`, which is the user
+// directly asking us to save a specific fact. That counts as consent for
+// that one memory.
 import * as Sentry from "@sentry/nextjs";
 
 
@@ -269,4 +281,170 @@ export async function extractAndStoreMemories(
   const memories = await extractMemories(content);
   if (memories.length === 0) return 0;
   return storeMemories(userId, memories);
+}
+
+// ---------- Memory consent gate (Ethical #4) ----------
+//
+// Reads the `memory_consent` column from `user_preferences`. The column is
+// added lazily via ALTER TABLE on first read (SQLite's `ALTER TABLE ADD
+// COLUMN` is idempotent-ish — wrapped in try/catch so a duplicate add
+// doesn't crash). Postgres path: a Prisma migration would add the column
+// properly; the SQLite path here is the dev-default.
+//
+// DEFAULT IS FALSE. Memory extraction is opt-in — the user must explicitly
+// turn it on via /api/preferences/memory. Routes that auto-extract
+// memories MUST call this first.
+
+const CONSENT_COLUMN = "memory_consent";
+
+function ensureConsentColumn(): void {
+  try {
+    const db = getDb();
+    // SQLite: ALTER TABLE ADD COLUMN is silent if the column already exists
+    // when wrapped in try/catch (the duplicate-column error is caught).
+    db.exec(`ALTER TABLE user_preferences ADD COLUMN ${CONSENT_COLUMN} INTEGER DEFAULT 0`);
+  } catch {
+    // Column already exists — expected on subsequent calls.
+  }
+}
+
+/**
+ * Returns true if the user has opted in to automatic memory extraction.
+ *
+ * OPT-IN by default: returns false when the user has no preference row,
+ * when the column is missing, or when the column value is 0/null. Only
+ * returns true when the user has explicitly set consent to 1 via
+ * /api/preferences/memory.
+ */
+export function isMemoryExtractionEnabled(userId: string): boolean {
+  // Postgres path: defer to the preferences table via Prisma. Prisma
+  // doesn't have the `memory_consent` column in the current schema, so
+  // we read it raw via $queryRaw when Postgres is configured.
+  if (isPostgresAvailable()) {
+    // Defer to the SQLite path for the synchronous fast-path. The async
+    // variant below is preferred for routes that can await — but most
+    // callers (chat, agent) want the sync answer so they don't block the
+    // stream. The sync Postgres path falls through to SQLite (which is
+    // always available as a fallback in dual-mode deployments).
+  }
+
+  try {
+    ensureConsentColumn();
+    const db = getDb();
+    const row = db
+      .prepare(`SELECT ${CONSENT_COLUMN} AS consent FROM user_preferences WHERE user_id = ?`)
+      .get(userId) as { consent: number } | undefined;
+    return !!(row && row.consent === 1);
+  } catch (err) {
+    logger.warn(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "isMemoryExtractionEnabled lookup failed — defaulting to false (opt-in)"
+    );
+    return false;
+  }
+}
+
+/**
+ * Async variant — preferred for routes that can await. Reads from Postgres
+ * via Prisma's $queryRaw when configured, falling back to the sync SQLite
+ * path.
+ */
+export async function isMemoryExtractionEnabledAsync(userId: string): Promise<boolean> {
+  if (isPostgresAvailable()) {
+    try {
+      const prisma = await getPrismaDb();
+      if (prisma) {
+        const rows = await prisma.$queryRaw<Array<{ consent: number }>>`
+          SELECT memory_consent AS consent FROM user_preferences WHERE user_id = ${userId} LIMIT 1
+        `;
+        if (Array.isArray(rows) && rows.length > 0) {
+          return rows[0]!.consent === 1;
+        }
+        return false;
+      }
+    } catch (err) {
+      logger.warn(
+        { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+        "isMemoryExtractionEnabledAsync Postgres lookup failed — falling back to SQLite"
+      );
+    }
+  }
+  return isMemoryExtractionEnabled(userId);
+}
+
+/**
+ * Set the user's memory consent flag. Used by /api/preferences/memory.
+ * Writes to the `memory_consent` column on the existing user_preferences
+ * row (creates the row if missing — INSERT OR REPLACE pattern).
+ */
+export function setMemoryExtractionConsent(userId: string, enabled: boolean): void {
+  try {
+    ensureConsentColumn();
+    const db = getDb();
+    const value = enabled ? 1 : 0;
+    db.prepare(
+      `INSERT INTO user_preferences (user_id, ${CONSENT_COLUMN})
+       VALUES (?, ?)
+       ON CONFLICT(user_id) DO UPDATE SET ${CONSENT_COLUMN} = excluded.${CONSENT_COLUMN}`
+    ).run(userId, value);
+  } catch (err) {
+    logger.warn(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "setMemoryExtractionConsent write failed"
+    );
+  }
+}
+
+// ---------- Explicit memory command (Ethical #5) ----------
+//
+// Detects when the user explicitly asks Quaesitor to remember something:
+//   "remember that I prefer concise answers"
+//   "note that my timezone is PST"
+//   "تذكر أنني أكتب بالعربية"
+//   "احفظ أن المشروع يستخدم RISC-V"
+//
+// When detected, the captured `content` is stored directly via
+// `storeExplicitMemory()` — bypassing the opt-in gate (the user's explicit
+// ask counts as consent for that one memory).
+
+const MEMORY_COMMAND_PATTERNS: RegExp[] = [
+  /^(?:remember that|remember|note that|keep in mind|don't forget that|dont forget that)\s+(.+)/i,
+  /^(?:تذكر أن|تذكر|احفظ أن|احفظ|دوّن أن|دون أن)\s+(.+)/i,
+];
+
+export interface MemoryCommand {
+  isMemoryCommand: boolean;
+  content?: string;
+}
+
+export function detectMemoryCommand(message: string): MemoryCommand {
+  if (!message || typeof message !== "string") return { isMemoryCommand: false };
+  const trimmed = message.trim();
+  for (const pattern of MEMORY_COMMAND_PATTERNS) {
+    const match = trimmed.match(pattern);
+    if (match && match[1] && match[1].trim().length > 0) {
+      return { isMemoryCommand: true, content: match[1].trim() };
+    }
+  }
+  return { isMemoryCommand: false };
+}
+
+/**
+ * Store an explicit memory ("remember that...") for the user.
+ *
+ * Bypasses the opt-in consent gate because the user is directly asking us
+ * to save this fact. The memory is stored as type "fact" with confidence
+ * 1.0 (the user wouldn't ask us to remember something they're unsure of).
+ *
+ * Returns true on success, false on failure (DB write error).
+ */
+export async function storeExplicitMemory(
+  userId: string | null,
+  content: string
+): Promise<boolean> {
+  if (!content || content.trim().length === 0) return false;
+  const stored = await storeMemories(userId, [
+    { type: "fact", content: content.trim(), confidence: 1.0 },
+  ]);
+  return stored > 0;
 }

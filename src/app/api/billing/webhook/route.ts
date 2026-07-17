@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 import { getDb } from "@/lib/db";
+import { logSensitiveAction } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
@@ -55,6 +56,15 @@ export async function POST(req: NextRequest) {
           logger.error({ err }, "Failed to store subscription");
         }
         trackEvent(userId, "plan_upgraded", { plan: "pro", customerId });
+        // SENSITIVE ACTION: subscription activated. Logged against the
+        // userId embedded in the checkout session (set by /billing/checkout
+        // from getUserId(req) at creation time).
+        logSensitiveAction("billing.subscribe", userId, req, {
+          phase: "completed",
+          plan: "pro",
+          customerId,
+          subscriptionId,
+        });
         break;
       }
 
@@ -74,8 +84,15 @@ export async function POST(req: NextRequest) {
 
       case "customer.subscription.deleted": {
         const sub = event.data.object;
+        let canceledUserId = "default";
         try {
           const db = getDb();
+          // Look up the userId from our local subscriptions table BEFORE
+          // we mark it canceled (so we can attribute the audit log).
+          const row = db
+            .prepare("SELECT user_id FROM subscriptions WHERE stripe_subscription_id = ?")
+            .get(sub.id) as { user_id?: string } | undefined;
+          if (row?.user_id) canceledUserId = row.user_id;
           db.prepare(`UPDATE subscriptions SET status = 'canceled', updated_at = datetime('now') WHERE stripe_subscription_id = ?`)
             .run(sub.id);
           logger.info({ subscriptionId: sub.id }, "Subscription canceled");
@@ -83,6 +100,12 @@ export async function POST(req: NextRequest) {
   Sentry.captureException(err);
 /* ignore */ 
 }
+        // SENSITIVE ACTION: subscription canceled (by user via portal,
+        // or by Stripe for non-payment).
+        logSensitiveAction("billing.cancel", canceledUserId, req, {
+          phase: "completed",
+          subscriptionId: sub.id,
+        });
         break;
       }
 

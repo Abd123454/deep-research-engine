@@ -85,7 +85,11 @@ export const Sidebar = React.memo(function Sidebar({
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="flex h-full w-[280px] flex-col border-r border-[#d9d4c7] bg-[#f4f1ea] dark:border-[#3d3830] dark:bg-[#1c1a17] z-50"
+            // Mobile: fixed drawer overlaying content (z-50, above the
+            // backdrop at z-40). Desktop: static flex item taking 280px
+            // in the layout — the drawer animation still works because
+            // `lg:static` overrides `fixed`.
+            className="flex h-full w-[280px] flex-col border-r border-[#d9d4c7] bg-[#f4f1ea] dark:border-[#3d3830] dark:bg-[#1c1a17] z-50 fixed lg:static inset-y-0 left-0"
           >
             <div className="flex h-14 items-center gap-2 px-4 shrink-0">
               <CompassLogo className="h-5 w-5 fill-[#8b4513] text-[#8b4513]" />

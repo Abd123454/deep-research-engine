@@ -6,6 +6,8 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SessionProvider } from "@/components/SessionProvider";
+import { CookieConsent } from "@/components/CookieConsent";
+import { FeedbackWidget } from "@/components/FeedbackWidget";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -80,6 +82,8 @@ export default function RootLayout({
             {children}
             <Toaster />
             <SonnerToaster />
+            <CookieConsent />
+            <FeedbackWidget />
             </SessionProvider>
           </LocaleProvider>
         </ThemeProvider>

@@ -4,6 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, Zap, Building2, Crown } from "lucide-react";
 import { CompassLogo } from "@/components/CompassLogo";
+import { PricingCalculator } from "@/components/PricingCalculator";
 
 const PLANS = [
   {
@@ -115,6 +116,9 @@ export default function PricingPage() {
             );
           })}
         </div>
+
+        {/* Interactive pricing calculator (Commercial #1). */}
+        <PricingCalculator className="mb-12" />
 
         <div className="rounded-2xl border border-border p-8">
           <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>

@@ -94,13 +94,23 @@ npm run dev   # requires the Next.js app running on port 3000
 | `NVIDIA_API_KEY` | — | Primary LLM (free at build.nvidia.com). 6-model fallback chain. |
 | `OPENAI_API_KEY` | — | Cross-provider fallback #1. |
 | `ANTHROPIC_API_KEY` | — | Cross-provider fallback #2. |
-| `OLLAMA_URL` | — | Cross-provider fallback #3 (local LLM). |
+| `OLLAMA_URL` | — | Cross-provider fallback #3 (local LLM). When set as `LLM_PROVIDER=ollama`, all LLM inference runs locally (0 g remote CO₂). |
 | `SMART_LLM_MODELS` | 6 models | Comma-separated NVIDIA fallback chain. |
 | `DATABASE_URL` | `file:./db/custom.db` | SQLite (dev) or `postgresql://...` (prod). |
-| `REDIS_URL` | — | Optional. Distributed rate limiting. |
+| `REDIS_URL` | — | Optional. Enables BullMQ job queue for research, email, memory (run `bun run worker` separately). |
+| `MAX_JOBS` | `100` | In-memory research job cap. With BullMQ, overflow jobs stay queued in Redis; without, the oldest inactive job is evicted (DB row survives). |
+| `NEXT_PUBLIC_LLM_PROVIDER` | — | Optional. Set to `ollama` to expose local-mode to the client (carbon indicator shows "0g CO₂ (local)" for research reports). |
 | `SEARCH_DEPTH` | `advanced` | `standard` (~2-3 min), `deep` (~5-7 min), `advanced` (~10-15 min). |
 | `AUTH_USERNAME` / `AUTH_PASSWORD` | empty | Set both to enable HTTP Basic Auth. |
 | `MAX_DOCUMENT_SIZE_MB` | `50` | File upload limit. |
+
+### Environmental Impact
+
+Quaesitor displays a carbon-footprint estimate at the bottom of every chat
+response and research report. Configure **Ollama** for zero-carbon local
+inference — the indicator switches to "0g CO₂ (local)". See
+[`docs/ENVIRONMENTAL.md`](docs/ENVIRONMENTAL.md) for full setup, renewable-energy
+server recommendations, and the estimation methodology.
 
 ---
 

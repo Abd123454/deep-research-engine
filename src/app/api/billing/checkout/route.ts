@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createCheckoutSession, PLANS } from "@/lib/stripe";
 import { getUserId, requireAuth } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
 
 export async function POST(req: NextRequest) {
   let body: { plan?: string };
@@ -25,12 +26,20 @@ export async function POST(req: NextRequest) {
 
   // SECURITY: resolve userId from auth (was hardcoded "default").
   const userId = getUserId(req);
+  // SENSITIVE ACTION: log at the start so even an attempted-but-failed
+  // checkout is recorded. (Resource: billing.)
+  logSensitiveAction("billing.subscribe", userId, req, { plan, phase: "checkout_initiated" });
   const origin = req.headers.get("origin") || "http://localhost:3000";
 
   const url = await createCheckoutSession(userId, priceId, `${origin}/billing?success=true`, `${origin}/billing?canceled=true`);
   if (!url) {
     return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
   }
+
+  // SENSITIVE ACTION: log the successful session creation (the actual
+  // subscription activation happens via webhook → billing.subscribe
+  // with phase=completed).
+  logSensitiveAction("billing.subscribe", userId, req, { plan, phase: "checkout_session_created" });
 
   return NextResponse.json({ url });
 }

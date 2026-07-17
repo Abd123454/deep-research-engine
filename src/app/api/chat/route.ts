@@ -17,9 +17,10 @@ import { NextRequest } from "next/server";
 import { trackEvent } from "@/lib/analytics";
 import { getLLM, getProviderDisplayInfo, type LLMMessage } from "@/lib/llm-provider";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
-import { extractAndStoreMemories } from "@/lib/memory-extractor";
+import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
 import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
 import {
   getOrCreateConversation,
@@ -71,6 +72,25 @@ export async function POST(req: NextRequest) {
   }
 
   const userId = DEFAULT_USER_ID;
+
+  // ---------- Plan limit enforcement (402 Payment Required) ----------
+  // Free plan: 500 chat messages/month — generous enough that no test or
+  // fresh dev deployment trips the gate. Returns the plan + remaining so
+  // the UI can surface a graceful upgrade prompt.
+  const planCheck = checkPlanLimit(userId, "chat");
+  if (!planCheck.allowed) {
+    return Response.json(
+      {
+        ok: false,
+        error:
+          "Your plan's monthly chat limit has been reached. Upgrade at /pricing to continue the conversation.",
+        plan: planCheck.plan,
+        limit: planCheck.limit,
+        remaining: planCheck.remaining,
+      },
+      { status: 402 }
+    );
+  }
 
   // Explicit LLM provider check — return 503 BEFORE starting the stream.
   // getLLM() is lazy and won't throw until smart() is called inside the
@@ -175,7 +195,21 @@ export async function POST(req: NextRequest) {
         controller.close();
 
         // Non-blocking: extract memories.
-        extractAndStoreMemories(userId, `user: ${message}\nassistant: ${result.content}`).catch(() => {});
+        //
+        // Memory consent gate (Ethical #4): automatic extraction only runs
+        // when the user has explicitly opted in via /api/preferences/memory.
+        // Default is FALSE (opt-in, not opt-out).
+        //
+        // Exception (Ethical #5): if the user's message started with an
+        // explicit memory command ("remember that...", "تذكر أن..."), store
+        // the captured content directly. The user's explicit ask counts as
+        // consent for that one memory, regardless of the global opt-in.
+        const memoryCmd = detectMemoryCommand(message);
+        if (memoryCmd.isMemoryCommand && memoryCmd.content) {
+          storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
+        } else if (isMemoryExtractionEnabled(userId)) {
+          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${result.content}`).catch(() => {});
+        }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));

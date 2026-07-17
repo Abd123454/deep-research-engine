@@ -7,8 +7,18 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Square, Copy, Check } from "lucide-react";
+import { ArrowRight, Square, Copy, Check, Leaf, Lightbulb } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import {
+  estimateChatCarbon,
+  formatCarbon,
+  inferModelSize,
+  type CarbonEstimate,
+} from "@/lib/carbon-footprint";
+import {
+  getCriticalThinkingPrompt,
+  shouldShowCriticalThinkingPrompt,
+} from "@/lib/critical-thinking";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -40,9 +50,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const [error, setError] = React.useState("");
   const [tokens, setTokens] = React.useState(0);
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
+  // Carbon footprint of the most recent assistant response. Updated when
+  // the `done` SSE event arrives (carries tokensUsed + actual provider/model).
+  const [lastCarbon, setLastCarbon] = React.useState<CarbonEstimate | null>(null);
   // Provider attribution: populated from the SSE `meta` event (expected,
   // pre-stream) and corrected by the `done` event (actual post-stream).
   const [providerInfo, setProviderInfo] = React.useState<ProviderAttribution | null>(null);
+  // Critical-thinking prompt — set ONCE when the assistant's response
+  // completes (not on every render, so it doesn't reshuffle). Persists
+  // across follow-ups; reset only when a new response finishes.
+  const [criticalThinkingPrompt, setCriticalThinkingPrompt] = React.useState<string | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
 
@@ -125,6 +142,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                 if (data.done) {
                   if (data.conversationId) setConversationId(data.conversationId);
                   if (data.tokensUsed) setTokens(data.tokensUsed);
+                  // Compute carbon footprint for this response.
+                  // `data.provider` is the ACTUAL provider (post-fallback).
+                  // `data.model` lets us infer the model-size bucket.
+                  setLastCarbon(
+                    estimateChatCarbon(
+                      data.tokensUsed ?? 0,
+                      inferModelSize(data.model || ""),
+                      data.provider === "ollama"
+                    )
+                  );
                   // Correct the attribution with the ACTUAL provider/model
                   // used (post-fallback). Skipped only if the meta event
                   // already matched — but it's cheaper to just overwrite.
@@ -159,6 +186,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
           ]);
           setStreamingResponse("");
           abortRef.current = null;
+          // Critical-thinking prompt: set once when the response
+          // completes. Gated by shouldShowCriticalThinkingPrompt —
+          // currently returns false for "chat" so this is a no-op,
+          // but the wiring is here for future tuning (e.g. showing
+          // the prompt for long/complex chat responses).
+          if (shouldShowCriticalThinkingPrompt("chat")) {
+            setCriticalThinkingPrompt(getCriticalThinkingPrompt());
+          } else {
+            setCriticalThinkingPrompt(null);
+          }
         }
       }
     })();
@@ -230,6 +267,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               if (data.token) { fullResponse += data.token; setStreamingResponse((r) => r + data.token); }
               if (data.done && data.conversationId) setConversationId(data.conversationId);
               if (data.done && data.tokensUsed) setTokens((t) => t + (data.tokensUsed ?? 0));
+              if (data.done) {
+                // Update carbon footprint for this follow-up response.
+                setLastCarbon(
+                  estimateChatCarbon(
+                    data.tokensUsed ?? 0,
+                    inferModelSize(data.model || ""),
+                    data.provider === "ollama"
+                  )
+                );
+              }
               if (data.done && data.provider) {
                 setProviderInfo({
                   provider: data.provider,
@@ -260,6 +307,13 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
     } finally {
       setStreaming(false);
       abortRef.current = null;
+      // Refresh the critical-thinking prompt for the new response
+      // (same gating as the initial response — no-op for "chat" today).
+      if (shouldShowCriticalThinkingPrompt("chat")) {
+        setCriticalThinkingPrompt(getCriticalThinkingPrompt());
+      } else {
+        setCriticalThinkingPrompt(null);
+      }
     }
   }
 
@@ -326,8 +380,10 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
                 <ReactMarkdown components={quaesitorMarkdownComponents}>{msg.content}</ReactMarkdown>
               </div>
-              {/* Action bar — appears on hover (Quaesitor pattern) */}
-              <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
+              {/* Action bar — appears on hover (Quaesitor pattern).
+                  On touch devices there's no hover, so the bar is
+                  always visible below sm; on sm+ it fades in on hover. */}
+              <div className="flex items-center gap-1 mt-2 opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
                 <button
                   onClick={() => copyMessage(i, msg.content)}
                   className="flex size-7 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
@@ -389,6 +445,24 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         </div>
       )}
 
+      {/* Critical-thinking prompt — shown after the assistant's response
+          completes, gated by shouldShowCriticalThinkingPrompt. Currently
+          a no-op for "chat" type (the gating returns false), but the
+          wiring is here so future tuning (e.g. long/complex chat
+          responses) can flip it on without touching ChatCard again.
+
+          Quaesitor design: warm, italic, muted text-[#6b6358],
+          Lightbulb icon. Subtle — not a callout, not a warning. */}
+      {!streaming && criticalThinkingPrompt && (
+        <div className="mt-4 flex items-start gap-2 px-1">
+          <Lightbulb className="h-3.5 w-3.5 shrink-0 mt-0.5 text-[#8b4513] dark:text-[#b5673a]" aria-hidden="true" />
+          <p className="text-xs italic font-body text-[#6b6358] dark:text-[#9a9080] leading-relaxed">
+            <span className="font-medium not-italic">Critical thinking:</span>{" "}
+            {criticalThinkingPrompt}
+          </p>
+        </div>
+      )}
+
       <div className="mt-4">
         <form className="flex items-center gap-2 rounded-3xl border border-[#d9d4c7] bg-[#faf8f3] dark:border-[#3d3830] dark:bg-[#1c1a17] px-3.5 pt-3 pb-2.5 focus-within:border-[#b5673a]/50 transition-colors">
           <textarea
@@ -426,6 +500,31 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         </form>
         {tokens > 0 && (
           <p className="text-[10px] text-[#6b6358] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
+        )}
+        {/* Carbon footprint indicator — shown after the first response completes.
+            Quaesitor palette: text-[#6b6358] (faded ink), Leaf icon. */}
+        {lastCarbon && (
+          <div
+            className="flex items-center justify-center gap-1.5 mt-1.5 text-[10px] text-[#6b6358] dark:text-[#9a9080] font-ui"
+            title={
+              lastCarbon.local
+                ? "Local inference (Ollama) — 0g remote CO₂. See docs/ENVIRONMENTAL.md."
+                : `${lastCarbon.breakdown
+                    .map((b) => `${b.category}: ${b.grams}g`)
+                    .join(" · ")} — see docs/ENVIRONMENTAL.md.`
+            }
+          >
+            <Leaf className="h-3 w-3 shrink-0" />
+            <span>
+              {lastCarbon.local
+                ? "0g CO₂ (local)"
+                : `${formatCarbon(lastCarbon.grams)} estimated`}
+              {" · "}
+              <span className="underline-offset-2 hover:underline cursor-help">
+                See impact
+              </span>
+            </span>
+          </div>
         )}
       </div>
     </motion.div>

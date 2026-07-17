@@ -15,6 +15,8 @@ import {
   encryptCredentials,
   decryptCredentials,
 } from "@/lib/credentials";
+import { getUserId, requireAuth } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
 
 /**
  * Build the safe connector response object — credentials are decrypted
@@ -44,6 +46,18 @@ export async function GET(req: NextRequest) {
   if (!projectId) {
     return NextResponse.json({ ok: false, error: "projectId is required." }, { status: 400 });
   }
+
+  // Auth: connectors expose decrypted third-party credentials, so even
+  // GET requires authentication (no anonymous listing).
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+  const userId = getUserId(req);
+  // SENSITIVE ACTION: reading decrypted connector credentials. Logged
+  // at the start so even a failed read is recorded.
+  logSensitiveAction("connector.credentials_access", userId, req, {
+    projectId,
+    phase: "list_initiated",
+  });
 
   if (isPostgresAvailable()) {
     try {
@@ -101,6 +115,17 @@ export async function POST(req: NextRequest) {
     if (!projectId || !type) {
       return NextResponse.json({ ok: false, error: "projectId and type are required." }, { status: 400 });
     }
+
+    // Auth: connector creation writes encrypted third-party credentials.
+    const authFail = requireAuth(req);
+    if (authFail) return authFail;
+    const userId = getUserId(req);
+    // SENSITIVE ACTION: connector creation (stores third-party creds).
+    logSensitiveAction("connector.create", userId, req, {
+      projectId,
+      connectorType: type,
+      phase: "initiated",
+    });
 
     const id = crypto.randomUUID();
     // Encrypt credentials at rest. Accept either a string (treated as a

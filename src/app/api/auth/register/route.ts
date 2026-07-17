@@ -7,6 +7,7 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { createRequestLogger, generateRequestId } from "@/lib/logger";
+import { logSensitiveAction } from "@/lib/audit";
 
 const RegisterSchema = z.object({
   email: z.string().email("Invalid email."),
@@ -29,6 +30,11 @@ export async function POST(req: NextRequest) {
 
     const { email, password, name } = parsed.data;
     const passwordHash = await bcrypt.hash(password, 10);
+
+    // SENSITIVE ACTION: account creation. The "userId" for the audit
+    // entry is the new user's email — they don't have an authenticated
+    // session yet, so we use the email as the identifier.
+    logSensitiveAction("account.create", email, req, { phase: "initiated" });
 
     // Postgres.
     if (isPostgresAvailable()) {

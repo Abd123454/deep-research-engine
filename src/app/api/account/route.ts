@@ -24,7 +24,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
-import { logAudit } from "@/lib/audit";
+import { logSensitiveAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,6 +35,10 @@ export async function DELETE(req: NextRequest) {
   if (authFail) return authFail;
 
   const userId = getUserId(req);
+  // SENSITIVE ACTION: log at the start so even an attempted-but-failed
+  // erasure is recorded (the actual delete is logged again below with
+  // the result counts).
+  logSensitiveAction("account.delete", userId, req, { phase: "initiated" });
 
   let sessions = 0;
   let memories = 0;
@@ -126,11 +130,10 @@ export async function DELETE(req: NextRequest) {
       { module: "account-delete", userId, conversations, memories, connectors, researchJobs, documents, projects, subscriptions, usageRecords, preferences, auditLogs, artifactStorage },
       "Account deleted (Postgres)"
     );
-    logAudit({
-      userId,
-      action: "account.delete",
-      resource: "account",
-      userAgent: req.headers.get("user-agent") || undefined,
+    logSensitiveAction("account.delete", userId, req, {
+      phase: "completed",
+      backend: "postgres",
+      conversations, memories, connectors, researchJobs, documents, projects, subscriptions, usageRecords, preferences, auditLogs, artifactStorage,
     });
 
     return NextResponse.json({
@@ -205,11 +208,10 @@ export async function DELETE(req: NextRequest) {
       { module: "account-delete", userId, sessions, memories, connectors, conversations, researchJobs, documents, projects, subscriptions, usageRecords, preferences, auditLogs, artifactStorage },
       "Account deleted (SQLite)"
     );
-    logAudit({
-      userId,
-      action: "account.delete",
-      resource: "account",
-      userAgent: req.headers.get("user-agent") || undefined,
+    logSensitiveAction("account.delete", userId, req, {
+      phase: "completed",
+      backend: "sqlite",
+      sessions, memories, connectors, conversations, researchJobs, documents, projects, subscriptions, usageRecords, preferences, auditLogs, artifactStorage,
     });
 
     return NextResponse.json({
