@@ -6,11 +6,12 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import ReactMarkdown from "react-markdown";
 import { useT } from "@/components/i18n/locale-provider";
+import { CompassLogo } from "@/components/CompassLogo";
 
 export function QuickMode() {
   const t = useT();
@@ -111,7 +112,7 @@ export function QuickMode() {
             onClick={send}
             disabled={!input.trim() || streaming}
             size="icon"
-            className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
+            className="h-8 w-8 rounded-full bg-[#8b4513] dark:bg-[#b5673a] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] border-0"
             aria-label={t("quickSend")}
           >
             {streaming ? (
@@ -134,12 +135,12 @@ export function QuickMode() {
       {(response || streaming) && (
         <div className="rounded-2xl border border-border/60 p-5">
           <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <CompassLogo className="h-4 w-4 text-primary" />
             <span className="text-sm font-semibold">
               {streaming ? t("quickThinking") : t("quickResponse")}
             </span>
             {streaming && (
-              <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
+              <span className="inline-block h-3 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5" />
             )}
           </div>
           {response ? (

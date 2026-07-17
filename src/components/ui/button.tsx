@@ -10,16 +10,16 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-[#c96442] dark:bg-[#d97757] text-[#faf9f5] hover:bg-[#b5563a] dark:hover:bg-[#c6613f]",
+          "bg-[#8b4513] dark:bg-[#b5673a] text-[#faf8f3] hover:bg-[#6b3410] dark:hover:bg-[#8b4513]",
         destructive:
-          "bg-[#c44848] text-[#faf9f5] hover:bg-[#b53333] focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
+          "bg-[#a33a3a] text-[#faf8f3] hover:bg-[#a33a3a] focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
-          "border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] hover:bg-[#f0eee6] dark:hover:bg-[#393937] hover:text-[#141413] dark:hover:text-[#faf9f5]",
+          "border border-[#d9d4c7] dark:border-[#3d3830] bg-[#faf8f3] dark:bg-[#1c1a17] hover:bg-[#f4f1ea] dark:hover:bg-[#322e28] hover:text-[#2a2620] dark:hover:text-[#e8e3d8]",
         secondary:
-          "bg-[#e8e6dc] dark:bg-[#393937] text-[#141413] dark:text-[#faf9f5] hover:bg-[#e3dacc] dark:hover:bg-[#4a4845]",
+          "bg-[#d9d4c7] dark:bg-[#322e28] text-[#2a2620] dark:text-[#e8e3d8] hover:bg-[#e0d9c8] dark:hover:bg-[#3d3830]",
         ghost:
-          "hover:bg-[#141413]/5 dark:hover:bg-[#faf9f5]/5 hover:text-[#141413] dark:hover:text-[#faf9f5]",
-        link: "text-[#c96442] underline-offset-4 hover:underline",
+          "hover:bg-[#2a2620]/5 dark:hover:bg-[#e8e3d8]/5 hover:text-[#2a2620] dark:hover:text-[#e8e3d8]",
+        link: "text-[#8b4513] dark:text-[#b5673a] underline-offset-4 hover:underline",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",

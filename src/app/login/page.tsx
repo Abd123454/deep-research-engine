@@ -3,10 +3,11 @@
 import * as React from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CompassLogo } from "@/components/CompassLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function LoginPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient mb-4">
-            <Sparkles className="h-6 w-6 text-white" />
+            <CompassLogo className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Welcome back</h1>
           <p className="text-sm text-muted-foreground mt-1">Sign in to your account</p>

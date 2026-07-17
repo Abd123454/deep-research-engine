@@ -9,13 +9,14 @@
 //   History drawer (slide-in from right)
 
 import * as React from "react";
-import { Sparkles, Menu, Lightbulb, FileSearch, Brain, Layers } from "lucide-react";
+import { Menu, Lightbulb, FileSearch, Brain, Layers } from "lucide-react";
 import { Brain as BrainIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { useT } from "@/components/i18n/locale-provider";
+import { CompassLogo } from "@/components/CompassLogo";
 import {
   UnifiedInput,
   detectCardType,
@@ -62,19 +63,19 @@ function LoadedSession({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
+      className="rounded-3xl border border-[#d9d4c7] dark:border-[#3d3830] overflow-hidden bg-[#faf8f3] dark:bg-[#1c1a17]"
     >
-      <div className="px-5 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35]">
-        <p className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">{typeLabel}</p>
-        <p className="font-serif text-sm font-medium text-[#141413] dark:text-[#faf9f5]">{title}</p>
+      <div className="px-5 py-3 border-b border-[#d9d4c7] dark:border-[#3d3830]">
+        <p className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080]">{typeLabel}</p>
+        <p className="font-body text-sm font-medium text-[#2a2620] dark:text-[#e8e3d8]">{title}</p>
       </div>
       <div className="px-5 py-4">
         {content ? (
-          <article className="prose prose-claude font-serif max-w-none dark:prose-invert">
+          <article className="prose prose-quaesitor font-body max-w-none dark:prose-invert">
             <ReactMarkdown>{content}</ReactMarkdown>
           </article>
         ) : (
-          <p className="text-sm text-[#87867f] dark:text-[#a3a098] italic">No content saved.</p>
+          <p className="text-sm text-[#6b6358] dark:text-[#9a9080] italic">No content saved.</p>
         )}
       </div>
     </motion.div>
@@ -173,7 +174,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#f0eee6] dark:bg-[#1a1a18]">
+    <div className="flex h-screen overflow-hidden bg-[#f4f1ea] dark:bg-[#1c1a17]">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
@@ -187,29 +188,29 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       {/* Main column */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Topbar — h-14, NO blur, transparent bg */}
-        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#e8e6dc] dark:border-[#3d3a35] px-4">
+        <header className="flex h-14 shrink-0 items-center justify-between border-b border-[#d9d4c7] dark:border-[#3d3830] px-4">
           <div className="flex items-center gap-2">
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors lg:hidden"
+              className="flex size-8 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors lg:hidden"
               aria-label="Toggle sidebar"
             >
               <Menu className="h-4 w-4" />
             </button>
-            <span className="font-serif text-base text-[#141413] dark:text-[#faf9f5]">New Conversation</span>
+            <span className="font-body text-base text-[#2a2620] dark:text-[#e8e3d8]">New Conversation</span>
           </div>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setMemoryOpen(true)}
               aria-label="Memory"
-              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+              className="flex size-8 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
             >
               <BrainIcon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setHistoryOpen(true)}
               aria-label="History"
-              className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+              className="flex size-8 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -228,9 +229,9 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
           {cards.length === 0 && !loadedSession && (
             <div className="flex grow flex-col items-center justify-center px-4 min-h-[60vh]">
               <div className="mx-auto flex w-full max-w-2xl flex-col items-stretch gap-5">
-                {/* Hero — centered, serif, with Sparkle. Time-based greeting (Claude pattern). */}
-                <h1 className="flex items-center justify-center gap-3 font-serif text-3xl text-[#141413] dark:text-[#faf9f5] sm:text-4xl">
-                  <Sparkles className="fill-[#c96442] text-[#c96442] h-7 w-7" />
+                {/* Hero — centered, serif, with Compass. Time-based greeting. */}
+                <h1 className="flex items-center justify-center gap-3 font-body text-3xl text-[#2a2620] dark:text-[#e8e3d8] sm:text-4xl">
+                  <CompassLogo className="fill-[#8b4513] text-[#8b4513] h-7 w-7" />
                   {greeting}
                 </h1>
 
@@ -248,12 +249,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                     <button
                       key={i}
                       onClick={() => handleSuggestionClick(ex.text)}
-                      className="group flex items-start gap-3 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] px-4 py-3 text-left hover:border-[#c96442]/30 hover:bg-[#f0eee6]/50 transition-all dark:border-[#3d3a35] dark:bg-[#1a1a18] dark:hover:bg-[#393937]/50"
+                      className="group flex items-start gap-3 rounded-2xl border border-[#d9d4c7] bg-[#faf8f3] px-4 py-3 text-left hover:border-[#8b4513]/30 hover:bg-[#f4f1ea]/50 transition-all dark:border-[#3d3830] dark:bg-[#1c1a17] dark:hover:bg-[#322e28]/50"
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f0eee6] text-[#c96442] dark:bg-[#393937]">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f4f1ea] text-[#8b4513] dark:bg-[#322e28]">
                         <ex.icon className="h-4 w-4" />
                       </div>
-                      <span className="font-serif text-sm text-[#141413] dark:text-[#faf9f5] leading-snug">
+                      <span className="font-body text-sm text-[#2a2620] dark:text-[#e8e3d8] leading-snug">
                         {ex.text}
                       </span>
                     </button>

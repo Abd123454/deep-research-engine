@@ -7,7 +7,6 @@ import {
   FileSearch,
   Brain,
   Layers,
-  Sparkles,
   ArrowRight,
   Loader2,
 } from "lucide-react";
@@ -18,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { fmtNum } from "@/lib/research-ui-utils";
 import { useT } from "@/components/i18n/locale-provider";
 import { DocumentPicker } from "@/components/documents/DocumentPicker";
+import { CompassLogo } from "@/components/CompassLogo";
 import { Paperclip, X } from "lucide-react";
 
 const MAX_QUERY_CHARS = 100_000;
@@ -123,7 +123,7 @@ export function ResearchInput({
                   <Paperclip className="h-3 w-3" />
                   <span className="hidden sm:inline">Attach</span>
                   {attachedDocs.length > 0 && (
-                    <span className="ml-0.5 rounded-full bg-[#c96442]/20 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757] text-[9px] px-1.5">
+                    <span className="ml-0.5 rounded-full bg-[#8b4513]/20 dark:bg-[#b5673a]/20 text-[#8b4513] dark:text-[#b5673a] text-[9px] px-1.5">
                       {attachedDocs.length}
                     </span>
                   )}
@@ -135,11 +135,11 @@ export function ResearchInput({
                   className={cn(
                     "rounded-full text-[10px] gap-1 px-2 py-0.5",
                     isMega
-                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
-                      : "bg-[#c96442]/10 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
+                      ? "bg-[#8b4513]/10 dark:bg-[#b5673a]/20 text-[#8b4513] dark:text-[#b5673a]"
+                      : "bg-[#8b4513]/10 dark:bg-[#b5673a]/20 text-[#8b4513] dark:text-[#b5673a]"
                   )}
                 >
-                  <Sparkles className="h-2.5 w-2.5" />
+                  <CompassLogo className="h-2.5 w-2.5" />
                   {isMega ? "Mega" : "Large"}
                 </Badge>
               )}
@@ -158,7 +158,7 @@ export function ResearchInput({
                 onClick={startResearch}
                 disabled={starting || !query.trim() || isOverLimit}
                 size="icon"
-                className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
+                className="h-8 w-8 rounded-full bg-[#8b4513] dark:bg-[#b5673a] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] border-0"
                 aria-label={t("startResearch")}
               >
                 {starting ? (
@@ -186,7 +186,7 @@ export function ResearchInput({
             onClick={() => setQuery(ex.text)}
             className="group flex items-start gap-3 rounded-2xl bg-secondary px-4 py-3 text-left transition-colors hover:bg-accent"
           >
-            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-[#c96442] dark:group-hover:bg-[#d97757] group-hover:text-primary-foreground transition-colors">
+            <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-muted text-muted-foreground group-hover:bg-[#8b4513] dark:group-hover:bg-[#b5673a] group-hover:text-primary-foreground transition-colors">
               <ex.icon className="h-3.5 w-3.5" />
             </div>
             <span className="text-[13px] leading-snug text-muted-foreground group-hover:text-foreground">
@@ -202,7 +202,7 @@ export function ResearchInput({
           {attachedDocs.map((d) => (
             <span
               key={d.id}
-              className="inline-flex items-center gap-1 rounded-full bg-[#c96442]/10 dark:bg-[#d97757]/10 text-[#c96442] text-xs px-2.5 py-1"
+              className="inline-flex items-center gap-1 rounded-full bg-[#8b4513]/10 dark:bg-[#b5673a]/10 text-[#8b4513] text-xs px-2.5 py-1"
             >
               <Paperclip className="h-3 w-3" />
               {d.filename}

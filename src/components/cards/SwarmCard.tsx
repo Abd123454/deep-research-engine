@@ -24,12 +24,12 @@ import {
   Code2,
   BarChart3,
   PenLine,
-  Sparkles,
   Wrench,
   Layers,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { CompassLogo } from "@/components/CompassLogo";
 
 // ---------- Types ----------
 
@@ -84,15 +84,15 @@ const ROLE_ICON: Record<AgentRole, React.ElementType> = {
   coder: Code2,
   analyst: BarChart3,
   writer: PenLine,
-  generalist: Sparkles,
+  generalist: CompassLogo,
 };
 
 const ROLE_COLOR: Record<AgentRole, string> = {
-  researcher: "text-[#c96442] bg-[#f0eee6] dark:bg-[#393937]",
-  coder: "text-[#8b6f47] bg-[#f0eee6] dark:bg-[#393937]",
-  analyst: "text-[#a37a3f] bg-[#f0eee6] dark:bg-[#393937]",
-  writer: "text-[#9b6b5c] bg-[#f0eee6] dark:bg-[#393937]",
-  generalist: "text-[#5e5d59] bg-[#f0eee6] dark:bg-[#393937]",
+  researcher: "text-[#8b4513] bg-[#f4f1ea] dark:bg-[#322e28]",
+  coder: "text-[#8b6f47] bg-[#f4f1ea] dark:bg-[#322e28]",
+  analyst: "text-[#a37a3f] bg-[#f4f1ea] dark:bg-[#322e28]",
+  writer: "text-[#9b6b5c] bg-[#f4f1ea] dark:bg-[#322e28]",
+  generalist: "text-[#6b6358] bg-[#f4f1ea] dark:bg-[#322e28]",
 };
 
 const ROLE_LABEL: Record<AgentRole, string> = {
@@ -255,39 +255,39 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
+      className="rounded-3xl border border-[#d9d4c7] dark:border-[#3d3830] overflow-hidden bg-[#faf8f3] dark:bg-[#1c1a17]"
     >
       {/* Header */}
-      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 flex items-start gap-2 border-b border-[#e8e6dc] dark:border-[#3d3a35]">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#f0eee6] dark:bg-[#393937]">
-          <Network className="h-3.5 w-3.5 text-[#c96442]" />
+      <div className="bg-[#faf8f3] dark:bg-[#1c1a17] px-5 py-3 flex items-start gap-2 border-b border-[#d9d4c7] dark:border-[#3d3830]">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#f4f1ea] dark:bg-[#322e28]">
+          <Network className="h-3.5 w-3.5 text-[#8b4513]" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-[#c96442] mb-0.5">Agent Swarm</p>
-          <p className="text-sm font-medium text-[#141413] dark:text-[#faf9f5]">{task}</p>
+          <p className="text-xs font-semibold text-[#8b4513] mb-0.5">Agent Swarm</p>
+          <p className="text-sm font-medium text-[#2a2620] dark:text-[#e8e3d8]">{task}</p>
         </div>
         {!done && !error && (
-          <Loader2 className="h-4 w-4 animate-spin text-[#87867f] dark:text-[#a3a098] shrink-0" />
+          <Loader2 className="h-4 w-4 animate-spin text-[#6b6358] dark:text-[#9a9080] shrink-0" />
         )}
         {done && !error && (
-          <CheckCircle2 className="h-4 w-4 text-[#c96442] shrink-0" />
+          <CheckCircle2 className="h-4 w-4 text-[#8b4513] shrink-0" />
         )}
       </div>
 
       <div className="px-5 py-4 space-y-4">
         {error ? (
-          <div className="flex items-start gap-2 rounded-xl border border-[#c44848]/30 bg-[#c44848]/5 p-3">
-            <AlertCircle className="h-4 w-4 shrink-0 text-[#c44848] mt-0.5" />
-            <p className="text-sm text-[#c44848]">{error}</p>
+          <div className="flex items-start gap-2 rounded-xl border border-[#a33a3a]/30 bg-[#a33a3a]/5 p-3">
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#a33a3a] mt-0.5" />
+            <p className="text-sm text-[#a33a3a]">{error}</p>
           </div>
         ) : (
           <>
             {/* Plan */}
             {plan && (
-              <div className="rounded-xl border border-[#e8e6dc]/60 dark:border-[#3d3a35]/60 bg-[#f0eee6]/30 dark:bg-[#393937]/30 p-3">
+              <div className="rounded-xl border border-[#d9d4c7]/60 dark:border-[#3d3830]/60 bg-[#f4f1ea]/30 dark:bg-[#322e28]/30 p-3">
                 <div className="flex items-center gap-1.5 mb-2">
-                  <Layers className="h-3.5 w-3.5 text-[#87867f] dark:text-[#a3a098]" />
-                  <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">
+                  <Layers className="h-3.5 w-3.5 text-[#6b6358] dark:text-[#9a9080]" />
+                  <span className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080]">
                     Plan — {plan.subtasks.length} agents
                   </span>
                 </div>
@@ -299,20 +299,20 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
                     return (
                       <div
                         key={s.id}
-                        className="flex items-start gap-2 rounded-lg bg-[#faf9f5]/60 dark:bg-[#1a1a18]/60 px-2.5 py-2"
+                        className="flex items-start gap-2 rounded-lg bg-[#faf8f3]/60 dark:bg-[#1c1a17]/60 px-2.5 py-2"
                       >
                         <div className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${ROLE_COLOR[s.role]}`}>
                           <Icon className="h-3.5 w-3.5" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-mono text-[#87867f]">#{i + 1}</span>
-                            <span className="text-xs font-medium text-[#141413] dark:text-[#faf9f5]">{ROLE_LABEL[s.role]}</span>
-                            {status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#c96442]" />}
-                            {status === "done" && <CheckCircle2 className="h-3 w-3 text-[#c96442]" />}
-                            {status === "error" && <AlertCircle className="h-3 w-3 text-[#c44848]" />}
+                            <span className="text-[10px] font-mono text-[#6b6358]">#{i + 1}</span>
+                            <span className="text-xs font-medium text-[#2a2620] dark:text-[#e8e3d8]">{ROLE_LABEL[s.role]}</span>
+                            {status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#8b4513]" />}
+                            {status === "done" && <CheckCircle2 className="h-3 w-3 text-[#8b4513]" />}
+                            {status === "error" && <AlertCircle className="h-3 w-3 text-[#a33a3a]" />}
                           </div>
-                          <p className="text-xs text-[#87867f] dark:text-[#a3a098] mt-0.5 line-clamp-2">{s.description}</p>
+                          <p className="text-xs text-[#6b6358] dark:text-[#9a9080] mt-0.5 line-clamp-2">{s.description}</p>
                         </div>
                       </div>
                     );
@@ -324,8 +324,8 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
             {/* Agent activity (live) */}
             {agentList.some((a) => a.tokens || a.tools.length > 0) && !finalReport && (
               <div className="space-y-2">
-                <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098] flex items-center gap-1.5">
-                  <Sparkles className="h-3.5 w-3.5" />
+                <span className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080] flex items-center gap-1.5">
+                  <CompassLogo className="h-3.5 w-3.5" />
                   Live agent activity
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -334,34 +334,34 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
                     return (
                       <div
                         key={a.id}
-                        className="rounded-xl border border-[#e8e6dc]/40 dark:border-[#3d3a35]/40 bg-[#faf9f5]/60 dark:bg-[#1a1a18]/60 p-3 max-h-64 overflow-y-auto"
+                        className="rounded-xl border border-[#d9d4c7]/40 dark:border-[#3d3830]/40 bg-[#faf8f3]/60 dark:bg-[#1c1a17]/60 p-3 max-h-64 overflow-y-auto"
                       >
-                        <div className="flex items-center gap-1.5 mb-2 sticky top-0 bg-[#faf9f5]/95 dark:bg-[#1a1a18]/95 -mx-3 -mt-3 px-3 pt-3 pb-2 border-b border-[#e8e6dc]/40 dark:border-[#3d3a35]/40">
+                        <div className="flex items-center gap-1.5 mb-2 sticky top-0 bg-[#faf8f3]/95 dark:bg-[#1c1a17]/95 -mx-3 -mt-3 px-3 pt-3 pb-2 border-b border-[#d9d4c7]/40 dark:border-[#3d3830]/40">
                           <div className={`flex h-5 w-5 items-center justify-center rounded ${ROLE_COLOR[a.role]}`}>
                             <Icon className="h-3 w-3" />
                           </div>
-                          <span className="text-xs font-medium text-[#141413] dark:text-[#faf9f5]">{ROLE_LABEL[a.role]}</span>
-                          {a.status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#c96442] ml-auto" />}
-                          {a.status === "done" && <CheckCircle2 className="h-3 w-3 text-[#c96442] ml-auto" />}
+                          <span className="text-xs font-medium text-[#2a2620] dark:text-[#e8e3d8]">{ROLE_LABEL[a.role]}</span>
+                          {a.status === "running" && <Loader2 className="h-3 w-3 animate-spin text-[#8b4513] ml-auto" />}
+                          {a.status === "done" && <CheckCircle2 className="h-3 w-3 text-[#8b4513] ml-auto" />}
                         </div>
                         {/* Tool calls */}
                         {a.tools.map((tool, i) => (
-                          <div key={i} className="mb-2 rounded-lg bg-[#f0eee6] dark:bg-[#393937] border border-[#e8e6dc] dark:border-[#3d3a35] px-2 py-1.5">
+                          <div key={i} className="mb-2 rounded-lg bg-[#f4f1ea] dark:bg-[#322e28] border border-[#d9d4c7] dark:border-[#3d3830] px-2 py-1.5">
                             <div className="flex items-center gap-1 text-[10px] font-mono text-[#a37a3f] dark:text-[#d4a574]">
                               <Wrench className="h-3 w-3" />
                               {tool.tool}
                             </div>
                             {tool.result && (
-                              <p className="text-[10px] text-[#87867f] mt-1 line-clamp-3 font-mono">{tool.result}</p>
+                              <p className="text-[10px] text-[#6b6358] mt-1 line-clamp-3 font-mono">{tool.result}</p>
                             )}
                           </div>
                         ))}
                         {/* Tokens */}
                         {a.tokens && (
-                          <p className="text-xs text-[#87867f] dark:text-[#a3a098] whitespace-pre-wrap font-mono leading-relaxed">
+                          <p className="text-xs text-[#6b6358] dark:text-[#9a9080] whitespace-pre-wrap font-mono leading-relaxed">
                             {a.tokens.slice(-600)}
                             {a.status === "running" && (
-                              <span className="inline-block h-3 w-1 bg-[#c96442] animate-pulse ml-0.5 align-middle" />
+                              <span className="inline-block h-3 w-1 bg-[#8b4513] animate-pulse ml-0.5 align-middle" />
                             )}
                           </p>
                         )}
@@ -379,24 +379,24 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="rounded-xl border border-[#c96442]/30 bg-[#c96442]/5 p-3"
+                  className="rounded-xl border border-[#8b4513]/30 bg-[#8b4513]/5 p-3"
                 >
                   <div className="flex items-center gap-1.5 mb-2">
-                    <Network className="h-3.5 w-3.5 text-[#c96442]" />
-                    <span className="text-xs font-semibold text-[#c96442]">
+                    <Network className="h-3.5 w-3.5 text-[#8b4513]" />
+                    <span className="text-xs font-semibold text-[#8b4513]">
                       Synthesizing {allAgentsDone ? "✓" : "..."}
                     </span>
                     {synthActive && <Loader2 className="h-3 w-3 animate-spin ml-auto" />}
                   </div>
                   {synthText ? (
-                    <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
+                    <article className="prose prose-quaesitor font-body leading-[1.7] max-w-none dark:prose-invert">
                       <ReactMarkdown>{synthText}</ReactMarkdown>
                     </article>
                   ) : (
                     <div className="space-y-1.5 animate-pulse">
-                      <div className="h-3 bg-[#e8e6dc] dark:bg-[#393937] rounded w-3/4" />
-                      <div className="h-3 bg-[#e8e6dc] dark:bg-[#393937] rounded w-full" />
-                      <div className="h-3 bg-[#e8e6dc] dark:bg-[#393937] rounded w-5/6" />
+                      <div className="h-3 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
+                      <div className="h-3 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
+                      <div className="h-3 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
                     </div>
                   )}
                 </motion.div>
@@ -407,13 +407,13 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
             {finalReport && (
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-[#c96442]" />
-                  <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">Final Report</span>
+                  <CheckCircle2 className="h-3.5 w-3.5 text-[#8b4513]" />
+                  <span className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080]">Final Report</span>
                   <div className="ml-auto">
                     <ExportMenu content={finalReport} filename="swarm-report" />
                   </div>
                 </div>
-                <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
+                <article className="prose prose-quaesitor font-body leading-[1.7] max-w-none dark:prose-invert">
                   <ReactMarkdown>{finalReport}</ReactMarkdown>
                 </article>
               </div>
@@ -423,11 +423,11 @@ export const SwarmCard = React.memo(function SwarmCard({ task }: SwarmCardProps)
             {!plan && !error && (
               <div className="space-y-2 animate-pulse">
                 <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-[#c96442]" />
-                  <span className="text-sm text-[#87867f] dark:text-[#a3a098]">Orchestrator is planning the swarm...</span>
+                  <Loader2 className="h-4 w-4 animate-spin text-[#8b4513]" />
+                  <span className="text-sm text-[#6b6358] dark:text-[#9a9080]">Orchestrator is planning the swarm...</span>
                 </div>
-                <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-1/2" />
-                <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-2/3" />
+                <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-1/2" />
+                <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-2/3" />
               </div>
             )}
           </>

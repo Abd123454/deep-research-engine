@@ -40,26 +40,26 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
+      className="rounded-3xl border border-[#d9d4c7] dark:border-[#3d3830] overflow-hidden bg-[#faf8f3] dark:bg-[#1c1a17]"
     >
       {/* Query header */}
-      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35] flex items-start gap-2">
-        <Search className="h-4 w-4 shrink-0 mt-0.5 text-[#c96442]" />
-        <p className="text-sm font-medium text-[#141413] dark:text-[#faf9f5] flex-1">{query}</p>
+      <div className="bg-[#faf8f3] dark:bg-[#1c1a17] px-5 py-3 border-b border-[#d9d4c7] dark:border-[#3d3830] flex items-start gap-2">
+        <Search className="h-4 w-4 shrink-0 mt-0.5 text-[#8b4513]" />
+        <p className="text-sm font-medium text-[#2a2620] dark:text-[#e8e3d8] flex-1">{query}</p>
         {isRunning && (
           <button
             onClick={handleStop}
-            className="inline-flex items-center gap-1.5 shrink-0 rounded-full border border-[#c44848]/30 px-3 py-1.5 text-xs text-[#c44848] hover:bg-[#c44848]/5 transition-colors"
+            className="inline-flex items-center gap-1.5 shrink-0 rounded-full border border-[#a33a3a]/30 px-3 py-1.5 text-xs text-[#a33a3a] hover:bg-[#a33a3a]/5 transition-colors"
           >
             <Square className="h-3 w-3" />
             {t("stop")}
           </button>
         )}
         {phase === "done" && (
-          <CheckCircle2 className="h-4 w-4 text-[#c96442] shrink-0" />
+          <CheckCircle2 className="h-4 w-4 text-[#8b4513] shrink-0" />
         )}
         {phase === "failed" && (
-          <AlertCircle className="h-4 w-4 text-[#c44848] shrink-0" />
+          <AlertCircle className="h-4 w-4 text-[#a33a3a] shrink-0" />
         )}
       </div>
 
@@ -69,7 +69,7 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
 
         {/* Error */}
         {phase === "failed" && error && (
-          <div className="rounded-xl border border-[#c44848]/30 bg-[#c44848]/5 p-3 text-sm text-[#c44848]">
+          <div className="rounded-xl border border-[#a33a3a]/30 bg-[#a33a3a]/5 p-3 text-sm text-[#a33a3a]">
             {error}
           </div>
         )}
@@ -80,7 +80,7 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
             {/* Compact progress bar */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px]">
-                <span className="text-[#87867f] dark:text-[#a3a098]">
+                <span className="text-[#6b6358] dark:text-[#9a9080]">
                   {isRunning
                     ? job.status === "planning"
                       ? t("planning") + "..."
@@ -91,16 +91,16 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
                 </span>
                 <span className="font-mono tabular-nums">{stageProgress(job.status)}%</span>
               </div>
-              <div className="relative h-1.5 rounded-full bg-[#e8e6dc] dark:bg-[#393937] overflow-hidden">
+              <div className="relative h-1.5 rounded-full bg-[#d9d4c7] dark:bg-[#322e28] overflow-hidden">
                 <div
                   className={cn(
                     "absolute inset-y-0 left-0 rounded-full transition-all duration-500",
-                    job.status === "failed" ? "bg-[#c44848]" : "bg-[#c96442]"
+                    job.status === "failed" ? "bg-[#a33a3a]" : "bg-[#8b4513]"
                   )}
                   style={{ width: `${stageProgress(job.status)}%` }}
                 />
               </div>
-              <p className="text-[10px] text-[#87867f] font-mono">
+              <p className="text-[10px] text-[#6b6358] font-mono">
                 {t("pagesRead")} {job.stats.totalPagesRead} {t("pages")}
                 {job.stats.totalPagesSucceeded > 0 && ` (${job.stats.totalPagesSucceeded} usable)`}
                 {job.stats.roundsCompleted > 0 && ` · ${job.stats.roundsCompleted} round${job.stats.roundsCompleted > 1 ? "s" : ""}`}
@@ -115,7 +115,7 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
               {job.verificationReport && job.verificationReport.total > 0 && (
                 <div className="flex items-center gap-1.5 text-[10px]">
                   {job.verificationReport.unverified === 0 && job.verificationReport.contradicts === 0 ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-[#c96442]/10 text-[#c96442] px-2 py-0.5 font-medium">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-[#8b4513]/10 text-[#8b4513] px-2 py-0.5 font-medium">
                       ✓ {job.verificationReport.verified}/{job.verificationReport.total} citations verified
                     </span>
                   ) : (
@@ -130,12 +130,12 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
             {/* Plan preview (collapsible) */}
             {job.plan && (
               <Collapsible open={planExpanded} onOpenChange={setPlanExpanded}>
-                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-[#c96442] hover:underline">
+                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-[#8b4513] hover:underline">
                   <ChevronDown className={cn("h-3 w-3 transition-transform", planExpanded && "rotate-180")} />
                   {job.plan.title} ({job.plan.sections.length} sections)
                 </CollapsibleTrigger>
-                <CollapsibleContent className="mt-2 text-xs text-[#87867f] dark:text-[#a3a098] space-y-1">
-                  <p className="font-medium text-[#141413] dark:text-[#faf9f5]">{job.plan.summary}</p>
+                <CollapsibleContent className="mt-2 text-xs text-[#6b6358] dark:text-[#9a9080] space-y-1">
+                  <p className="font-medium text-[#2a2620] dark:text-[#e8e3d8]">{job.plan.summary}</p>
                   {job.plan.sections.map((s, i) => (
                     <p key={s.id} className="pl-2">• {i + 1}. {s.title}</p>
                   ))}
@@ -149,7 +149,7 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
             {/* Live activity (collapsible) */}
             {job.logs.length > 0 && (
               <Collapsible open={activityExpanded} onOpenChange={setActivityExpanded}>
-                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-[#87867f] dark:text-[#a3a098] hover:text-[#141413] dark:hover:text-[#faf9f5]">
+                <CollapsibleTrigger className="flex items-center gap-1 text-xs text-[#6b6358] dark:text-[#9a9080] hover:text-[#2a2620] dark:hover:text-[#e8e3d8]">
                   <ChevronDown className={cn("h-3 w-3 transition-transform", activityExpanded && "rotate-180")} />
                   {t("liveActivity")} ({job.logs.length})
                 </CollapsibleTrigger>

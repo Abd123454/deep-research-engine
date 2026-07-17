@@ -13,11 +13,11 @@ interface SourcesListProps {
 function getSourceQuality(host: string): { label: string; color: string } {
   const h = host.toLowerCase();
   if (h.endsWith(".edu") || h.endsWith(".gov") || h.endsWith(".mil"))
-    return { label: "High", color: "text-[#c96442] dark:text-[#d97757]" };
+    return { label: "High", color: "text-[#8b4513] dark:text-[#b5673a]" };
   if (h.endsWith(".org") || h.includes("wikipedia.org") || h.includes("arxiv.org") || h.includes("nature.com") || h.includes("ieee.org"))
-    return { label: "High", color: "text-[#c96442] dark:text-[#d97757]" };
+    return { label: "High", color: "text-[#8b4513] dark:text-[#b5673a]" };
   if (h.endsWith(".com") || h.endsWith(".net"))
-    return { label: "Medium", color: "text-[#c96442] dark:text-[#d97757]" };
+    return { label: "Medium", color: "text-[#8b4513] dark:text-[#b5673a]" };
   return { label: "Low", color: "text-muted-foreground" };
 }
 

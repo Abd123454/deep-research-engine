@@ -23,14 +23,14 @@ function SubQueryCard({ index, sq }: { index: number; sq: SubQuery }) {
             className={cn(
               "flex h-4 w-4 items-center justify-center rounded text-[9px] font-bold",
               sq.round === 2
-                ? "bg-[#c96442]/20 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]"
-                : "bg-[#c96442]/15 dark:bg-[#d97757]/15 text-[#c96442]"
+                ? "bg-[#8b4513]/20 dark:bg-[#b5673a]/20 text-[#8b4513] dark:text-[#b5673a]"
+                : "bg-[#8b4513]/15 dark:bg-[#b5673a]/15 text-[#8b4513]"
             )}
           >
             {index + 1}
           </span>
           {sq.round === 2 && (
-            <Badge className="bg-[#c96442]/15 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757] text-[8px] px-1 py-0 rounded">
+            <Badge className="bg-[#8b4513]/15 dark:bg-[#b5673a]/15 text-[#8b4513] dark:text-[#b5673a] text-[8px] px-1 py-0 rounded">
               R2
             </Badge>
           )}

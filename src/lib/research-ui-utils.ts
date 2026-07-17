@@ -6,7 +6,6 @@ import {
   FileText,
   Globe,
   BookOpen,
-  Sparkles,
   Target,
   ListTree,
   GitBranch,
@@ -19,6 +18,7 @@ import type {
   SubQuery,
   LogEntry,
 } from "@/lib/types";
+import { CompassLogo } from "@/components/CompassLogo";
 
 // ---------- Stage metadata ----------
 
@@ -32,7 +32,7 @@ export const STAGES: {
   { key: "decomposing", label: "Decomposing", icon: GitBranch, hint: "Breaking into sub-questions" },
   { key: "searching", label: "Searching", icon: Globe, hint: "Searching the web" },
   { key: "reading", label: "Reading", icon: BookOpen, hint: "Reading pages" },
-  { key: "extracting", label: "Extracting", icon: Sparkles, hint: "Extracting findings" },
+  { key: "extracting", label: "Extracting", icon: CompassLogo, hint: "Extracting findings" },
   { key: "analyzing_gaps", label: "Gap analysis", icon: Target, hint: "Finding knowledge gaps" },
   { key: "synthesizing", label: "Writing", icon: FileText, hint: "Writing the report" },
 ];
@@ -59,10 +59,10 @@ export const SQ_STATUS_META: Record<
   { label: string; cls: string; icon: React.ElementType }
 > = {
   pending: { label: "Pending", cls: "bg-muted text-muted-foreground", icon: Clock },
-  searching: { label: "Searching", cls: "bg-[#c96442]/10 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757]", icon: Globe },
-  reading: { label: "Reading", cls: "bg-[#c96442]/15 dark:bg-[#d97757]/20 text-[#c96442] dark:text-[#d97757]", icon: BookOpen },
-  extracting: { label: "Extracting", cls: "bg-[#c96442]/20 dark:bg-[#d97757]/25 text-[#c96442] dark:text-[#d97757]", icon: Sparkles },
-  done: { label: "Done", cls: "bg-[#c96442]/10 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757]", icon: Check },
+  searching: { label: "Searching", cls: "bg-[#8b4513]/10 dark:bg-[#b5673a]/15 text-[#8b4513] dark:text-[#b5673a]", icon: Globe },
+  reading: { label: "Reading", cls: "bg-[#8b4513]/15 dark:bg-[#b5673a]/20 text-[#8b4513] dark:text-[#b5673a]", icon: BookOpen },
+  extracting: { label: "Extracting", cls: "bg-[#8b4513]/20 dark:bg-[#b5673a]/25 text-[#8b4513] dark:text-[#b5673a]", icon: CompassLogo },
+  done: { label: "Done", cls: "bg-[#8b4513]/10 dark:bg-[#b5673a]/15 text-[#8b4513] dark:text-[#b5673a]", icon: Check },
   failed: { label: "Failed", cls: "bg-destructive/10 text-destructive", icon: AlertCircle },
 };
 
@@ -97,9 +97,9 @@ export function dedupeSources(sources: { url: string; title: string; host: strin
 
 export const LOG_COLORS: Record<LogEntry["level"], string> = {
   info: "text-muted-foreground",
-  warn: "text-[#c96442] dark:text-[#d97757]",
+  warn: "text-[#8b4513] dark:text-[#b5673a]",
   error: "text-destructive",
-  success: "text-[#c96442] dark:text-[#d97757]",
+  success: "text-[#8b4513] dark:text-[#b5673a]",
 };
 
 export const LOG_PREFIX: Record<LogEntry["level"], string> = {

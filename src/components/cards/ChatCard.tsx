@@ -208,22 +208,22 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const fullConversation = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
   void fullConversation;
 
-  // Claude markdown components — serif, warm colors, persistent underlines
-  const claudeMarkdownComponents: Record<string, React.ComponentType<any>> = {
+  // Quaesitor markdown components — serif body, warm colors, persistent underlines
+  const quaesitorMarkdownComponents: Record<string, React.ComponentType<any>> = {
     p: ({ children }: any) => <p className="mb-4">{children}</p>,
     code: ({ inline, children }: any) =>
       inline
-        ? <code className="font-mono text-[14px] bg-[#e8e6dc] dark:bg-[#393937] px-1 py-0.5 rounded">{children}</code>
-        : <pre className="font-mono text-[14px] bg-[#f0eee6] dark:bg-[#1a1a18] p-4 rounded-lg overflow-x-auto my-4 border border-[#e8e6dc] dark:border-[#3d3a35]"><code>{children}</code></pre>,
-    a: ({ href, children }: any) => <a href={href} className="text-[#c96442] underline underline-offset-2 hover:text-[#b5563a]">{children}</a>,
-    h1: ({ children }: any) => <h1 className="font-serif text-2xl font-semibold mt-6 mb-3 text-[#141413] dark:text-[#faf9f5]">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="font-serif text-xl font-semibold mt-6 mb-3 text-[#141413] dark:text-[#faf9f5]">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="font-serif text-lg font-semibold mt-4 mb-2 text-[#141413] dark:text-[#faf9f5]">{children}</h3>,
+        ? <code className="font-mono text-[14px] bg-[#d9d4c7] dark:bg-[#322e28] px-1 py-0.5 rounded">{children}</code>
+        : <pre className="font-mono text-[14px] bg-[#f4f1ea] dark:bg-[#1c1a17] p-4 rounded-lg overflow-x-auto my-4 border border-[#d9d4c7] dark:border-[#3d3830]"><code>{children}</code></pre>,
+    a: ({ href, children }: any) => <a href={href} className="text-[#8b4513] underline underline-offset-2 hover:text-[#6b3410]">{children}</a>,
+    h1: ({ children }: any) => <h1 className="font-body text-2xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h1>,
+    h2: ({ children }: any) => <h2 className="font-body text-xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h2>,
+    h3: ({ children }: any) => <h3 className="font-body text-lg font-semibold mt-4 mb-2 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h3>,
     ul: ({ children }: any) => <ul className="list-disc pl-6 my-4 space-y-1">{children}</ul>,
     ol: ({ children }: any) => <ol className="list-decimal pl-6 my-4 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="font-serif text-[16px] leading-[1.6]">{children}</li>,
-    blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#e8e6dc] dark:border-[#3d3a35] pl-4 italic my-4 text-[#5e5d59] dark:text-[#b0aea5]">{children}</blockquote>,
-    strong: ({ children }: any) => <strong className="font-semibold text-[#141413] dark:text-[#faf9f5]">{children}</strong>,
+    li: ({ children }: any) => <li className="font-body text-[16px] leading-[1.7]">{children}</li>,
+    blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#d9d4c7] dark:border-[#3d3830] pl-4 italic my-4 text-[#6b6358] dark:text-[#9a9080]">{children}</blockquote>,
+    strong: ({ children }: any) => <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">{children}</strong>,
   };
 
   return (
@@ -237,7 +237,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         {messages.map((msg, i) => (
           msg.role === "user" ? (
             <div key={i} className="flex flex-col items-end gap-1">
-              <div className="max-w-[80%] rounded-2xl bg-[#e8e6dc] dark:bg-[#393937] px-4 py-2.5 break-words whitespace-pre-wrap font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5]">
+              <div className="max-w-[75%] rounded-3xl rounded-br-md bg-[#e8e0d0] dark:bg-[#322e28] px-4 py-2.5 break-words whitespace-pre-wrap font-body text-[16px] leading-[1.5] text-[#2a2620] dark:text-[#e8e3d8]">
                 {msg.content}
               </div>
             </div>
@@ -245,19 +245,19 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
             <div key={i} className="mb-6 group/msg">
               {/* Assistant label — Claude shows "Claude" above first assistant message */}
               <div className="flex items-center gap-2 mb-1.5">
-                <span className="font-sans text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Quaesitor</span>
+                <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
               </div>
-              <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
-                <ReactMarkdown components={claudeMarkdownComponents}>{msg.content}</ReactMarkdown>
+              <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
+                <ReactMarkdown components={quaesitorMarkdownComponents}>{msg.content}</ReactMarkdown>
               </div>
-              {/* Action bar — appears on hover (Claude pattern) */}
+              {/* Action bar — appears on hover (Quaesitor pattern) */}
               <div className="flex items-center gap-1 mt-2 opacity-0 group-hover/msg:opacity-100 transition-opacity">
                 <button
                   onClick={() => copyMessage(i, msg.content)}
-                  className="flex size-7 items-center justify-center rounded-md text-[#87867f] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+                  className="flex size-7 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
                   aria-label="Copy"
                 >
-                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#c96442]" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#8b4513]" /> : <Copy className="h-3.5 w-3.5" />}
                 </button>
               </div>
             </div>
@@ -267,38 +267,38 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
         {streaming && streamingResponse && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-1.5">
-              <span className="font-sans text-xs font-medium text-[#87867f] dark:text-[#a3a098]">Quaesitor</span>
+              <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
             </div>
-            <div className="prose prose-claude font-serif break-words text-[#141413] dark:text-[#faf9f5] max-w-none">
-              <ReactMarkdown components={claudeMarkdownComponents}>{streamingResponse}</ReactMarkdown>
-              <span className="inline-block h-4 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
+            <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
+              <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
+              <span className="inline-block h-4 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
             </div>
           </div>
         )}
 
         {streaming && !streamingResponse && (
           <div className="mb-6 space-y-2 animate-pulse">
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-3/4" />
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-full" />
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-5/6" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
           </div>
         )}
       </div>
 
       {error && (
-        <div className="mt-4 py-2 text-sm text-[#c44848] border-t border-[#c44848]/20">
+        <div className="mt-4 py-2 text-sm text-[#a33a3a] border-t border-[#a33a3a]/20">
           {error}
         </div>
       )}
 
       <div className="mt-4">
-        <form className="flex items-center gap-2 rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors">
+        <form className="flex items-center gap-2 rounded-3xl border border-[#d9d4c7] bg-[#faf8f3] dark:border-[#3d3830] dark:bg-[#1c1a17] px-3.5 pt-3 pb-2.5 focus-within:border-[#b5673a]/50 transition-colors">
           <textarea
             value={followUp}
             onChange={(e) => setFollowUp(e.target.value)}
             placeholder="Ask a follow-up..."
             rows={1}
-            className="flex-1 resize-none bg-transparent border-0 font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] focus:outline-none placeholder:text-[#87867f] py-1 min-h-[24px] max-h-[100px]"
+            className="flex-1 resize-none bg-transparent border-0 font-body text-[16px] leading-[1.5] text-[#2a2620] dark:text-[#e8e3d8] focus:outline-none placeholder:text-[#6b6358] py-1 min-h-[24px] max-h-[100px]"
             style={{ boxShadow: "none" }}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -310,7 +310,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
           {streaming ? (
             <button
               onClick={(e) => { e.preventDefault(); stopStreaming(); }}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#141413] dark:bg-[#faf9f5] text-[#faf9f5] dark:text-[#141413] hover:bg-[#3d3d3a] dark:hover:bg-[#e8e6dc] transition-colors"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#2a2620] dark:bg-[#e8e3d8] text-[#e8e3d8] dark:text-[#2a2620] hover:bg-[#3d3830] dark:hover:bg-[#d9d4c7] transition-colors"
               aria-label="Stop generating"
             >
               <Square className="h-3.5 w-3.5 fill-current" />
@@ -319,7 +319,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
             <button
               onClick={(e) => { e.preventDefault(); sendFollowUp(); }}
               disabled={!followUp.trim()}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c96442] dark:bg-[#d97757] text-[#faf9f5] hover:bg-[#b5563a] dark:hover:bg-[#c6613f] disabled:opacity-30 transition-colors"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#8b4513] dark:bg-[#b5673a] text-[#faf8f3] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] disabled:opacity-30 transition-colors"
               aria-label="Send"
             >
               <ArrowRight className="h-4 w-4" />
@@ -327,7 +327,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
           )}
         </form>
         {tokens > 0 && (
-          <p className="text-[10px] text-[#87867f] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
+          <p className="text-[10px] text-[#6b6358] mt-1.5 font-mono text-center">~{tokens} tokens total</p>
         )}
       </div>
     </motion.div>

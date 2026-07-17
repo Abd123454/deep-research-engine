@@ -43,20 +43,20 @@ export default function ProjectsPage() {
   }
 
   if (loading) {
-    return <div className="flex items-center justify-center min-h-screen font-serif text-lg text-[#87867f]">Loading...</div>;
+    return <div className="flex items-center justify-center min-h-screen font-body text-lg text-[#6b6358]">Loading...</div>;
   }
 
   return (
-    <div className="min-h-screen bg-[#f0eee6] dark:bg-[#2b2a27]">
+    <div className="min-h-screen bg-[#f4f1ea] dark:bg-[#2b2a27]">
       <div className="max-w-5xl mx-auto px-6 py-16">
         <div className="flex items-center justify-between mb-8">
           <div>
-            <h1 className="font-serif text-3xl font-normal text-[#141413] dark:text-[#eeeeee] mb-1">Projects</h1>
-            <p className="font-sans text-sm text-[#87867f]">Persistent knowledge bases with custom instructions</p>
+            <h1 className="font-body text-3xl font-normal text-[#2a2620] dark:text-[#e8e3d8] mb-1">Projects</h1>
+            <p className="font-ui text-sm text-[#6b6358]">Persistent knowledge bases with custom instructions</p>
           </div>
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex items-center gap-2 bg-[#d97757] text-[#faf9f5] rounded-lg px-4 py-2.5 font-sans text-sm font-medium hover:bg-[#c6613f] transition-colors"
+            className="flex items-center gap-2 bg-[#b5673a] text-[#faf8f3] rounded-lg px-4 py-2.5 font-ui text-sm font-medium hover:bg-[#8b4513] transition-colors"
           >
             <Plus className="h-4 w-4" />
             New Project
@@ -64,13 +64,13 @@ export default function ProjectsPage() {
         </div>
 
         {showCreate && (
-          <div className="mb-6 bg-[#faf9f5] dark:bg-[#1f1e1b] border border-[#cccbc8] dark:border-[#3d3a35] rounded-3xl p-6">
+          <div className="mb-6 bg-[#faf8f3] dark:bg-[#252220] border border-[#d9d4c7] dark:border-[#3d3830] rounded-3xl p-6">
             <input
               type="text"
               placeholder="Project name"
               value={newName}
               onChange={(e) => setNewName(e.target.value)}
-              className="w-full bg-transparent border-0 font-serif text-xl text-[#141413] dark:text-[#eeeeee] placeholder:text-[#87867f] outline-none mb-3"
+              className="w-full bg-transparent border-0 font-body text-xl text-[#2a2620] dark:text-[#e8e3d8] placeholder:text-[#6b6358] outline-none mb-3"
               style={{ boxShadow: "none", minHeight: "auto", padding: "0" }}
             />
             <textarea
@@ -78,21 +78,21 @@ export default function ProjectsPage() {
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               rows={2}
-              className="w-full bg-transparent border-0 font-sans text-sm text-[#141413] dark:text-[#eeeeee] placeholder:text-[#87867f] outline-none resize-none"
+              className="w-full bg-transparent border-0 font-ui text-sm text-[#2a2620] dark:text-[#e8e3d8] placeholder:text-[#6b6358] outline-none resize-none"
               style={{ boxShadow: "none", minHeight: "auto", padding: "0" }}
             />
             <div className="flex gap-2 mt-4">
-              <button onClick={createProject} className="bg-[#d97757] text-[#faf9f5] rounded-lg px-4 py-2 font-sans text-sm font-medium hover:bg-[#c6613f] transition-colors">Create</button>
-              <button onClick={() => setShowCreate(false)} className="border border-[#87867f] text-[#141413] dark:text-[#eeeeee] rounded-lg px-4 py-2 font-sans text-sm hover:bg-[#e3dacc] dark:hover:bg-[#393937] transition-colors">Cancel</button>
+              <button onClick={createProject} className="bg-[#b5673a] text-[#faf8f3] rounded-lg px-4 py-2 font-ui text-sm font-medium hover:bg-[#8b4513] transition-colors">Create</button>
+              <button onClick={() => setShowCreate(false)} className="border border-[#6b6358] text-[#2a2620] dark:text-[#e8e3d8] rounded-lg px-4 py-2 font-ui text-sm hover:bg-[#e0d9c8] dark:hover:bg-[#322e28] transition-colors">Cancel</button>
             </div>
           </div>
         )}
 
         {projects.length === 0 ? (
           <div className="text-center py-16">
-            <Folder className="h-12 w-12 text-[#cccbc8] mx-auto mb-4" />
-            <p className="font-serif text-lg text-[#87867f] mb-2">No projects yet</p>
-            <p className="font-sans text-sm text-[#87867f]">Create a project to organize research and conversations with custom instructions.</p>
+            <Folder className="h-12 w-12 text-[#d9d4c7] mx-auto mb-4" />
+            <p className="font-body text-lg text-[#6b6358] mb-2">No projects yet</p>
+            <p className="font-ui text-sm text-[#6b6358]">Create a project to organize research and conversations with custom instructions.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -100,11 +100,11 @@ export default function ProjectsPage() {
               <Link
                 key={project.id}
                 href={`/projects/${project.id}`}
-                className="block bg-[#faf9f5] dark:bg-[#1f1e1b] border border-[#cccbc8] dark:border-[#3d3a35] rounded-3xl p-6 hover:border-[#d97757] transition-colors"
+                className="block bg-[#faf8f3] dark:bg-[#252220] border border-[#d9d4c7] dark:border-[#3d3830] rounded-3xl p-6 hover:border-[#b5673a] transition-colors"
               >
-                <h3 className="font-serif text-lg text-[#141413] dark:text-[#eeeeee] mb-1">{project.name}</h3>
-                <p className="font-sans text-sm text-[#87867f] mb-4 line-clamp-2">{project.description || "No description"}</p>
-                <div className="flex items-center gap-3 text-xs font-sans text-[#87867f]">
+                <h3 className="font-body text-lg text-[#2a2620] dark:text-[#e8e3d8] mb-1">{project.name}</h3>
+                <p className="font-ui text-sm text-[#6b6358] mb-4 line-clamp-2">{project.description || "No description"}</p>
+                <div className="flex items-center gap-3 text-xs font-ui text-[#6b6358]">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {new Date(project.createdAt).toLocaleDateString()}</span>
                 </div>
               </Link>

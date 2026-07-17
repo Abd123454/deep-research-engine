@@ -172,7 +172,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
   const modeLabel = mode === "auto" ? "Auto" : mode === "research" ? t("modeResearch") : mode === "chat" ? "Chat" : mode === "swarm" ? "Swarm" : t("modeQuick");
 
   return (
-    <div className="shrink-0 z-30 px-4 pb-4 bg-[#f0eee6] dark:bg-[#1a1a18]">
+    <div className="shrink-0 z-30 px-4 pb-4 bg-[#f4f1ea] dark:bg-[#1c1a17]">
       <div className="mx-auto max-w-2xl">
         {/* Attached files */}
         {files.length > 0 && (
@@ -180,14 +180,14 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
             {files.map((f) => (
               <span
                 key={f.id}
-                className="inline-flex items-center gap-1 rounded-full bg-[#e8e6dc] dark:bg-[#393937] text-[#141413] dark:text-[#faf9f5] text-xs px-2.5 py-1"
+                className="inline-flex items-center gap-1 rounded-full bg-[#d9d4c7] dark:bg-[#322e28] text-[#2a2620] dark:text-[#e8e3d8] text-xs px-2.5 py-1"
               >
                 <Paperclip className="h-3 w-3" />
                 {f.file.name}
                 <button
                   onClick={() => removeFile(f.id)}
                   aria-label={`Remove ${f.file.name}`}
-                  className="hover:text-[#c44848]"
+                  className="hover:text-[#a33a3a]"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -196,12 +196,12 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
           </div>
         )}
 
-        {error && <p className="text-xs text-[#c44848] mb-2">{error}</p>}
+        {error && <p className="text-xs text-[#a33a3a] mb-2">{error}</p>}
 
-        {/* Composer — Claude structure: textarea on top, bottom toolbar (attach+mode left, send right) */}
+        {/* Composer — Quaesitor structure: textarea on top, bottom toolbar (attach+mode left, send right) */}
         <form
           onSubmit={(e) => e.preventDefault()}
-          className="flex w-full flex-col rounded-2xl border border-[#e8e6dc] bg-[#faf9f5] dark:border-[#3d3a35] dark:bg-[#1a1a18] px-3.5 pt-3 pb-2.5 focus-within:border-[#d97757]/50 transition-colors"
+          className="flex w-full flex-col rounded-3xl border border-[#d9d4c7] bg-[#faf8f3] dark:border-[#3d3830] dark:bg-[#1c1a17] px-3.5 pt-3 pb-2.5 focus-within:border-[#b5673a]/50 transition-colors"
         >
           {/* Active tool chips — shown above textarea when tools are selected */}
           {tools.length > 0 && (
@@ -213,7 +213,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                 return (
                   <span
                     key={tk}
-                    className="inline-flex items-center gap-1 rounded-full bg-[#c96442]/10 dark:bg-[#d97757]/15 text-[#c96442] dark:text-[#d97757] text-xs px-2.5 py-1 font-sans font-medium"
+                    className="inline-flex items-center gap-1 rounded-full bg-[#8b4513]/10 dark:bg-[#b5673a]/15 text-[#8b4513] dark:text-[#b5673a] text-xs px-2.5 py-1 font-ui font-medium"
                   >
                     <Icon className="h-3 w-3" />
                     {tool.label}
@@ -221,7 +221,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                       type="button"
                       onClick={() => toggleTool(tk)}
                       aria-label={`Remove ${tool.label}`}
-                      className="hover:text-[#b5563a] dark:hover:text-[#c6613f] ml-0.5"
+                      className="hover:text-[#6b3410] dark:hover:text-[#8b4513] ml-0.5"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -231,14 +231,14 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
             </div>
           )}
 
-          {/* Textarea — transparent, serif, 16px. Claude behavior: Enter sends, Shift+Enter newline. */}
+          {/* Textarea — transparent, serif body, 16px. Enter sends, Shift+Enter newline. */}
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={t("quickPlaceholder")}
             rows={1}
-            className="w-full resize-none bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none font-serif text-[16px] leading-[1.5] text-[#141413] dark:text-[#faf9f5] placeholder:text-[#87867f] min-h-[24px] max-h-[200px]"
+            className="w-full resize-none bg-transparent border-0 ring-0 focus:ring-0 focus:outline-none font-body text-[16px] leading-[1.5] text-[#2a2620] dark:text-[#e8e3d8] placeholder:text-[#6b6358] min-h-[24px] max-h-[200px]"
             style={{ boxShadow: "none" }}
             onKeyDown={(e) => {
               // Claude.ai behavior: Enter sends, Shift+Enter inserts newline.
@@ -264,7 +264,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex size-8 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+                className="flex size-8 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
                 aria-label={t("uploadDocument")}
               >
                 <Paperclip className="h-4 w-4" />
@@ -278,8 +278,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                   className={cn(
                     "flex h-8 items-center gap-1 rounded-md px-2 text-xs transition-colors",
                     tools.length > 0
-                      ? "text-[#c96442] font-medium bg-[#c96442]/10"
-                      : "text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5"
+                      ? "text-[#8b4513] font-medium bg-[#8b4513]/10"
+                      : "text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5"
                   )}
                   aria-label="Tools"
                   aria-expanded={toolsOpen}
@@ -287,14 +287,14 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                   <Wrench className="h-3.5 w-3.5" />
                   Tools
                   {tools.length > 0 && (
-                    <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-[#c96442] text-[#faf9f5] text-[10px] font-semibold size-4 leading-none">
+                    <span className="ml-0.5 inline-flex items-center justify-center rounded-full bg-[#8b4513] text-[#faf8f3] text-[10px] font-semibold size-4 leading-none">
                       {tools.length}
                     </span>
                   )}
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {toolsOpen && (
-                  <div className="absolute bottom-full left-0 mb-1 z-20 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] py-1 min-w-[220px]">
+                  <div className="absolute bottom-full left-0 mb-1 z-20 rounded-lg border border-[#d9d4c7] dark:border-[#3d3830] bg-[#faf8f3] dark:bg-[#1c1a17] py-1 min-w-[220px]">
                     {TOOLS.map((tool) => {
                       const Icon = tool.icon;
                       const active = tools.includes(tool.key);
@@ -303,22 +303,22 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                           key={tool.key}
                           onClick={() => toggleTool(tool.key)}
                           className={cn(
-                            "flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f0eee6] dark:hover:bg-[#393937] transition-colors",
-                            active && "bg-[#c96442]/5"
+                            "flex w-full items-start gap-2.5 px-3 py-2 text-left hover:bg-[#f4f1ea] dark:hover:bg-[#322e28] transition-colors",
+                            active && "bg-[#8b4513]/5"
                           )}
                         >
-                          <Icon className={cn("h-4 w-4 shrink-0 mt-0.5", active ? "text-[#c96442]" : "text-[#5e5d59] dark:text-[#a3a098]")} />
+                          <Icon className={cn("h-4 w-4 shrink-0 mt-0.5", active ? "text-[#8b4513]" : "text-[#6b6358] dark:text-[#9a9080]")} />
                           <div className="flex-1 min-w-0">
-                            <div className={cn("text-xs font-medium font-sans", active ? "text-[#c96442]" : "text-[#141413] dark:text-[#faf9f5]")}>
+                            <div className={cn("text-xs font-medium font-ui", active ? "text-[#8b4513]" : "text-[#2a2620] dark:text-[#e8e3d8]")}>
                               {tool.label}
                             </div>
-                            <div className="text-[11px] text-[#87867f] dark:text-[#a3a098] font-sans leading-tight">
+                            <div className="text-[11px] text-[#6b6358] dark:text-[#9a9080] font-ui leading-tight">
                               {tool.description}
                             </div>
                           </div>
                           {active && (
-                            <div className="size-4 rounded-full bg-[#c96442] flex items-center justify-center shrink-0 mt-0.5">
-                              <svg className="h-2.5 w-2.5 text-[#faf9f5]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
+                            <div className="size-4 rounded-full bg-[#8b4513] flex items-center justify-center shrink-0 mt-0.5">
+                              <svg className="h-2.5 w-2.5 text-[#faf8f3]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={4}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                               </svg>
                             </div>
@@ -335,7 +335,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                 <button
                   type="button"
                   onClick={() => setModeOpen((v) => !v)}
-                  className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors"
+                  className="flex h-8 items-center gap-1 rounded-md px-2 text-xs text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
                   aria-label="Mode"
                   aria-expanded={modeOpen}
                 >
@@ -343,7 +343,7 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                   <ChevronDown className="h-3 w-3" />
                 </button>
                 {modeOpen && (
-                  <div className="absolute bottom-full left-0 mb-1 z-20 rounded-lg border border-[#e8e6dc] dark:border-[#3d3a35] bg-[#faf9f5] dark:bg-[#1a1a18] py-1 min-w-[120px]">
+                  <div className="absolute bottom-full left-0 mb-1 z-20 rounded-lg border border-[#d9d4c7] dark:border-[#3d3830] bg-[#faf8f3] dark:bg-[#1c1a17] py-1 min-w-[120px]">
                     {([
                       { key: "auto", label: "Auto" },
                       { key: "research", label: t("modeResearch") },
@@ -358,8 +358,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                           setModeOpen(false);
                         }}
                         className={cn(
-                          "flex w-full items-center px-3 py-2 text-xs hover:bg-[#f0eee6] dark:hover:bg-[#393937] text-left font-sans text-[#141413] dark:text-[#faf9f5]",
-                          mode === m.key && "text-[#c96442] font-medium"
+                          "flex w-full items-center px-3 py-2 text-xs hover:bg-[#f4f1ea] dark:hover:bg-[#322e28] text-left font-ui text-[#2a2620] dark:text-[#e8e3d8]",
+                          mode === m.key && "text-[#8b4513] font-medium"
                         )}
                       >
                         {m.label}
@@ -370,12 +370,12 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
               </div>
             </div>
 
-            {/* Send button — circular, terracotta (light) / clay (dark) */}
+            {/* Send button — circular, saddle brown (light) / leather (dark) */}
             <button
               type="button"
               onClick={handleSend}
               disabled={disabled || (!text.trim() && files.length === 0)}
-              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#c96442] dark:bg-[#d97757] text-[#faf9f5] hover:bg-[#b5563a] dark:hover:bg-[#c6613f] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#8b4513] dark:bg-[#b5673a] text-[#faf8f3] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
               aria-label={t("quickSend")}
             >
               {disabled ? (
@@ -387,8 +387,8 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
           </div>
         </form>
 
-        {/* Disclaimer — Claude signature */}
-        <p className="text-center text-xs text-[#87867f] dark:text-[#a3a098] mt-2 font-sans">
+        {/* Disclaimer — Quaesitor signature */}
+        <p className="text-center text-xs text-[#6b6358] dark:text-[#9a9080] mt-2 font-ui">
           {t("disclaimer")}
         </p>
       </div>

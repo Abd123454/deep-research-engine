@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Copy, Check, Sparkles } from "lucide-react";
+import { FileText, Copy, Check } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import type { LogEntry } from "@/lib/types";
 import { LOG_COLORS, LOG_PREFIX } from "@/lib/research-ui-utils";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { CompassLogo } from "@/components/CompassLogo";
 
 // ---------- ReportViewer ----------
 
@@ -33,7 +34,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, 
               {streaming ? t("writingReport") : t("finalReport")}
             </h3>
             {streaming && (
-              <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
+              <span className="inline-block h-3 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5" />
             )}
           </div>
           <div className="flex gap-1 items-center">
@@ -60,7 +61,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, 
               the entire string on every token = browser freeze on long reports).
               Switch to ReactMarkdown only when streaming is done. */}
           {streaming ? (
-            <pre className="whitespace-pre-wrap text-sm font-sans not-prose">{report}<span className="inline-block h-4 w-2 bg-[#c96442] dark:bg-[#d97757] animate-pulse align-text-bottom" /></pre>
+            <pre className="whitespace-pre-wrap text-sm font-ui not-prose">{report}<span className="inline-block h-4 w-2 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse align-text-bottom" /></pre>
           ) : (
             <ReactMarkdown>{report}</ReactMarkdown>
           )}
@@ -85,7 +86,7 @@ export function LiveActivity({ logs }: { logs: LogEntry[] }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-3">
-        <Sparkles className="h-4 w-4 text-primary" />
+        <CompassLogo className="h-4 w-4 text-primary" />
         <h3 className="text-sm font-semibold">{t("liveActivity")}</h3>
       </div>
       <div

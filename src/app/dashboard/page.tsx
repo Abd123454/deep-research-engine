@@ -67,7 +67,7 @@ export default function DashboardPage() {
               {stats.recentActivity.map((item) => (
                 <div key={item.id} className="flex items-center justify-between rounded-lg border border-border/50 px-4 py-2">
                   <span className="text-sm truncate flex-1">{item.query}</span>
-                  <span className={`text-xs px-2 py-1 rounded-full ${item.status === "completed" ? "bg-[#c96442]/10 dark:bg-[#d97757]/10 text-[#c96442] dark:text-[#d97757]" : item.status === "failed" ? "bg-[#c44848]/10 text-[#c44848]" : "bg-[#c96442]/10 dark:bg-[#d97757]/10 text-[#c96442] dark:text-[#d97757]"}`}>
+                  <span className={`text-xs px-2 py-1 rounded-full ${item.status === "completed" ? "bg-[#8b4513]/10 dark:bg-[#b5673a]/10 text-[#8b4513] dark:text-[#b5673a]" : item.status === "failed" ? "bg-[#a33a3a]/10 text-[#a33a3a]" : "bg-[#8b4513]/10 dark:bg-[#b5673a]/10 text-[#8b4513] dark:text-[#b5673a]"}`}>
                     {item.status}
                   </span>
                 </div>
@@ -83,7 +83,7 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold">API Keys</h2>
           </div>
           <p className="text-sm text-muted-foreground mb-4">Generate API keys to use Quaesitor programmatically via the MCP server or REST API.</p>
-          <button className="rounded-lg bg-[#c96442] dark:bg-[#d97757] text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90">Generate New Key</button>
+          <button className="rounded-lg bg-[#8b4513] dark:bg-[#b5673a] text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-[#6b3410] dark:hover:bg-[#8b4513]">Generate New Key</button>
         </div>
       </div>
     </div>
@@ -101,7 +101,7 @@ function UsageCard({ icon: Icon, label, remaining, limit }: { icon: React.Elemen
       </div>
       <p className="text-2xl font-bold">{used.toLocaleString()} <span className="text-sm text-muted-foreground font-normal">/ {limit === Infinity ? "∞" : limit.toLocaleString()}</span></p>
       <div className="h-2 rounded-full bg-secondary overflow-hidden mt-2">
-        <div className="h-full bg-[#c96442] dark:bg-[#d97757] transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
+        <div className="h-full bg-[#8b4513] dark:bg-[#b5673a] transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
   );

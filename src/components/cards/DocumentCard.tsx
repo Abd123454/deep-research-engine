@@ -6,12 +6,13 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { FileText, Loader2, Sparkles, ArrowRight } from "lucide-react";
+import { FileText, Loader2, ArrowRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { CompassLogo } from "@/components/CompassLogo";
 import type { QAMode } from "@/lib/document-qa";
 
 interface DocumentCardProps {
@@ -138,38 +139,38 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
+      className="rounded-3xl border border-[#d9d4c7] dark:border-[#3d3830] overflow-hidden bg-[#faf8f3] dark:bg-[#1c1a17]"
     >
       {/* Document header */}
-      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 border-b border-[#e8e6dc] dark:border-[#3d3a35] flex items-center gap-2">
-        <FileText className="h-4 w-4 shrink-0 text-[#c96442]" />
-        <span className="text-sm font-medium truncate flex-1 text-[#141413] dark:text-[#faf9f5]">{file.name}</span>
-        <span className="text-[10px] text-[#87867f] shrink-0">{fmtSize(file.size)}</span>
+      <div className="bg-[#faf8f3] dark:bg-[#1c1a17] px-5 py-3 border-b border-[#d9d4c7] dark:border-[#3d3830] flex items-center gap-2">
+        <FileText className="h-4 w-4 shrink-0 text-[#8b4513]" />
+        <span className="text-sm font-medium truncate flex-1 text-[#2a2620] dark:text-[#e8e3d8]">{file.name}</span>
+        <span className="text-[10px] text-[#6b6358] shrink-0">{fmtSize(file.size)}</span>
       </div>
 
       <div className="px-5 py-4 space-y-3">
         {/* Upload status */}
         {uploading ? (
-          <div className="flex items-center gap-2 text-sm text-[#87867f] dark:text-[#a3a098]">
+          <div className="flex items-center gap-2 text-sm text-[#6b6358] dark:text-[#9a9080]">
             <Loader2 className="h-4 w-4 animate-spin" />
             {t("uploading")}
           </div>
         ) : uploadError ? (
-          <p className="text-sm text-[#c44848]">{uploadError}</p>
+          <p className="text-sm text-[#a33a3a]">{uploadError}</p>
         ) : (
           <>
-            <p className="text-[10px] text-[#87867f]">
+            <p className="text-[10px] text-[#6b6358]">
               {textLength.toLocaleString()} chars extracted
             </p>
 
             {/* Question input (if no initial question or for follow-up) */}
             {!answer && !streaming && (
-              <div className="rounded-xl bg-[#e8e6dc] dark:bg-[#393937]">
+              <div className="rounded-xl bg-[#d9d4c7] dark:bg-[#322e28]">
                 <Textarea
                   value={question}
                   onChange={(e) => setQuestion(e.target.value)}
                   placeholder={t("askPlaceholder")}
-                  className="min-h-[50px] resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm font-serif text-[16px] focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-[#87867f]"
+                  className="min-h-[50px] resize-none border-0 bg-transparent px-4 pt-3 pb-1 text-sm font-body text-[16px] focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-[#6b6358]"
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) sendQA(question, "qa");
                   }}
@@ -197,7 +198,7 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
                     onClick={() => sendQA(question, "qa")}
                     disabled={!question.trim() || streaming}
                     size="icon"
-                    className="h-7 w-7 rounded-full bg-[#c96442] hover:bg-[#b5563a] dark:bg-[#d97757] dark:hover:bg-[#c6613f] border-0 text-[#faf9f5] hover:text-[#faf9f5]"
+                    className="h-7 w-7 rounded-full bg-[#8b4513] hover:bg-[#6b3410] dark:bg-[#b5673a] dark:hover:bg-[#8b4513] border-0 text-[#faf8f3] hover:text-[#faf8f3]"
                     aria-label={t("quickSend")}
                   >
                     <ArrowRight className="h-3.5 w-3.5" />
@@ -208,19 +209,19 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
 
             {/* Error */}
             {qaError && (
-              <p className="text-sm text-[#c44848]">{qaError}</p>
+              <p className="text-sm text-[#a33a3a]">{qaError}</p>
             )}
 
             {/* Answer */}
             {(answer || streaming) && (
-              <div className="rounded-xl border border-[#e8e6dc] dark:border-[#3d3a35] p-4">
+              <div className="rounded-xl border border-[#d9d4c7] dark:border-[#3d3830] p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Sparkles className="h-3.5 w-3.5 text-[#c96442]" />
-                  <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">
+                  <CompassLogo className="h-3.5 w-3.5 text-[#8b4513]" />
+                  <span className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080]">
                     {streaming ? t("quickThinking") : t("answer")}
                   </span>
                   {streaming && (
-                    <span className="inline-block h-3 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
+                    <span className="inline-block h-3 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
                   )}
                   {!streaming && answer && (
                     <div className="ml-auto">
@@ -229,19 +230,19 @@ function DocumentCardImpl({ file, initialQuestion }: DocumentCardProps) {
                   )}
                 </div>
                 {answer ? (
-                  <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
+                  <article className="prose prose-quaesitor font-body leading-[1.7] max-w-none dark:prose-invert">
                     <ReactMarkdown>{answer}</ReactMarkdown>
                   </article>
                 ) : (
                   !qaError && (
-                    <div className="flex items-center gap-2 text-sm text-[#87867f] dark:text-[#a3a098]">
+                    <div className="flex items-center gap-2 text-sm text-[#6b6358] dark:text-[#9a9080]">
                       <Loader2 className="h-4 w-4 animate-spin" />
                       {t("quickThinking")}
                     </div>
                   )
                 )}
                 {!streaming && tokens > 0 && (
-                  <p className="text-[10px] text-[#87867f] mt-3 font-mono">~{tokens} tokens</p>
+                  <p className="text-[10px] text-[#6b6358] mt-3 font-mono">~{tokens} tokens</p>
                 )}
               </div>
             )}

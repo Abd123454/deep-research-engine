@@ -6,10 +6,11 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Zap, Sparkles, AlertCircle } from "lucide-react";
+import { Zap, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { CompassLogo } from "@/components/CompassLogo";
 
 interface QuickCardProps {
   question: string;
@@ -104,26 +105,26 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-3xl border border-[#e8e6dc] dark:border-[#3d3a35] overflow-hidden bg-[#faf9f5] dark:bg-[#1a1a18]"
+      className="rounded-3xl border border-[#d9d4c7] dark:border-[#3d3830] overflow-hidden bg-[#faf8f3] dark:bg-[#1c1a17]"
     >
       {/* Question */}
-      <div className="bg-[#faf9f5] dark:bg-[#1a1a18] px-5 py-3 flex items-start gap-2 border-b border-[#e8e6dc] dark:border-[#3d3a35]">
-        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#f0eee6] dark:bg-[#393937]">
-          <Zap className="h-3.5 w-3.5 text-[#c96442]" />
+      <div className="bg-[#faf8f3] dark:bg-[#1c1a17] px-5 py-3 flex items-start gap-2 border-b border-[#d9d4c7] dark:border-[#3d3830]">
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-[#f4f1ea] dark:bg-[#322e28]">
+          <Zap className="h-3.5 w-3.5 text-[#8b4513]" />
         </div>
-        <p className="text-sm font-medium text-[#141413] dark:text-[#faf9f5]">{question}</p>
+        <p className="text-sm font-medium text-[#2a2620] dark:text-[#e8e3d8]">{question}</p>
       </div>
 
       {/* Answer */}
       <div className="px-5 py-4">
         {error ? (
-          <div className="flex items-start gap-2 rounded-xl border border-[#c44848]/30 bg-[#c44848]/5 p-3">
-            <AlertCircle className="h-4 w-4 shrink-0 text-[#c44848] mt-0.5" />
+          <div className="flex items-start gap-2 rounded-xl border border-[#a33a3a]/30 bg-[#a33a3a]/5 p-3">
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#a33a3a] mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm text-[#c44848]">{error}</p>
+              <p className="text-sm text-[#a33a3a]">{error}</p>
               <button
                 onClick={() => { setError(""); setStreaming(true); setResponse(""); }}
-                className="text-xs text-[#c96442] hover:underline mt-1"
+                className="text-xs text-[#8b4513] hover:underline mt-1"
               >
                 Try again
               </button>
@@ -132,12 +133,12 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
         ) : response ? (
           <>
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-3.5 w-3.5 text-[#c96442]" />
-              <span className="text-xs font-semibold text-[#87867f] dark:text-[#a3a098]">
+              <CompassLogo className="h-3.5 w-3.5 text-[#8b4513]" />
+              <span className="text-xs font-semibold text-[#6b6358] dark:text-[#9a9080]">
                 {streaming ? t("quickThinking") : t("answer")}
               </span>
               {streaming && (
-                <span className="inline-block h-3 w-1.5 bg-[#c96442] animate-pulse ml-0.5" />
+                <span className="inline-block h-3 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
               )}
               {!streaming && (
                 <div className="ml-auto">
@@ -145,19 +146,19 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
                 </div>
               )}
             </div>
-            <article className="prose prose-claude font-serif leading-[1.6] max-w-none dark:prose-invert">
+            <article className="prose prose-quaesitor font-body leading-[1.7] max-w-none dark:prose-invert">
               <ReactMarkdown>{response}</ReactMarkdown>
             </article>
             {!streaming && tokens > 0 && (
-              <p className="text-[10px] text-[#87867f] mt-3 font-mono">~{tokens} tokens</p>
+              <p className="text-[10px] text-[#6b6358] mt-3 font-mono">~{tokens} tokens</p>
             )}
           </>
         ) : (
           <div className="space-y-2 animate-pulse">
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-3/4" />
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-full" />
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-5/6" />
-            <div className="h-4 bg-[#e8e6dc] dark:bg-[#393937] rounded w-2/3" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
+            <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-2/3" />
           </div>
         )}
       </div>

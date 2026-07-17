@@ -67,7 +67,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
               {isRunning ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
               ) : job.status === "completed" ? (
-                <CheckCircle2 className="h-3.5 w-3.5 text-[#c96442] dark:text-[#d97757]" />
+                <CheckCircle2 className="h-3.5 w-3.5 text-[#8b4513] dark:text-[#b5673a]" />
               ) : (
                 <AlertCircle className="h-3.5 w-3.5 text-destructive" />
               )}
@@ -135,7 +135,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
                     active
                       ? "text-primary"
                       : done
-                        ? "text-[#c96442] dark:text-[#d97757]"
+                        ? "text-[#8b4513] dark:text-[#b5673a]"
                         : "text-muted-foreground/50"
                   )}
                 >
@@ -152,7 +152,7 @@ export function ResearchStatus({ job, isRunning, onReset }: ResearchStatusProps)
                   <div
                     className={cn(
                       "h-px flex-1",
-                      done ? "bg-[#c96442]/30 dark:bg-[#d97757]/30" : "bg-border"
+                      done ? "bg-[#8b4513]/30 dark:bg-[#b5673a]/30" : "bg-border"
                     )}
                   />
                 )}

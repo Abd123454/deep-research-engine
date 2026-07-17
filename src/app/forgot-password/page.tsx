@@ -6,10 +6,11 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Sparkles, Loader2, ArrowLeft, MailCheck } from "lucide-react";
+import { Loader2, ArrowLeft, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CompassLogo } from "@/components/CompassLogo";
 
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -45,7 +46,7 @@ export default function ForgotPasswordPage() {
       <div className="w-full max-w-sm space-y-6">
         <div className="text-center">
           <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-gradient mb-4">
-            <Sparkles className="h-6 w-6 text-white" />
+            <CompassLogo className="h-6 w-6 text-white" />
           </div>
           <h1 className="text-2xl font-bold">Reset your password</h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -56,10 +57,10 @@ export default function ForgotPasswordPage() {
         {submitted ? (
           <div
             role="status"
-            className="rounded-xl border border-[#c96442]/30 dark:border-[#d97757]/30 bg-[#c96442]/5 dark:bg-[#d97757]/5 p-4 space-y-2"
+            className="rounded-xl border border-[#8b4513]/30 dark:border-[#b5673a]/30 bg-[#8b4513]/5 dark:bg-[#b5673a]/5 p-4 space-y-2"
           >
             <div className="flex items-center gap-2">
-              <MailCheck className="h-5 w-5 text-[#c96442] dark:text-[#d97757]" />
+              <MailCheck className="h-5 w-5 text-[#8b4513] dark:text-[#b5673a]" />
               <p className="text-sm font-medium">Check your inbox</p>
             </div>
             <p className="text-sm text-muted-foreground">

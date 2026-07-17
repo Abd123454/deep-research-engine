@@ -9,13 +9,14 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { Upload, FileText, Trash2, Loader2, ArrowRight, Sparkles } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import ReactMarkdown from "react-markdown";
 import { cn } from "@/lib/utils";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { CompassLogo } from "@/components/CompassLogo";
 import type { QAMode } from "@/lib/document-qa";
 
 interface DocListItem {
@@ -247,8 +248,8 @@ export function DocumentsMode() {
                   className={cn(
                     "w-full text-left rounded-lg p-2.5 transition-colors group flex items-start gap-2",
                     selectedId === d.id
-                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/10 border border-[#c96442]/30 dark:border-[#d97757]/30"
-                      : "hover:bg-[#f0eee6] dark:hover:bg-[#393937] border border-transparent"
+                      ? "bg-[#8b4513]/10 dark:bg-[#b5673a]/10 border border-[#8b4513]/30 dark:border-[#b5673a]/30"
+                      : "hover:bg-[#f4f1ea] dark:hover:bg-[#322e28] border border-transparent"
                   )}
                 >
                   <FileText className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />
@@ -319,7 +320,7 @@ export function DocumentsMode() {
                     className={cn(
                       "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
                       qaMode === m
-                        ? "bg-[#c96442] dark:bg-[#d97757] text-primary-foreground"
+                        ? "bg-[#8b4513] dark:bg-[#b5673a] text-primary-foreground"
                         : "bg-secondary text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -352,7 +353,7 @@ export function DocumentsMode() {
                       onClick={sendQA}
                       disabled={!question.trim() || streaming}
                       size="icon"
-                      className="h-8 w-8 rounded-full bg-[#c96442] dark:bg-[#d97757] hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90 border-0"
+                      className="h-8 w-8 rounded-full bg-[#8b4513] dark:bg-[#b5673a] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] border-0"
                       aria-label={t("quickSend")}
                     >
                       {streaming ? (
@@ -376,7 +377,7 @@ export function DocumentsMode() {
                   {streaming ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
-                    <Sparkles className="h-4 w-4" />
+                    <CompassLogo className="h-4 w-4" />
                   )}
                   {qaMode === "summarize" ? t("summarizeBtn") : t("suggestQuestionsBtn")}
                 </Button>
@@ -393,12 +394,12 @@ export function DocumentsMode() {
               {(answer || streaming) && (
                 <div className="rounded-2xl border border-border/60 p-5">
                   <div className="flex items-center gap-2 mb-3">
-                    <Sparkles className="h-4 w-4 text-primary" />
+                    <CompassLogo className="h-4 w-4 text-primary" />
                     <span className="text-sm font-semibold">
                       {streaming ? t("quickThinking") : t("answer")}
                     </span>
                     {streaming && (
-                      <span className="inline-block h-3 w-1.5 bg-[#c96442] dark:bg-[#d97757] animate-pulse ml-0.5" />
+                      <span className="inline-block h-3 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5" />
                     )}
                     {!streaming && answer && (
                       <div className="ml-auto">

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, Sparkles } from "lucide-react";
+import { Check } from "lucide-react";
+import { CompassLogo } from "@/components/CompassLogo";
 
 // Plan definitions duplicated here (client-safe, no server imports).
 // The server-side source of truth is src/lib/stripe.ts.
@@ -61,11 +62,11 @@ export default function BillingPage() {
                   <span className="text-sm text-muted-foreground font-normal">/mo</span>
                 </p>
                 <ul className="mt-4 space-y-2 text-sm">
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {plan.limits.researchPerMonth === Infinity ? "Unlimited" : plan.limits.researchPerMonth} research/mo</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {plan.limits.chatPerDay === Infinity ? "Unlimited" : plan.limits.chatPerDay} chat/day</li>
-                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {(plan.limits.tokensPerMonth / 1_000_000).toFixed(1)}M tokens/mo</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#8b4513] dark:text-[#b5673a]" /> {plan.limits.researchPerMonth === Infinity ? "Unlimited" : plan.limits.researchPerMonth} research/mo</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#8b4513] dark:text-[#b5673a]" /> {plan.limits.chatPerDay === Infinity ? "Unlimited" : plan.limits.chatPerDay} chat/day</li>
+                  <li className="flex items-center gap-2"><Check className="h-4 w-4 text-[#8b4513] dark:text-[#b5673a]" /> {(plan.limits.tokensPerMonth / 1_000_000).toFixed(1)}M tokens/mo</li>
                   {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-[#c96442] dark:text-[#d97757]" /> {f.replace(/_/g, " ")}</li>
+                    <li key={f} className="flex items-center gap-2"><Check className="h-4 w-4 text-[#8b4513] dark:text-[#b5673a]" /> {f.replace(/_/g, " ")}</li>
                   ))}
                 </ul>
                 {isCurrent ? (
@@ -75,7 +76,7 @@ export default function BillingPage() {
                 ) : (
                   <button
                     onClick={() => upgrade(key)}
-                    className="mt-4 w-full rounded-lg bg-[#c96442] dark:bg-[#d97757] text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-[#c96442]/90 dark:hover:bg-[#d97757]/90"
+                    className="mt-4 w-full rounded-lg bg-[#8b4513] dark:bg-[#b5673a] text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-[#6b3410] dark:hover:bg-[#8b4513]"
                   >
                     Upgrade to {plan.name}
                   </button>
@@ -87,7 +88,7 @@ export default function BillingPage() {
 
         <div className="rounded-2xl border border-border p-6">
           <div className="flex items-center gap-2 mb-4">
-            <Sparkles className="h-5 w-5 text-primary" />
+            <CompassLogo className="h-5 w-5 text-primary" />
             <h2 className="text-lg font-semibold">Current Usage</h2>
           </div>
           <UsageWidget />
@@ -128,7 +129,7 @@ function UsageBar({ label, remaining, limit }: { label: string; remaining: numbe
         <span className="text-muted-foreground">{used.toLocaleString()} / {limit === Infinity ? "∞" : limit.toLocaleString()}</span>
       </div>
       <div className="h-2 rounded-full bg-secondary overflow-hidden">
-        <div className="h-full bg-[#c96442] dark:bg-[#d97757] transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
+        <div className="h-full bg-[#8b4513] dark:bg-[#b5673a] transition-all" style={{ width: `${Math.min(100, pct)}%` }} />
       </div>
     </div>
   );

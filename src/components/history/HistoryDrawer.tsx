@@ -148,26 +148,26 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "tween", duration: 0.2 }}
-            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm bg-[#faf9f5] dark:bg-[#1a1a18] border-l border-[#e8e6dc] dark:border-[#3d3a35] flex flex-col"
+            className="fixed top-0 right-0 bottom-0 z-50 w-full max-w-sm bg-[#faf8f3] dark:bg-[#1c1a17] border-l border-[#d9d4c7] dark:border-[#3d3830] flex flex-col"
             role="dialog"
             aria-label={t("historyPlaceholder")}
           >
             {/* Header */}
-            <div className="flex items-center justify-between p-4 border-b border-[#e8e6dc]/60 dark:border-[#3d3a35]/60">
+            <div className="flex items-center justify-between p-4 border-b border-[#d9d4c7]/60 dark:border-[#3d3830]/60">
               <h2 className="text-sm font-semibold flex items-center gap-2">
-                <HistoryIcon className="h-4 w-4 text-[#c96442]" />
+                <HistoryIcon className="h-4 w-4 text-[#8b4513]" />
                 {t("historyPlaceholder")}
               </h2>
               <div className="flex items-center gap-1">
                 {sessions.length > 0 && (
                   <button
                     onClick={handleClearAll}
-                    className="text-xs text-[#c44848] hover:text-[#c44848] px-3 py-1.5 rounded-md hover:bg-[#c44848]/5 transition-colors"
+                    className="text-xs text-[#a33a3a] hover:text-[#a33a3a] px-3 py-1.5 rounded-md hover:bg-[#a33a3a]/5 transition-colors"
                   >
                     {t("clearAllSessions")}
                   </button>
                 )}
-                <button onClick={onClose} className="flex size-7 items-center justify-center rounded-md text-[#5e5d59] hover:bg-[#141413]/5 dark:text-[#a3a098] dark:hover:bg-[#faf9f5]/5 transition-colors" aria-label="Close">
+                <button onClick={onClose} className="flex size-7 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors" aria-label="Close">
                   <X className="h-4 w-4" />
                 </button>
               </div>
@@ -177,12 +177,12 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
             <div className="flex-1 overflow-y-auto p-2">
               {loading ? (
                 <div className="flex justify-center py-8">
-                  <Loader2 className="h-5 w-5 animate-spin text-[#87867f] dark:text-[#a3a098]" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#6b6358] dark:text-[#9a9080]" />
                 </div>
               ) : sessions.length === 0 ? (
                 <div className="text-center py-12 px-4">
-                  <HistoryIcon className="h-8 w-8 text-[#87867f]/40 mx-auto mb-3" />
-                  <p className="text-sm text-[#87867f] dark:text-[#a3a098]">{t("noSessions")}</p>
+                  <HistoryIcon className="h-8 w-8 text-[#6b6358]/40 mx-auto mb-3" />
+                  <p className="text-sm text-[#6b6358] dark:text-[#9a9080]">{t("noSessions")}</p>
                 </div>
               ) : (
                 sessions.map((s) => {
@@ -195,26 +195,26 @@ export function HistoryDrawer({ open, onClose, onSelect }: HistoryDrawerProps) {
                       className={cn(
                         "w-full text-left rounded-lg p-3 transition-colors group flex items-start gap-2 mb-1",
                         loadingId === s.id
-                          ? "bg-[#c96442]/5 opacity-50"
-                          : "hover:bg-[#f0eee6] dark:hover:bg-[#393937]"
+                          ? "bg-[#8b4513]/5 opacity-50"
+                          : "hover:bg-[#f4f1ea] dark:hover:bg-[#322e28]"
                       )}
                     >
                       {loadingId === s.id ? (
-                        <Loader2 className="h-4 w-4 shrink-0 mt-0.5 animate-spin text-[#c96442]" />
+                        <Loader2 className="h-4 w-4 shrink-0 mt-0.5 animate-spin text-[#8b4513]" />
                       ) : (
-                        <Icon className="h-4 w-4 shrink-0 mt-0.5 text-[#87867f] dark:text-[#a3a098]" />
+                        <Icon className="h-4 w-4 shrink-0 mt-0.5 text-[#6b6358] dark:text-[#9a9080]" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <p className="text-xs font-medium truncate text-[#141413] dark:text-[#faf9f5]">{s.title}</p>
+                        <p className="text-xs font-medium truncate text-[#2a2620] dark:text-[#e8e3d8]">{s.title}</p>
                         {s.summary && (
-                          <p className="text-[10px] text-[#87867f] dark:text-[#a3a098] truncate">{s.summary}</p>
+                          <p className="text-[10px] text-[#6b6358] dark:text-[#9a9080] truncate">{s.summary}</p>
                         )}
-                        <p className="text-[9px] text-[#87867f]/60 mt-0.5">{fmtDate(s.createdAt)}</p>
+                        <p className="text-[9px] text-[#6b6358]/60 mt-0.5">{fmtDate(s.createdAt)}</p>
                       </div>
                       <button
                         onClick={(e) => handleDelete(s.id, e)}
                         aria-label={t("deleteSession")}
-                        className="opacity-0 group-hover:opacity-100 text-[#87867f] hover:text-[#c44848] transition-opacity"
+                        className="opacity-0 group-hover:opacity-100 text-[#6b6358] hover:text-[#a33a3a] transition-opacity"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>

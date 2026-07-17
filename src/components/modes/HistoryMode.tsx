@@ -190,8 +190,8 @@ export function HistoryMode() {
                   className={cn(
                     "w-full text-left rounded-lg p-3 transition-colors group flex items-start gap-2",
                     selectedId === s.id
-                      ? "bg-[#c96442]/10 dark:bg-[#d97757]/10 border border-[#c96442]/30 dark:border-[#d97757]/30"
-                      : "hover:bg-[#f0eee6] dark:hover:bg-[#393937] border border-transparent"
+                      ? "bg-[#8b4513]/10 dark:bg-[#b5673a]/10 border border-[#8b4513]/30 dark:border-[#b5673a]/30"
+                      : "hover:bg-[#f4f1ea] dark:hover:bg-[#322e28] border border-transparent"
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0 mt-0.5 text-muted-foreground" />

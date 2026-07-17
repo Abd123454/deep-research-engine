@@ -7,11 +7,11 @@ interface GapAnalysisProps {
 
 export function GapAnalysis({ gapAnalysis }: GapAnalysisProps) {
   return (
-    <Card className="border-[#e8e6dc] dark:border-[#3d3a35]/40 bg-[#c96442]/5 dark:bg-[#d97757]/5">
+    <Card className="border-[#d9d4c7] dark:border-[#3d3830]/40 bg-[#8b4513]/5 dark:bg-[#b5673a]/5">
       <CardContent className="p-5">
         <div className="flex items-center gap-2 mb-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#c96442]/20 dark:bg-[#d97757]/20">
-            <Target className="h-3.5 w-3.5 text-[#c96442] dark:text-[#d97757]" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#8b4513]/20 dark:bg-[#b5673a]/20">
+            <Target className="h-3.5 w-3.5 text-[#8b4513] dark:text-[#b5673a]" />
           </div>
           <div>
             <h3 className="text-sm font-semibold leading-tight">Gap analysis</h3>

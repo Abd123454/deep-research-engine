@@ -24,7 +24,7 @@ export const SKILLS: Skill[] = [
     description: "General-purpose AI assistant",
     systemPrompt: "You are a helpful, knowledgeable AI assistant. Be concise but thorough. Use markdown when helpful.",
     allowedTools: [],
-    icon: "Sparkles",
+    icon: "CompassLogo",
   },
   {
     name: "coder",
