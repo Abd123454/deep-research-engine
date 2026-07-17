@@ -225,16 +225,20 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                   textareaRef={textareaFocusRef}
                 />
 
-                {/* Mode tabs */}
-                <div className="flex flex-wrap items-center justify-center gap-2">
+                {/* Mode tabs — card style with icon + text */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
                   {EXAMPLES.map((ex, i) => (
                     <button
                       key={i}
                       onClick={() => handleSuggestionClick(ex.text)}
-                      className="flex items-center gap-2 rounded-lg border border-[#E5E0D6] bg-transparent px-3 py-1.5 font-sans text-sm text-[#1a1a18] hover:bg-[#1a1a18]/5 dark:border-[#3d3a35] dark:text-[#eee] dark:hover:bg-[#eee]/5 transition-colors"
+                      className="group flex items-start gap-3 rounded-2xl border border-[#E5E0D6] bg-white px-4 py-3 text-left hover:border-[#c96442]/30 hover:bg-[#F0ECE0]/50 transition-all dark:border-[#3d3a35] dark:bg-[#1f1e1b] dark:hover:bg-[#393937]/50"
                     >
-                      <ex.icon className="h-4 w-4" />
-                      {ex.text.slice(0, 40)}
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F0ECE0] text-[#c96442] dark:bg-[#393937]">
+                        <ex.icon className="h-4 w-4" />
+                      </div>
+                      <span className="font-serif text-sm text-[#1a1a18] dark:text-[#eee] leading-snug">
+                        {ex.text}
+                      </span>
                     </button>
                   ))}
                 </div>

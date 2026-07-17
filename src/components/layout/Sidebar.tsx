@@ -84,42 +84,46 @@ export const Sidebar = React.memo(function Sidebar({
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className="fixed lg:static inset-y-0 left-0 z-50 w-[250px] shrink-0 flex flex-col border-r border-border bg-background"
+            className="flex h-full w-[260px] flex-col border-r border-[#E5E0D6] bg-[#F0ECE0] dark:border-[#3d3a35] dark:bg-[#2b2a27] z-50"
           >
-            <div className="shrink-0 p-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
-                  <Sparkles className="h-4 w-4 text-white" />
-                </div>
-                <span className="text-sm font-semibold">Deep Research</span>
-              </div>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 lg:hidden">
+            {/* Header — h-14 (56px), serif name, Sparkle icon */}
+            <div className="flex h-14 items-center gap-2 px-4 shrink-0">
+              <Sparkles className="h-5 w-5 fill-[#c96442] text-[#c96442]" />
+              <span className="font-serif text-lg font-semibold text-[#1a1a18] dark:text-[#eee]">
+                Quaesitor
+              </span>
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 ml-auto lg:hidden">
                 <X className="h-4 w-4" />
               </Button>
             </div>
 
+            {/* New Chat button — clay, rounded-lg (8px), sans font */}
             <div className="shrink-0 px-3">
-              <Button onClick={onNewChat} className="w-full gap-2 rounded-xl" size="sm">
+              <button
+                onClick={onNewChat}
+                className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-[#c96442] px-3 py-2 font-sans text-sm font-medium text-white hover:bg-[#b5563a] transition-colors"
+              >
                 <Plus className="h-4 w-4" />
                 New Chat
-              </Button>
+              </button>
             </div>
 
-            <div className="shrink-0 px-3 mt-3">
+            <div className="shrink-0 px-3 mt-1">
               <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#9a9893]" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search conversations..."
-                  className="w-full rounded-lg border border-border bg-secondary/50 pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  className="w-full bg-[#E5E0D6]/50 dark:bg-[#393937]/50 border-0 rounded-lg pl-9 pr-3 py-2 font-sans text-sm text-[#1a1a18] dark:text-[#eee] placeholder:text-[#9a9893] outline-none focus:ring-2 focus:ring-[#c96442]/20"
+                  style={{ boxShadow: "none", minHeight: "auto" }}
                 />
               </div>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-2 space-y-3 mt-2">
+            <div className="flex-1 overflow-y-auto p-2 space-y-3 mt-1">
               {filtered.length === 0 ? (
-                <p className="text-xs text-muted-foreground text-center py-8">
+                <p className="font-sans text-xs text-[#9a9893] text-center py-8">
                   {search ? "No matches found." : "No conversations yet."}
                 </p>
               ) : (
@@ -128,7 +132,7 @@ export const Sidebar = React.memo(function Sidebar({
                   if (!items || items.length === 0) return null;
                   return (
                     <div key={group}>
-                      <p className="text-[10px] font-semibold text-muted-foreground/60 uppercase tracking-wide px-2 mb-1">
+                      <p className="font-sans text-xs font-medium text-[#9a9893] uppercase tracking-wider px-3 mb-1">
                         {group}
                       </p>
                       <div className="space-y-0.5">
@@ -139,13 +143,13 @@ export const Sidebar = React.memo(function Sidebar({
                               key={c.id}
                               onClick={() => onSelectConversation(c.id)}
                               className={cn(
-                                "w-full flex items-center gap-2 rounded-lg px-2.5 py-2 text-left transition-colors group",
-                                activeId === c.id ? "bg-primary/10 text-primary" : "hover:bg-accent"
+                                "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors group",
+                                activeId === c.id ? "bg-[#1a1a18]/5 dark:bg-[#eee]/5" : "hover:bg-[#1a1a18]/5 dark:hover:bg-[#eee]/5"
                               )}
                             >
-                              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                              <span className="text-xs truncate flex-1">{c.title}</span>
-                              <Trash2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-opacity shrink-0" />
+                              <Icon className="h-3.5 w-3.5 shrink-0 text-[#9a9893]" />
+                              <span className="font-sans text-sm text-[#1a1a18] dark:text-[#eee] truncate flex-1">{c.title}</span>
+                              <Trash2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-[#9a9893] hover:text-[#c44848] transition-opacity shrink-0" />
                             </button>
                           );
                         })}
@@ -156,9 +160,9 @@ export const Sidebar = React.memo(function Sidebar({
               )}
             </div>
 
-            <div className="shrink-0 border-t border-border p-3 flex items-center justify-between">
+            <div className="shrink-0 border-t border-[#E5E0D6] dark:border-[#3d3a35] p-3 flex items-center justify-between">
               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Settings">
-                <Settings className="h-4 w-4 text-muted-foreground" />
+                <Settings className="h-4 w-4 text-[#5b5950] dark:text-[#a3a098]" />
               </Button>
               <div className="flex items-center gap-1">
                 <LanguageToggle />
