@@ -151,7 +151,8 @@ describe("tool registry", () => {
     expect(tools).toContain("run_code");
     expect(tools).toContain("web_search");
     expect(tools).toContain("read_file");
-    expect(tools.length).toBe(3);
+    expect(tools).toContain("device_control");
+    expect(tools.length).toBe(4);
   });
 
   it("getToolsDescription returns formatted string", () => {

@@ -134,8 +134,8 @@ describe("ReAct — skills integration", () => {
 });
 
 describe("ReAct — tool registry", () => {
-  it("has 3 tools registered", () => {
-    expect(Object.keys(AGENT_TOOLS)).toHaveLength(3);
+  it("has 4 tools registered", () => {
+    expect(Object.keys(AGENT_TOOLS)).toHaveLength(4);
   });
 
   it("getAvailableTools returns all names", () => {

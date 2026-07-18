@@ -81,6 +81,14 @@ export const SENSITIVE_ACTIONS = {
   // scroll) the target coordinates are recorded. The base64 screenshot
   // is NOT logged (size + privacy).
   "computer_use.action": "computer_use",
+  // Device Control — every cross-platform device action (file ops,
+  // shell command, package install, process kill, clipboard access,
+  // open URL, network/disk probe) is auditable. The action slug +
+  // (for destructive ops) the target path / PID / command are
+  // recorded in metadata. Output is NOT logged (size + privacy — a
+  // read_file on a private key, for example, must not land in the
+  // audit trail). See /api/device-control.
+  "device_control.action": "device_control",
 } as const;
 
 export type SensitiveAction = keyof typeof SENSITIVE_ACTIONS;

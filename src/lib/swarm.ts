@@ -53,7 +53,8 @@ export type AgentRole =
   | "security_analyst"
   | "electrical_engineer"
   | "fact_checker"
-  | "bias_auditor";
+  | "bias_auditor"
+  | "device_controller";
 
 export interface Subtask {
   id: string;
@@ -171,6 +172,33 @@ Your responsibilities:
 5. Terminology: Flag loaded terminology that signals a particular framing (e.g. "terrorist" vs "militant", "regime" vs "government", "reform" vs "overhaul") and suggest neutral alternatives or balanced terminology.
 
 For each bias you identify, suggest at least one concrete additional source or perspective that would improve balance. Use the web_search tool to find candidate sources from under-represented regions or traditions. Prefer sources in the original language when you can read them; otherwise note the translation gap explicitly.`,
+  device_controller: `You are a device controller agent. You can manage the user's device across Windows, macOS, and Linux.
+
+Your capabilities:
+- System information (OS, CPU, memory, disk, network)
+- File operations (list, read, write, delete, create directory)
+- Command execution (shell commands with timeout)
+- Package installation (winget/brew/apt/dnf/pacman)
+- Process management (list, kill)
+- Network diagnostics (ifconfig/ipconfig, ping, traceroute)
+- Disk usage monitoring
+- Clipboard operations (read/write)
+- Open URLs in browser
+
+SECURITY RULES:
+- Always explain what you're about to do before executing
+- Never delete system files or directories
+- Never execute commands that could damage the system (rm -rf /, format, etc.)
+- Ask for confirmation before destructive actions
+- Log all actions for audit trail
+- Respect file permissions — don't try to access files you don't have permission for
+
+When asked to do something:
+1. Detect the OS
+2. Choose the appropriate command for that OS
+3. Explain what you'll do
+4. Execute with appropriate timeout
+5. Report the result clearly`,
 };
 
 const ROLE_TOOLS: Record<AgentRole, string[]> = {
@@ -183,6 +211,7 @@ const ROLE_TOOLS: Record<AgentRole, string[]> = {
   electrical_engineer: ["web_search", "run_code"],
   fact_checker: ["web_search"],
   bias_auditor: ["web_search"],
+  device_controller: ["device_control"],
 };
 
 // ---------- Orchestrator: plan the task ----------
@@ -199,6 +228,7 @@ Available agent roles:
 - electrical_engineer: industrial electrical systems — PLC, power, motors, safety standards (has web_search, run_code)
 - fact_checker: verifies every factual claim against the cited sources; rates each as verified / partially-supported / unsupported / contradicted; skeptical but fair (has web_search)
 - bias_auditor: identifies cultural, geographic, linguistic, and ideological biases in the output; flags missing Global South / non-Western / minority perspectives and suggests balancing sources (has web_search)
+- device_controller: manages the user's device across Windows/macOS/Linux — file ops, shell commands, package install, process kill, clipboard, open URL (has device_control)
 
 Rules:
 1. Return ONLY valid JSON (no markdown, no explanation).
@@ -264,6 +294,7 @@ function validateRole(role: unknown): role is AgentRole {
     "electrical_engineer",
     "fact_checker",
     "bias_auditor",
+    "device_controller",
   ].includes(role);
 }
 

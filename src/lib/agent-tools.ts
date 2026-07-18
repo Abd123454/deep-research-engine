@@ -144,12 +144,73 @@ const readFileTool: AgentTool = {
   },
 };
 
+// ---------- Tool: device_control ----------
+
+const deviceControlTool: AgentTool = {
+  name: "device_control",
+  description:
+    "Control the user's device (Windows/macOS/Linux). Actions: system_info, list_files, read_file, write_file, execute_command, install_package, list_processes, kill_process, network_status, disk_usage, open_url, clipboard_read, clipboard_write. SECURITY: only use this tool when the user has explicitly asked you to perform a device action. Always explain what you are about to do before calling this tool. Never delete system files or run destructive commands (rm -rf /, format, etc.).",
+  parameters: [
+    { name: "action", type: "string", description: "The device action to perform", required: true },
+    { name: "params", type: "string", description: "Action parameters as a JSON object (path, command, etc.) — pass a JSON-encoded string", required: false },
+  ],
+  async execute(params: Record<string, unknown>): Promise<ToolResult> {
+    const action = String(params.action || "");
+    if (!action) {
+      return { tool: "device_control", success: false, output: "No action provided." };
+    }
+
+    // The `params` field arrives either as an object (when the LLM emits
+    // JSON with a nested object) or as a JSON-encoded string (when the
+    // LLM treats it as a string parameter, which is what the schema
+    // declares above). Accept both forms.
+    let actionParams: Record<string, unknown> = {};
+    const rawParams = params.params;
+    if (rawParams && typeof rawParams === "object" && !Array.isArray(rawParams)) {
+      actionParams = rawParams as Record<string, unknown>;
+    } else if (typeof rawParams === "string" && rawParams.length > 0) {
+      try {
+        const parsed = JSON.parse(rawParams);
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+          actionParams = parsed as Record<string, unknown>;
+        } else {
+          return { tool: "device_control", success: false, output: "'params' must be a JSON object." };
+        }
+      } catch {
+        return { tool: "device_control", success: false, output: "'params' is not valid JSON." };
+      }
+    }
+
+    // Dynamic import keeps the device-control module (which pulls in
+    // child_process / fs / os) out of the test bundle. The agent-tools
+    // test suite mocks the LLM and code-sandbox; pulling in device-control
+    // eagerly would also pull in better-sqlite3 transitively via db.ts
+    // if we ever wire audit logging through here. Lazy import avoids that.
+    const { executeDeviceAction, isDeviceAction } = await import("./device-control");
+    if (!isDeviceAction(action)) {
+      return {
+        tool: "device_control",
+        success: false,
+        output: `Unknown device action: ${action}. Valid actions: system_info, list_files, read_file, write_file, delete_file, create_directory, execute_command, install_package, list_processes, kill_process, network_status, disk_usage, env_vars, open_url, clipboard_read, clipboard_write.`,
+      };
+    }
+
+    const result = executeDeviceAction(action, actionParams);
+    return {
+      tool: "device_control",
+      success: result.success,
+      output: result.output || result.error || "",
+    };
+  },
+};
+
 // ---------- Tool Registry ----------
 
 export const AGENT_TOOLS: Record<string, AgentTool> = {
   run_code: runCodeTool,
   web_search: webSearchTool,
   read_file: readFileTool,
+  device_control: deviceControlTool,
 };
 
 export function getTool(name: string): AgentTool | null {

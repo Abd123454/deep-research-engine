@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Quaesitor",
+    "slug": "quaesitor",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "quaesitor",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "resizeMode": "contain",
+      "backgroundColor": "#f4f1ea"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.quaesitor.mobile",
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Quaesitor uses Face ID for secure authentication"
+      }
+    },
+    "android": {
+      "package": "com.quaesitor.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#f4f1ea"
+      }
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-notifications",
+      "expo-local-authentication"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "quaesitor-mobile"
+      }
+    }
+  }
+}
