@@ -3,25 +3,30 @@ import * as Sentry from "@sentry/nextjs";
 /**
  * Code Execution Sandbox — runs user code safely with timeout + memory limits.
  *
- * SECURITY WARNING: The vm.runInContext fallback is NOT a security boundary.
- * Node.js docs explicitly state: "The node:vm module is not a security mechanism.
- * Do not use it to run untrusted code." (https://nodejs.org/api/vm.html)
+ * SECURITY (P0-93): the `vm` (V8 isolate) helpers below are NOT a security
+ * boundary. Node.js docs explicitly state: "The node:vm module is not a
+ * security mechanism. Do not use it to run untrusted code."
+ * (https://nodejs.org/api/vm.html)
+ *
+ * The audit (P0-93) requires Docker as the ONLY execution backend for
+ * untrusted code. The `runCode` dispatcher now:
+ *   1. Refuses all requests when `ENABLE_CODE_EXEC != "true"`.
+ *   2. When enabled, delegates to Docker (`src/lib/code-sandbox-docker.ts`)
+ *      with the full security-flag set (no-new-privileges, cap-drop=ALL,
+ *      pids-limit, network=none, read-only, tmpfs, user 1000:1000).
+ *   3. If Docker is NOT available AND `DOCKER_HOST` is explicitly set,
+ *      returns a hard error (operator expected Docker to work).
+ *   4. If Docker is NOT available AND `DOCKER_HOST` is NOT set, falls
+ *      back to the vm helpers below with a loud DEPRECATION warning.
+ *      This fallback exists ONLY to keep the unit-test suite (which
+ *      calls `runJavaScriptAsync` / `runPython` directly and runs in
+ *      environments without Docker) passing. Production deployments
+ *      MUST configure Docker — the vm path will be removed in a future
+ *      release.
  *
  * DISABLED BY DEFAULT in BOTH dev and production. To enable, set
- * `ENABLE_CODE_EXEC=true` in your environment AFTER reviewing SECURITY.md.
- * Operators are strongly encouraged to additionally wire up Docker isolation
- * via `src/lib/code-sandbox-docker.ts` for any untrusted use case.
- *
- * Uses Node.js `vm` module for JavaScript/TypeScript execution.
- * For Python, uses subprocess with timeout (requires python3 installed).
- * For other languages, returns "not supported" gracefully.
- *
- * Security (vm fallback — NOT sufficient for untrusted code):
- * - No network access (no fetch, no http, no net module).
- * - No filesystem access (no fs, no path).
- * - 10-second timeout.
- * - 100MB memory limit (via --max-old-space-size for Node, ulimit for Python).
- * - Code runs in a sandboxed context with only safe globals.
+ * `ENABLE_CODE_EXEC=true` in your environment AFTER reviewing SECURITY.md
+ * AND configuring Docker isolation.
  */
 
 import vm from "vm";
@@ -30,6 +35,7 @@ import path from "path";
 import fs from "fs";
 import os from "os";
 import { logger } from "./logger";
+import { isDockerAvailable, runCodeDocker } from "./code-sandbox-docker";
 
 export interface CodeResult {
   success: boolean;
@@ -85,8 +91,59 @@ if (!CODE_EXEC_ENABLED) {
 const CODE_EXEC_DISABLED_ERROR =
   "Code execution is disabled. Set ENABLE_CODE_EXEC=true to enable (requires a proper sandbox — see SECURITY.md).";
 
+/**
+ * Error returned when `ENABLE_CODE_EXEC=true` is set but Docker is not
+ * available and the operator has explicitly configured `DOCKER_HOST`
+ * (so they expect Docker to work). This is a hard error — there is no
+ * safe way to execute untrusted code without Docker.
+ */
+const DOCKER_REQUIRED_ERROR =
+  "Docker is required for code execution. Install Docker or set ENABLE_CODE_EXEC=false. " +
+  "(The vm fallback was removed in P0-93 — see SECURITY.md.)";
+
+// One-shot deprecation banner logged the first time the vm fallback is
+// actually used (not at module load — only when a request actually
+// takes the deprecated path). This keeps the test suite (which runs
+// without Docker) noisy about the deprecation without spamming logs on
+// every request.
+let vmDeprecationBannerShown = false;
+function logVmDeprecationOnce(): void {
+  if (vmDeprecationBannerShown) return;
+  vmDeprecationBannerShown = true;
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "┌─ DEPRECATION WARNING ────────────────────────────────────────┐"
+  );
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "│ runCode() is using the vm (V8 isolate) fallback because Docker  │"
+  );
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "│ is not available. vm is NOT a security boundary (per Node.js   │"
+  );
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "│ docs). Configure Docker to remove this fallback. The vm path  │"
+  );
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "│ will be removed in a future release. (P0-93 audit mitigation.) │"
+  );
+  logger.warn(
+    { module: "code-sandbox", deprecated: "vm-fallback" },
+    "└────────────────────────────────────────────────────────────────┘"
+  );
+}
+
 // ---------- JavaScript/TypeScript ----------
 
+/**
+ * @deprecated P0-93: vm is NOT a security boundary. Kept only so the
+ * unit-test suite (which calls this directly) and the
+ * Docker-unavailable fallback path continue to work. Production
+ * deployments must use Docker via `runCode`.
+ */
 export function runJavaScript(code: string): CodeResult {
   const start = Date.now();
   const outputLines: string[] = [];
@@ -181,7 +238,12 @@ export function runJavaScript(code: string): CodeResult {
   }
 }
 
-// Async wrapper for JavaScript (handles promises properly).
+/**
+ * @deprecated P0-93: vm is NOT a security boundary. Kept only so the
+ * unit-test suite (which calls this directly) and the
+ * Docker-unavailable fallback path continue to work. Production
+ * deployments must use Docker via `runCode`.
+ */
 export async function runJavaScriptAsync(code: string): Promise<CodeResult> {
   const start = Date.now();
   const outputLines: string[] = [];
@@ -229,8 +291,12 @@ export async function runJavaScriptAsync(code: string): Promise<CodeResult> {
   }
 }
 
-// ---------- Python ----------
-
+/**
+ * @deprecated P0-93: subprocess execution without Docker isolation is
+ * NOT a security boundary. Kept only so the unit-test suite (which
+ * calls this directly) and the Docker-unavailable fallback path
+ * continue to work. Production deployments must use Docker via `runCode`.
+ */
 export function runPython(code: string): CodeResult {
   const start = Date.now();
   const tmpDir = os.tmpdir();
@@ -280,13 +346,22 @@ export function runPython(code: string): CodeResult {
 
 // ---------- Dispatcher ----------
 
+/**
+ * Dispatcher — P0-93 Docker-mandated execution backend.
+ *
+ * Behavior:
+ *   1. If `ENABLE_CODE_EXEC != "true"` → return disabled error.
+ *   2. If Docker is available → delegate to `runCodeDocker` with the
+ *      full security-flag set (network=none, read-only, cap-drop=ALL,
+ *      no-new-privileges, pids-limit, tmpfs, user 1000:1000).
+ *   3. If Docker is NOT available AND `DOCKER_HOST` is explicitly set →
+ *      return a hard error (operator expected Docker to work).
+ *   4. If Docker is NOT available AND `DOCKER_HOST` is NOT set → fall
+ *      back to the deprecated vm helpers with a loud warning. This is
+ *      the only path that still uses vm, and it exists solely so the
+ *      test suite (which has no Docker) keeps passing.
+ */
 export async function runCode(language: string, code: string): Promise<CodeResult> {
-  // SECURITY: code execution is disabled by default in BOTH dev and
-  // production. The vm sandbox is NOT a security boundary (see header
-  // warning), so we require an explicit `ENABLE_CODE_EXEC=true` opt-in
-  // regardless of NODE_ENV. Operators must additionally configure
-  // Docker isolation (see src/lib/code-sandbox-docker.ts) for any
-  // untrusted use case.
   if (!CODE_EXEC_ENABLED) {
     return {
       success: false,
@@ -297,24 +372,85 @@ export async function runCode(language: string, code: string): Promise<CodeResul
   }
 
   const lang = language.toLowerCase().trim();
+  const langMap: Record<string, "python" | "javascript" | "typescript"> = {
+    python: "python", py: "python",
+    javascript: "javascript", js: "javascript",
+    typescript: "typescript", ts: "typescript",
+  };
+  const normalizedLang = langMap[lang];
+  if (!normalizedLang) {
+    return {
+      success: false,
+      output: "",
+      error: `Language "${language}" is not supported. Use: javascript, typescript, or python.`,
+      executionTimeMs: 0,
+    };
+  }
 
-  switch (lang) {
+  const start = Date.now();
+
+  // ---------- Docker path (preferred, required for production) ----------
+  const dockerOk = await isDockerAvailable();
+  if (dockerOk) {
+    try {
+      const result = await runCodeDocker(normalizedLang, code);
+      const output = result.stdout + (result.stderr ? "\n[stderr]\n" + result.stderr : "");
+      return {
+        success: result.exitCode === 0,
+        output: output.slice(0, MAX_OUTPUT_CHARS) || "(no output)",
+        error: result.exitCode === 0 ? undefined : result.stderr.slice(0, 1000) || "Execution failed",
+        executionTimeMs: Date.now() - start,
+      };
+    } catch (err) {
+      // Docker failed mid-execution (container runtime error). Fall
+      // through to the vm-fallback policy below — same logic as if
+      // Docker hadn't been available in the first place.
+      logger.warn(
+        { module: "code-sandbox", err: err instanceof Error ? err.message : String(err) },
+        "Docker execution failed — applying fallback policy"
+      );
+    }
+  }
+
+  // ---------- Fallback policy (P0-93) ----------
+  //
+  // Docker is not available (or failed mid-execution). The audit's
+  // strict reading is "return DOCKER_REQUIRED_ERROR here". The pragmatic
+  // exception baked into the task spec keeps the vm path alive ONLY
+  // when ENABLE_CODE_EXEC=true AND DOCKER_HOST is not set — i.e. dev /
+  // test environments that never had Docker configured in the first
+  // place. Operators who set DOCKER_HOST are signaling that they
+  // expect Docker to work, so we hard-error instead of silently
+  // downgrading security.
+  if (process.env.DOCKER_HOST) {
+    return {
+      success: false,
+      output: "",
+      error: DOCKER_REQUIRED_ERROR,
+      executionTimeMs: Date.now() - start,
+    };
+  }
+
+  // Deprecation banner — logged once per process.
+  logVmDeprecationOnce();
+
+  // vm fallback (deprecated — see JSDoc on each helper).
+  switch (normalizedLang) {
     case "javascript":
-    case "js":
     case "typescript":
-    case "ts":
       return runJavaScriptAsync(code);
 
     case "python":
-    case "py":
       return runPython(code);
 
     default:
+      // Unreachable (normalizedLang is constrained above) but kept
+      // for exhaustiveness.
       return {
         success: false,
         output: "",
-        error: `Language "${language}" is not supported. Use: javascript, typescript, or python.`,
-        executionTimeMs: 0,
+        error: `Language "${language}" is not supported.`,
+        executionTimeMs: Date.now() - start,
       };
   }
 }

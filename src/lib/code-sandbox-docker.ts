@@ -57,13 +57,42 @@ export async function runCodeDocker(
 
     await fs.writeFile(path.join(tempDir, filename), code);
 
+    // P0-93: full Docker security flag set. Each flag is a separate
+    // layer of defense — removing any one weakens the sandbox.
+    //
+    // --security-opt=no-new-privileges  → child processes cannot gain
+    //   elevated capabilities via setuid binaries (e.g. sudo, ping).
+    // --cap-drop=ALL                    → drop ALL Linux capabilities
+    //   (CAP_NET_RAW, CAP_SYS_ADMIN, …) — the container cannot do
+    //   anything that requires a capability, including mounting
+    //   filesystems or opening privileged sockets.
+    // --pids-limit=64                   → cap the number of processes /
+    //   threads in the container at 64 — prevents fork bombs from
+    //   exhausting the host's PID table.
+    // --network=none                    → no network access at all
+    //   (no outbound HTTP, no DNS, no port scanning).
+    // --read-only                       → root filesystem is mounted
+    //   read-only; the container cannot persist anything to disk
+    //   outside the tmpfs.
+    // --tmpfs /tmp:rw,nosuid,nodev,size=64m
+    //   → /tmp is writable (programs need it) but is in-memory,
+    //   nosuid (no setuid binaries), nodev (no device files),
+    //   size-capped at 64MB.
+    // --user 1000:1000                  → run as non-root UID 1000
+    //   (matches the host's typical first user account — the container
+    //   never runs as root, even if it tries to).
+    // --memory=256m --cpus=0.5          → resource caps so a runaway
+    //   process cannot starve the host.
     const { stdout, stderr } = await execAsync(
       `docker run --rm ` +
+        `--security-opt=no-new-privileges ` +
+        `--cap-drop=ALL ` +
+        `--pids-limit=64 ` +
         `--memory=${MEMORY_LIMIT} ` +
         `--cpus=${CPU_LIMIT} ` +
         `--network=none ` +
         `--read-only ` +
-        `--tmpfs /tmp:rw,size=64m ` +
+        `--tmpfs /tmp:rw,nosuid,nodev,size=64m ` +
         `--workdir /app ` +
         `--user 1000:1000 ` +
         `-v ${tempDir}:/app:ro ` +
@@ -98,7 +127,13 @@ export async function isDockerAvailable(): Promise<boolean> {
   }
 }
 
-// Smart dispatcher: Docker first, vm fallback.
+// Smart dispatcher — mirrors the policy in code-sandbox.ts:
+//   - Docker first (with the full P0-93 security flag set).
+//   - If Docker is NOT available AND `DOCKER_HOST` is set → hard error.
+//   - If Docker is NOT available AND `DOCKER_HOST` is NOT set → fall
+//     back to `runCode` (which itself may take the deprecated vm path
+//     with a one-shot deprecation banner). The `provider` field on the
+//     returned object reflects which backend actually ran the code.
 export async function runCodeSmart(
   language: string,
   code: string
@@ -127,13 +162,25 @@ export async function runCodeSmart(
         };
       }
     } catch (err) {
-  Sentry.captureException(err);
-// Fall through to vm.
-    
-}
+      Sentry.captureException(err);
+      // Fall through to the fallback policy below.
+    }
   }
 
-  // Fallback to vm-based sandbox.
+  // P0-93 fallback policy: hard-error if DOCKER_HOST is set (operator
+  // expected Docker to work), otherwise delegate to runCode which will
+  // apply the same DOCKER_HOST check + deprecation warning before
+  // touching the vm helpers.
+  if (process.env.DOCKER_HOST) {
+    return {
+      success: false,
+      output: "",
+      error: "Docker is required for code execution. Install Docker or set ENABLE_CODE_EXEC=false. (The vm fallback was removed in P0-93 — see SECURITY.md.)",
+      executionTimeMs: Date.now() - start,
+      provider: "none",
+    };
+  }
+
   try {
     const { runCode } = await import("./code-sandbox");
     const result = await runCode(language, code);

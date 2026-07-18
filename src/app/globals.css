@@ -160,6 +160,29 @@
   * {
     @apply border-border;
   }
+  /* P0-108: WCAG 2.2 AA focus-visible. A 2px solid primary outline
+     with 2px offset is visible against both light (saddle brown
+     #8b4513) and dark (lighter leather #b5673a) backgrounds, and
+     meets the 3:1 contrast ratio for UI components per WCAG 1.4.11.
+     `border-radius: 2px` keeps the outline from looking like a
+     rectangle on rounded controls (the radius is small enough not
+     to visually fight the control's own rounding). */
+  *:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* P0-28: Dark-mode crossfade. By removing
+     `disableTransitionOnChange` from the ThemeProvider (layout.tsx),
+     next-themes no longer injects the temporary "freeze transitions"
+     style during a theme switch. This global rule — scoped to
+     background-color, border-color, color only — produces a smooth
+     200ms crossfade when the user toggles themes. We deliberately
+     EXCLUDE `transform` and `opacity` (would break framer-motion
+     animations, the streaming cursor pulse, hover lifts, etc.). */
+  *, *::before, *::after {
+    transition: background-color 200ms ease, border-color 200ms ease, color 200ms ease;
+  }
   body {
     background-color: var(--background);
     color: var(--foreground);
@@ -170,6 +193,17 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+  }
+  /* P0-29: Mobile sans-serif body. Newsreader at 18px is too heavy
+     for a 375px viewport — the long ascenders/descenders and serif
+     details consume too many horizontal pixels, hurting readability.
+     Switch to DM Sans at 16px on mobile (< 768px). Desktop keeps
+     the serif reading experience (DESIGN.md principle #2). */
+  @media (max-width: 768px) {
+    body {
+      font-family: var(--font-ui), "DM Sans", system-ui, sans-serif;
+      font-size: 16px;
+    }
   }
   /* UI chrome uses DM Sans */
   button, nav, header, footer, .font-ui, select, input {
@@ -222,7 +256,26 @@ a { text-decoration: underline; text-underline-offset: 2px; }
   }
 }
 
-/* RTL support */
+/* ============================================
+   RTL SUPPORT — P0-110
+   --------
+   Tailwind utilities like `.border-l` / `.left-0` emit PHYSICAL
+   properties (`border-left` / `left`), which don't auto-flip in
+   [dir="rtl"]. The overrides below catch the physical utilities
+   used throughout the Quaesitor UI so Arabic/Hebrew layouts read
+   correctly right-to-left.
+
+   For NEW CSS, prefer LOGICAL properties — they auto-flip and
+   need no override:
+     - padding-inline / padding-inline-start / padding-inline-end
+     - margin-inline  / margin-inline-start  / margin-inline-end
+     - inset-inline   / inset-inline-start   / inset-inline-end
+     - border-inline-start / border-inline-end
+     - border-start-start-radius / border-start-end-radius /
+       border-end-start-radius / border-end-end-radius
+   Logical properties keep the cascade simple and let us delete
+   most of the overrides below over time as new code is written.
+   ============================================ */
 [dir="rtl"] .rounded-l-3xl { border-radius: 0 1.5rem 1.5rem 0; }
 [dir="rtl"] .rounded-r-3xl { border-radius: 1.5rem 0 0 1.5rem; }
 [dir="rtl"] .border-l { border-left: 0; border-right: 1px solid; }

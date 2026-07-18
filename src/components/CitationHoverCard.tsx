@@ -61,9 +61,9 @@ export interface CitationHoverCardProps {
   source?: CitationSource | null;
   /**
    * Verification status from the citation-verifier.
-   * - "verified"     → green check badge
-   * - "unverified"   → amber alert badge
-   * - "contradicts"  → red X badge
+   * - "verified"     → green check badge (popover) + ✓ inline (P0-59)
+   * - "unverified"   → amber alert badge (popover) + ⚠ inline (P0-59)
+   * - "contradicts"  → red X badge (popover) + ✕ inline (P0-59)
    * - undefined      → no badge (verification wasn't run)
    */
   verification?: "verified" | "unverified" | "contradicts" | null;
@@ -106,6 +106,63 @@ const VERIFICATION_META = {
     cls: "text-[#a33a3a] dark:text-[#d47a7a] bg-[#a33a3a]/10 dark:bg-[#d47a7a]/15",
   },
 } as const;
+
+// ---------- P0-59: Inline status badges ----------
+//
+// Small symbol badges shown DIRECTLY in the text (no hover/click
+// required) next to a `[N]` citation number, OR replacing a
+// `[verified]` / `[unverified]` / `[contradicted]` /
+// `[single-sourced]` / `[well-sourced]` text marker that the
+// assistant emits inline. The popover (rendered by
+// CitationHoverCardInner) shows full details; the inline badge is
+// the at-a-glance indicator.
+//
+// Five symbols, all drawn from the Quaesitor sepia palette:
+//   ✓ verified          — text-[#4a6b3a] (green-ish, like sage)
+//   ⚠ unverified        — text-[#a37a3f] (amber)
+//   ✕ contradicted      — text-[#a33a3a] (red, same as --destructive)
+//   ◊ single-sourced    — text-[#6b6358] (muted, faded ink)
+//   ★ well-sourced      — text-[#a37a3f] (gold — same amber as unverified
+//                          but a star glyph distinguishes it at a glance)
+//
+// The symbols are Unicode glyphs (not SVG icons) so they scale with
+// the surrounding text and inherit the font weight. `aria-label`
+// gives screen readers the word; sighted users see the symbol.
+//
+// `InlineStatus` is the union used by both the inline badge (this
+// component) and the text-marker parser (parseStatusMarkers below).
+// Note `contradicted` (the inline-marker form) vs. `contradicts`
+// (the verification enum form) — the conversion happens at the
+// call site in CitationHoverCardInner.
+
+export type InlineStatus =
+  | "verified"
+  | "unverified"
+  | "contradicted"
+  | "single-sourced"
+  | "well-sourced";
+
+const INLINE_STATUS_META: Record<InlineStatus, { symbol: string; label: string; cls: string }> = {
+  verified:         { symbol: "✓", label: "Verified",        cls: "text-[#4a6b3a] dark:text-[#7ab566]" },
+  unverified:       { symbol: "⚠", label: "Unverified",      cls: "text-[#a37a3f] dark:text-[#d4a574]" },
+  contradicted:     { symbol: "✕", label: "Contradicted",    cls: "text-[#a33a3a] dark:text-[#d47a7a]" },
+  "single-sourced": { symbol: "◊", label: "Single-sourced",  cls: "text-[#6b6358] dark:text-[#9a9080]" },
+  "well-sourced":   { symbol: "★", label: "Well-sourced",    cls: "text-[#a37a3f] dark:text-[#d4a574]" },
+};
+
+export function InlineStatusBadge({ status }: { status: InlineStatus }) {
+  const meta = INLINE_STATUS_META[status];
+  return (
+    <span
+      className={`inline-flex items-baseline font-mono text-[0.7em] font-semibold leading-none ${meta.cls} ml-0.5 align-baseline`}
+      aria-label={meta.label}
+      role="img"
+      title={meta.label}
+    >
+      <span aria-hidden="true">{meta.symbol}</span>
+    </span>
+  );
+}
 
 // Extract a hostname from a URL (used when `source.host` is absent).
 function hostFromUrl(url: string): string {
@@ -300,6 +357,19 @@ function CitationHoverCardInner({ number, source, verification }: CitationHoverC
       >
         [{number}]
       </button>
+      {/* P0-59: inline status badge after the `[N]` number. The
+          popover (above) shows full details on hover/click; this
+          inline glyph is the at-a-glance indicator visible without
+          interaction. Only rendered when `verification` is provided
+          (i.e. the citation-verifier actually ran for this citation).
+          The enum value `contradicts` maps to the inline glyph `✕`
+          (labelled "Contradicted" — the past-participle form is more
+          readable in the inline context than the verb form). */}
+      {verification && (
+        <InlineStatusBadge
+          status={verification === "contradicts" ? "contradicted" : verification}
+        />
+      )}
 
       {open && portalTarget && createPortal(
         <div
@@ -385,21 +455,64 @@ function CitationHoverCardInner({ number, source, verification }: CitationHoverC
 // ---------- Text-with-citations parser ----------
 //
 // Splits a text node (a string from react-markdown's `p` renderer) into
-// an array of strings + CitationHoverCard elements. Patterns detected:
+// an array of strings + CitationHoverCard elements + InlineStatusBadge
+// elements. Patterns detected:
 //   [1]      → CitationHoverCard (with source from `sources[0]`)
 //   [12]     → CitationHoverCard (with source from `sources[11]`)
 //   [1, 2]   → two CitationHoverCards (comma-separated, optional space)
 //   [1-3]    → three CitationHoverCards (range)
 //
+// P0-59 — inline status markers (also split, replaced with badges):
+//   [verified]        → ✓ InlineStatusBadge
+//   [unverified]      → ⚠ InlineStatusBadge
+//   [contradicted]    → ✕ InlineStatusBadge
+//   [single-sourced]  → ◊ InlineStatusBadge
+//   [well-sourced]    → ★ InlineStatusBadge
+//
 // Patterns NOT touched (left as plain text):
 //   - [text], [text](url) — handled by react-markdown's link renderer
-//   - [verified], [unverified], [contradicted] — P0-6 self-critique
-//     markers, leave them alone (they're rendered as plain text by
-//     default; the user reads them inline).
+//     (any bracketed string that doesn't match the citation regex AND
+//     isn't one of the five status markers above falls through here)
 //
 // The `verificationMap` is an optional map from citation number (1-indexed)
 // to the citation-verifier's status. When provided, the corresponding
-// CitationHoverCard renders a verification badge.
+// CitationHoverCard renders BOTH the inline status badge (P0-59) and
+// the popover verification badge (P0-8).
+
+const STATUS_MARKER_PATTERN =
+  /\[(verified|unverified|contradicted|single-sourced|well-sourced)\]/g;
+
+/**
+ * P0-59: split a text chunk (between citations) on inline status
+ * markers like `[verified]` / `[unverified]` / `[contradicted]` /
+ * `[single-sourced]` / `[well-sourced]`. Each marker becomes an
+ * `<InlineStatusBadge>`; the text between markers stays as plain
+ * strings. The `baseKey` is used to namespace the React `key`s so
+ * they don't collide with sibling CitationHoverCard elements in the
+ * parent array.
+ */
+function parseStatusMarkers(text: string, baseKey: string): React.ReactNode[] {
+  const out: React.ReactNode[] = [];
+  let lastIdx = 0;
+  let match: RegExpExecArray | null;
+  let k = 0;
+  STATUS_MARKER_PATTERN.lastIndex = 0;
+  while ((match = STATUS_MARKER_PATTERN.exec(text)) !== null) {
+    if (match.index > lastIdx) {
+      out.push(text.slice(lastIdx, match.index));
+    }
+    const status = match[1] as InlineStatus;
+    out.push(<InlineStatusBadge key={`${baseKey}-st${k++}`} status={status} />);
+    lastIdx = match.index + match[0].length;
+  }
+  if (lastIdx < text.length) {
+    out.push(text.slice(lastIdx));
+  }
+  // If no markers were found, `out` is `[text]` — a single-element
+  // array. The parent spreads this into its own array, so the result
+  // is identical to the previous `out.push(text.slice(...))` behavior.
+  return out;
+}
 
 export function parseCitations(
   text: string,
@@ -416,9 +529,13 @@ export function parseCitations(
   let match: RegExpExecArray | null;
   let key = 0;
   while ((match = pattern.exec(text)) !== null) {
-    // Push the text before the citation.
+    // Push the text before the citation, split on status markers
+    // (P0-59: `[verified]` / `[unverified]` / `[contradicted]` /
+    // `[single-sourced]` / `[well-sourced]` become inline badges).
     if (match.index > lastIdx) {
-      out.push(text.slice(lastIdx, match.index));
+      const chunk = text.slice(lastIdx, match.index);
+      const parsed = parseStatusMarkers(chunk, `txt-${key++}`);
+      for (const node of parsed) out.push(node);
     }
     const inner = match[1]!;
     // Parse the inner content into a list of citation numbers.
@@ -460,9 +577,11 @@ export function parseCitations(
     }
     lastIdx = match.index + match[0].length;
   }
-  // Push the trailing text.
+  // Push the trailing text, split on status markers.
   if (lastIdx < text.length) {
-    out.push(text.slice(lastIdx));
+    const chunk = text.slice(lastIdx);
+    const parsed = parseStatusMarkers(chunk, `txt-${key++}`);
+    for (const node of parsed) out.push(node);
   }
   return out;
 }

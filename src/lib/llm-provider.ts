@@ -27,6 +27,7 @@ import { logger } from "./logger";
 import { OpenAIProvider } from "./llm-providers/openai";
 import { AnthropicProvider } from "./llm-providers/anthropic";
 import { OllamaProvider } from "./llm-providers/ollama";
+import { getCachedPrompt, setCachedPrompt } from "./prompt-cache";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -191,6 +192,35 @@ async function nvidiaCompleteSingle(
     body.response_format = { type: "json_object" };
   }
 
+  // ---------- P0-10: Prompt cache lookup (non-streaming only) ----------
+  //
+  // Streaming responses can't be safely replayed from cache because the
+  // caller has already attached an onToken callback expecting live
+  // tokens. Skip the cache when streaming.
+  //
+  // The cache key includes everything that affects the output: the
+  // full message history, the tool catalog, the model name, and the
+  // sampling parameters. Two requests with identical keys would
+  // produce identical responses (temperature is fixed at call time
+  // and included in the key).
+  if (!opts.stream) {
+    const cachePrompt = JSON.stringify(opts.messages) + JSON.stringify(opts.tools || []);
+    const cacheContext = `${model}:${opts.temperature ?? 0.4}:${opts.maxTokens ?? 2048}:${opts.json ? "json" : "text"}`;
+    const cached = getCachedPrompt(cachePrompt, cacheContext);
+    if (cached !== null) {
+      logger.debug(
+        { module: "llm-provider", model, cache: "hit" },
+        "Prompt cache hit — returning cached result without calling NVIDIA."
+      );
+      return {
+        content: cached,
+        tokensUsed: estimateTokens(cached),
+        model,
+        provider: "nvidia",
+      };
+    }
+  }
+
   const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
   const res = await fetch(url, {
     method: "POST",
@@ -270,6 +300,18 @@ async function nvidiaCompleteSingle(
   let content = msg?.content ?? "";
   if (!content && (msg?.reasoning_content || msg?.reasoning)) {
     content = msg.reasoning_content || msg.reasoning || "";
+  }
+
+  // ---------- P0-10: store non-streaming result in prompt cache ----------
+  //
+  // Only non-empty content is cached — empty content usually indicates
+  // a reasoning model that put its output in `reasoning_content` (which
+  // we DID fold into `content` above, so this guard is just defensive).
+  // The cache key matches the one used in the lookup above.
+  if (content) {
+    const cachePrompt = JSON.stringify(opts.messages) + JSON.stringify(opts.tools || []);
+    const cacheContext = `${model}:${opts.temperature ?? 0.4}:${opts.maxTokens ?? 2048}:${opts.json ? "json" : "text"}`;
+    setCachedPrompt(cachePrompt, content, cacheContext);
   }
 
   return {

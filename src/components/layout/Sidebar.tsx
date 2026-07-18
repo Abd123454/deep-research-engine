@@ -102,8 +102,8 @@ export const Sidebar = React.memo(function Sidebar({
               <span className="font-body text-lg font-semibold text-[#2a2620] dark:text-[#e8e3d8]">
                 Quaesitor
               </span>
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 ml-auto lg:hidden">
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7 ml-auto lg:hidden" aria-label="Close sidebar">
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
 
@@ -112,8 +112,9 @@ export const Sidebar = React.memo(function Sidebar({
               <button
                 onClick={onNewChat}
                 className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg bg-[#8b4513] dark:bg-[#b5673a] px-3 py-2 font-ui text-sm font-medium text-[#faf8f3] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] transition-colors"
+                aria-label="Start a new chat"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-4 w-4" aria-hidden="true" />
                 New Chat
               </button>
             </div>
@@ -125,6 +126,7 @@ export const Sidebar = React.memo(function Sidebar({
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search conversations..."
+                  aria-label="Search conversations"
                   className="w-full bg-[#d9d4c7]/50 dark:bg-[#322e28]/50 border-0 rounded-lg pl-9 pr-3 py-2 font-ui text-sm text-[#2a2620] dark:text-[#e8e3d8] placeholder:text-[#6b6358] outline-none focus:ring-2 focus:ring-[#8b4513]/20"
                   style={{ boxShadow: "none", minHeight: "auto" }}
                 />
@@ -159,7 +161,7 @@ export const Sidebar = React.memo(function Sidebar({
                             >
                               <Icon className="h-3.5 w-3.5 shrink-0 text-[#6b6358]" />
                               <span className="font-body text-sm text-[#2a2620] dark:text-[#e8e3d8] truncate flex-1">{c.title}</span>
-                              <Trash2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-[#6b6358] hover:text-[#a33a3a] transition-opacity shrink-0" />
+                              <Trash2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-[#6b6358] hover:text-[#a33a3a] transition-opacity shrink-0" aria-hidden="true" />
                             </button>
                           );
                         })}
@@ -172,7 +174,7 @@ export const Sidebar = React.memo(function Sidebar({
 
             <div className="shrink-0 border-t border-[#d9d4c7] dark:border-[#3d3830] p-3 flex items-center justify-between">
               <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Settings">
-                <Settings className="h-4 w-4 text-[#6b6358] dark:text-[#9a9080]" />
+                <Settings className="h-4 w-4 text-[#6b6358] dark:text-[#9a9080]" aria-hidden="true" />
               </Button>
               <div className="flex items-center gap-1">
                 <LanguageToggle />

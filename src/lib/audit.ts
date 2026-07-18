@@ -49,6 +49,11 @@ export const SENSITIVE_ACTIONS = {
   // ageConfirmation) is logged with this slug so the consent ledger is
   // fully auditable. See /api/consent.
   "consent.update": "consent",
+  // GDPR Art. 20 (subset) — memory portability. The full account export
+  // (`account.export`) covers memories as part of the bundle; this slug
+  // is for the narrower `/api/memory/export` endpoint that exports ONLY
+  // the user's long-term memories + embeddings + access metadata.
+  "memory.export": "memory",
 } as const;
 
 export type SensitiveAction = keyof typeof SENSITIVE_ACTIONS;

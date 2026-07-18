@@ -13,9 +13,15 @@ import {
   getSmartModels,
   getFastModel,
 } from "../llm-provider";
+import { clearPromptCache } from "../prompt-cache";
 
 beforeEach(() => {
   fetchMock.mockReset();
+  // Clear the in-process prompt cache so tests don't leak cached
+  // results into each other (P0-10 wired the cache into
+  // nvidiaCompleteSingle — without this, a passing test that wrote
+  // to the cache could mask a fetch-mock assertion in the next test).
+  clearPromptCache();
   // Set env for tests
   process.env.NVIDIA_API_KEY = "test-key";
   process.env.NVIDIA_BASE_URL = "https://integrate.api.nvidia.com/v1";

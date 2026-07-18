@@ -40,6 +40,12 @@ import {
   parseCitations,
   type CitationSource,
 } from "@/components/CitationHoverCard";
+// P0-104: per-message thumbs up/down feedback. Renders inline below
+// each assistant message. Posts to /api/feedback with the message
+// index as `context.messageId` and the conversation ID as
+// `context.conversationId` so admin stats can correlate ratings to
+// specific responses.
+import { FeedbackButtons } from "@/components/FeedbackButtons";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -516,9 +522,22 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                   className="flex size-7 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
                   aria-label="Copy"
                 >
-                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#8b4513]" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#8b4513]" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
                 </button>
               </div>
+              {/* P0-104: per-message feedback. Always visible (not part
+                  of the hover-only action bar) so the user can rate
+                  without first hovering. `messageId` uses the array
+                  index as a stable identifier — ChatCard only ever
+                  appends messages (never reorders or deletes), so the
+                  index is a safe correlation key for the /api/feedback
+                  endpoint's `context.messageId` field. */}
+              {!streaming && (
+                <FeedbackButtons
+                  messageId={`${conversationId || "init"}-${i}`}
+                  conversationId={conversationId}
+                />
+              )}
             </div>
           )
         ))}
@@ -537,7 +556,23 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               )}
             </div>
             <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
-              <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
+              {/* P0-24: Streaming token animation. Wraps the streaming
+                  block in a motion.span that fades opacity from 0.6 → 1
+                  on mount (when the first token arrives). The fade
+                  re-triggers subtly as `streamingResponse` updates
+                  because motion re-evaluates `animate` on each render,
+                  but the duration is short (80ms) and the prop stays
+                  `opacity: 1` so there's no visible flicker — just a
+                  gentle "settling" feel as the block grows. We do NOT
+                  key the span by response length (that would remount
+                  the ReactMarkdown tree on every token — too expensive). */}
+              <motion.span
+                initial={{ opacity: 0.6 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.08, ease: "easeOut" }}
+              >
+                <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
+              </motion.span>
               <span className="inline-block h-4 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
             </div>
             {/* P0-5: streaming artifact affordance. While `detectArtifactStream`
@@ -554,7 +589,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
                   aria-label={`Open ${streamArtifact.type} artifact in side panel`}
                   title={`Open ${streamArtifact.type} artifact in side panel (partial — full content will arrive when streaming completes)`}
                 >
-                  <PanelRight className="h-3.5 w-3.5" />
+                  <PanelRight className="h-3.5 w-3.5" aria-hidden="true" />
                   Artifact detected
                   <span className="text-[#6b6358] dark:text-[#9a9080] font-normal">→</span>
                 </button>
@@ -632,7 +667,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#2a2620] dark:bg-[#e8e3d8] text-[#e8e3d8] dark:text-[#2a2620] hover:bg-[#3d3830] dark:hover:bg-[#d9d4c7] transition-colors"
               aria-label="Stop generating"
             >
-              <Square className="h-3.5 w-3.5 fill-current" />
+              <Square className="h-3.5 w-3.5 fill-current" aria-hidden="true" />
             </button>
           ) : (
             <button
@@ -641,7 +676,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#8b4513] dark:bg-[#b5673a] text-[#faf8f3] hover:bg-[#6b3410] dark:hover:bg-[#8b4513] disabled:opacity-30 transition-colors"
               aria-label="Send"
             >
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           )}
         </form>

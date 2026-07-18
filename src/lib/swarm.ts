@@ -36,6 +36,7 @@
 // Cancellation: the caller passes an AbortSignal. When aborted, all
 // in-flight LLM calls are cancelled and the swarm stops.
 
+import crypto from "crypto";
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { detectToolCall, executeToolCall, getToolsDescription, type ToolCall } from "./agent-tools";
 import { logger } from "./logger";
@@ -336,16 +337,51 @@ function detectToolCalls(response: string): ToolCall[] {
   return calls;
 }
 
-/** Hash a (tool, params) tuple for loop-degeneration tracking. */
-function hashToolCall(call: ToolCall): string {
-  // Stable JSON serialization: sort keys so {"a":1,"b":2} and {"b":2,"a":1}
-  // hash the same. We only care about EXACT repeats, so this is sufficient.
-  try {
-    const stable = JSON.stringify(call.params, Object.keys(call.params).sort());
-    return `${call.tool}::${stable}`;
-  } catch {
-    return `${call.tool}::${JSON.stringify(call.params)}`;
+/** Recursively stable JSON serialization.
+ *
+ * P0-39 (audit fix): the previous implementation used
+ * `JSON.stringify(call.params, Object.keys(call.params).sort())` which
+ * ONLY sorts top-level keys. Nested objects retained their insertion
+ * order, so `{"a":{"x":1,"y":2}}` and `{"a":{"y":2,"x":1}}` hashed
+ * differently — a real degenerate loop where the model reorders nested
+ * keys (which it does, because JSON object key order is not
+ * semantically meaningful) was not detected.
+ *
+ * This implementation walks the entire object tree, sorting keys at
+ * every depth. Arrays preserve element order (which is semantically
+ * meaningful for `["a","b"]` vs `["b","a"]`).
+ */
+function stableStringify(obj: unknown): string {
+  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
+  if (Array.isArray(obj)) {
+    return "[" + obj.map(stableStringify).join(",") + "]";
   }
+  const keys = Object.keys(obj as Record<string, unknown>).sort();
+  return (
+    "{" +
+    keys
+      .map(
+        (k) =>
+          JSON.stringify(k) +
+          ":" +
+          stableStringify((obj as Record<string, unknown>)[k])
+      )
+      .join(",") +
+    "}"
+  );
+}
+
+/** Hash a (tool, params) tuple for loop-degeneration tracking.
+ *
+ * Uses `stableStringify` (recursive key sort) so two semantically
+ * identical calls with differently-ordered keys hash to the same
+ * value. This is the actual loop-degeneration signal we care about —
+ * the model is "doing the same thing" regardless of which order it
+ * emitted the JSON keys in.
+ */
+function hashToolCall(call: ToolCall): string {
+  const stable = stableStringify(call.params);
+  return crypto.createHash("sha256").update(`${call.tool}:${stable}`).digest("hex");
 }
 
 export async function runWorker(
@@ -414,39 +450,108 @@ export async function runWorker(
       return result.content;
     }
 
-    // Cap the fan-out to MAX_PARALLEL_TOOL_CALLS to avoid tripping rate
-    // limits on wide fan-out (Kimi §2.6 — the model decides how many to
-    // emit; we just cap the worst case).
-    const callsToRun = allowedCalls.slice(0, MAX_PARALLEL_TOOL_CALLS);
+    // P0-40: process ALL detected tool calls in batches of
+    // MAX_PARALLEL_TOOL_CALLS. Each batch runs its tool calls in parallel
+    // via Promise.all; batches run sequentially to bound the per-batch
+    // rate-limit fan-out (Kimi §2.6 — the model decides how many to emit;
+    // we cap the worst-case concurrency at 4).
+    //
+    // Previously this code TRUNCATED to the first 4 calls and dropped
+    // the rest. The audit flagged this as a correctness bug: if the
+    // model emitted 6 search queries, queries 5 and 6 were silently
+    // discarded and the model had no way to know — it would re-emit
+    // them on the next iteration, wasting a turn. Batching executes
+    // every requested call.
     if (allowedCalls.length > MAX_PARALLEL_TOOL_CALLS) {
       logger.warn(
-        { module: "swarm", agentId, role: subtask.role, requested: allowedCalls.length, capped: MAX_PARALLEL_TOOL_CALLS },
-        "Worker requested more parallel tool calls than the cap — truncating"
+        {
+          module: "swarm",
+          agentId,
+          role: subtask.role,
+          requested: allowedCalls.length,
+          cap: MAX_PARALLEL_TOOL_CALLS,
+          batches: Math.ceil(allowedCalls.length / MAX_PARALLEL_TOOL_CALLS),
+        },
+        "Worker requested more parallel tool calls than the cap — running in batches"
       );
     }
 
-    // Loop-degeneration check: if any of the calls we're about to make has
-    // already been attempted LOOP_DETECTION_THRESHOLD times, break the loop
-    // with an explicit error message instead of retrying.
-    //
-    // Semantics: "3+ times with identical arguments" means after the 3rd
-    // call has executed, the 4th attempt is blocked. So we break when
-    // callCounts >= LOOP_DETECTION_THRESHOLD.
-    const degenerate = callsToRun.find((c) => {
-      const h = hashToolCall(c);
-      return (callCounts.get(h) || 0) >= LOOP_DETECTION_THRESHOLD;
-    });
-    if (degenerate) {
+    const allResults: Array<{ call: ToolCall; result: { success: boolean; output: string } }> = [];
+    let degenerateCall: ToolCall | null = null;
+
+    for (
+      let batchStart = 0;
+      batchStart < allowedCalls.length;
+      batchStart += MAX_PARALLEL_TOOL_CALLS
+    ) {
+      const batch = allowedCalls.slice(batchStart, batchStart + MAX_PARALLEL_TOOL_CALLS);
+
+      // Loop-degeneration check (per batch): if any call in THIS batch
+      // has already been attempted LOOP_DETECTION_THRESHOLD times, stop
+      // processing further batches and surface the degenerate call to
+      // the model. We still feed back the results collected so far.
+      const degenerate = batch.find((c) => {
+        const h = hashToolCall(c);
+        return (callCounts.get(h) || 0) >= LOOP_DETECTION_THRESHOLD;
+      });
+      if (degenerate) {
+        degenerateCall = degenerate;
+        break;
+      }
+
+      // Record call counts for loop detection (before execution — the
+      // count reflects "attempted", matching the original semantics
+      // where "3+ times attempted with identical args" trips the guard).
+      for (const c of batch) {
+        const h = hashToolCall(c);
+        callCounts.set(h, (callCounts.get(h) || 0) + 1);
+      }
+
+      // Emit tool-start events (one per call in this batch).
+      for (const c of batch) {
+        emit({ type: "agent_tool", agentId, tool: c.tool, params: c.params });
+      }
+
+      // Kimi P0-2: run all tool calls in the batch in parallel via
+      // Promise.all. Per-batch wall-clock latency drops by ~N× compared
+      // to serial execution.
+      const batchResults = await Promise.all(
+        batch.map((c) => executeToolCall(c))
+      );
+
+      // Emit tool-result events + collect for the feedback message.
+      for (let i = 0; i < batchResults.length; i++) {
+        const tr = batchResults[i]!;
+        emit({
+          type: "agent_result",
+          agentId,
+          tool: batch[i]!.tool,
+          result: tr.output.slice(0, 2000),
+        });
+        allResults.push({ call: batch[i]!, result: tr });
+      }
+    }
+
+    // Feed all tool results back to the model.
+    messages.push({ role: "assistant", content: result.content });
+
+    if (degenerateCall) {
+      // Loop-degeneration: stop retrying and ask the model for a final
+      // answer with what it has so far.
       const msg =
-        `Loop-degeneration detected: tool "${degenerate.tool}" has been called ` +
+        `Loop-degeneration detected: tool "${degenerateCall.tool}" has been called ` +
         `${LOOP_DETECTION_THRESHOLD}+ times with identical arguments without progress. ` +
         `Breaking the ReAct loop to avoid wasting the worker's token budget. ` +
         `(Kimi/Trilogy production post-mortem mitigation.)`;
-      logger.warn({ module: "swarm", agentId, tool: degenerate.tool }, msg);
-      messages.push({ role: "assistant", content: result.content });
+      logger.warn({ module: "swarm", agentId, tool: degenerateCall.tool }, msg);
+      const partialSummary = allResults.length > 0
+        ? allResults
+            .map((r) => `Tool ${r.call.tool} result:\n${r.result.output.slice(0, 1500)}`)
+            .join("\n\n")
+        : "(no prior tool results)";
       messages.push({
         role: "user",
-        content: `${msg}\n\nStop retrying this tool call. Either use a different tool, fix the arguments, or give your final answer with what you have so far.`,
+        content: `${partialSummary}\n\n${msg}\n\nStop retrying this tool call. Either use a different tool, fix the arguments, or give your final answer with what you have so far.`,
       });
       // Give the model one more turn to recover (no further tool calls will
       // be allowed once it responds — the next iteration will return its
@@ -454,47 +559,20 @@ export async function runWorker(
       continue;
     }
 
-    // Record the call counts for loop detection.
-    for (const c of callsToRun) {
-      const h = hashToolCall(c);
-      callCounts.set(h, (callCounts.get(h) || 0) + 1);
-    }
-
-    // Emit tool-start events (one per call).
-    for (const c of callsToRun) {
-      emit({ type: "agent_tool", agentId, tool: c.tool, params: c.params });
-    }
-
-    // Kimi P0-2: run all tool calls in parallel via Promise.all.
-    // The worker's wall-clock latency on wide-fanout research tasks drops
-    // by ~N× compared to serial execution.
-    const toolResults = await Promise.all(
-      callsToRun.map((c) => executeToolCall(c))
-    );
-
-    // Emit tool-result events.
-    for (let i = 0; i < toolResults.length; i++) {
-      const tr = toolResults[i]!;
-      emit({ type: "agent_result", agentId, tool: callsToRun[i]!.tool, result: tr.output.slice(0, 2000) });
-    }
-
-    // Feed all tool results back to the model.
-    messages.push({ role: "assistant", content: result.content });
-
     // Verifier loop: if ANY tool failed, ask the model to fix and retry.
     // If all succeeded, just continue with the results.
-    const failed = toolResults.filter((r) => !r.success);
+    const failed = allResults.filter((r) => !r.result.success);
     if (failed.length > 0) {
       const failureSummary = failed
-        .map((r, i) => `Tool ${callsToRun[i]!.tool} failed:\n${r.output.slice(0, 1500)}`)
+        .map((r) => `Tool ${r.call.tool} failed:\n${r.result.output.slice(0, 1500)}`)
         .join("\n\n");
       messages.push({
         role: "user",
         content: `${failureSummary}\n\nPlease fix the issue(s) and try again. If you've already retried and it still fails, explain the error in your final answer.`,
       });
     } else {
-      const successSummary = toolResults
-        .map((r, i) => `Tool ${callsToRun[i]!.tool} result:\n${r.output.slice(0, 1500)}`)
+      const successSummary = allResults
+        .map((r) => `Tool ${r.call.tool} result:\n${r.result.output.slice(0, 1500)}`)
         .join("\n\n");
       messages.push({
         role: "user",
