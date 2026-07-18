@@ -207,6 +207,14 @@ export const ResearchCard = React.memo(function ResearchCard({ query, onStop }: 
                 onCopy={() => {}}
                 onDownload={() => {}}
                 streaming={phase === "researching" && !job.report}
+                // P0-8: pass sources + verification report so [N] citations
+                // in the report become interactive hover cards. While the
+                // report is streaming we pass `sources` anyway — the
+                // hover cards are inert until ReactMarkdown renders the
+                // final report (the streaming branch uses a <pre>, not
+                // ReactMarkdown, so citations stay as plain text).
+                sources={job.sources}
+                verificationReport={job.verificationReport ?? null}
               />
             )}
           </>

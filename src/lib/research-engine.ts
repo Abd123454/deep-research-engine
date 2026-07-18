@@ -29,6 +29,9 @@ import {
   wrapUserQuery,
   getInjectionDefensePrompt,
 } from "./prompt-security";
+// P0-6: Constitutional Self-Critique Pass — inline [verified] /
+// [unverified] / [contradicted] markers added by a second LLM call.
+import { SELF_CRITIQUE_PROMPT } from "./prompts/self-critique";
 import { randomUUID } from "crypto";
 import type {
   ResearchConfig,
@@ -41,6 +44,7 @@ import type {
   SearchResultItem,
   PageReadResult,
   SubQueryRound,
+  Source,
 } from "./types";
 
 export function resolveConfig(
@@ -876,6 +880,98 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
   return gapAnalysis;
 }
 
+// ---------- P0-6: Constitutional Self-Critique Pass ----------
+//
+// After the existing rewrite-style critique pass (which may improve prose
+// clarity and catch missing citations), a SECOND LLM call analyzes the
+// report's factual claims and inserts inline markers:
+//
+//   [verified]     — the cited source directly supports the claim
+//   [unverified]   — the source is cited but doesn't clearly support it
+//   [contradicted] — the source contradicts the claim
+//
+// This pass is NON-DESTRUCTIVE: it must not remove content or add new
+// claims, only insert markers. The output is subject to a length-ratio
+// guard (0.9x–1.6x of the input) — if the LLM ignores instructions and
+// rewrites or truncates the report, the original is returned unchanged.
+//
+// Wrapped in try/catch at the call site — if the LLM call fails, the
+// original report is used (the user is never blocked by a critique error).
+//
+// The annotated report is saved as `job.report` (the user-facing version).
+// The streamed tokens (`job.reportStream`) are unaffected — they're the
+// raw LLM output without markers.
+
+async function selfCritiquePass(
+  report: string,
+  sources: Source[],
+  llm: Awaited<ReturnType<typeof getLLM>>,
+  config: ResearchConfig
+): Promise<string> {
+  // Skip when the report is too short to contain factual claims worth
+  // annotating. 500 chars matches the existing rewrite-critique gate.
+  if (!report || report.length < 500) return report;
+  // Skip when there are no sources to verify against — without sources
+  // the LLM has nothing to cross-reference and would just parrot the
+  // report back (or hallucinate markers).
+  if (!sources || sources.length === 0) return report;
+
+  // Build a numbered source index the LLM can map [N] citations to.
+  // Only sources with an excerpt/text are useful for verification.
+  const sourcesBlock = sources
+    .filter((s) => s.excerpt || s.url)
+    .slice(0, 40) // cap to keep prompt size bounded
+    .map((s, i) => {
+      const excerpt = (s.excerpt || "").slice(0, 400);
+      const date = s.publishedTime ? ` (${s.publishedTime.slice(0, 10)})` : "";
+      return `[${i + 1}] ${s.title || "(untitled)"}${date} — ${s.host}\n    URL: ${s.url}\n    Excerpt: ${excerpt || "(no excerpt available)"}`;
+    })
+    .join("\n");
+
+  if (!sourcesBlock) return report;
+
+  const sys: LLMMessage = {
+    role: "system",
+    content: SELF_CRITIQUE_PROMPT,
+  };
+  const user: LLMMessage = {
+    role: "user",
+    content: `${SELF_CRITIQUE_PROMPT}${report}\n\n# Source Index\n${sourcesBlock}\n\n# Task\nAnnotate the report above with inline [verified] / [unverified] / [contradicted] markers based on the source index. Return the FULL report with markers — do not truncate, do not summarize, do not add new claims.`,
+  };
+
+  const result = await llm.smart({
+    messages: [sys, user],
+    maxTokens: Math.min(config.reportMaxTokens + 1500, 16000),
+    temperature: 0.2, // low temperature — fact-checking should be deterministic
+  });
+
+  const annotated = result.content;
+
+  // Guard: reject outputs that don't preserve the report's structure.
+  // The annotated version should be slightly LONGER than the original
+  // (markers add chars) but never substantially shorter or absurdly
+  // longer. Accept 0.9x–1.6x of the original length.
+  const ratio = annotated.length / report.length;
+  if (annotated.length < 200 || ratio < 0.9 || ratio > 1.6) {
+    return report;
+  }
+
+  // Guard: must contain at least one marker (otherwise the LLM didn't
+  // do the task). Also reject if it lost more than 30% of the original
+  // section headings (a heuristic for "rewrote instead of annotated").
+  const markerCount = (annotated.match(/\[(?:verified|unverified|contradicted)\]/g) || []).length;
+  if (markerCount === 0) {
+    return report;
+  }
+  const originalHeadings = (report.match(/^#{1,6}\s/gm) || []).length;
+  const annotatedHeadings = (annotated.match(/^#{1,6}\s/gm) || []).length;
+  if (originalHeadings > 0 && annotatedHeadings < originalHeadings * 0.7) {
+    return report;
+  }
+
+  return annotated;
+}
+
 // ---------- Stage 6: Synthesis ----------
 
 async function synthesizeReport(
@@ -1046,6 +1142,38 @@ Write a comprehensive long-form Deep Research report answering the original quer
   Sentry.captureException(err);
 /* ignore — follow-ups are nice-to-have */ 
 }
+
+  // P0-6: Constitutional Self-Critique Pass — a SECOND LLM call annotates
+  // the report with inline [verified] / [unverified] / [contradicted]
+  // markers based on the cited sources. Runs AFTER the rewrite-style
+  // critique pass and AFTER follow-up question generation (so follow-ups
+  // see the original, unannotated prose) and BEFORE the bias disclaimer
+  // (so the disclaimer isn't itself "fact-checked"). Wrapped in
+  // try/catch — if the LLM call fails, the original report is used and
+  // the user is never blocked.
+  try {
+    think(job, "synthesizing", "Running constitutional self-critique pass — annotating claims with [verified] / [unverified] / [contradicted] markers...");
+    const annotated = await selfCritiquePass(finalReport, job.sources, llm, config);
+    if (annotated !== finalReport) {
+      // The function returned a different string → annotation happened.
+      const markers = (annotated.match(/\[(?:verified|unverified|contradicted)\]/g) || []).length;
+      log(job, "success", "synthesizing", `Self-critique pass annotated ${markers} claim${markers === 1 ? "" : "s"} with verification markers.`);
+      think(job, "synthesizing",
+        `Self-critique complete — ${markers} claim${markers === 1 ? " was" : "s were"} annotated with [verified] / [unverified] / [contradicted] markers based on the cited sources.`,
+        "Hover any [N] citation in the report to inspect the source's verification status."
+      );
+      finalReport = annotated;
+    } else {
+      // Either the report was too short, no sources, or the LLM output
+      // failed the length-ratio/marker-count guards. Silently fall back.
+      log(job, "info", "synthesizing", "Self-critique pass skipped (report too short, no sources, or LLM output failed guards).");
+    }
+  } catch (err) {
+    // Non-fatal: keep the original report. The user is never blocked by
+    // a critique error.
+    Sentry.captureException(err);
+    log(job, "warn", "synthesizing", `Self-critique pass failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
 
   return appendBiasDisclaimer(finalReport);
 }

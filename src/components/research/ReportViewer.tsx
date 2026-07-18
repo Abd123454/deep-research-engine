@@ -10,6 +10,17 @@ import { LOG_COLORS, LOG_PREFIX } from "@/lib/research-ui-utils";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
 import { CompassLogo } from "@/components/CompassLogo";
+// P0-8: inline citation hover cards. parseCitations splits a text node
+// into strings + <CitationHoverCard> elements based on [N] patterns.
+// When sources are provided (research reports have them), citations
+// become interactive hover cards showing the source title, URL, tier
+// badge, and verification status.
+import {
+  parseCitations,
+  type CitationSource,
+} from "@/components/CitationHoverCard";
+import type { Source } from "@/lib/types";
+import type { VerificationReport } from "@/lib/citation-verifier";
 
 // ---------- ReportViewer ----------
 
@@ -20,10 +31,99 @@ interface ReportViewerProps {
   onDownload: () => void;
   // If true, the report is being streamed token-by-token. Show a typing cursor.
   streaming?: boolean;
+  /**
+   * P0-8: optional source list for inline citation hover cards. When
+   * provided, [N] patterns in the report become interactive hover cards
+   * (popover with title, URL, tier badge, verified badge). When absent,
+   * citations render as plain [N] text.
+   */
+  sources?: Source[] | null;
+  /**
+   * P0-8: optional verification report from the citation-verifier. When
+   * provided, each citation hover card shows a verified/unverified/
+   * contradicted badge based on the verifier's outcome for that URL.
+   */
+  verificationReport?: VerificationReport | null;
 }
 
-export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, streaming }: ReportViewerProps) {
+export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, streaming, sources, verificationReport }: ReportViewerProps) {
   const t = useT();
+
+  // P0-8: build a citation-number → verification-status map from the
+  // verifier's report. The verifier reports per-URL status; we map each
+  // source's URL to its status, then index by citation number (1-based)
+  // to match the [N] patterns in the report.
+  const verificationMap = React.useMemo(() => {
+    if (!verificationReport || !sources || sources.length === 0) return null;
+    const m = new Map<number, "verified" | "unverified" | "contradicts">();
+    // For each source (indexed 1..N), find the matching verifier detail
+    // entry by URL and record its status.
+    for (let i = 0; i < sources.length; i++) {
+      const src = sources[i]!;
+      const detail = verificationReport.details.find(
+        (d) => d.url === src.url || d.url.replace(/\/$/, "") === src.url.replace(/\/$/, "")
+      );
+      if (detail) {
+        m.set(i + 1, detail.supportsClaim);
+      }
+    }
+    return m;
+  }, [verificationReport, sources]);
+
+  // P0-8: convert the engine's Source[] to the looser CitationSource[]
+  // shape that CitationHoverCard accepts. We do this once per render
+  // (cheap — just a map over the array).
+  const citationSources: CitationSource[] | null = React.useMemo(() => {
+    if (!sources || sources.length === 0) return null;
+    return sources.map((s) => ({
+      url: s.url,
+      title: s.title,
+      host: s.host,
+      excerpt: s.excerpt,
+      publishedTime: s.publishedTime,
+    }));
+  }, [sources]);
+
+  // P0-8: walk markdown children, replacing [N] patterns with hover
+  // cards. Mirrors the ChatCard implementation. When `citationSources`
+  // is null (no sources), children pass through unchanged — preserving
+  // the pre-existing rendering.
+  const renderWithCitations = React.useCallback(
+    (children: React.ReactNode): React.ReactNode => {
+      if (!citationSources) return children;
+      if (typeof children === "string") {
+        return parseCitations(children, citationSources, verificationMap);
+      }
+      if (Array.isArray(children)) {
+        return children.map((child, i) => {
+          if (typeof child === "string") {
+            return (
+              <React.Fragment key={i}>
+                {parseCitations(child, citationSources, verificationMap)}
+              </React.Fragment>
+            );
+          }
+          return child;
+        });
+      }
+      return children;
+    },
+    [citationSources, verificationMap]
+  );
+
+  // Quaesitor markdown components — same as ChatCard but with citation
+  // support. We define them inline (not as a shared constant) because
+  // they close over `renderWithCitations` which depends on the source
+  // list (which differs per report).
+  const markdownComponents: Record<string, React.ComponentType<any>> = {
+    p: ({ children }: any) => <p>{renderWithCitations(children)}</p>,
+    li: ({ children }: any) => <li>{renderWithCitations(children)}</li>,
+    h1: ({ children }: any) => <h1>{renderWithCitations(children)}</h1>,
+    h2: ({ children }: any) => <h2>{renderWithCitations(children)}</h2>,
+    h3: ({ children }: any) => <h3>{renderWithCitations(children)}</h3>,
+    h4: ({ children }: any) => <h4>{renderWithCitations(children)}</h4>,
+  };
+
   return (
     <Card className="border-border/70">
       <CardContent className="p-0">
@@ -63,7 +163,7 @@ export function ReportViewer({ report, copied, onCopy, onDownload: _onDownload, 
           {streaming ? (
             <pre className="whitespace-pre-wrap text-sm font-ui not-prose">{report}<span className="inline-block h-4 w-2 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse align-text-bottom" /></pre>
           ) : (
-            <ReactMarkdown>{report}</ReactMarkdown>
+            <ReactMarkdown components={markdownComponents}>{report}</ReactMarkdown>
           )}
         </article>
       </CardContent>

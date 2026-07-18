@@ -12,9 +12,14 @@ import {
   saveMessage,
   getHistory,
 } from "@/lib/chat-store";
+// P0-2 (intensive audit): import MAX_TOOL_ITERATIONS from the shared
+// swarm-constants module so the agent loop and the swarm share the same
+// budget. Previously this route had a local `= 5` while the swarm used
+// `= 15`, causing inconsistent tool-call ceilings depending on the
+// entrypoint.
+import { MAX_TOOL_ITERATIONS } from "@/lib/swarm-constants";
 
 const MAX_HISTORY = 20;
-const MAX_TOOL_ITERATIONS = 5;
 const DEFAULT_USER_ID = "default";
 
 export async function POST(req: NextRequest) {

@@ -14,6 +14,11 @@ import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 import type { LongTermMemoryRow, RawVectorSearchRow } from "./sqlite-types";
 import { logger } from "./logger";
+// P0-3 (intensive audit): ensure the pgvector extension + embedding
+// columns exist on the Postgres side before attempting a vector search.
+// Lazy + idempotent — runs once per process, then becomes a no-op.
+// SQLite path is unaffected (the function returns immediately).
+import { ensurePgvector } from "./pgvector-migration";
 
 const DEFAULT_USER_ID = "default";
 
@@ -57,6 +62,12 @@ export async function recallRelevantMemories(
   const embeddingResult = await embed(query);
   if (embeddingResult.vector.length > 0 && isPostgresAvailable()) {
     try {
+      // P0-3: ensure the `vector` extension + `embedding` column exist
+      // on the Postgres side before issuing a cosine-similarity query.
+      // Without this, the raw SQL below would throw `column "embedding"
+      // does not exist` on a fresh Postgres install. The function is
+      // idempotent (cached after first success).
+      await ensurePgvector();
       const prisma = await getPrismaDb();
       if (prisma) {
         // pgvector cosine similarity search via raw SQL.

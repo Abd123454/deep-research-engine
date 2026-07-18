@@ -7,7 +7,7 @@ import * as Sentry from "@sentry/nextjs";
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Square, Copy, Check, Leaf, Lightbulb } from "lucide-react";
+import { ArrowRight, Square, Copy, Check, Leaf, Lightbulb, PanelRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import {
   estimateChatCarbon,
@@ -19,6 +19,27 @@ import {
   getCriticalThinkingPrompt,
   shouldShowCriticalThinkingPrompt,
 } from "@/lib/critical-thinking";
+// P0-5: streaming artifact detection. During the stream we run
+// `detectArtifactStream` (throttled to 200ms) on the partial response.
+// If an opening marker is detected, an "Artifact detected →" button
+// appears in the assistant message footer; clicking it calls
+// `onArtifact` with the partial artifact so the parent can open the
+// ArtifactsPanel. On stream completion, the canonical `detectArtifact`
+// pass runs and `onArtifact` is called with the final version.
+import {
+  detectArtifact as detectArtifactFinal,
+  detectArtifactStream,
+  type Artifact,
+} from "@/lib/artifact-detector";
+// P0-8: inline citation hover cards. The parseCitations helper splits a
+// text node into strings + <CitationHoverCard> elements based on [N]
+// patterns. When no `sources` array is provided (chat transcripts don't
+// currently carry source metadata), CitationHoverCard renders the plain
+// `[N]` text — visually identical to the pre-existing behavior.
+import {
+  parseCitations,
+  type CitationSource,
+} from "@/components/CitationHoverCard";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -37,9 +58,20 @@ interface ProviderAttribution {
 interface ChatCardProps {
   initialMessage: string;
   conversationId?: string;
+  /** Called when an artifact is detected (streaming or final). */
+  onArtifact?: (a: Artifact | null) => void;
+  /**
+   * P0-8: optional source list for inline citation hover cards. When
+   * provided, `[1]` / `[2]` / etc. patterns in the assistant's messages
+   * become interactive hover cards (popover with title, URL, tier
+   * badge, verified badge). When absent (the default — chat API doesn't
+   * currently send sources), citations render as plain `[N]` text,
+   * preserving the pre-existing behavior.
+   */
+  sources?: CitationSource[];
 }
 
-export const ChatCard = React.memo(function ChatCard({ initialMessage, conversationId: initialConvId }: ChatCardProps) {
+export const ChatCard = React.memo(function ChatCard({ initialMessage, conversationId: initialConvId, onArtifact, sources }: ChatCardProps) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([
     { role: "user", content: initialMessage },
   ]);
@@ -60,14 +92,75 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   // completes (not on every render, so it doesn't reshuffle). Persists
   // across follow-ups; reset only when a new response finishes.
   const [criticalThinkingPrompt, setCriticalThinkingPrompt] = React.useState<string | null>(null);
+  // P0-5: partial artifact detected during streaming. While non-null, a
+  // small "Artifact detected →" button is rendered below the streaming
+  // response. Clicking it calls `onArtifact` with the current partial
+  // (the parent opens the ArtifactsPanel). Cleared on stream completion
+  // and replaced with the canonical artifact via `detectArtifact`.
+  const [streamArtifact, setStreamArtifact] = React.useState<Artifact | null>(null);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const abortRef = React.useRef<AbortController | null>(null);
+  // Throttle token for the streaming artifact check: we only run
+  // `detectArtifactStream` at most once per 200ms even if tokens are
+  // arriving faster. This keeps the main thread responsive on long
+  // responses (the regex search is O(n) on the last 500 chars).
+  const lastStreamCheckRef = React.useRef(0);
 
   React.useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages, streamingResponse]);
+
+  // P0-5: streaming artifact detection. Runs throttled (≤ once / 200ms)
+  // on the latest `streamingResponse`. When an opening marker is found,
+  // we set `streamArtifact` so the "Artifact detected →" button appears.
+  // The check is cheap (regex on the last 500 chars) but we still throttle
+  // because token batches can arrive every few ms and we don't want to
+  // re-run the regex on every keystroke-equivalent.
+  React.useEffect(() => {
+    if (!streaming || !streamingResponse) return;
+    const now = Date.now();
+    if (now - lastStreamCheckRef.current < 200) return;
+    lastStreamCheckRef.current = now;
+    const detected = detectArtifactStream(streamingResponse);
+    // Only update state if the detection result CHANGED — avoids
+    // re-rendering the button every 200ms when the partial content is
+    // still flowing into the same artifact.
+    setStreamArtifact((prev) => {
+      const sameType = prev?.type === detected?.type;
+      if (sameType && detected) {
+        // Update the partial content in-place (the panel will re-render
+        // with the longer body). No need to return a new object if the
+        // content hasn't grown enough to matter — but a fresh ref keeps
+        // the parent's onArtifact callback in sync if it's open.
+        if (prev && prev.content === detected.content) return prev;
+        return detected;
+      }
+      return detected;
+    });
+  }, [streaming, streamingResponse]);
+
+  // P0-5: when the stream completes, run the canonical `detectArtifact`
+  // pass and clear the partial. If a final artifact is found, notify the
+  // parent (which opens the ArtifactsPanel). If none is found but a
+  // partial was visible, notify with `null` so the parent can close it.
+  React.useEffect(() => {
+    if (streaming) return;
+    if (!streamingResponse && messages.length === 0) return;
+    // Use the last assistant message (the one that just finished) as
+    // the input — `streamingResponse` has been cleared by this point.
+    const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+    const text = lastAssistant?.content || "";
+    if (!text) {
+      setStreamArtifact(null);
+      return;
+    }
+    const finalArtifact = detectArtifactFinal(text);
+    setStreamArtifact(null);
+    if (onArtifact) onArtifact(finalArtifact);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streaming]);
 
   // Build the "Quaesitor · <model> via <Provider> (<region>)" subtitle.
   const providerSubtitle = React.useMemo(() => {
@@ -327,20 +420,54 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const fullConversation = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
   void fullConversation;
 
+  // P0-8: walk markdown children, replacing [N] patterns in string
+  // children with <CitationHoverCard> elements. When `sources` is
+  // absent (chat API doesn't currently send source metadata), the
+  // function returns children unchanged — preserving the pre-existing
+  // rendering. Non-string children (elements like <strong>, <em>) are
+  // passed through; only direct string children are split, which is
+  // what react-markdown produces for inline text.
+  //
+  // The function is stable across renders: it closes over `sources`
+  // (which only changes when the parent passes a new array — typically
+  // never for ChatCard, since chat doesn't stream sources).
+  const renderWithCitations = React.useCallback(
+    (children: React.ReactNode): React.ReactNode => {
+      if (!sources || sources.length === 0) return children;
+      if (typeof children === "string") {
+        return parseCitations(children, sources);
+      }
+      if (Array.isArray(children)) {
+        return children.map((child, i) => {
+          if (typeof child === "string") {
+            return (
+              <React.Fragment key={i}>
+                {parseCitations(child, sources)}
+              </React.Fragment>
+            );
+          }
+          return child;
+        });
+      }
+      return children;
+    },
+    [sources]
+  );
+
   // Quaesitor markdown components — serif body, warm colors, persistent underlines
   const quaesitorMarkdownComponents: Record<string, React.ComponentType<any>> = {
-    p: ({ children }: any) => <p className="mb-4">{children}</p>,
+    p: ({ children }: any) => <p className="mb-4">{renderWithCitations(children)}</p>,
     code: ({ inline, children }: any) =>
       inline
         ? <code className="font-mono text-[14px] bg-[#d9d4c7] dark:bg-[#322e28] px-1 py-0.5 rounded">{children}</code>
         : <pre className="font-mono text-[14px] bg-[#f4f1ea] dark:bg-[#1c1a17] p-4 rounded-lg overflow-x-auto my-4 border border-[#d9d4c7] dark:border-[#3d3830]"><code>{children}</code></pre>,
     a: ({ href, children }: any) => <a href={href} className="text-[#8b4513] underline underline-offset-2 hover:text-[#6b3410]">{children}</a>,
-    h1: ({ children }: any) => <h1 className="font-body text-2xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h1>,
-    h2: ({ children }: any) => <h2 className="font-body text-xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h2>,
-    h3: ({ children }: any) => <h3 className="font-body text-lg font-semibold mt-4 mb-2 text-[#2a2620] dark:text-[#e8e3d8]">{children}</h3>,
+    h1: ({ children }: any) => <h1 className="font-body text-2xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h1>,
+    h2: ({ children }: any) => <h2 className="font-body text-xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h2>,
+    h3: ({ children }: any) => <h3 className="font-body text-lg font-semibold mt-4 mb-2 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h3>,
     ul: ({ children }: any) => <ul className="list-disc pl-6 my-4 space-y-1">{children}</ul>,
     ol: ({ children }: any) => <ol className="list-decimal pl-6 my-4 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="font-body text-[16px] leading-[1.7]">{children}</li>,
+    li: ({ children }: any) => <li className="font-body text-[16px] leading-[1.7]">{renderWithCitations(children)}</li>,
     blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#d9d4c7] dark:border-[#3d3830] pl-4 italic my-4 text-[#6b6358] dark:text-[#9a9080]">{children}</blockquote>,
     strong: ({ children }: any) => <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">{children}</strong>,
   };
@@ -413,6 +540,26 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
               <span className="inline-block h-4 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
             </div>
+            {/* P0-5: streaming artifact affordance. While `detectArtifactStream`
+                has fired (an opening marker is in the buffer), show a small
+                "Artifact detected →" button. Clicking it calls `onArtifact`
+                with the PARTIAL artifact so the parent can open the
+                ArtifactsPanel and render a live preview as the body streams in. */}
+            {streamArtifact && (
+              <div className="mt-2">
+                <button
+                  type="button"
+                  onClick={() => onArtifact?.(streamArtifact)}
+                  className="inline-flex items-center gap-1.5 rounded-md border border-[#8b4513]/30 dark:border-[#b5673a]/30 bg-[#8b4513]/5 dark:bg-[#b5673a]/10 px-2 py-1 font-ui text-[11px] font-medium text-[#8b4513] dark:text-[#b5673a] hover:border-[#8b4513]/50 dark:hover:border-[#b5673a]/50 hover:bg-[#8b4513]/10 dark:hover:bg-[#b5673a]/15 transition-colors"
+                  aria-label={`Open ${streamArtifact.type} artifact in side panel`}
+                  title={`Open ${streamArtifact.type} artifact in side panel (partial — full content will arrive when streaming completes)`}
+                >
+                  <PanelRight className="h-3.5 w-3.5" />
+                  Artifact detected
+                  <span className="text-[#6b6358] dark:text-[#9a9080] font-normal">→</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
 

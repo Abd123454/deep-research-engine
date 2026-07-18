@@ -39,6 +39,7 @@
 import { getLLM, type LLMMessage } from "./llm-provider";
 import { detectToolCall, executeToolCall, getToolsDescription, type ToolCall } from "./agent-tools";
 import { logger } from "./logger";
+import { MAX_TOOL_ITERATIONS } from "./swarm-constants";
 
 // ---------- Types ----------
 
@@ -276,7 +277,17 @@ function validateRole(role: unknown): role is AgentRole {
 // read → extract cycles, low enough to stay within the 90s worker timeout.
 // (Kimi-Researcher averages 23 reasoning steps + 70 search queries; we are
 // not in that league, but 4 was clearly too low.)
-const MAX_TOOL_ITERATIONS = 15;
+//
+// P0-2 (intensive audit): the value is now centralized in
+// `src/lib/swarm-constants.ts` so the chat agent route and the swarm
+// share the same budget — they had drifted (swarm=15, agent=5) which
+// caused inconsistent tool-call ceilings depending on the entrypoint.
+//
+// The constant is imported at the top of this file. We re-export it here
+// for callers that already import it from `@/lib/swarm` — the swarm is
+// the historical home of this value and external code may still reach
+// for `swarm.MAX_TOOL_ITERATIONS`.
+export { MAX_TOOL_ITERATIONS };
 
 // Kimi/Trilogy loop-degeneration detection (Trilogy AI production
 // post-mortem): when a tool keeps failing, the model can enter a

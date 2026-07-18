@@ -102,9 +102,17 @@ model Message {
   content        String
   tokensUsed     Int      @default(0)
   modelUsed      String?
-  // embedding is stored via raw SQL when pgvector is available.
-  // Prisma doesn't natively support vector type, so we use Unsupported.
-  // embedding      Unsupported("vector(1536)")?
+  // pgvector-backed semantic embedding for this message. Prisma can't
+  // natively represent the `vector` type, so we declare it as
+  // `Unsupported` — Prisma will skip it in queries, but the column
+  // exists at the DB level. The column is added lazily by
+  // `src/lib/pgvector-migration.ts` (run on first memory-recall use
+  // when Postgres is configured). SQLite has no equivalent column —
+  // recall falls back to LIKE search on `content` (see
+  // `src/lib/memory-recall.ts`).
+  //
+  // pgvector requires Postgres + `CREATE EXTENSION vector`.
+  embedding      Unsupported("vector(1536)")?
   createdAt      DateTime @default(now())
 
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
@@ -120,7 +128,12 @@ model LongTermMemory {
   userId       String
   type         String // "fact" | "preference" | "context"
   content      String
-  // embedding   Unsupported("vector(1536)")?
+  // pgvector-backed semantic embedding for this memory. Same notes as
+  // `Message.embedding` — see above. Used by `recallRelevantMemories`
+  // for cosine-similarity search (`embedding <=> $query::vector`).
+  //
+  // pgvector requires Postgres + `CREATE EXTENSION vector`.
+  embedding   Unsupported("vector(1536)")?
   confidence   Float    @default(0.5)
   createdAt    DateTime @default(now())
   lastAccessed DateTime?
@@ -168,7 +181,12 @@ model DocumentRecord {
   size      Int
   text      String
   textLength Int
-  // embedding Unsupported("vector(1536)")?
+  // pgvector-backed semantic embedding for this document (used for
+  // document-QA retrieval). Same notes as `Message.embedding` — see
+  // above.
+  //
+  // pgvector requires Postgres + `CREATE EXTENSION vector`.
+  embedding Unsupported("vector(1536)")?
   createdAt DateTime @default(now())
 
   user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)

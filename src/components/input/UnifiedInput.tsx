@@ -64,6 +64,12 @@ interface UnifiedInputProps {
   value?: string;
   onValueChange?: (v: string) => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+  /** Controlled mode — when provided + onModeChange present, the parent
+   *  owns the mode state (so the CommandPalette can switch it via Cmd+K).
+   *  When absent, UnifiedInput falls back to internal state (backward
+   *  compatible with all existing callers). */
+  mode?: InputMode;
+  onModeChange?: (m: InputMode) => void;
 }
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
@@ -78,7 +84,7 @@ const ALLOWED_TYPES = [
   "image/webp",
 ];
 
-export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaRef: externalRef }: UnifiedInputProps) {
+export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaRef: externalRef, mode: controlledMode, onModeChange }: UnifiedInputProps) {
   const t = useT();
   const [internalText, setInternalText] = React.useState("");
   const text = value !== undefined ? value : internalText;
@@ -86,8 +92,15 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
     if (onValueChange) onValueChange(v);
     else setInternalText(v);
   };  const [files, setFiles] = React.useState<AttachedFile[]>([]);
-  const [mode, setMode] = React.useState<InputMode>("auto");
-  const [modeOpen, setModeOpen] = React.useState(false);
+  // Controlled-mode pattern: when the parent passes `mode` + `onModeChange`,
+  // we use those (so the CommandPalette can set the mode externally).
+  // Otherwise we fall back to internal state.
+  const [internalMode, setInternalMode] = React.useState<InputMode>("auto");
+  const mode = controlledMode !== undefined ? controlledMode : internalMode;
+  const setMode = (m: InputMode) => {
+    if (onModeChange) onModeChange(m);
+    setInternalMode(m);
+  };  const [modeOpen, setModeOpen] = React.useState(false);
   const [tools, setTools] = React.useState<ToolKey[]>([]);
   const [toolsOpen, setToolsOpen] = React.useState(false);
   const [error, setError] = React.useState("");

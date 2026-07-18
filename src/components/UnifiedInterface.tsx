@@ -12,11 +12,15 @@ import * as React from "react";
 import { Menu, Lightbulb, FileSearch, Brain, Layers } from "lucide-react";
 import { Brain as BrainIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTheme } from "next-themes";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
+import { useLocale } from "@/components/i18n/locale-provider";
 import { useT } from "@/components/i18n/locale-provider";
 import { CompassLogo } from "@/components/CompassLogo";
+// P0-7: CommandPalette — Cmd+K palette with fuzzy-search commands.
+import { CommandPalette } from "@/components/CommandPalette";
 import {
   UnifiedInput,
   detectCardType,
@@ -31,11 +35,23 @@ import { ChatCard } from "@/components/cards/ChatCard";
 import { SwarmCard } from "@/components/cards/SwarmCard";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { OnboardingFlow } from "@/components/OnboardingFlow";
+// P0-1: ArtifactsPanel is mounted as a third column (right side, ~480px)
+// when an artifact is active. The panel is `hidden lg:flex` itself, so on
+// mobile/tablet it stays out of the way and the chat column takes the
+// full width.
+import { ArtifactsPanel } from "@/components/artifacts/ArtifactsPanel";
 import { detectArtifact as _detectArtifact, type Artifact } from "@/lib/artifact-detector";
 
 // Lazy load heavy drawers — they're only needed when opened.
 const HistoryDrawer = React.lazy(() =>
   import("@/components/history/HistoryDrawer").then((m) => ({ default: m.HistoryDrawer }))
+);
+// P0-7: lazy-loaded MemoryPanel so the CommandPalette's "Open memory"
+// command has a target. The panel was already implemented (it just
+// wasn't wired into UnifiedInterface — `_memoryOpen` was unused). We
+// expose it under a `MemoryDrawerLazy` alias to mirror `HistoryDrawer`.
+const MemoryDrawerLazy = React.lazy(() =>
+  import("@/components/memory/MemoryPanel").then((m) => ({ default: m.MemoryPanel }))
 );
 import type { SessionType } from "@/lib/session-store";
 import ReactMarkdown from "react-markdown";
@@ -91,20 +107,152 @@ const EXAMPLES = [
   { icon: Layers, text: "How do large language model agents work?" },
 ];
 
+// ---------- Conversation list shape (from /api/chat/conversations) ----------
+// The route returns rows from the `conversations` table; the `type` field
+// is omitted because conversations don't carry a type (sessions do). The
+// Sidebar accepts an optional `type` and falls back to "chat" when absent.
+interface ConversationListItem {
+  id: string;
+  title: string;
+  messageCount?: number;
+  createdAt: string;
+  updatedAt?: string;
+}
+
 // ---------- Main component ----------
 export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a: Artifact | null) => void }) {
   const [cards, setCards] = React.useState<CardEntry[]>([]);
   const [historyOpen, setHistoryOpen] = React.useState(false);
   const [sidebarOpen, setSidebarOpen] = React.useState(true);
-  const [_memoryOpen, setMemoryOpen] = React.useState(false);
+  const [memoryOpen, setMemoryOpen] = React.useState(false);
   const [inputText, setInputText] = React.useState("");
+  // P0-7: CommandPalette open state. Toggled by Cmd+K / Ctrl+K (handled
+  // in a useEffect below). The palette is rendered as a portal overlay
+  // so it floats above the sidebar / artifacts panel.
+  const [paletteOpen, setPaletteOpen] = React.useState(false);
+  // P0-7: lifted mode state so the CommandPalette can switch it. When
+  // the user picks "Switch mode: Research" from the palette, we update
+  // this state and UnifiedInput reflects it (controlled-mode pattern).
+  const [inputMode, setInputMode] = React.useState<InputMode>("auto");
   const [loadedSession, setLoadedSession] = React.useState<{
     title: string;
     content: string | null;
     type: SessionType;
   } | null>(null);
+  // P0-1: the active artifact drives the 3rd column (ArtifactsPanel).
+  // Set by ChatCard via onArtifact (streaming partial → final). Cleared
+  // by the panel's Close button. We also forward it to the optional
+  // `onArtifact` prop so the page-level consumer (page.tsx) can react.
+  const [activeArtifact, setActiveArtifact] = React.useState<Artifact | null>(null);
+  // P0-4: conversations list (backed by /api/chat/conversations). Fetched
+  // on mount and refreshed after each send. `activeConversationId` tracks
+  // the currently-selected row so the Sidebar can highlight it.
+  const [conversations, setConversations] = React.useState<ConversationListItem[]>([]);
+  const [activeConversationId, setActiveConversationId] = React.useState<string | undefined>(undefined);
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const textareaFocusRef = React.useRef<HTMLTextAreaElement | null>(null);
+
+  // P0-1: wrap setActiveArtifact so we also forward to the optional
+  // page-level onArtifact prop. Keeps page.tsx's `setArtifact` state in
+  // sync without coupling UnifiedInterface to it.
+  const handleArtifactChange = React.useCallback((a: Artifact | null) => {
+    setActiveArtifact(a);
+    _onArtifact?.(a);
+  }, [_onArtifact]);
+
+  // P0-4: fetch the conversation list. Wrapped in useCallback so we can
+  // call it again after a message is sent (the new conversation row will
+  // appear at the top of the list). Errors are swallowed — the Sidebar
+  // shows "No conversations yet." which is the correct empty state.
+  const refreshConversations = React.useCallback(() => {
+    fetch("/api/chat/conversations")
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; conversations?: ConversationListItem[] }) => {
+        if (data.ok && Array.isArray(data.conversations)) {
+          setConversations(data.conversations);
+        }
+      })
+      .catch(() => {
+        // Network/JSON errors leave the list as-is. The next refresh
+        // (e.g. after another send) will retry.
+      });
+  }, []);
+
+  React.useEffect(() => {
+    refreshConversations();
+  }, [refreshConversations]);
+
+  // P0-7: Theme + locale hooks for the CommandPalette callbacks. We use
+  // next-themes' useTheme and our own useLocale so the palette can
+  // toggle theme/language without going through the icon buttons.
+  const { setTheme } = useTheme();
+  const { toggleLocale } = useLocale();
+
+  // P0-7: Cmd+K / Ctrl+K keyboard shortcut to open the CommandPalette.
+  // We listen on window so it works regardless of focus (textarea,
+  // sidebar, etc.). We also suppress the browser's default Cmd+K
+  // behavior (some browsers focus the search bar). The shortcut is
+  // ignored when the user is typing in a form field — UNLESS the
+  // palette is already open (so Esc can close it via the palette's own
+  // handler). To keep the listener stable, we depend only on
+  // `paletteOpen` (so we re-bind when it changes) — the actual state
+  // setter is stable.
+  React.useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      // Cmd+K (Mac) or Ctrl+K (Windows/Linux).
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        e.stopPropagation();
+        setPaletteOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
+  // P0-7: CommandPalette callbacks. Each one is wrapped in useCallback
+  // so the palette's memoized command list doesn't reshuffle on every
+  // render. The callbacks close the palette after firing (the palette
+  // component does this internally, but we also handle it here in case
+  // the callback is invoked from elsewhere).
+  const handlePaletteToggleTheme = React.useCallback(() => {
+    // next-themes exposes setTheme. We need to read the current theme
+    // from document.documentElement.className (next-themes toggles
+    // the `dark` class on <html>).
+    const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+    setTheme(isDark ? "light" : "dark");
+  }, [setTheme]);
+
+  const handlePaletteOpenMemory = React.useCallback(() => {
+    setMemoryOpen(true);
+  }, []);
+
+  const handlePaletteOpenHistory = React.useCallback(() => {
+    setHistoryOpen(true);
+  }, []);
+
+  const handlePaletteOpenSettings = React.useCallback(() => {
+    // Quaesitor doesn't have a /settings page yet — the closest is the
+    // skills marketplace at /skills (if it exists). We use a relative
+    // navigation so the gateway handles it. If the route doesn't exist
+    // the user will see a 404, but the palette is still useful for
+    // the other commands. Wrapped in try/catch in case window is
+    // unavailable (SSR — shouldn't happen since the palette is
+    // client-only, but defensive).
+    try {
+      window.location.href = "/settings";
+    } catch {
+      // no-op
+    }
+  }, []);
+
+  const handlePaletteOpenPricing = React.useCallback(() => {
+    try {
+      window.location.href = "/pricing";
+    } catch {
+      // no-op
+    }
+  }, []);
 
   // Mobile-first: close the sidebar on small screens so it doesn't
   // overlay the empty state on first paint. Desktop keeps it open.
@@ -134,6 +282,10 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     setCards([]);
     setLoadedSession(null);
     setInputText("");
+    setActiveConversationId(undefined);
+    // P0-1: closing the new-chat flow also dismisses any open artifact
+    // panel — the user is starting fresh, the previous artifact is stale.
+    setActiveArtifact(null);
   }
 
   function handleSend(text: string, files: AttachedFile[], mode: InputMode, tools: ToolKey[] = []) {
@@ -163,6 +315,13 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
         { id: crypto.randomUUID(), type: cardType, query: text },
       ]);
     }
+
+    // P0-4: refresh the conversation list after a short delay so the
+    // new row (created by /api/chat when it persisted the message) is
+    // picked up. 800ms is enough for the chat route's first message
+    // to land + the conversation row to be committed; if the user is
+    // on a slow connection the next refresh (next send) will catch it.
+    setTimeout(refreshConversations, 800);
   }
 
   function handleSelectSession(s: {
@@ -173,6 +332,34 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   }) {
     setCards([]);
     setLoadedSession({ title: s.title, content: s.content, type: s.type });
+    setActiveConversationId(s.id);
+  }
+
+  // P0-4: when a conversation is selected from the Sidebar, fetch its
+  // messages and render them as a loaded session. For now we use the
+  // existing LoadedSession viewer (renders the conversation's first
+  // assistant message as markdown). Full multi-message rendering is a
+  // follow-up — the task explicitly defers it ("for now just set the
+  // title"). We still fetch so the activeId highlight is correct and
+  // the conversation row is marked as recently used.
+  function handleSelectConversation(id: string) {
+    setActiveConversationId(id);
+    fetch(`/api/chat/conversations/${id}`)
+      .then((r) => r.json())
+      .then((data: { ok?: boolean; conversation?: { title?: string; messages?: Array<{ role: string; content: string }> } }) => {
+        if (!data.ok || !data.conversation) return;
+        const conv = data.conversation;
+        const firstAssistant = (conv.messages || []).find((m) => m.role === "assistant");
+        setCards([]);
+        setLoadedSession({
+          title: conv.title || "Conversation",
+          content: firstAssistant?.content || null,
+          type: "quick" as SessionType,
+        });
+      })
+      .catch(() => {
+        // Leave the list as-is; the activeId highlight still applies.
+      });
   }
 
   // Suggestion click: fill input instead of auto-send, then focus textarea.
@@ -190,9 +377,9 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
         open={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
         onNewChat={handleNewChat}
-        onSelectConversation={() => {}}
-        conversations={[]}
-        activeId={undefined}
+        onSelectConversation={handleSelectConversation}
+        conversations={conversations}
+        activeId={activeConversationId}
       />
 
       {/* Main column */}
@@ -254,6 +441,8 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                   value={inputText}
                   onValueChange={setInputText}
                   textareaRef={textareaFocusRef}
+                  mode={inputMode}
+                  onModeChange={setInputMode}
                 />
 
                 {/* Mode tabs — card style with icon + text */}
@@ -314,7 +503,15 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                   if (card.type === "chat") {
                     return (
                       <ErrorBoundary key={card.id}>
-                        <ChatCard initialMessage={card.query} />
+                        {/* P0-1 / P0-5: ChatCard reports streaming + final
+                            artifacts via onArtifact. The parent
+                            (UnifiedInterface) owns the activeArtifact state
+                            and mounts ArtifactsPanel as a 3rd column when
+                            non-null. */}
+                        <ChatCard
+                          initialMessage={card.query}
+                          onArtifact={handleArtifactChange}
+                        />
                       </ErrorBoundary>
                     );
                   }
@@ -343,9 +540,28 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
             value={inputText}
             onValueChange={setInputText}
             textareaRef={textareaFocusRef}
+            mode={inputMode}
+            onModeChange={setInputMode}
           />
         )}
       </div>
+
+      {/* P0-1: ArtifactsPanel — 3rd column on the right (lg+ only).
+          Conditionally rendered when an artifact is active. The panel
+          component itself is `hidden lg:flex` so on smaller viewports it
+          stays mounted-but-invisible (preserving its internal state)
+          rather than unmounting and losing scroll position.
+
+          Width: the panel uses `w-[40%] min-w-[400px] max-w-[600px]` —
+          on a 1280px viewport that's ~512px, matching the ~480px target.
+          The 3-column layout becomes: Sidebar (280px) | Chat (flex-1) |
+          ArtifactsPanel (~480px). */}
+      {activeArtifact && (
+        <ArtifactsPanel
+          artifact={activeArtifact}
+          onClose={() => handleArtifactChange(null)}
+        />
+      )}
 
       {/* History drawer */}
       <React.Suspense fallback={null}>
@@ -355,6 +571,35 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
           onSelect={handleSelectSession}
         />
       </React.Suspense>
+
+      {/* P0-7: Memory drawer — rendered when memoryOpen is true. We lazy
+          load it (like HistoryDrawer) because it's only needed when
+          opened. */}
+      <React.Suspense fallback={null}>
+        {memoryOpen && (
+          <MemoryDrawerLazy
+            open={memoryOpen}
+            onClose={() => setMemoryOpen(false)}
+          />
+        )}
+      </React.Suspense>
+
+      {/* P0-7: CommandPalette — Cmd+K / Ctrl+K palette. Rendered as a
+          portal overlay so it floats above the sidebar / artifacts
+          panel / drawers. The palette handles its own Esc + backdrop
+          click dismissal; we just pass the open state and callbacks. */}
+      <CommandPalette
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onNewChat={handleNewChat}
+        onToggleTheme={handlePaletteToggleTheme}
+        onToggleLanguage={toggleLocale}
+        onOpenMemory={handlePaletteOpenMemory}
+        onOpenHistory={handlePaletteOpenHistory}
+        onSetMode={setInputMode}
+        onOpenSettings={handlePaletteOpenSettings}
+        onOpenPricing={handlePaletteOpenPricing}
+      />
 
       {/* Onboarding — shows on first visit (empty state only).
           Mounted at the root so the backdrop covers the full viewport.

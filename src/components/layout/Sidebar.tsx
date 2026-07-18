@@ -15,7 +15,13 @@ import { cn } from "@/lib/utils";
 interface SidebarConversation {
   id: string;
   title: string;
-  type: "chat" | "research" | "quick" | "document";
+  // `type` is optional because the conversations table doesn't store a
+  // per-conversation type (the sessions table does, but the Sidebar is
+  // now backed by /api/chat/conversations which returns rows from the
+  // conversations table — see P0-4 in UnifiedInterface). When omitted,
+  // the Sidebar falls back to the chat icon. Callers that have the
+  // type (e.g. from /api/sessions) can still pass it.
+  type?: "chat" | "research" | "quick" | "document";
   createdAt: string;
 }
 
@@ -141,7 +147,7 @@ export const Sidebar = React.memo(function Sidebar({
                       </p>
                       <div className="space-y-0.5">
                         {items.map((c) => {
-                          const Icon = TYPE_ICON[c.type] || MessageSquare;
+                          const Icon = TYPE_ICON[c.type || "chat"] || MessageSquare;
                           return (
                             <button
                               key={c.id}
