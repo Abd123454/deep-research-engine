@@ -1,67 +1,91 @@
-# Evaluation Baseline — v7.1
+# Evaluation Baseline — v3.3.1
 
 ## Summary
-- **Date:** 2026-07-15
-- **Version:** v7.1
-- **Total queries run:** 5/20 (factual only — coding/research require extended runtime)
-- **Passed:** 4/5 (80%)
-- **Avg score:** 80%
-- **Avg time:** 563ms
-- **Total tokens:** 441
+- **Date:** 2026-07-17
+- **Version:** v3.3.1 (commit c623e09)
+- **Total queries:** 20 (5 factual + 5 coding + 10 research)
+- **Previously run:** 5/20 (factual only, v7.1 baseline)
+- **Current status:** Pending LLM API key — suite requires NVIDIA_API_KEY or alternative provider
 
-## Results by type
-
-| Type | Passed | Total | Avg Score |
-|---|---|---|---|
-| factual | 4 | 5 | 80% |
-| coding | — | 5 | pending |
-| research | — | 10 | pending |
-
-## Individual results
-
-| ID | Query | Type | Passed | Score | Time | Tokens | Notes |
-|---|---|---|---|---|---|---|---|
-| f1 | Capital of France | factual | ✅ | 100% | ~400ms | ~80 | |
-| f2 | Speed of light | factual | ❌ | 0% | ~500ms | 87 | Test expects "km/s" but LLM returns "m/s". Fixed in v7.2 — now accepts "299,792" alone. |
-| f3 | Who wrote Hamlet | factual | ✅ | 100% | ~600ms | 63 | |
-| f4 | Chemical symbol gold | factual | ✅ | 100% | ~550ms | 62 | |
-| f5 | WW2 end year | factual | ✅ | 100% | ~800ms | 169 | |
-
-## Pending
-- **coding queries (5):** require full swarm execution (~3 min each — orchestrator + coder agent + synthesizer)
-- **research queries (10):** require full 6-stage research pipeline (~5 min each — plan + decompose + search + read + gap analysis + synthesize)
-
-## How to run
+## How to run the full suite
 
 ```bash
-# Factual only (fast, ~30 seconds)
-bun run eval --type=factual
-
-# Specific queries
-bun run eval f1 f2 f3
-
-# Coding (slow, ~3 min each)
-bun run eval c1 c2 c3 c4 c5
-
-# Research (slow, ~5 min each)
-bun run eval r1 r2 r3
-
-# Everything (30+ minutes)
+# Option 1: NVIDIA NIM (free key from https://build.nvidia.com/)
+echo "NVIDIA_API_KEY=your-key-here" >> .env
 bun run eval
+
+# Option 2: Ollama (local, no API key needed)
+# Install: https://ollama.ai
+OLLAMA_URL=http://localhost:11434 bun run eval
+
+# Option 3: OpenAI
+echo "OPENAI_API_KEY=sk-..." >> .env
+bun run eval
+
+# Specific types:
+bun run eval --type=factual    # 5 queries, ~30s
+bun run eval --type=coding     # 5 queries, ~15min (swarm)
+bun run eval --type=research   # 10 queries, ~50min (6-stage pipeline)
 ```
 
-## Notes
-- This is a **partial baseline**. Full eval requires a server with more resources/headroom.
-- The f2 failure was a **test design issue**, not an LLM quality issue — the LLM answered correctly ("299,792,458 m/s") but the test checked for "km/s". Fixed in v7.2.
-- **Every future round must show before/after EVAL.md diff.**
-- Factual queries use the `fast()` LLM path (single call, ~200ms).
-- Coding queries use the **swarm** (3+ LLM calls).
-- Research queries use the **full 6-stage pipeline** (10+ LLM calls + web searches).
+## Previous baseline (v7.1, 2026-07-15)
 
-## Environment
-- **LLM:** NVIDIA NIM (meta/llama-3.1-70b-instruct)
-- **Fast model:** meta/llama-3.1-8b-instruct
-- **Database:** SQLite
-- **Search:** DuckDuckGo + Wikipedia + GitHub
-- **Node:** 20+
-- **Bun:** latest
+| Type | Passed | Total | Avg Score | Notes |
+|---|---|---|---|---|
+| factual | 4 | 5 | 80% | f2 failed (unit mismatch km/s vs m/s — fixed in v7.2) |
+| coding | — | 5 | pending | Requires full swarm execution (~3 min each) |
+| research | — | 10 | pending | Requires 6-stage pipeline (~5 min each) |
+
+### Factual results (v7.1)
+
+| ID | Query | Passed | Score | Time | Notes |
+|---|---|---|---|---|---|
+| f1 | Capital of France | ✅ | 100% | ~400ms | |
+| f2 | Speed of light | ❌ | 0% | ~500ms | Test expects "km/s" but LLM returns "m/s". Acceptance criteria now accepts "299,792" alone. |
+| f3 | Who wrote Hamlet | ✅ | 100% | ~600ms | |
+| f4 | Chemical symbol gold | ✅ | 100% | ~550ms | |
+| f5 | WW2 end year | ✅ | 100% | ~800ms | |
+
+## Pending queries (to run with API key)
+
+### Coding queries (5)
+- c1: Write a function to reverse a string in Python
+- c2: Implement binary search in JavaScript
+- c3: Create a REST API endpoint for user CRUD
+- c4: Write a SQL query to find duplicates
+- c5: Implement a simple LRU cache
+
+### Research queries (10)
+- r1: Compare RISC-V and ARM architectures
+- r2: Latest breakthroughs in quantum error correction
+- r3: State of solid-state battery technology
+- r4: How do LLM agents work?
+- r5: Climate change impact on agriculture
+- r6: History of Byzantine Empire
+- r7: CRISPR gene editing applications
+- r8: Renewable energy storage solutions
+- r9: Machine learning in healthcare
+- r10: Cryptocurrency regulation by country
+
+## Acceptance criteria
+
+- **factual:** LLM response contains the expected answer string (case-insensitive)
+- **coding:** Generated code passes unit tests (syntax + logic)
+- **research:** Report has ≥3 sources, ≥500 words, citation verification ≥80%
+
+## Why the full suite hasn't run yet
+
+The evaluation suite requires a working LLM provider. In the current sandbox:
+- No NVIDIA_API_KEY configured
+- No OpenAI/Anthropic keys
+- Ollama not installed
+
+When a key is available, run `bun run eval` and update this file with the complete results. This is the **baseline** — every future version should be compared against these numbers.
+
+## What the eval measures
+
+1. **Factual accuracy** — can the LLM answer simple questions correctly?
+2. **Coding capability** — can the swarm (orchestrator + coder + synthesizer) produce working code?
+3. **Research depth** — can the 6-stage pipeline produce a cited, sourced report?
+
+These are the three core capabilities of Quaesitor. The eval suite is the objective measure of whether they work.

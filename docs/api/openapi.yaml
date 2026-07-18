@@ -41,6 +41,18 @@ tags:
     description: Persisted user sessions (history)
   - name: Eval
     description: Evaluation harness
+  - name: Account
+    description: GDPR Art. 17 (erasure) and Art. 20 (portability) endpoints
+  - name: Consent
+    description: GDPR Art. 7 consent ledger (read + update)
+  - name: Auth
+    description: Authentication — MFA enrollment, verification, and disable
+  - name: MCP
+    description: Model Context Protocol server marketplace and install state
+  - name: Metrics
+    description: Admin-only platform KPI dashboard
+  - name: Feedback
+    description: User feedback (thumbs up/down + free text)
   - name: Docs
     description: This OpenAPI spec
 
@@ -50,33 +62,69 @@ paths:
       tags: [Health]
       summary: Liveness & readiness probe
       description: |
-        Returns the process uptime, configured LLM provider, and the status of
-        dependent services (Redis, database, Docker sandbox). Used by the
-        Docker HEALTHCHECK and by uptime monitors.
+        Returns the process uptime, the configured LLM provider, and the
+        status of dependent subsystems (database, Postgres if configured,
+        and at least one LLM provider). Used by the Docker HEALTHCHECK,
+        the desktop wrapper's boot probe, and uptime monitors.
+
+        The overall `status` is one of `"ok"`, `"degraded"`, or `"down"`:
+          - `ok`        — every check passed (HTTP 200)
+          - `degraded`  — at least one check is degraded, none down (HTTP 200)
+          - `down`      — at least one check is down (HTTP 503)
+
+        The `checks` map uses the same vocabulary per-subsystem. The
+        `postgres` key is only present when `DATABASE_URL` points at
+        Postgres (i.e. in production); in SQLite / in-memory dev mode
+        the key is absent and the overall rollup ignores it.
       operationId: getHealth
       security: []
       responses:
         "200":
-          description: Service is up (may be healthy, degraded, or unhealthy).
+          description: Service is up (status is `ok` or `degraded`).
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
               examples:
-                healthy:
+                ok:
                   value:
-                    status: healthy
+                    status: ok
+                    checks:
+                      database: ok
+                      llm: ok
+                    timestamp: "2026-07-18T12:00:00.000Z"
+                    version: "3.2.0"
                     uptime: 12483
                     uptimeHuman: "12s"
-                    version: "1.4.0"
-                    timestamp: "2026-07-16T12:00:00.000Z"
+                degraded:
+                  value:
+                    status: degraded
                     checks:
-                      redis: true
-                      database: true
-                      docker: true
-                    details: {}
-                    redis: connected
-                    database: connected
+                      database: ok
+                      llm: degraded
+                    timestamp: "2026-07-18T12:00:00.000Z"
+                    version: "3.2.0"
+                    uptime: 12483
+                    uptimeHuman: "12s"
+        "503":
+          description: |
+            Service is `down` — at least one critical subsystem (database)
+            is unreachable. Retry with exponential backoff.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+              examples:
+                down:
+                  value:
+                    status: down
+                    checks:
+                      database: down
+                      llm: ok
+                    timestamp: "2026-07-18T12:00:00.000Z"
+                    version: "3.2.0"
+                    uptime: 12483
+                    uptimeHuman: "12s"
 
   /api/chat:
     post:
@@ -195,7 +243,9 @@ paths:
                   description: Alias for `message`.
       responses:
         "200":
-          description: SSE stream of `{ "token": "..." }` events followed by `{ "done": true, "tokensUsed": 123 }`.
+          description: |
+            SSE stream of `{ "token": "..." }` events followed by
+            `{ "done": true, "tokensUsed": 123 }`.
           content:
             text/event-stream:
               schema:
@@ -331,6 +381,60 @@ paths:
                     $ref: "#/components/schemas/ResearchJob"
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /api/research/stop/{id}:
+    post:
+      tags: [Research]
+      summary: Cancel a running research job
+      description: |
+        Aborts a running research job. Two things happen:
+
+          1. `job.abortController.abort("Cancelled by user")` — cancels
+             all in-flight `fetch()` calls (search, page reads) immediately.
+             They throw `AbortError` and the pipeline unwinds.
+          2. `job.cancelled = true` — the pipeline checks this flag
+             before each stage as a cooperative fallback in case a
+             request already completed before the abort fired.
+
+        The job is then persisted with `status: "failed"` and
+        `error: "Cancelled by user"` so the cancellation survives
+        server restarts. Audit-logged as `research.stop`.
+
+        NOTE: the route is implemented as `POST` (not `DELETE`) because
+        it has side effects beyond deletion (abort + persist) and the
+        Next.js Route Handler exports `POST`. RESTful convention would
+        use `DELETE`; the audit spec listed it that way — both refer to
+        the same conceptual "cancel job" operation.
+      operationId: stopResearch
+      security:
+        - basicAuth: []
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Job cancelled (or already finished).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                  status:
+                    type: string
+                    enum: [failed]
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
 
   /api/swarm:
     post:
@@ -640,6 +744,611 @@ paths:
               schema:
                 type: string
 
+  /api/account:
+    delete:
+      tags: [Account]
+      summary: GDPR Article 17 — right to erasure
+      description: |
+        Permanently deletes ALL data associated with the current user:
+        conversations (+ messages via cascade), long_term_memories,
+        research_jobs, documents, projects (+ connectors via cascade),
+        subscriptions, usage_records, user_preferences, audit_logs
+        (this user's), and artifact_storage (this user's).
+
+        The legacy `sessions` table has no `user_id` column; in single-
+        tenant mode (auth disabled, `userId === "default"`) it is
+        wiped, otherwise it is left alone.
+
+        This operation is **irreversible**. The front-end should show a
+        confirmation modal before issuing this request. Audit-logged
+        twice — at initiation (`phase: "initiated"`) and on completion
+        (`phase: "completed"`) with per-table counts.
+      operationId: deleteAccount
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Account deleted. Response contains per-table counts.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  deleted:
+                    type: object
+                    properties:
+                      sessions:
+                        type: integer
+                      memories:
+                        type: integer
+                      connectors:
+                        type: integer
+                      conversations:
+                        type: integer
+                      researchJobs:
+                        type: integer
+                      documents:
+                        type: integer
+                      projects:
+                        type: integer
+                      subscriptions:
+                        type: integer
+                      usageRecords:
+                        type: integer
+                      preferences:
+                        type: integer
+                      auditLogs:
+                        type: integer
+                      artifactStorage:
+                        type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/account/export:
+    get:
+      tags: [Account]
+      summary: GDPR Article 20 — right to data portability
+      description: |
+        Exports ALL data associated with the current user as a JSON
+        download. Response has
+        `Content-Disposition: attachment; filename="quaesitor-data-export.json"`.
+
+        Includes: conversations (with messages), long_term_memories,
+        research_jobs, documents (metadata + extracted text), projects
+        (with connectors — credentials **decrypted** for portability),
+        subscriptions, usage_records, user_preferences, audit_logs
+        (this user's), and artifact_storage (this user's).
+
+        Audit-logged at initiation and completion with per-table counts.
+        Cache-Control: no-store.
+      operationId: exportAccount
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: JSON download with the user's full data.
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: attachment; filename="quaesitor-data-export.json"
+            Cache-Control:
+              schema:
+                type: string
+                example: no-store
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/consent:
+    get:
+      tags: [Consent]
+      summary: GDPR Art. 7 — read consent ledger
+      description: |
+        Returns the canonical consent state for the current user across
+        the five regulated consent keys: `termsOfService`,
+        `privacyPolicy`, `memoryExtraction`, `marketing`, and
+        `ageConfirmation`.
+
+        Every key is present in the response; missing rows default to
+        `{ granted: false, timestamp: null, version: null }`. The
+        ledger is the source of truth — the legacy
+        `user_preferences.memory_consent` column is a denormalised
+        cache that `POST /api/consent` keeps in sync.
+      operationId: getConsent
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: The user's full consent map.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsentLedger"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Consent]
+      summary: GDPR Art. 7 — update a single consent key
+      description: |
+        Upserts a single consent key in the ledger with a fresh
+        timestamp. Zod-validated against the canonical `CONSENT_KEYS`
+        list. Audit-logged via the `consent.update` slug so consent is
+        demonstrable per GDPR Art. 7(1).
+
+        When `key === "memoryExtraction"`, the value is mirrored into
+        the legacy `user_preferences.memory_consent` column so the
+        existing `isMemoryExtractionEnabled()` gate (read by
+        `/api/chat`, `/api/chat/agent`, `/api/memories/extract`)
+        honors the consent ledger without a migration.
+
+        The optional `version` field lets the UI re-prompt on a new
+        policy version (defaults to `CURRENT_POLICY_VERSION = "1.0"`).
+      operationId: updateConsent
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [key, granted]
+              properties:
+                key:
+                  type: string
+                  enum:
+                    - termsOfService
+                    - privacyPolicy
+                    - memoryExtraction
+                    - marketing
+                    - ageConfirmation
+                granted:
+                  type: boolean
+                version:
+                  type: string
+                  maxLength: 20
+                  description: Policy version stamp. Defaults to `"1.0"`.
+      responses:
+        "200":
+          description: Consent updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  consent:
+                    $ref: "#/components/schemas/ConsentRecord"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/mfa/setup:
+    post:
+      tags: [Auth]
+      summary: Begin MFA enrollment (TOTP)
+      description: |
+        Generates a fresh TOTP secret + 10 single-use backup codes,
+        stores them in `user_mfa` as `enabled=0` (pending), and
+        returns the secret, the `otpauth://` URI (for QR generation),
+        and the **plaintext** backup codes.
+
+        Backup codes are returned **exactly once**. They are stored as
+        SHA-256 hashes; if the user loses them, they must disable and
+        re-enroll MFA.
+
+        The user then adds the secret to their authenticator app and
+        submits a current 6-digit TOTP to `/api/auth/mfa/verify` to
+        confirm possession and activate MFA.
+
+        Refuses with `409` if MFA is already enabled — the user must
+        explicitly disable it first to prevent silent secret rotation.
+        Audit-logged as `auth.mfa_verify` with `phase: "setup_initiated"`.
+      operationId: setupMfa
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Pending MFA setup created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  secret:
+                    type: string
+                    description: Base32 TOTP secret (manual entry).
+                  uri:
+                    type: string
+                    description: "`otpauth://totp/...` URI for QR generation."
+                  backupCodes:
+                    type: array
+                    items:
+                      type: string
+                    description: Ten 8-digit backup codes (returned once).
+                  algorithm:
+                    type: string
+                    example: SHA1
+                  digits:
+                    type: integer
+                    example: 6
+                  period:
+                    type: integer
+                    example: 30
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "409":
+          description: MFA is already enabled. Disable it first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/mfa/verify:
+    post:
+      tags: [Auth]
+      summary: Complete MFA enrollment (verify TOTP)
+      description: |
+        Verifies the supplied 6-digit TOTP against the PENDING secret
+        stored by `/api/auth/mfa/setup`. On success, marks the MFA
+        record as `enabled=1`. On failure, returns 400 without
+        revealing whether the pending setup exists (to avoid leaking
+        which userIds have begun enrollment).
+
+        Audit-logged as `auth.mfa_enable` on success (the moment MFA
+        actually becomes active for the account); failed attempts are
+        logged as `auth.mfa_verify` with `phase: "verify_failed"` so
+        brute-force patterns are detectable.
+      operationId: verifyMfa
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: Exactly 6 digits.
+      responses:
+        "200":
+          description: MFA enabled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid token or no pending setup.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/mfa/disable:
+    post:
+      tags: [Auth]
+      summary: Disable MFA
+      description: |
+        Revokes MFA for the current user. Requires the user to prove
+        possession of either a current 6-digit TOTP **or** an 8-digit
+        backup code before MFA is removed — this prevents an attacker
+        who briefly obtains the session from silently weakening the
+        account.
+
+        On success, the `user_mfa` row is deleted entirely (secret +
+        backup code hashes). Audit-logged as `auth.mfa_disable` with
+        `method: "totp" | "backup_code"`.
+      operationId: disableMfa
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  pattern: '^\d{6}$'
+                  description: Current 6-digit TOTP.
+                backupCode:
+                  type: string
+                  pattern: '^\d{8}$'
+                  description: Optional 8-digit backup code (alternative to TOTP).
+      responses:
+        "200":
+          description: MFA disabled.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+        "400":
+          description: Invalid token / backup code, or MFA not enabled.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/mcp/marketplace:
+    get:
+      tags: [MCP]
+      summary: List available MCP servers
+      description: |
+        Returns the marketplace catalog with current install state.
+        The client uses this to render the marketplace UI; install /
+        uninstall state is reflected immediately because
+        `getMarketplace()` reads the in-memory Set every call.
+
+        Not admin-gated — the catalog is public information. The
+        actual install / uninstall action IS auth-gated (see
+        `/api/mcp/install`).
+
+        The `stub: true` field surfaces that real MCP transport
+        wiring is future work (see `docs/ROADMAP_v2.md`, Phase 2).
+      operationId: getMcpMarketplace
+      security: []
+      responses:
+        "200":
+          description: Marketplace catalog.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  servers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/McpServer"
+                  stub:
+                    type: boolean
+                    description: True until real MCP transport is wired.
+                  installedCount:
+                    type: integer
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/mcp/install:
+    post:
+      tags: [MCP]
+      summary: Install or uninstall an MCP server (stub)
+      description: |
+        Marks the named server as installed (or uninstalled) in the
+        in-memory registry. Real MCP transport wiring is future work
+        (see `docs/ROADMAP_v2.md`, Phase 2 — "MCP marketplace").
+        Today this endpoint exists so the marketplace UI has a working
+        install / uninstall button — state is preserved for the
+        lifetime of the server process only.
+
+        Auth: required (`requireAuth`). Anonymous callers cannot
+        change install state. Audit-logged as `admin.access` with
+        `{ route: "mcp.install", serverId, serverName, action, changed }`.
+      operationId: installMcpServer
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id, action]
+              properties:
+                id:
+                  type: string
+                  description: Server id from the marketplace catalog.
+                action:
+                  type: string
+                  enum: [install, uninstall]
+      responses:
+        "200":
+          description: Install / uninstall completed (or was a no-op).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  server:
+                    $ref: "#/components/schemas/McpServer"
+                  changed:
+                    type: boolean
+                    description: False if the server was already in the requested state.
+                  stub:
+                    type: boolean
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/metrics:
+    get:
+      tags: [Metrics]
+      summary: Admin-only platform KPI dashboard
+      description: |
+        Surfaces the KPIs an operator needs to understand system health
+        at a glance:
+
+          - Total users + active users (7d / 30d windows)
+          - Total research jobs + success rate + avg duration
+          - Total chat messages + total tokens consumed
+          - Cache hit rate (from the research cache)
+          - Carbon footprint for the current month
+          - Plan distribution (free / pro / team / enterprise)
+
+        Auth: requires `requireAuth` + `requireAdminAccess`. The admin
+        IP allowlist (`ADMIN_IP_ALLOWLIST`) applies via
+        `requireAdminAccess` if set. Audit-logged as `admin.access`
+        with `{ route: "metrics" }`.
+      operationId: getMetrics
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Platform KPI snapshot.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Metrics"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/feedback:
+    post:
+      tags: [Feedback]
+      summary: Submit user feedback (thumbs up/down + free text)
+      description: |
+        Powers the floating FeedbackWidget at the bottom-left of
+        every page. Stores a single feedback row in the lazily-created
+        `feedback` SQLite table.
+
+        Auth: required (`requireAuth`) — users must be signed in to
+        leave feedback (anonymous feedback is rejected to prevent
+        spam). Audit-logged as `admin.access` with
+        `{ action: "feedback.submit", rating, hasComment }`.
+
+        The optional `context` object captures the page / route /
+        conversationId the feedback was given from to help triage.
+      operationId: postFeedback
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rating]
+              properties:
+                rating:
+                  type: string
+                  enum: [up, down]
+                comment:
+                  type: string
+                  maxLength: 5000
+                  description: Optional free-text feedback.
+                context:
+                  type: object
+                  properties:
+                    route:
+                      type: string
+                      maxLength: 500
+                    conversationId:
+                      type: string
+                      maxLength: 200
+                    messageId:
+                      type: string
+                      maxLength: 200
+      responses:
+        "200":
+          description: Feedback stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+                  id:
+                    type: string
+                    format: uuid
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   parameters:
     JobIdPath:
@@ -659,6 +1368,15 @@ components:
             $ref: "#/components/schemas/Error"
     Unauthorized:
       description: HTTP Basic auth required or invalid.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    Forbidden:
+      description: |
+        Authenticated but not allowed — either the admin IP allowlist
+        (`ADMIN_IP_ALLOWLIST`) rejected the request, or the user lacks
+        the role required for the resource.
       content:
         application/json:
           schema:
@@ -714,35 +1432,45 @@ components:
       properties:
         status:
           type: string
-          enum: [healthy, degraded, unhealthy]
+          enum: [ok, degraded, down]
+          description: |
+            Overall rollup. `"ok"` = every check passed (HTTP 200);
+            `"degraded"` = at least one check is degraded, none down
+            (HTTP 200); `"down"` = at least one check is down (HTTP 503).
         uptime:
           type: integer
-          description: Process uptime in milliseconds.
+          description: Process uptime in milliseconds (backward-compat field).
         uptimeHuman:
           type: string
+          description: Human-readable uptime string (backward-compat field).
         version:
           type: string
+          description: npm package version (`process.env.npm_package_version`).
         timestamp:
           type: string
           format: date-time
         checks:
           type: object
+          description: |
+            Per-subsystem status. Keys are present only when the
+            subsystem is configured (e.g. `postgres` is absent in
+            SQLite / in-memory dev mode).
           properties:
-            redis:
-              type: boolean
             database:
-              type: boolean
-            docker:
-              type: boolean
-        details:
-          type: object
-          additionalProperties: true
-        redis:
-          type: string
-          enum: [connected, not_configured]
-        database:
-          type: string
-          enum: [connected, memory_fallback]
+              type: string
+              enum: [ok, degraded, down]
+              description: Always present (SQLite or in-memory fallback).
+            postgres:
+              type: string
+              enum: [ok, degraded, down]
+              description: Only present when `DATABASE_URL` starts with `postgresql://`.
+            llm:
+              type: string
+              enum: [ok, degraded, down]
+              description: |
+                `"ok"` if at least one of `NVIDIA_API_KEY`,
+                `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, or `OLLAMA_URL`
+                is set; otherwise `"degraded"`.
 
     ResearchPlan:
       type: object
@@ -858,4 +1586,192 @@ components:
             totalPagesSucceeded:
               type: integer
             roundsCompleted:
+              type: integer
+
+    ConsentRecord:
+      type: object
+      properties:
+        key:
+          type: string
+          enum:
+            - termsOfService
+            - privacyPolicy
+            - memoryExtraction
+            - marketing
+            - ageConfirmation
+        granted:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the consent was last set (null if never set).
+        version:
+          type: string
+          nullable: true
+          description: Policy version stamp at the time of consent.
+
+    ConsentLedger:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        userId:
+          type: string
+        consents:
+          type: object
+          properties:
+            termsOfService:
+              $ref: "#/components/schemas/ConsentRecord"
+            privacyPolicy:
+              $ref: "#/components/schemas/ConsentRecord"
+            memoryExtraction:
+              $ref: "#/components/schemas/ConsentRecord"
+            marketing:
+              $ref: "#/components/schemas/ConsentRecord"
+            ageConfirmation:
+              $ref: "#/components/schemas/ConsentRecord"
+
+    AccountExport:
+      type: object
+      description: |
+        GDPR Art. 20 data portability payload. All user-owned records
+        are included; connector credentials are **decrypted** so the
+        user can take them to another provider.
+      properties:
+        format:
+          type: string
+          example: quaesitor-account-export
+        version:
+          type: integer
+          example: 1
+        exportedAt:
+          type: string
+          format: date-time
+        userId:
+          type: string
+        conversations:
+          type: array
+          items:
+            type: object
+        memories:
+          type: array
+          items:
+            type: object
+        researchJobs:
+          type: array
+          items:
+            type: object
+        documents:
+          type: array
+          items:
+            type: object
+        projects:
+          type: array
+          items:
+            type: object
+        subscriptions:
+          type: array
+          items:
+            type: object
+        usageRecords:
+          type: array
+          items:
+            type: object
+        preferences:
+          type: object
+          nullable: true
+        auditLogs:
+          type: array
+          items:
+            type: object
+        artifactStorage:
+          type: array
+          items:
+            type: object
+
+    McpServer:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        installed:
+          type: boolean
+          description: Whether this server is currently marked installed.
+        homepage:
+          type: string
+          format: uri
+
+    Metrics:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        generatedAt:
+          type: string
+          format: date-time
+        users:
+          type: object
+          properties:
+            total:
+              type: integer
+            active7d:
+              type: integer
+            active30d:
+              type: integer
+        research:
+          type: object
+          properties:
+            totalJobs:
+              type: integer
+            completed:
+              type: integer
+            failed:
+              type: integer
+            successRate:
+              type: number
+              description: 0..1 (rounded to 3 decimal places).
+            avgDurationMs:
+              type: integer
+        chat:
+          type: object
+          properties:
+            totalUserMessages:
+              type: integer
+            totalAssistantMessages:
+              type: integer
+            totalTokens:
+              type: integer
+        cache:
+          type: object
+          properties:
+            hitRate:
+              type: number
+            size:
+              type: integer
+        carbon:
+          type: object
+          properties:
+            gramsThisMonth:
+              type: number
+            local:
+              type: boolean
+            source:
+              type: string
+        planDistribution:
+          type: object
+          properties:
+            free:
+              type: integer
+            pro:
+              type: integer
+            team:
+              type: integer
+            enterprise:
               type: integer

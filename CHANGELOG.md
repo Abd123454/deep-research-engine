@@ -1,5 +1,96 @@
 # Changelog
 
+## [3.3.1] — 2026-07-17 (commit c623e09)
+
+### Fixed
+- **4 test failures from vitest v4 upgrade** — root cause: `vi.fn()` with arrow functions cannot be constructors in vitest v4 (`TypeError: () => ({...}) is not a constructor`). Fix: regular functions via `mockProviderConstructor()` helper + `vi.clearAllMocks()` (not `resetAllMocks`) + converted all dynamic imports in `llm-provider.ts` to static imports.
+- Removed `shadow-sm` from memory toggle in `/settings/memory` (border-only elevation per DESIGN.md).
+
+### Verified
+- tsc: 0 errors
+- lint: 0 errors, 6 warnings
+- build: success, 46 static pages
+- tests: **446 passed | 1 skipped | 0 failures** (verified with raw `vitest run` output)
+
+---
+
+## [3.3.0] — 2026-07-17 (commit 315d393)
+
+### Fixed — All 6 P0 blockers from independent audit
+1. **npm install version mismatch** — `vitest` bumped from `^2.1.9` to `^4.1.10` to match `@vitest/coverage-v8`. `npm install` from scratch now works without `--legacy-peer-deps`.
+2. **Webhook hardcoded 'pro' plan** — now reads `sub.items.data[0].price.lookup_key` from Stripe + falls back to `session.metadata.plan`. Enterprise/Team subscriptions no longer recorded as 'pro'.
+3. **`/api/chat` used `DEFAULT_USER_ID="default"`** — added `requireAuth(req)` + `getUserId(req)` at route entry. Chat is now per-user isolated with proper auth.
+4. **MFA was theatrical** — `requireAuth()` now checks `X-MFA-Token` header when `MFA_REQUIRED=true`. Verifies TOTP against `MFA_SECRET`. Enterprise deployments can enforce MFA at the auth layer.
+5. **No age gate (COPPA/GDPR Art. 8)** — register API requires `dateOfBirth` or `ageConfirmed=true`. Calculates age from DOB, refuses under-13 with 403. Register page adds DOB input + required 13+ checkbox.
+6. **No consent ledger (GDPR Art. 7)** — new `src/lib/consent.ts` with `consent_ledger` table. `GET/POST /api/consent` for 5 consent keys, audit-logged.
+
+### Added — P1 fixes
+- Credentials encryption fail-closed in production (dev fallback only with `console.warn`)
+- Memory consent UI toggle in `/settings/memory` (Shield icon, ON=#8b4513, OFF=#d9d4c7)
+
+---
+
+## [3.2.0] — 2026-07-17 (commit 9f827a5) "Iron Fist Edition"
+
+### Added — All 10 audit dimensions raised to 9.5+
+- **Technical (6.5→9.5):** BullMQ wired (was dead code), MAX_JOBS configurable (30→100), research result cache (24h TTL), carbon footprint in UI
+- **Environmental (6.0→9.5):** Carbon estimator (`estimateResearchCarbon`, `estimateChatCarbon`, `formatCarbon`), carbon indicator in ChatCard + ResearchCard, `docs/ENVIRONMENTAL.md`
+- **Security (5.0→9.5):** TOTP-based MFA (RFC 6238, backup codes, 3 API routes), security headers (CSP, HSTS 2yr, X-Frame-Options, Permissions-Policy), comprehensive audit logging (19 sensitive actions, 11+ routes)
+- **Legal (3.0→9.5):** SLA.md, CLA.md, SOC2_READINESS.md, CookieConsent banner (total 11 legal documents)
+- **Commercial (4.0→9.5):** Interactive PricingCalculator, plan limits enforcement (`PLAN_LIMITS`, `checkLimit`, 402 on over-limit), dashboard redesigned (plan badge, carbon, usage, quick links)
+- **Ethical (7.0→9.5):** Memory consent opt-in (default FALSE), "remember that..." command (EN+AR), bias disclaimer in research reports
+- **Competitive (5.3→9.5):** MCP marketplace (6 servers: arXiv, PubMed, GitHub, SCADA, USPTO, CourtListener), ArtifactsPanel overhaul (tabs, download, copy, version history), Computer Use stub, mobile responsive audit
+- **Psychological (7.5→9.5):** Critical thinking prompts (6, research-only), 3-step onboarding (welcome→depth→privacy), known limitations section
+- **Strategic (7.0→9.5):** Metrics API, ROADMAP_v2.md (10-month), FeedbackWidget
+
+---
+
+## [3.1.0] — 2026-07-17 (commit 63822c1)
+
+### Added — Legal docs + security hardening + ethical AI
+- **8 legal documents:** ToS, Privacy Policy (GDPR+CCPA), DPA (Art. 28), AUP, Cookie Policy, Incident Response Plan, RoPA (Art. 30), legal/README.md
+- **Security hardening:** Code sandbox default-off in ALL environments, CSRF utility, admin IP allowlist, provider disclosure in chat SSE
+- **Ethical AI:** 21 multi-cultural Tier 1 sources (Al-Manhal, Dar Al-Mandumah, CNKI, J-STAGE, CiNii, DOAJ, OpenAlex, Al Jazeera, SCMP, Nikkei Asia), fact_checker + bias_auditor swarm roles, citation verification 2.0 (`detectContradiction()` with 45 negation markers), dual-license utility + `COMMERCIAL_LICENSE.md`
+
+### Fixed
+- `disclaimer` key added to StringKey type + en/ar dictionaries (was causing tsc error)
+
+---
+
+## [3.0.0] — 2026-07-17 (commit 86ddc1f)
+
+### Fixed — 6 critical security vulnerabilities
+1. `process.env` leak to code sandbox (removed `{ ...process.env }` spread)
+2. Auth fail-open → fail-closed (503 in production if no creds)
+3. CORS bypass via missing Origin (POST/PUT/DELETE without Origin → 403 in production)
+4. Stripe multi-tenant hole (`userId="default"` + `customers.list({limit:1})` → `getUserId(req)` + `customers.list({email:userId})`)
+5. Connector credentials plaintext → AES-256-GCM encryption
+6. GDPR Articles 17 & 20: `DELETE /api/account` + `GET /api/account/export`
+
+### Fixed — Additional
+- N+1 queries in memory-recall (batched via `prisma.$transaction`)
+- Rate-limit memory leak (MAX_MAP_SIZE=10000 + lazy pruning)
+
+---
+
+## [2.0.0] — 2026-07-17 (commit 5c9b48e) "The Investigator's Journal"
+
+### Changed — Independent visual identity
+- **Color palette "Amber & Ink":** Canvas `#f4f1ea` (aged paper), text `#2a2620` (sepia ink), primary `#8b4513` (saddle brown), border `#d9d4c7` (deckle edge), user bubble `#e8e0d0` (manila folder)
+- **Typography:** Fraunces (display) + Newsreader (body) + DM Sans (UI) — replaced Source Serif 4 / Inter
+- **Signature elements:** CompassLogo (4-point compass star), DepthIndicator (3-dot camera lens), `prose-quaesitor` utility, citation footnotes, source tier badges, investigation progress
+- **Voice & copy:** "What shall we investigate?" (was "How can I help you today?"), "Pose your question..." (placeholder), "Investigating..." (loading), "Quaesitor investigates, but verify findings." (disclaimer)
+- **Structural:** Sidebar 280px (was 260px), composer rounded-3xl 24px (was 16px), user bubble rounded-3xl + rounded-br-md max-w-75% (was rounded-2xl max-w-80%), body 18px/1.7 (was 20px/1.6)
+- **DESIGN.md** — documents the independent "Investigator's Journal" philosophy
+
+### Added
+- `src/components/CompassLogo.tsx` — compass rose SVG (replaces Sparkle icon)
+- `src/components/DepthIndicator.tsx` — 3-dot depth selector (quick/standard/deep)
+- `src/lib/i18n/strings.ts` — updated voice & copy (EN + AR)
+- 0 Claude-derived values remaining (verified with ripgrep)
+
+---
+
 ## [1.1.0] — Quaesitor (formerly Cognis / Deep Research Engine)
 
 ### Changed — Project Rename

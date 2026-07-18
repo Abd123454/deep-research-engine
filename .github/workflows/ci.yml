@@ -1,5 +1,11 @@
 # CI pipeline: lint + typecheck + test on every push and PR.
 # Runs on Node 20 (matches .nvmrc and engines field).
+#
+# Two parallel jobs:
+#   - ci:        the canonical run using Bun (the primary dev runtime)
+#   - npm-test:  a compatibility run using plain npm + Node, so that
+#                contributors who don't have Bun installed don't
+#                silently break the npm install / lint / test path.
 
 name: CI
 
@@ -39,3 +45,15 @@ jobs:
 
       - name: Unit tests
         run: bun run test
+
+  npm-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run lint
+      - run: npm test
