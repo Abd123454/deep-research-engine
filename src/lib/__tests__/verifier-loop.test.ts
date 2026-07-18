@@ -192,8 +192,13 @@ describe("Code verifier loop (Round 11 wiring)", () => {
       expect(executeToolCall).toHaveBeenCalledTimes(1);
     });
 
-    it("respects MAX_TOOL_ITERATIONS limit", async () => {
-      // detectToolCall always returns a tool call — the worker should hit the iteration limit.
+    it("breaks the ReAct loop on degenerate retry (same tool+args 3+ times)", async () => {
+      // detectToolCall always returns the SAME tool call — the worker should
+      // break out of the loop after LOOP_DETECTION_THRESHOLD (3) attempts,
+      // rather than burning the entire MAX_TOOL_ITERATIONS=15 budget on
+      // identical failing retries. This is the Kimi/Trilogy production
+      // post-mortem mitigation: degenerate retry loops are detected and
+      // aborted before they degrade the model's output.
       vi.mocked(detectToolCall).mockReturnValue({ tool: "run_code", params: { language: "javascript", code: "1+1" } } as any);
       vi.mocked(executeToolCall).mockResolvedValue({
         tool: "run_code",
@@ -209,8 +214,10 @@ describe("Code verifier loop (Round 11 wiring)", () => {
         () => {}
       );
 
-      // Should have called executeToolCall MAX_TOOL_ITERATIONS times (4).
-      expect(executeToolCall).toHaveBeenCalledTimes(4);
+      // Should have called executeToolCall exactly LOOP_DETECTION_THRESHOLD
+      // times (3), then broken the loop on the 4th attempt WITHOUT executing.
+      // This is the "3+ times with identical arguments → break" semantics.
+      expect(executeToolCall).toHaveBeenCalledTimes(3);
     });
   });
 });

@@ -1,0 +1,672 @@
+URL: https://www.mindstudio.ai/blog/kimi-k2-300-sub-agents-4000-steps-4x-h100s-story-hermes-found
+TITLE: Kimi K2 Runs 300 Sub-Agents Across 4,000 Steps on 4x H100s — The Story Hermes Found That Everyone Missed
+PUBLISHED: 2026-05-04T00:00:00.000Z
+
+Kimi K2 Runs 300 Sub-Agents Across 4,000 Steps on 4x H100s — The Story Hermes Found That Everyone Missed | MindStudio
+
+We value your privacy
+We use cookies to enhance your browsing experience, serve personalized ads or content, and analyze our traffic. By clicking "Accept All", you consent to our use of cookies.
+
+Customize Reject All Accept All 
+
+Customize Consent Preferences 
+We use cookies to help you navigate efficiently and perform certain functions. You will find detailed information about all cookies under each consent category below.
+The cookies that are categorized as "Necessary" are stored on your browser as they are essential for enabling the basic functionalities of the site. ... Show more
+
+NecessaryAlways Active
+Necessary cookies are required to enable the basic features of this site, such as providing secure log-in or adjusting your consent preferences. These cookies do not store any personally identifiable data.
+
+Cookie
+mindstudio_attributionData
+
+Duration
+1 month
+
+Description
+MindStudio cookie for user signup.
+
+Cookie
+GAESA
+
+Duration
+1 month
+
+Description
+This cookie ensures proper server routing for our documentation site. It is required for technical functionality and does not collect personal data.
+
+Cookie
+destination_url
+
+Duration
+session
+
+Description
+This cookie stores the intended destination URL to redirect users after login or authentication on our community forum.
+
+Cookie
+__cf_bm
+
+Duration
+1 hour
+
+Description
+This cookie, set by Cloudflare, is used to support Cloudflare Bot Management. 
+
+Cookie
+intercom-id-*
+
+Duration
+8 months 26 days 1 hour
+
+Description
+Intercom sets this cookie that allows visitors to see any conversations they've had on Intercom websites.
+
+Cookie
+intercom-session-*
+
+Duration
+7 days
+
+Description
+Intercom sets this cookie that allows visitors to see any conversations they've had on Intercom websites.
+
+Cookie
+intercom-device-id-*
+
+Duration
+8 months 26 days 1 hour
+
+Description
+Intercom sets this cookie that allows visitors to see any conversations they've had on Intercom websites.
+
+Cookie
+cookietest
+
+Duration
+session
+
+Description
+The cookietest cookie is typically used to determine whether the user's browser accepts cookies, essential for website functionality and user experience.
+
+Cookie
+cookieyes-*
+
+Duration
+1 year
+
+Description
+CookieYes sets this cookie for consent solution management.
+
+Functional
+
+Functional cookies help perform certain functionalities like sharing the content of the website on social media platforms, collecting feedback, and other third-party features.
+
+Cookie
+li_gc
+
+Duration
+6 months
+
+Description
+Linkedin set this cookie for storing visitor's consent regarding using cookies for non-essential purposes.
+
+Cookie
+lidc
+
+Duration
+1 day
+
+Description
+LinkedIn sets the lidc cookie to facilitate data center selection.
+
+Cookie
+__session
+
+Duration
+1 year 1 month 4 days
+
+Description
+GitBook sets this cookie for logging in.
+
+Cookie
+ytidb::LAST_RESULT_ENTRY_KEY
+
+Duration
+Never Expires
+
+Description
+The cookie ytidb::LAST_RESULT_ENTRY_KEY is used by YouTube to store the last search result entry that was clicked by the user. This information is used to improve the user experience by providing more relevant search results in the future.
+
+Cookie
+__Secure-YEC
+
+Duration
+past
+
+Description
+YouTube sets this cookie to stores the user's video player preferences using embedded YouTube video
+
+Analytics
+
+Analytical cookies are used to understand how visitors interact with the website. These cookies help provide information on metrics such as the number of visitors, bounce rate, traffic source, etc.
+
+Cookie
+_ga_*
+
+Duration
+1 year 1 month 4 days
+
+Description
+Google Analytics sets this cookie to store and count page views.
+
+Cookie
+_ga
+
+Duration
+1 year 1 month 4 days
+
+Description
+Google Analytics sets this cookie to calculate visitor, session and campaign data and track site usage for the site's analytics report. The cookie stores information anonymously and assigns a randomly generated number to recognise unique visitors.
+
+Cookie
+__hstc
+
+Duration
+6 months
+
+Description
+Hubspot set this main cookie for tracking visitors. It contains the domain, initial timestamp (first visit), last timestamp (last visit), current timestamp (this visit), and session number (increments for each subsequent session).
+
+Cookie
+hubspotutk
+
+Duration
+6 months
+
+Description
+HubSpot sets this cookie to keep track of the visitors to the website. This cookie is passed to HubSpot on form submission and used when deduplicating contacts.
+
+Cookie
+__hssrc
+
+Duration
+session
+
+Description
+HubSpot cookie sets this cookie to determine if the visitor has restarted their browser. If this cookie does not exist when HubSpot manages cookies, it is considered a new session.
+
+Cookie
+__hssc
+
+Duration
+1 hour
+
+Description
+HubSpot sets this cookie to keep track of sessions. This is used to determine if HubSpot should increment the session number and timestamps in the __hstc cookie. It contains the domain, viewCount (which  increments with each pageview in a session), and session start timestamp.
+
+Cookie
+_clck
+
+Duration
+1 year
+
+Description
+Microsoft Clarity sets this cookie to retain the browser's Clarity User ID and settings exclusive to that website. This guarantees that actions taken during subsequent visits to the same website will be linked to the same user ID.
+
+Cookie
+_clsk
+
+Duration
+1 day
+
+Description
+Microsoft Clarity sets this cookie to store and consolidate a user's pageviews into a single session recording.
+
+Cookie
+ajs_anonymous_id
+
+Duration
+1 year
+
+Description
+This cookie is set by Segment to count the number of people who visit a certain site by tracking if they have visited before.
+
+Performance
+
+Performance cookies are used to understand and analyze the key performance indexes of the website which helps in delivering a better user experience for the visitors.
+
+Cookie
+GCLB
+
+Duration
+session
+
+Description
+This cookie is known as Google Cloud Load Balancer set by the provider Google. This cookie is used for external HTTPS load balancing of the cloud infrastructure with Google.
+
+Advertisement
+
+Advertisement cookies are used to provide visitors with customized advertisements based on the pages you visited previously and to analyze the effectiveness of the ad campaigns.
+
+Cookie
+bcookie
+
+Duration
+1 year
+
+Description
+LinkedIn sets this cookie from LinkedIn share buttons and ad tags to recognize browser IDs.
+
+Cookie
+YSC
+
+Duration
+session
+
+Description
+Youtube sets this cookie to track the views of embedded videos on Youtube pages.
+
+Cookie
+VISITOR_INFO1_LIVE
+
+Duration
+6 months
+
+Description
+YouTube sets this cookie to measure bandwidth, determining whether the user gets the new or old player interface.
+
+Cookie
+VISITOR_PRIVACY_METADATA
+
+Duration
+6 months
+
+Description
+YouTube sets this cookie to store the user's cookie consent state for the current domain. 
+
+Cookie
+test_cookie
+
+Duration
+15 minutes
+
+Description
+doubleclick.net sets this cookie to determine if the user's browser supports cookies.
+
+Cookie
+_fbp
+
+Duration
+3 months
+
+Description
+Facebook sets this cookie to store and track interactions.
+
+Cookie
+_gcl_au
+
+Duration
+3 months
+
+Description
+Google Tag Manager sets this cookie to experiment advertisement efficiency of websites using their services.
+
+Cookie
+_rdt_uuid
+
+Duration
+3 months
+
+Description
+Reddit sets this cookie to build a profile of your interests and show you relevant ads.
+
+Cookie
+__Secure-ROLLOUT_TOKEN
+
+Duration
+6 months
+
+Description
+YouTube sets this cookie to manage feature rollout and experimentation. It helps Google control which new features or interface changes are shown to users as part of testing and staged rollouts, ensuring consistent experience for a given user during an experiment.
+
+Cookie
+__Secure-YNID
+
+Duration
+6 months
+
+Description
+Google cookie used to protect user security and prevent fraud, especially during the login process.
+
+Cookie
+__Host-GAPS
+
+Duration
+2 years
+
+Description
+This cookie allows the website to identify a user and provide enhanced functionality and personalisation.
+
+Uncategorised
+
+Other uncategorised cookies are those that are being analysed and have not been classified into a category as yet.
+
+Cookie
+loom_anon_comment
+
+Duration
+1 year
+
+Description
+No description available.
+
+Cookie
+loom_referral_video
+
+Duration
+session
+
+Description
+Description is currently not available.
+
+Cookie
+__Host-psifi.analyticsTrace
+
+Duration
+6 hours
+
+Description
+Description is currently not available.
+
+Cookie
+__Host-psifi.analyticsTraceV2
+
+Duration
+6 hours
+
+Description
+Description is currently not available.
+
+Cookie
+_fontshare_key
+
+Duration
+session
+
+Description
+Description is currently not available.
+
+Accept All Save My Preferences Reject All
+Powered by 
+
+Skip to main contentProduct
+AI ModelsAI Media WorkbenchAgent Skills PluginWorkflow Capabilities
+
+PricingLearn
+UniversityDocumentation
+
+BlogAbout
+Log inGet Started
+
+My Workspace
+
+Product
+AI ModelsAI Media WorkbenchAgent Skills PluginWorkflow Capabilities
+
+PricingLearn
+UniversityDocumentation
+
+BlogAbout
+Log inGet Started
+
+My Workspace
+
+Blog/Kimi K2 Runs 300 Sub-Agents Across 4,000 Steps on 4x H100s — The Story Hermes Found That Everyone MissedMulti-AgentLLMs & ModelsAutomation
+Kimi K2 Runs 300 Sub-Agents Across 4,000 Steps on 4x H100s — The Story Hermes Found That Everyone Missed
+Hermes's content ideation agent surfaced Kimi K2: an open-source system orchestrating 300 sub-agents across 4,000 coordinated steps on 4x H100 GPUs.
+MindStudio Team·May 4, 2026·
+
+RSS
+Kimi K2 Orchestrates 300 Sub-Agents Across 4,000 Steps — And Most Coverage Missed the Point Entirely
+
+Kimi K2’s benchmark numbers got the headlines. The actual story — a system that orchestrates 300 sub-agents across 4,000 coordinated steps on 4x H100 GPUs, released as open source — barely registered.
+
+That detail didn’t surface from a press release or a researcher’s Twitter thread. It surfaced when a Hermes agent, running on a $0.24/hour CPU instance at hpcai.com, was asked a simple content ideation prompt: “Research what’s going on in AI and give me three fresh content ideas that most people have overlooked but are important.”
+
+The agent came back with this: “Everyone is talking about Kimi K2 comparing benchmark scores, but they’re missing what Kimi actually shipped. The system that orchestrates 300 sub-agents across 4,000 coordinated steps on four times H100 GPUs. That’s not a better model, that’s an execution substrate, and it’s open source.”
+
+That framing — “execution substrate, not a better model” — is the right frame. And the fact that an autonomous agent surfaced it before most human analysts did is itself worth examining.
+
+The Benchmark Coverage Was a Distraction
+
+When Kimi K2 dropped, the coverage pattern was predictable: MMLU scores, coding benchmarks, comparisons to GPT-4o and Claude. The usual leaderboard journalism.
+
+That coverage isn’t wrong, exactly. Benchmark comparisons are useful. But they describe the model in isolation, as if the interesting question is “how smart is it?” rather than “what does it actually do when deployed?”
+
+Remy is new.
+The platform isn't.
+
+Remy
+
+Product Manager Agent
+
+THE PLATFORM
+
+200+ models
+1,000+ integrations
+Managed DB
+Auth
+Payments
+Deploy
+
+▮
+
+BUILT BY MINDSTUDIO
+
+Shipping agent infrastructure since 2021
+
+Remy is the latest expression of years of platform work.
+Not a hastily wrapped LLM.
+
+The world's most powerful product manager agentTry Remy today
+
+The interesting question with Kimi K2 is the second one. What Moonshot AI shipped isn’t just a model with good scores — it’s a multi-agent orchestration system where the model serves as the reasoning layer inside a much larger execution architecture.
+
+300 sub-agents. 4,000 coordinated steps. Four H100 GPUs running in parallel. That’s not a chatbot with a better MMLU score. That’s an infrastructure decision about how to decompose hard problems into parallelizable work.
+
+The AutoResearch loop pattern that Karpathy described — where agents autonomously run experiments, measure results, and iterate — is essentially what Kimi K2’s architecture operationalizes at scale. The difference is that Kimi K2 ships with the orchestration layer already built.
+
+What 300 Sub-Agents Actually Means
+
+The number sounds impressive, but the architecture question is more interesting than the count.
+
+Running 300 sub-agents in parallel isn’t just “more agents.” It requires a coordination layer that can decompose a task into 300 independent work units, dispatch them, track their state, handle failures, and synthesize results. That’s a distributed systems problem as much as it’s an AI problem.
+
+4,000 coordinated steps across those agents means the system isn’t just fan-out parallelism — it’s maintaining state and dependencies across a long execution graph. Some agents are presumably waiting on outputs from others. The orchestrator has to manage that dependency graph without losing coherence.
+
+This is why the “execution substrate” framing matters. A better model gives you better answers to individual questions. An execution substrate gives you the ability to run qualitatively different classes of work — tasks that are too large, too parallelizable, or too long-running for a single model call to handle.
+
+The open-source release compounds this. When the orchestration architecture is open, teams can inspect how Moonshot AI solved the coordination problem, adapt it, and build on top of it. That’s a different kind of contribution than releasing model weights with a permissive license.
+
+How an Autonomous Agent Found This Before Most Humans Did
+
+The Hermes content ideation demo is worth examining on its own terms, separate from what it found.
+
+The prompt was deliberately vague: research AI news, surface three overlooked but important ideas. No specific sources, no constraints on format, no list of topics to check. The agent had to decide what “overlooked but important” means operationally — which sources to scrape, how to weight recency versus significance, how to distinguish “covered but underweighted” from “genuinely missed.”
+
+It came back with three ideas. The Kimi K2 multi-agent architecture story. An AI paper using Sam Altman’s WorldCoin data to argue against UBI. A paper claiming all 12 tested AI safety defenses had been broken.
+
+Two out of three of those are stories that would require a human researcher to be actively monitoring the right corners of arXiv and AI Twitter to catch. The Kimi K2 one in particular requires knowing that benchmark coverage ≠ architecture coverage — a distinction that takes some domain knowledge to make.
+
+The agent made that distinction correctly.
+
+This is the part of the demo that doesn’t get enough attention in discussions of autonomous agents. The value isn’t just automation of known tasks. It’s the ability to surface signal from noise in domains where you don’t have time to maintain continuous attention.
+
+Introducing Remy
+
+200+
+AI models
+
+1000+
+Integrations
+
+Years
+Of production use
+
+200+ AI models. 1000+ integrations. Built in from day one.
+
+Remy runs on MindStudio — infrastructure we've been building for years. Every model and every integration is ready the moment your app needs it.
+
+Try Remy today →
+
+The Broader Pattern: What Gets Missed When Coverage Optimizes for Speed
+
+There’s a structural reason the Kimi K2 architecture story got underweighted. Benchmark comparisons are fast to produce and easy to verify — you run the eval, you report the number. Architecture analysis requires reading technical documentation, understanding distributed systems tradeoffs, and making a judgment call about what’s significant.
+
+Under time pressure, coverage optimizes for the fast path. Benchmark numbers get published within hours. Architecture analysis shows up days later, if at all.
+
+This is a general problem in AI coverage, not specific to Kimi K2. The Claude Mythos surfacing through API leaks and benchmark drops rather than official announcements is another example of the same pattern — the technically significant signal arriving through indirect channels while official coverage focuses on announced features.
+
+Autonomous agents running continuous research loops are one partial solution to this. They don’t have the time pressure that drives human coverage toward the fast path. They can run a broader search, weight sources differently, and surface things that fall outside the standard coverage template.
+
+The Hermes demo ran on a CPU instance at $0.24/hour. The agent that found the Kimi K2 architecture story cost less than a cup of coffee to run. That’s a meaningful asymmetry.
+
+What the Architecture Implies for Builders
+
+If you’re building multi-agent systems, the Kimi K2 architecture raises some concrete questions worth thinking through.
+
+The 300 sub-agent number implies a task decomposition strategy. Most multi-agent frameworks top out well below that in practice — not because of technical limits, but because task decomposition gets hard. How do you break a problem into 300 independent units without creating so many dependencies that the parallelism is illusory? How do you handle the 5% of sub-agents that fail or return garbage?
+
+The 4,000 coordinated steps number implies persistent state management across a long execution. That’s different from stateless fan-out. It means the orchestrator is maintaining a model of what’s been done, what’s in flight, and what’s blocked — essentially a workflow engine embedded in the agent architecture.
+
+For teams building on top of open-source frameworks, this is the design space worth studying in the Kimi K2 release. Not the benchmark scores — the coordination architecture.
+
+Platforms like MindStudio handle this orchestration layer for teams that don’t want to build it from scratch: 200+ models, 1,000+ integrations, and a visual builder for chaining agents and workflows without writing the coordination code yourself.
+
+The Open-Source Angle Is Underreported Too
+
+Kimi K2 being open source isn’t just a licensing detail. It means the 300-agent orchestration architecture is inspectable.
+
+Most proprietary multi-agent systems are black boxes. You can observe their outputs, but you can’t examine how they decompose tasks, how they handle failures, or what the coordination protocol looks like between agents. Open-source releases change that.
+
+The MiniMax M2.7 self-optimization architecture is another case where the open release mattered more than the benchmark numbers — because it let researchers examine the recursive self-improvement mechanism directly rather than inferring it from outputs.
+
+Other agents start typing.
+Remy starts asking.
+
+YOU SAID
+"Build me a sales CRM."
+
+REMY ASKS
+
+01
+DESIGN
+Should it feel like Linear, or Salesforce?
+
+02
+UX
+How do reps move deals — drag, or dropdown?
+
+03
+ARCH
+Single team, or multi-org with permissions?
+
+Scoping, trade-offs, edge cases — the real work. Before a line of code.
+
+The world's most powerful product manager agentTry Remy today
+
+With Kimi K2, the same principle applies. Researchers and engineers can study how Moonshot AI solved the 300-agent coordination problem. That’s a contribution to the field that doesn’t show up in any benchmark table.
+
+What to Watch
+
+The immediate question is whether the Kimi K2 orchestration architecture gets adopted, forked, or improved by the open-source community. The model weights matter less than whether the coordination layer proves useful outside Moonshot AI’s specific use cases.
+
+Watch for papers and blog posts analyzing the coordination protocol specifically. The benchmark comparisons will keep coming — they’re easy to produce. The architecture analysis will take longer but will be more useful.
+
+If you’re building agents that need to decompose large tasks into parallel workstreams, the Kimi K2 release is worth studying directly rather than through the benchmark coverage. The Gemma 4 vs Qwen 3.6 Plus comparison for agentic workflows covers some of the model-level tradeoffs for open-weight options, but the Kimi K2 architecture question is upstream of model selection — it’s about how you structure the work before you decide which model handles each piece.
+
+The secondary question is what the Hermes content ideation pattern implies for research workflows. An agent running on a $0.24/hour CPU instance, given a vague prompt about overlooked AI stories, surfaced a technically significant architecture detail that most human coverage missed. That’s not a fluke — it’s a repeatable capability. The prompt was “Research what’s going on in AI and give me three fresh content ideas that most people have overlooked but are important.” You could run that prompt today.
+
+For teams building research or monitoring workflows on top of agent infrastructure, this is the pattern worth replicating. Not the specific use case, but the structure: continuous autonomous research, weighted toward signal that falls outside standard coverage templates, delivered through whatever messaging integration fits your workflow (Telegram, Discord, Slack — Hermes supports all three out of the box).
+
+The Kimi K2 story is a good example of what that looks like in practice. An execution substrate, not a better model. Open source. Running 300 agents across 4,000 steps. The benchmark coverage will fade. The architecture will matter for longer.
+
+If you’re thinking about how to build production tooling on top of insights like this — say, a monitoring dashboard that tracks architectural releases rather than benchmark scores — Remy takes a different approach to that kind of app: you write the application as an annotated spec, and it compiles into a complete TypeScript backend, SQLite database, frontend, and deployment. The spec is the source of truth; the code is derived output.
+
+The Hermes agent found the story. What you do with it is the next problem.
+
+Related Articles
+
+July 16, 2026What Is a 26M Parameter Function Calling Model? Cactus Needle Explained
+Cactus Needle is a 26 million parameter model built exclusively for function calling. Learn its architecture, benchmarks, and when to use it over larger models.
+LLMs & ModelsAI ConceptsAutomation
+
+July 16, 2026What Is GPT-5.6 Ultra Mode? Multi-Agent Coordination for Complex Tasks
+GPT-5.6 Ultra Mode spawns four or more parallel agents to tackle demanding tasks. Learn when to use it, what it costs, and how it compares to standard mode.
+GPT & OpenAIMulti-AgentLLMs & Models
+
+July 15, 2026What Is GPT-5.6 Ultra Mode? Multi-Agent Coordination for Complex Tasks
+GPT-5.6 Ultra Mode spawns four or more parallel agents to tackle demanding tasks. Learn how it works, what it costs, and when it's worth using.
+GPT & OpenAIMulti-AgentLLMs & Models
+
+July 14, 2026Open-Weight AI Models Are Closing the Gap: What GLM 5.2 Means for Your Agent Stack
+GLM 5.2 beats models 20x its size on function calling and design tasks. Here's what open-weight AI catching up means for your automation stack.
+LLMs & ModelsAutomationAI Concepts
+
+Presented by MindStudio
+The AI builder's briefing
+New models, automation patterns, and what actually works in production — delivered weekly to your inbox.
+Get the briefing
+
+No spam. Unsubscribe anytime.
+
+You're in! Check your inbox.
+
+Get weekly AI insights from MindStudio
+Subscribe
+
+Compare
+n8n vs MindStudio
+Make vs MindStudio
+Zapier vs MindStudio
+Botpress vs MindStudio
+LangChain vs MindStudio
+CrewAI vs MindStudio
+Retool vs MindStudio
+
+Use Cases
+Product Management
+Marketing
+Sales
+Customer Success
+Human Resources
+Legal
+Lead Generation
+
+Capabilities
+Image Generation
+Prompt Engineering
+RAG
+Human-in-the-Loop
+MCP Servers
+Multi-Step Reasoning
+
+MindStudio
+About
+Pricing
+Blog
+Newsroom
+Contact
+Trust Center
+Community
+Documentation
+
+Programs
+Enterprise
+Developers
+Partners
+Referral Program
+
+MindStudio
+
+Terms of UsePrivacy PolicyDPA© 2026 MindStudio (GoMeta, Inc.). All rights reserved.

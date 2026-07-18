@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/MoonshotAI/kimi-cli",
+    "name": "MoonshotAI/kimi-cli: Kimi Code CLI is your next CLI agent. - GitHub",
+    "snippet": "Kimi CLI is an AI agent that runs in the terminal, helping you complete software development tasks and terminal operations. Kimi CLI supports MCP (Model ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://forum.moonshot.ai/t/mcp-use-for-kimi-k2-when-used-through-the-moonshot-api/90",
+    "name": "MCP use for Kimi K2 when used through the moonshot API",
+    "snippet": "So the short answer is: you don't send an “MCP endpoint” to Kimi; you send ordinary tool definitions, and your local agent (or Playground) can ...",
+    "host_name": "forum.moonshot.ai",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moonshotai.github.io/Kimi-K2",
+    "name": "Kimi K2: Open Agentic Intelligence",
+    "snippet": "Give Kimi K2 your tools and describe your task. It automatically understands how to use the tools and gets the job done. You don't have to write any complex ...",
+    "host_name": "moonshotai.github.io",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.kimi.ai/docs/overview",
+    "name": "Quickstart - Kimi API Platform",
+    "snippet": "Kimi API lets you interact with Kimi models and is compatible with the OpenAI API format. Use it for general chat, agent tasks, visual understanding, and ...",
+    "host_name": "platform.kimi.ai",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/aicuriosity/comments/1u0cl35/kimi_work_local_desktop_ai_agent_swarm_launched",
+    "name": "Kimi Work Local Desktop AI Agent Swarm Launched by Moonshot AI",
+    "snippet": "Moonshot AI just released Kimi Work. It is a desktop app that runs AI agents right on your computer. It supports up to 300 agents working at ...",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cirra.ai/articles/kimi-k2-agentic-llm-mcp",
+    "name": "Kimi K2 Explained: Agentic Architecture & MCP Integration | Cirra",
+    "snippet": "Kimi K2 is a groundbreaking open-source agentic Large Language Model (LLM) developed by Moonshot AI (China) in mid-2025.",
+    "host_name": "cirra.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://blog.cloudflare.com/workers-ai-large-models",
+    "name": "Workers AI now runs large models, starting with Kimi K2.5",
+    "snippet": "We now offer frontier open-source models on our AI inference platform. We're starting by releasing Moonshot AI's Kimi K2.5 model on Workers AI.",
+    "host_name": "blog.cloudflare.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://trilogyai.substack.com/p/kimi-k3-is-live-pricing-benchmarks",
+    "name": "Kimi K3 Is Live: Pricing, Benchmarks, and the Wait for Open Source",
+    "snippet": "Moonshot describes Kimi K3 as a long-horizon agent model for software engineering, knowledge work, and multimodal reasoning. K3 uses Stable ...",
+    "host_name": "trilogyai.substack.com",
+    "rank": 7,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://composio.dev/toolkits/all_images_ai/framework/kimi",
+    "name": "How to integrate All images ai MCP with Kimi Code - Composio",
+    "snippet": "Kimi Code is Moonshot AI's open-source coding agent, powered by Kimi K2.6. It runs in your terminal, reads and edits code, executes shell ...",
+    "host_name": "composio.dev",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=ZwSTXuhyFHk",
+    "name": "Kimi K3 + Hermes AI Agent is INSANE! - YouTube",
+    "snippet": "Get the Hermes Agent OS & Kimi K3 setup https://www.skool.com/ai-profit-lab-7462/about Want to make money and save time with AI?",
+    "host_name": "www.youtube.com",
+    "rank": 9,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  }
+]

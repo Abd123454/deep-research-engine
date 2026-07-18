@@ -1,0 +1,274 @@
+URL: https://deepinfra.com/blog/kimi-k2-6-model-overview
+TITLE: Kimi K2.6 Model Overview: Architecture, Features & Capabilities
+PUBLISHED: Sat, 18 Jul 2026 02:45:18 GMT
+
+Kimi K2.6 Model Overview: Architecture, Features & CapabilitiesWe use essential cookies to make our site work. With your consent, we may also use non-essential cookies to improve user experience and analyze website traffic…
+AcceptReject
+
+DeepInfra raises $107M Series B to scale the inference cloud — read the announcement
+
+ModelsBy Category
+
+Automatic Speech Recognition
+Embeddings
+Reranker
+Text Generation
+Text To Image
+Text To Music
+Text To Speech
+Text To Video
+World Model
+Zero Shot Image Classification
+View all models
+
+By Family
+
+/Claude
+
+/DeepSeek
+
+/Flux
+
+/Gemini
+
+/Llama
+
+/Mistral
+
+/Nemotron
+
+/Qwen
+
+DocsPricingGPUsChatDeepStartDeepClusterBlogContact SalesLog In
+
+Models
+Automatic Speech RecognitionEmbeddingsRerankerText GenerationText To ImageText To MusicText To SpeechText To VideoWorld ModelZero Shot Image Classification
+
+Docs
+
+Pricing
+
+GPUs
+
+Chat
+
+DeepStart
+
+DeepCluster
+
+Blog
+
+Feedback
+
+Contact Sales
+Log In
+
+Kimi K2.6 Model Overview: Architecture, Features & CapabilitiesPublished on 2026.04.30 by DeepInfra
+
+Kimi K2.6 is Moonshot AI’s latest flagship open-source model, released on April 20, 2026 under a Modified MIT license. It is a native multimodal agentic model built on a 1-trillion parameter Mixture-of-Experts (MoE) architecture, with 32 billion parameters activated per token. The model is designed for long-horizon coding, autonomous execution, and multi-agent orchestration, and is available via the DeepInfra API as moonshotai/Kimi-K2.6.
+
+Key Capabilities
+
+Agent Swarm and Multi-Agent Orchestration
+
+Kimi K2.6 includes an Agent Swarm system that scales to 300 domain-specialized sub-agents, executing up to 4,000 coordinated steps in a single autonomous run — up from 100 sub-agents and 1,500 steps in K2.5. The orchestration layer decomposes complex prompts into parallel subtasks and synthesizes outputs into finished deliverables such as research documents, functional websites, or spreadsheets.
+
+Coding and Full-Stack Development
+
+The model is optimized for software engineering across Rust, Go, and Python, handling tasks from front-end generation to DevOps and performance optimization. Its coding-driven design capability transforms text prompts and visual mockups into production-ready interfaces. Note: image input is not exposed through the API — vision capabilities are used internally by the model’s MoonViT encoder but are not available as a direct API input parameter.
+
+Long-Horizon Autonomous Execution
+
+Kimi K2.6 supports persistent background agent execution, including continuous runs of 12+ hours with thousands of tool calls. It is designed for cross-platform operations and multi-step workflows that extend well beyond standard chat interaction patterns.
+
+Technical Specifications and Performance
+
+Architecture
+
+Model type: Mixture-of-Experts (MoE), 1 trillion total parameters
+
+Active parameters: 32 billion per token
+
+Experts: 384 total, 8 selected per token (plus 1 shared expert), 61 layers
+
+Context window: 262,144 tokens (256K), using Multi-Head Latent Attention (MLA)
+
+Vision encoder: 400M-parameter MoonViT (used internally; image input not exposed via API)
+
+Quantization: Native INT4 and FP4 supported for high-concurrency deployment
+
+Inference engines: vLLM, SGLang, KTransformers
+
+Benchmark Performance
+
+Kimi K2.6 leads on agentic and coding benchmarks, while trailing on pure math reasoning. All Kimi K2.6 results use thinking mode enabled. Asterisked (*) competitor scores were re-evaluated by Moonshot under the same conditions, as published scores were not available from the original sources.
+
+CategoryBenchmarkKimi K2.6GPT-5.4Claude Opus 4.6Gemini 3.1 Pro
+AgenticHLE-Full (w/ tools)54.052.153.051.4
+DeepSearchQA (Acc)83.063.780.660.2
+CodingSWE-Bench Pro58.657.753.454.2
+LiveCodeBench v689.6—88.891.7
+ReasoningAIME 202696.499.296.7*98.3*
+VisionMathVision (w/ Py)93.296.1*84.6*95.7*
+
+Additional results:
+
+SWE-Bench Verified: 80.2 — within 0.6 points of Claude Opus 4.6 (80.8)
+
+BrowseComp: 83.2 in single-agent mode; 86.3 in Agent Swarm mode
+
+IMO-AnswerBench: 86.0, ahead of Claude Opus 4.6 (75.3)
+
+Pure reasoning gap: GPT-5.4 leads on AIME 2026 (99.2 vs 96.4) and GPQA-Diamond (92.8 vs 90.5). For workloads requiring high single-turn mathematical reasoning accuracy, this gap is relevant.
+
+Getting Started with the Kimi K2.6 API
+
+Kimi K2.6 is available via DeepInfra’s OpenAI-compatible API.
+
+Authentication
+
+Obtain your API key from your DeepInfra account dashboard.
+
+Include it in requests as a Bearer token: Authorization: Bearer YOUR_DEEPINFRA_API_KEY
+
+API Endpoint Basics
+
+Base URL: https://api.deepinfra.com/v1/openai/chat/completions
+
+Model identifier: moonshotai/Kimi-K2.6
+
+HTTP method: POST
+
+Content type: application/json
+
+cURL Example
+
+curl -X POST \
+https://api.deepinfra.com/v1/openai/chat/completions \
+-H "Authorization: Bearer YOUR_DEEPINFRA_API_KEY" \
+-H "Content-Type: application/json" \
+-d '{
+"model": "moonshotai/Kimi-K2.6",
+"messages": [
+{"role": "system", "content": "You are a helpful assistant."},
+{"role": "user", "content": "What are the core capabilities of Kimi K2.6?"}
+],
+"max_tokens": 150,
+"temperature": 0.7
+}'copy
+
+Python Example
+
+import requests
+import json
+
+API_KEY = "YOUR_DEEPINFRA_API_KEY"
+API_URL = "https://api.deepinfra.com/v1/openai/chat/completions"
+
+headers = {
+"Authorization": f"Bearer {API_KEY}",
+"Content-Type": "application/json"
+}
+
+payload = {
+"model": "moonshotai/Kimi-K2.6",
+"messages": [
+{"role": "system", "content": "You are a helpful assistant."},
+{"role": "user", "content": "What are the core capabilities of Kimi K2.6?"}
+],
+"max_tokens": 150,
+"temperature": 0.7
+}
+
+try:
+response = requests.post(API_URL, headers=headers, data=json.dumps(payload))
+response.raise_for_status()
+print(json.dumps(response.json(), indent=2))
+except requests.exceptions.RequestException as e:
+print(f"API request failed: {e}")copy
+
+API Parameters and Response Format
+
+Common Parameters
+
+ParameterTypeDescription
+modelstringRequired. Use moonshotai/Kimi-K2.6.
+messagesarrayRequired. The conversation history (system, user, assistant).
+max_tokensintegerOptional. Limits the length of the generated output.
+temperaturenumberOptional. Controls randomness (0.0 to 2.0).
+streambooleanOptional. If true, sends partial deltas as server-sent events.
+
+Response Format
+
+A successful request returns a JSON object. Key fields: choices[0].message.content contains the generated text; usage contains token counts for billing.
+
+{
+"id": "chatcmpl-xxx",
+"model": "moonshotai/Kimi-K2.6",
+"choices": [
+{
+"message": {
+"role": "assistant",
+"content": "Kimi K2.6 is a multimodal agentic model..."
+},
+"finish_reason": "stop"
+}
+],
+"usage": {
+"prompt_tokens": 25,
+"completion_tokens": 130,
+"total_tokens": 155
+}
+}copy
+
+Pricing
+
+Kimi K2.6 on DeepInfra uses usage-based pricing calculated per 1 million tokens:
+
+Token TypePrice per 1M Tokens
+Input Tokens$0.75
+Output Tokens$3.50
+Cached Input Tokens$0.15
+
+For the most current information on pricing, visit the DeepInfra Pricing Page.
+
+Conclusion
+
+Kimi K2.6 is a capable open-weight agentic model that leads on long-horizon coding and multi-agent orchestration benchmarks while remaining competitive with closed-source frontier models on key software engineering tasks. Its 262K context window, Agent Swarm architecture, and open weights under a Modified MIT license give teams both performance and deployment flexibility — including self-hosting on vLLM or SGLang. The model’s main trade-offs are a smaller context window than some proprietary alternatives (1M vs 262K), no native image input via the API, and trailing scores on pure math reasoning benchmarks relative to GPT-5.4.
+
+To start building with Kimi K2.6, explore the DeepInfra API documentation or visit the Moonshot AI tech blog for the full technical report.
+
+Related articlesPower the Next Era of Image Generation with FLUX.2 Visual Intelligence on DeepInfraDeepInfra is excited to support FLUX.2 from day zero, bringing the newest visual intelligence model from Black Forest Labs to our platform at launch. We make it straightforward for developers, creators, and enterprises to run the model with high performance, transparent pricing, and an API designed for productivity.
+
+DeepInfra Launches Access to NVIDIA Nemotron Models for Vision, Retrieval, and AI SafetyDeepInfra is serving the new, open NVIDIA Nemotron vision language and OCR AI models from day zero of their release. As a leading inference provider committed to performance and cost-efficiency, we're making these cutting-edge models available at the industry's best prices, empowering developers to build specialized AI agents without compromising on budget or performance.
+
+Unleashing the Potential of AI for Exceptional Gaming ExperiencesGaming companies are constantly in search of ways to enhance player experiences and achieve 
+extraordinary outcomes. Recent research indicates that investments in player experience (PX) 
+can result in substantial returns on investment (ROI). By prioritizing PX and harnessing 
+the capabilities of AI...
+
+View all
+
+Have questions or need a custom solution?
+Contact Sales
+
+Company
+Pricing
+Docs
+Compare
+DeepStart
+About
+Careers
+Contact us
+Media Center
+Trust Center
+DeepGPT
+
+Latest Models
+nvidia/Nemotron-3-Embed-8Bnvidia/Nemotron-3-Embed-1B-NVFP4nvidia/Nemotron-3-Embed-1B-BF16google/gemma-4-E4B-ittencent/Hy3
+
+Featured Models
+nvidia/NVIDIA-Nemotron-3-Super-120B-A12Bdeepseek-ai/DeepSeek-V4-ProQwen/Qwen3.5-397B-A17Bzai-org/GLM-5zai-org/GLM-4.7-Flash
+
+© 2026 DeepInfra. All rights reserved.
+Privacy PolicyTerms of Service

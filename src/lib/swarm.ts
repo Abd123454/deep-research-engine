@@ -37,7 +37,8 @@
 // in-flight LLM calls are cancelled and the swarm stops.
 
 import { getLLM, type LLMMessage } from "./llm-provider";
-import { detectToolCall, executeToolCall, getToolsDescription } from "./agent-tools";
+import { detectToolCall, executeToolCall, getToolsDescription, type ToolCall } from "./agent-tools";
+import { logger } from "./logger";
 
 // ---------- Types ----------
 
@@ -266,7 +267,75 @@ function validateRole(role: unknown): role is AgentRole {
 
 // ---------- Worker: execute a subtask ----------
 
-const MAX_TOOL_ITERATIONS = 4;
+// Kimi K2.5/K2.6 production trajectories do 50–300 sequential tool calls
+// per subagent (K2 Thinking blog). The old cap of 4 was wildly conservative
+// and caused c5-style timeouts where the swarm ran out of iteration budget
+// before completing even a single research loop.
+//
+// 15 is a middle ground: high enough to let a researcher do 3–5 search →
+// read → extract cycles, low enough to stay within the 90s worker timeout.
+// (Kimi-Researcher averages 23 reasoning steps + 70 search queries; we are
+// not in that league, but 4 was clearly too low.)
+const MAX_TOOL_ITERATIONS = 15;
+
+// Kimi/Trilogy loop-degeneration detection (Trilogy AI production
+// post-mortem): when a tool keeps failing, the model can enter a
+// degenerate retry loop — e.g. 3 consecutive `exec` calls with
+// `{"command":""}` after a script-not-found error. The model does not
+// recover, it degrades.
+//
+// Mitigation: track (tool + JSON.stringify(params)) and break the loop
+// after the same call is attempted LOOP_DETECTION_THRESHOLD times.
+const LOOP_DETECTION_THRESHOLD = 3;
+
+// Kimi §2.6: the model can return multiple tool_calls in one assistant
+// message and they should run in parallel. We cap the per-message fan-out
+// to avoid pathological cases (model emits 50 search calls at once and
+// trips the rate limiter before any can complete).
+const MAX_PARALLEL_TOOL_CALLS = 4;
+
+/** Detect ALL ```tool\n{...}\n``` blocks in an assistant message.
+ *
+ * This is the multi-call counterpart to `detectToolCall` in agent-tools.ts.
+ * Kimi's API returns multiple `tool_calls` per assistant message and runs
+ * them concurrently (§2.6 of the kimi-research findings). We replicate that
+ * pattern here by scanning for every fenced tool block in the response.
+ *
+ * Implemented locally (rather than reusing `detectToolCall`) so the swarm
+ * test mock — which only mocks `detectToolCall` — is unaffected.
+ */
+function detectToolCalls(response: string): ToolCall[] {
+  if (!response) return [];
+  const calls: ToolCall[] = [];
+  // Same fence format as agent-tools.ts: ```tool\n{"tool":"name","params":{...}}\n```
+  const fenceRegex = /```tool\s*\n([\s\S]*?)```/gi;
+  let match: RegExpExecArray | null;
+  while ((match = fenceRegex.exec(response)) !== null) {
+    const raw = match[1]?.trim();
+    if (!raw) continue;
+    try {
+      const parsed = JSON.parse(raw) as { tool?: string; params?: Record<string, unknown> };
+      if (parsed.tool) {
+        calls.push({ tool: parsed.tool, params: parsed.params || {} });
+      }
+    } catch {
+      // Skip unparseable blocks — same behavior as detectToolCall.
+    }
+  }
+  return calls;
+}
+
+/** Hash a (tool, params) tuple for loop-degeneration tracking. */
+function hashToolCall(call: ToolCall): string {
+  // Stable JSON serialization: sort keys so {"a":1,"b":2} and {"b":2,"a":1}
+  // hash the same. We only care about EXACT repeats, so this is sufficient.
+  try {
+    const stable = JSON.stringify(call.params, Object.keys(call.params).sort());
+    return `${call.tool}::${stable}`;
+  } catch {
+    return `${call.tool}::${JSON.stringify(call.params)}`;
+  }
+}
 
 export async function runWorker(
   subtask: Subtask,
@@ -275,8 +344,13 @@ export async function runWorker(
 ): Promise<string> {
   const agentId = subtask.id;
   const rolePrompt = ROLE_PROMPTS[subtask.role] || ROLE_PROMPTS.generalist;
-  const toolsDesc = ROLE_TOOLS[subtask.role].length > 0
-    ? `\n\nAvailable tools:\n${getToolsDescription()}\n\nTo call a tool, use:\n\`\`\`tool\n{"tool": "name", "params": {...}}\n\`\`\``
+  const roleTools = ROLE_TOOLS[subtask.role] ?? [];
+
+  // Kimi P1 (Trilogy lesson): filter the tool description to ONLY this
+  // role's tools, so the model is not tempted to call tools it doesn't
+  // have. The old code passed the global catalog unfiltered.
+  const toolsDesc = roleTools.length > 0
+    ? `\n\nAvailable tools (you may call several in one response — they run in parallel):\n${getToolsDescription()}\n\nTo call a tool, use:\n\`\`\`tool\n{"tool": "name", "params": {...}}\n\`\`\``
     : "";
 
   const messages: LLMMessage[] = [
@@ -289,7 +363,11 @@ export async function runWorker(
 
   const llm = await getLLM();
 
-  // ReAct loop: think → maybe call tool → feed result → continue.
+  // Loop-degeneration tracker: maps hashToolCall(call) → count.
+  // If any single (tool, params) tuple is attempted 3+ times, break.
+  const callCounts = new Map<string, number>();
+
+  // ReAct loop: think → maybe call tools (in parallel) → feed results → continue.
   let fullResponse = "";
   for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
     const result = await llm.smart({
@@ -303,36 +381,116 @@ export async function runWorker(
       },
     });
 
-    // Check for tool call.
-    const toolCall = detectToolCall(result.content);
-    if (toolCall && ROLE_TOOLS[subtask.role].includes(toolCall.tool)) {
-      emit({ type: "agent_tool", agentId, tool: toolCall.tool, params: toolCall.params });
+    // Kimi P0-2: detect ALL tool calls in this assistant message and run
+    // them in parallel. Filter to only the tools this role is allowed to
+    // call (defense in depth — the model should not see other tools in
+    // its system prompt, but if it hallucinates one we silently drop it).
+    const allCalls = detectToolCalls(result.content);
+    const allowedCalls = allCalls.filter((c) => roleTools.includes(c.tool));
 
-      const toolResult = await executeToolCall(toolCall);
-      emit({ type: "agent_result", agentId, tool: toolCall.tool, result: toolResult.output.slice(0, 2000) });
-
-      // Feed tool result back for another iteration.
-      messages.push({ role: "assistant", content: result.content });
-
-      // Verifier loop: if the tool failed (e.g. code execution error),
-      // explicitly ask the model to fix and retry. This gives the coder
-      // agent a chance to self-correct instead of just reporting failure.
-      if (!toolResult.success) {
-        messages.push({
-          role: "user",
-          content: `The tool call failed:\n\n${toolResult.output.slice(0, 3000)}\n\nPlease fix the issue and try again. If you've already retried and it still fails, explain the error in your final answer.`,
-        });
-      } else {
-        messages.push({
-          role: "user",
-          content: `Tool result:\n${toolResult.output.slice(0, 3000)}\n\nContinue based on this result. If you have enough information, give your final answer.`,
-        });
+    // Backward-compat: if detectToolCalls returned nothing, also try the
+    // single-call detector from agent-tools.ts (it handles the inline
+    // `[TOOL: name] params: {...}` format that detectToolCalls does not).
+    if (allowedCalls.length === 0) {
+      const single = detectToolCall(result.content);
+      if (single && roleTools.includes(single.tool)) {
+        allowedCalls.push(single);
       }
+    }
+
+    if (allowedCalls.length === 0) {
+      // No tool call — we're done.
+      return result.content;
+    }
+
+    // Cap the fan-out to MAX_PARALLEL_TOOL_CALLS to avoid tripping rate
+    // limits on wide fan-out (Kimi §2.6 — the model decides how many to
+    // emit; we just cap the worst case).
+    const callsToRun = allowedCalls.slice(0, MAX_PARALLEL_TOOL_CALLS);
+    if (allowedCalls.length > MAX_PARALLEL_TOOL_CALLS) {
+      logger.warn(
+        { module: "swarm", agentId, role: subtask.role, requested: allowedCalls.length, capped: MAX_PARALLEL_TOOL_CALLS },
+        "Worker requested more parallel tool calls than the cap — truncating"
+      );
+    }
+
+    // Loop-degeneration check: if any of the calls we're about to make has
+    // already been attempted LOOP_DETECTION_THRESHOLD times, break the loop
+    // with an explicit error message instead of retrying.
+    //
+    // Semantics: "3+ times with identical arguments" means after the 3rd
+    // call has executed, the 4th attempt is blocked. So we break when
+    // callCounts >= LOOP_DETECTION_THRESHOLD.
+    const degenerate = callsToRun.find((c) => {
+      const h = hashToolCall(c);
+      return (callCounts.get(h) || 0) >= LOOP_DETECTION_THRESHOLD;
+    });
+    if (degenerate) {
+      const msg =
+        `Loop-degeneration detected: tool "${degenerate.tool}" has been called ` +
+        `${LOOP_DETECTION_THRESHOLD}+ times with identical arguments without progress. ` +
+        `Breaking the ReAct loop to avoid wasting the worker's token budget. ` +
+        `(Kimi/Trilogy production post-mortem mitigation.)`;
+      logger.warn({ module: "swarm", agentId, tool: degenerate.tool }, msg);
+      messages.push({ role: "assistant", content: result.content });
+      messages.push({
+        role: "user",
+        content: `${msg}\n\nStop retrying this tool call. Either use a different tool, fix the arguments, or give your final answer with what you have so far.`,
+      });
+      // Give the model one more turn to recover (no further tool calls will
+      // be allowed once it responds — the next iteration will return its
+      // content as the final answer if no new tool call is emitted).
       continue;
     }
 
-    // No tool call — we're done.
-    return result.content;
+    // Record the call counts for loop detection.
+    for (const c of callsToRun) {
+      const h = hashToolCall(c);
+      callCounts.set(h, (callCounts.get(h) || 0) + 1);
+    }
+
+    // Emit tool-start events (one per call).
+    for (const c of callsToRun) {
+      emit({ type: "agent_tool", agentId, tool: c.tool, params: c.params });
+    }
+
+    // Kimi P0-2: run all tool calls in parallel via Promise.all.
+    // The worker's wall-clock latency on wide-fanout research tasks drops
+    // by ~N× compared to serial execution.
+    const toolResults = await Promise.all(
+      callsToRun.map((c) => executeToolCall(c))
+    );
+
+    // Emit tool-result events.
+    for (let i = 0; i < toolResults.length; i++) {
+      const tr = toolResults[i]!;
+      emit({ type: "agent_result", agentId, tool: callsToRun[i]!.tool, result: tr.output.slice(0, 2000) });
+    }
+
+    // Feed all tool results back to the model.
+    messages.push({ role: "assistant", content: result.content });
+
+    // Verifier loop: if ANY tool failed, ask the model to fix and retry.
+    // If all succeeded, just continue with the results.
+    const failed = toolResults.filter((r) => !r.success);
+    if (failed.length > 0) {
+      const failureSummary = failed
+        .map((r, i) => `Tool ${callsToRun[i]!.tool} failed:\n${r.output.slice(0, 1500)}`)
+        .join("\n\n");
+      messages.push({
+        role: "user",
+        content: `${failureSummary}\n\nPlease fix the issue(s) and try again. If you've already retried and it still fails, explain the error in your final answer.`,
+      });
+    } else {
+      const successSummary = toolResults
+        .map((r, i) => `Tool ${callsToRun[i]!.tool} result:\n${r.output.slice(0, 1500)}`)
+        .join("\n\n");
+      messages.push({
+        role: "user",
+        content: `${successSummary}\n\nContinue based on these results. If you have enough information, give your final answer.`,
+      });
+    }
+    // Continue the ReAct loop — next iteration may emit more tool calls.
   }
 
   // Hit iteration limit — return what we have.
@@ -453,4 +611,120 @@ export async function runSwarm(
 
 export function serializeSSE(event: SwarmEvent): string {
   return `data: ${JSON.stringify(event)}\n\n`;
+}
+
+// ---------- Dynamic subagent API (Kimi two-tool swarm pattern) ----------
+//
+// Mirrors Kimi K2.5's `create_subagent` + `assign_task` tool API described
+// in Appendix E.8 of the K2.5 paper (arXiv:2602.02276v1). The orchestrator
+// can dynamically create specialized subagents at runtime and assign them
+// tasks, rather than relying solely on the static `planSwarm()` output.
+//
+// This is the minimal viable swarm API: two functions that together let a
+// caller spawn N subagents and dispatch work to them, possibly in parallel.
+//
+// Backward compatibility: `runSwarm()` continues to use `planSwarm()` +
+// `runWorker()` under the hood. The dynamic API is opt-in for callers that
+// want mid-execution subagent spawning (e.g., when an orchestrator-level
+// reasoning step discovers a new sub-problem that wasn't in the original
+// plan).
+
+export interface Subagent {
+  id: string;
+  name: string;
+  role: AgentRole;
+  systemPrompt: string;
+  createdAt: number;
+}
+
+// Process-local registry. Subagents are scoped to the current Node.js
+// process — they do not persist across restarts. This matches the existing
+// swarm's in-memory design (jobs are in `research-store.ts` memory too).
+const subagentRegistry = new Map<string, Subagent>();
+
+/** Create a new subagent with a name, role, and specialization prompt.
+ *
+ * Mirrors Kimi's `create_subagent(name, system_prompt)` tool — the model
+ * invents a name and a system prompt that defines the agent's role and
+ * capabilities, then later assigns tasks to it via `assignTask`.
+ *
+ * Returns the created Subagent (including its generated id) so the caller
+ * can immediately dispatch work.
+ */
+export function createSubagent(
+  name: string,
+  systemPrompt: string,
+  role: AgentRole = "generalist"
+): Subagent {
+  if (!name || !name.trim()) {
+    throw new Error("createSubagent: name is required");
+  }
+  if (!systemPrompt || !systemPrompt.trim()) {
+    throw new Error("createSubagent: systemPrompt is required");
+  }
+  const id = `agent_${crypto.randomUUID().slice(0, 8)}`;
+  const agent: Subagent = {
+    id,
+    name: name.trim(),
+    role,
+    systemPrompt: systemPrompt.trim(),
+    createdAt: Date.now(),
+  };
+  subagentRegistry.set(id, agent);
+  return agent;
+}
+
+/** Assign a task to a previously-created subagent and run it to completion.
+ *
+ * Mirrors Kimi's `assign_task(agent, prompt)` tool. The subagent executes
+ * the task in its own bounded context (proactive context sharding — only
+ * the final output returns to the caller, not the full ReAct trace).
+ *
+ * Multiple `assignTask` calls can be `Promise.all`'d in parallel by the
+ * caller — that's exactly how the orchestrator fans out work in Kimi's
+ * production swarm (§2.3 of the kimi-research findings).
+ */
+export async function assignTask(
+  agentId: string,
+  task: string,
+  emit?: SwarmEventEmitter
+): Promise<string> {
+  const agent = subagentRegistry.get(agentId);
+  if (!agent) {
+    throw new Error(
+      `assignTask: unknown subagent id "${agentId}". Call createSubagent() first.`
+    );
+  }
+  if (!task || !task.trim()) {
+    throw new Error("assignTask: task is required");
+  }
+
+  // Reuse the existing worker infrastructure. The subtask id is the agent
+  // id (so agent_tool / agent_token / agent_done events route correctly).
+  // The "context" passed to runWorker is the subagent's system prompt,
+  // which gives it its specialization.
+  const subtask: Subtask = {
+    id: agent.id,
+    description: task,
+    role: agent.role,
+  };
+
+  const noopEmit: SwarmEventEmitter = () => {};
+  return runWorker(subtask, agent.systemPrompt, emit ?? noopEmit);
+}
+
+/** Look up a previously-created subagent by id. */
+export function getSubagent(id: string): Subagent | undefined {
+  return subagentRegistry.get(id);
+}
+
+/** List all currently-registered subagents. */
+export function listSubagents(): Subagent[] {
+  return Array.from(subagentRegistry.values());
+}
+
+/** Clear all registered subagents. Useful for tests and between unrelated
+ * orchestrator runs. */
+export function clearSubagents(): void {
+  subagentRegistry.clear();
 }

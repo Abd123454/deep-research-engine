@@ -1,0 +1,250 @@
+URL: https://medium.com/@doubletaken/kimi-k2-5-redefining-ai-workflow-with-agent-swarm-2d50e76a7470
+TITLE: Kimi K2.5: Redefining AI Workflow with Agent Swarm
+PUBLISHED: 2026-02-07T00:59:48Z
+
+Kimi K2.5: Redefining AI Workflow with Agent Swarm | by Stella Jo | MediumMediumSitemap
+Open in appSign up
+Sign in
+
+Medium Logo
+
+Get app
+Write
+
+Search
+
+Sign up
+Sign in
+
+Kimi K2.5: Redefining AI Workflow with Agent Swarm
+
+Stella Jo
+
+Follow
+
+4 min read·
+Feb 7, 2026
+
+Listen
+
+Share
+
+On January 27, 2026, China’s Moonshot AI released Kimi K2.5 as open-source. Beyond being just another smart AI model, it’s changing how we approach real-world tasks with an “Agent Swarm” system where up to 100 AI agents collaborate simultaneously.
+Press enter or click to view image in full size
+
+What Makes K2.5 Special?
+Traditional AI models process tasks one at a time. But K2.5’s Agent Swarm breaks down complex work into multiple subtasks and processes them concurrently. Think of it as assembling a team of specialists working together rather than doing everything solo.
+# Traditional single-agent approach
+def traditional_agent(task):
+steps = break_down_task(task)
+results = []
+for step in steps: # Sequential processing
+result = execute_step(step)
+results.append(result)
+return combine_results(results)
+
+# Kimi K2.5 Agent Swarm approach
+def agent_swarm(task):
+# Decompose into parallelizable subtasks
+subtasks = orchestrator.decompose(task)
+
+# Spawn up to 100 sub-agents simultaneously
+agents = [spawn_specialist_agent(st) for st in subtasks]
+results = await asyncio.gather(*[agent.execute() for agent in agents])
+
+return orchestrator.aggregate(results)
+This approach achieves up to 4.5x speedup in execution time while handling up to 1,500 tool calls in parallel.
+Native Multimodal: Complete Integration of Vision and Language
+Another strength of K2.5 is its native multimodal architecture. Trained on approximately 15 trillion mixed text and vision tokens , it doesn’t process text and images separately – it understands them as one from the start.
+How does this work in practice?
+from kimi_api import KimiClient
+
+client = KimiClient(api_key="your_api_key")
+
+# Generate code from visual information
+response = client.chat.completions.create(
+model="kimi-k2.5",
+messages=[
+{
+"role": "user",
+"content": [
+{
+"type": "image_url",
+"image_url": "https://example.com/ui-design.png"
+},
+{
+"type": "text",
+"text": "Implement this design as a React component with scroll animations."
+}
+]
+}
+],
+mode="instant" # instant, thinking, agent, agent_swarm
+)
+
+print(response.choices[0].message.content)
+K2.5 can transform simple conversations into complete front-end interfaces, implementing rich animations like scroll-triggered effects.
+Four Operating Modes
+Kimi K2.5 offers four modes tailored to different task characteristics:
+Instant Mode – Quick everyday conversations
+
+response = client.chat.completions.create(
+model="kimi-k2.5",
+messages=[{"role": "user", "content": "Python list comprehension examples"}],
+mode="instant"
+)
+2. Thinking Mode – Complex reasoning tasks
+response = client.chat.completions.create(
+model="kimi-k2.5",
+messages=[{"role": "user", "content": "Solve AIME 2025 Problem 15"}],
+mode="thinking",
+max_completion_tokens=96000, # Reasoning token budget
+temperature=1.0,
+top_p=0.95
+)
+
+# reasoning_content contains internal thought process
+print("Reasoning process:", response.reasoning_content)
+print("Final answer:", response.choices[0].message.content)
+3. Agent Mode – Multi-step workflows with tools
+response = client.chat.completions.create(
+model="kimi-k2.5",
+messages=[{"role": "user", "content": "Create Tesla stock analysis report for the past year"}],
+mode="agent",
+tools=["search", "code_interpreter", "web_browser"]
+)
+4. Agent Swarm Mode – Large-scale parallel tasks
+response = client.chat.completions.create(
+model="kimi-k2.5",
+messages=[{
+"role": "user", 
+"content": "Find top 3 YouTube creators in 100 niche categories"
+}],
+mode="agent_swarm"
+)
+PARL: The Core Technology Behind Agent Swarm
+The Agent Swarm capability is powered by PARL (Parallel-Agent Reinforcement Learning), a novel learning methodology. The key concept is “Critical Steps.”
+class CriticalPathOptimizer:
+def calculate_critical_steps(self, task_graph):
+"""
+Borrows the Critical Path concept from parallel computing
+Optimizes the longest dependency chain, not total step count
+"""
+# Build task dependency graph
+dependencies = self.build_dependency_graph(task_graph)
+
+# Calculate Critical Path
+critical_path = self.find_longest_path(dependencies)
+
+# Identify parallelizable tasks
+parallelizable_tasks = self.identify_parallel_tasks(dependencies)
+
+return {
+'critical_steps': len(critical_path),
+'parallel_efficiency': len(parallelizable_tasks) / len(task_graph)
+}
+This approach ensures that generating more subtasks only helps when it actually shortens the Critical Path.
+Real-World Benchmark Performance
+Math/Reasoning Capabilities:
+∙ AIME 2025: 96.1% (32-pass average)
+∙ HMMT 2025: 95.4% (32-pass average)
+∙ GPQA-Diamond: 87.6% (8-pass average)
+Humanity’s Last Exam (HLE):
+∙ Without tools: Text 31.5%, Image 21.3%
+∙ With tools: Text 51.8%, Image 39.8%
+Notably, K2.5 achieved 50.2% accuracy on HLE at 76% lower cost compared to Claude Opus 4.5.
+Model Specifications and Access
+Get Stella Jo’s stories in your inbox
+
+Join Medium for free to get updates from this writer.
+
+Subscribe
+
+Subscribe
+
+Remember me for faster sign in
+
+Architecture:
+∙ 1 trillion parameter MoE structure (32B activated per request)
+∙ 256K context window
+∙ Text, image, and video input support
+Pricing:
+∙ Input: $0.60 per million tokens
+∙ Output: $3.00 per million tokens
+Access Methods:
+∙ Kimi.com web interface
+∙ Kimi App (mobile)
+∙ API (moonshot.ai)
+∙ Kimi Code CLI
+∙ Direct model weights download (HuggingFace)
+# Run locally with Ollama
+ollama run kimi-k2.5:cloud
+
+# Download from HuggingFace
+pip install -U huggingface_hub
+hf download unsloth/Kimi-K2.5-GGUF \
+--local-dir kimi-k2.5 \
+--include "*UD-Q2_K_XL*" # 2-bit quantized version (375GB)
+For local execution, 240GB or more of unified memory (RAM+VRAM) is recommended to achieve speeds of over 10 tokens per second.
+Limitations and Considerations
+Resource Requirements
+
+Thinking mode can use up to 96K tokens for complex problems, which can be costly and time-consuming.
+2. Agent Swarm Replication Challenges
+While base model weights are open-source, replicating the full Agent Swarm functionality requires understanding the PARL training methodology.
+3. Vision Feature Limitations
+Currently, llama.cpp doesn’t support vision capabilities yet. Local execution is limited to text mode only.
+Looking Forward
+K2.5 isn’t just a bigger model – it’s changing how AI works fundamentally. Agent Swarm will likely become standard across more models in the future.
+Areas I’m personally watching:
+∙ Smarter routing: Automatic task analysis to select optimal modes
+∙ Cost optimization: Using resources only as needed
+∙ Agent collaboration protocols: Standards for different AI models working together
+Conclusion
+Kimi K2.5 demonstrates that Chinese AI companies have moved beyond catching up. Releasing an open-source model that competes with GPT-4 and Claude Opus is significant for the entire industry.
+Particularly, the Agent Swarm concept represents a paradigm shift in how AI handles complex real-world tasks. Could your projects benefit from parallel agent systems like this?
+References
+∙ Kimi K2.5 Official Documentation
+∙ Kimi K2.5 Tech Blog – Moonshot AI
+∙ GitHub: MoonshotAI/Kimi-K2.5
+∙ Kimi K2.5 on HuggingFace
+
+AI Agent
+
+Artificial Intelligence
+
+Technology
+
+Large Language Models
+
+Follow
+
+Written by Stella Jo
+42 followers
+·31 following
+
+AI Research Scientist | Ph.D. in Artificial Intelligence | Exploring the frontiers of reasoning and Artificial General Intelligence
+
+Follow
+
+Help
+
+Status
+
+About
+
+Careers
+
+Press
+
+Blog
+
+Store
+
+Privacy
+
+Rules
+
+Terms
+
+Text to speech

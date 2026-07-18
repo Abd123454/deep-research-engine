@@ -1,0 +1,1050 @@
+URL: https://github.com/MoonshotAI/Kimi-K2.5
+TITLE: GitHub - MoonshotAI/Kimi-K2.5: Moonshot's most powerful model
+PUBLISHED: 
+
+GitHub - MoonshotAI/Kimi-K2.5: Moonshot's most powerful model · GitHub
+
+Skip to content
+
+Navigation Menu
+
+Toggle navigation
+
+Sign in
+
+Appearance settings
+
+PlatformAI CODE CREATIONGitHub CopilotWrite better code with AI
+
+GitHub Copilot appDirect agents from issue to merge
+
+MCP RegistryNewIntegrate external tools
+
+DEVELOPER WORKFLOWSActionsAutomate any workflow
+
+CodespacesInstant dev environments
+
+IssuesPlan and track work
+
+Code ReviewManage code changes
+
+APPLICATION SECURITYGitHub Advanced SecurityFind and fix vulnerabilities
+
+Code securitySecure your code as you build
+
+Secret protectionStop leaks before they start
+
+EXPLOREWhy GitHub
+Documentation
+Blog
+Changelog
+Marketplace
+
+View all features
+
+SolutionsBY COMPANY SIZEEnterprises
+Small and medium teams
+Startups
+Nonprofits
+
+BY USE CASEApp Modernization
+DevSecOps
+DevOps
+CI/CD
+View all use cases
+
+BY INDUSTRYHealthcare
+Financial services
+Manufacturing
+Government
+View all industries
+
+View all solutions
+
+ResourcesEXPLORE BY TOPICAI
+Software Development
+DevOps
+Security
+View all topics
+
+EXPLORE BY TYPECustomer stories
+Events & webinars
+Ebooks & reports
+Business insights
+GitHub Skills
+
+SUPPORT & SERVICESDocumentation
+Customer support
+Community forum
+Trust center
+Partners
+
+View all resources
+
+Open SourceCOMMUNITYGitHub SponsorsFund open source developers
+
+PROGRAMSSecurity Lab
+Maintainer Community
+Accelerator
+GitHub Stars
+Archive Program
+
+REPOSITORIESTopics
+Trending
+Collections
+
+EnterpriseENTERPRISE SOLUTIONSEnterprise platformAI-powered developer platform
+
+AVAILABLE ADD-ONSGitHub Advanced SecurityEnterprise-grade security features
+
+Copilot for BusinessEnterprise-grade AI features
+
+Premium SupportEnterprise-grade 24/7 support
+
+Pricing
+
+Search or jump to...
+
+Search code, repositories, users, issues, pull requests...
+
+Search
+
+Clear
+
+Search syntax tips 
+
+Provide feedback
+
+We read every piece of feedback, and take your input very seriously.
+
+Include my email address so I can be contacted
+
+Cancel
+
+Submit feedback
+
+Saved searches
+
+Use saved searches to filter your results more quickly
+
+Name
+
+Query
+
+To see all available qualifiers, see our documentation.
+
+Cancel
+
+Create saved search
+
+Sign in
+
+Sign up
+
+Appearance settings
+
+Resetting focus
+
+You signed in with another tab or window. Reload to refresh your session.
+You signed out in another tab or window. Reload to refresh your session.
+You switched accounts on another tab or window. Reload to refresh your session.
+
+Dismiss alert
+
+{{ message }}
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+MoonshotAI
+
+/
+
+Kimi-K2.5
+
+Public
+
+Notifications
+You must be signed in to change notification settings
+
+Fork
+280
+
+Star
+2.1k
+
+Code
+
+Issues
+45
+
+Pull requests
+2
+
+Actions
+
+Projects
+
+Security and quality
+0
+
+Insights
+
+Additional navigation options
+
+Code
+
+Issues
+
+Pull requests
+
+Actions
+
+Projects
+
+Security and quality
+
+Insights
+
+MoonshotAI/Kimi-K2.5
+
+ master
+
+1 Branch0 Tags
+
+Go to file
+
+CodeOpen more actions menu
+
+Folders and files
+NameNameLast commit message
+Last commit date
+
+Latest commit
+zhouzaida
+
+Updated deployment command to include encoder TP mode
+Open commit details
+Jan 31, 2026
+3e60763 · Jan 31, 2026
+History
+2 CommitsOpen commit details
+2 Commits
+
+docs
+
+docs
+
+Updated deployment command to include encoder TP mode
+
+Jan 31, 2026
+
+figures
+
+figures
+
+Initial bundle
+
+Jan 30, 2026
+
+LICENSE
+
+LICENSE
+
+Initial bundle
+
+Jan 30, 2026
+
+README.md
+
+README.md
+
+Initial bundle
+
+Jan 30, 2026
+
+tech_report.pdf
+
+tech_report.pdf
+
+Initial bundle
+
+Jan 30, 2026
+
+View all files
+
+Repository files navigation
+
+README
+License
+
+More items
+
+📰  Tech Blog |     📄  Full Report
+
+1. Model Introduction
+
+Kimi K2.5 is an open-source, native multimodal agentic model built through continual pretraining on approximately 15 trillion mixed visual and text tokens atop Kimi-K2-Base. It seamlessly integrates vision and language understanding with advanced agentic capabilities, instant and thinking modes, as well as conversational and agentic paradigms.
+
+Key Features
+
+Native Multimodality: Pre-trained on vision–language tokens, K2.5 excels in visual knowledge, cross-modal reasoning, and agentic tool use grounded in visual inputs.
+
+Coding with Vision: K2.5 generates code from visual specifications (UI designs, video workflows) and autonomously orchestrates tools for visual data processing.
+
+Agent Swarm: K2.5 transitions from single-agent scaling to a self-directed, coordinated swarm-like execution scheme. It decomposes complex tasks into parallel sub-tasks executed by dynamically instantiated, domain-specific agents.
+
+2. Model Summary
+
+Architecture
+Mixture-of-Experts (MoE)
+
+Total Parameters
+1T
+
+Activated Parameters
+32B
+
+Number of Layers (Dense layer included)
+61
+
+Number of Dense Layers
+1
+
+Attention Hidden Dimension
+7168
+
+MoE Hidden Dimension (per Expert)
+2048
+
+Number of Attention Heads
+64
+
+Number of Experts
+384
+
+Selected Experts per Token
+8
+
+Number of Shared Experts
+1
+
+Vocabulary Size
+160K
+
+Context Length
+256K
+
+Attention Mechanism
+MLA
+
+Activation Function
+SwiGLU
+
+Vision Encoder
+MoonViT
+
+Parameters of Vision Encoder
+400M
+
+3. Evaluation Results
+
+Benchmark
+Kimi K2.5
+(Thinking)
+GPT-5.2 
+(xhigh)
+Claude 4.5 Opus 
+(Extended Thinking)
+Gemini 3 Pro 
+(High Thinking Level)
+DeepSeek V3.2 
+(Thinking)
+Qwen3-VL-
+235B-A22B-
+Thinking
+
+Reasoning & Knowledge
+
+HLE-Full
+30.1
+34.5
+30.8
+37.5
+25.1†
+-
+
+HLE-Full
+(w/ tools)
+50.2
+45.5
+43.2
+45.8
+40.8†
+-
+
+AIME 2025
+96.1
+100
+92.8
+95.0
+93.1
+-
+
+HMMT 2025 (Feb)
+95.4
+99.4
+92.9*
+97.3*
+92.5
+-
+
+IMO-AnswerBench
+81.8
+86.3
+78.5*
+83.1*
+78.3
+-
+
+GPQA-Diamond
+87.6
+92.4
+87.0
+91.9
+82.4
+-
+
+MMLU-Pro
+87.1
+86.7*
+89.3*
+90.1
+85.0
+-
+
+Image & Video
+
+MMMU-Pro
+78.5
+79.5*
+74.0
+81.0
+-
+69.3
+
+CharXiv (RQ)
+77.5
+82.1
+67.2*
+81.4
+-
+66.1
+
+MathVision
+84.2
+83.0
+77.1*
+86.1*
+-
+74.6
+
+MathVista (mini)
+90.1
+82.8*
+80.2*
+89.8*
+-
+85.8
+
+ZeroBench
+9
+9*
+3*
+8*
+-
+4*
+
+ZeroBench
+(w/ tools)
+11
+7*
+9*
+12*
+-
+3*
+
+OCRBench
+92.3
+80.7*
+86.5*
+90.3*
+-
+87.5
+
+OmniDocBench 1.5
+88.8
+85.7
+87.7*
+88.5
+-
+82.0*
+
+InfoVQA (val)
+92.6
+84*
+76.9*
+57.2*
+-
+89.5
+
+SimpleVQA
+71.2
+55.8*
+69.7*
+69.7*
+-
+56.8*
+
+WorldVQA
+46.3
+28.0
+36.8
+47.4
+-
+23.5
+
+VideoMMMU
+86.6
+85.9
+84.4*
+87.6
+-
+80.0
+
+MMVU
+80.4
+80.8*
+77.3
+77.5
+-
+71.1
+
+MotionBench
+70.4
+64.8
+60.3
+70.3
+-
+-
+
+VideoMME
+87.4
+86.0*
+-
+88.4*
+-
+79.0
+
+LongVideoBench
+79.8
+76.5*
+67.2*
+77.7*
+-
+65.6*
+
+LVBench
+75.9
+-
+-
+73.5*
+-
+63.6
+
+Coding
+
+SWE-Bench Verified
+76.8
+80.0
+80.9
+76.2
+73.1
+-
+
+SWE-Bench Pro
+50.7
+55.6
+55.4*
+-
+-
+-
+
+SWE-Bench Multilingual
+73.0
+72.0
+77.5
+65.0
+70.2
+-
+
+Terminal Bench 2.0
+50.8
+54.0
+59.3
+54.2
+46.4
+-
+
+PaperBench
+63.5
+63.7*
+72.9*
+-
+47.1
+-
+
+CyberGym
+41.3
+-
+50.6
+39.9*
+17.3*
+-
+
+SciCode
+48.7
+52.1
+49.5
+56.1
+38.9
+-
+
+OJBench (cpp)
+57.4
+-
+54.6*
+68.5*
+54.7*
+-
+
+LiveCodeBench (v6)
+85.0
+-
+82.2*
+87.4*
+83.3
+-
+
+Long Context
+
+Longbench v2
+61.0
+54.5*
+64.4*
+68.2*
+59.8*
+-
+
+AA-LCR
+70.0
+72.3*
+71.3*
+65.3*
+64.3*
+-
+
+Agentic Search
+
+BrowseComp
+60.6
+65.8
+37.0
+37.8
+51.4
+-
+
+BrowseComp
+(w/ctx manage)
+74.9
+57.8
+59.2
+67.6
+-
+
+BrowseComp
+(Agent Swarm)
+78.4
+-
+-
+-
+-
+-
+
+WideSearch
+(item-f1)
+72.7
+-
+76.2*
+57.0
+32.5*
+-
+
+WideSearch
+(item-f1 Agent Swarm)
+79.0
+-
+-
+-
+-
+-
+
+DeepSearchQA
+77.1
+71.3*
+76.1*
+63.2*
+60.9*
+-
+
+FinSearchCompT2&T3
+67.8
+-
+66.2*
+49.9
+59.1*
+-
+
+Seal-0
+57.4
+45.0
+47.7*
+45.5*
+49.5*
+-
+
+Footnotes
+
+General Testing Details
+
+We report results for Kimi K2.5 and DeepSeek-V3.2 with thinking mode enabled, Claude Opus 4.5 with extended thinking mode, GPT-5.2 with xhigh reasoning effort, and Gemini 3 Pro with a high thinking level. For vision benchmarks, we additionally report results for Qwen3-VL-235B-A22B-Thinking.
+
+Unless otherwise specified, all Kimi K2.5 experiments were conducted with temperature = 1.0, top-p = 0.95, and a context length of 256k tokens.
+
+Benchmarks without publicly available scores were re-evaluated under the same conditions used for Kimi K2.5 and are marked with an asterisk (*).
+
+We could not evaluate GPT-5.2 xhigh on all benchmarks due to service stability issues. For benchmarks that were not tested, we mark them as "-".
+
+Text and Reasoning
+
+HLE, AIME 2025, HMMT 2025 (Feb), and GPQA-Diamond were evaluated with a maximum completion budget of 96k tokens.
+
+Results for AIME and HMMT are averaged over 32 runs (avg@32); GPQA-Diamond over 8 runs (avg@8).
+
+For HLE, we report scores on the full set (text & image). Kimi K2.5 scores 31.5 (text) and 21.3 (image) without tools, and 51.8 (text) and 39.8 (image) with tools. The DeepSeek-V3.2 score corresponds to its text-only subset (marked with †) . Hugging Face access was blocked to prevent potential data leakage. HLE with tools uses simple context management: once the context exceeds a threshold, only the latest round of tool messages is retained.
+
+Tool-Augmented / Agentic Search
+
+Kimi K2.5 was equipped with search, code-interpreter, and web-browsing tools for HLE with tools and all agentic search benchmarks.
+
+Except for BrowseComp (where K2.5 and DeepSeek-V3.2 used the discard-all strategy), no context management was applied, and tasks exceeding the supported context length were directly counted as failed.
+
+The test system prompts emphasize deep and proactive tool use, instructing models to reason carefully, leverage tools, and verify uncertain information. Full prompts will be provided in the technical report.
+
+Results for Seal-0 and WideSearch are averaged over four runs (avg@4).
+
+Vision Benchmarks
+
+Max-tokens = 64k, averaged over three runs (avg@3).
+
+ZeroBench (w/ tools) uses max-tokens-per-step = 24k and max-steps = 30 for multi-step reasoning.
+
+MMMU-Pro follows the official protocol, preserving input order and prepending images.
+
+GPT-5.2-xhigh had ~10% failure rate (no output despite 3 retries), treated as incorrect; reported scores likely underestimate true performance.
+
+WorldVQA, a benchmark designed to evaluate atomic vision-centric world knowledge. Access WorldVQA at https://github.com/MoonshotAI/WorldVQA.
+
+OmniDocBench Score is computed as (1 − normalized Levenshtein distance) × 100, where a higher score denotes superior accuracy.
+
+Coding Tasks
+
+Terminal-Bench 2.0 scores were obtained with the default agent framework (Terminus-2) and the provided JSON parser. In our implementation, we evaluated Terminal-Bench 2.0 under non-thinking mode. This choice was made because our current context management strategy for the thinking mode is incompatible with Terminus-2.
+
+For the SWE-Bench series of evaluations (including verified, multilingual, and pro), we used an internally developed evaluation framework. This framework includes a minimal set of tools—bash tool, createfile tool, insert tool, view tool, strreplace tool, and submit tool—along with tailored system prompts designed for the tasks. The highest scores were achieved under non-thinking mode.
+
+The score of Claude Opus 4.5 on CyberGym is reported under the non-thinking setting.
+
+All reported scores of coding tasks are averaged over 5 independent runs.
+
+Long-Context Benchmarks
+
+AA-LCR: scores averaged over three runs (avg@3).
+
+LongBench-V2: identical prompts and input contexts standardized to ~128k tokens.
+
+Agent Swarm
+
+BrowseComp (Swarm Mode): main agent max 15 steps; sub-agents max 100 steps.
+
+WideSearch (Swarm Mode): main and sub-agents max 100 steps.
+
+4. Native INT4 Quantization
+
+Kimi-K2.5 adopts the same native int4 quantization method as Kimi-K2-Thinking.
+
+5. Deployment
+
+Note
+You can access Kimi-K2.5's API on https://platform.moonshot.ai and we provide OpenAI/Anthropic-compatible API for you. To verify the deployment is correct, we also provide the Kimi Vendor Verifier.
+Currently, Kimi-K2.5 is recommended to run on the following inference engines:
+
+vLLM
+
+SGLang
+
+KTransformers
+
+The minimum version requirement for transformers is 4.57.1.
+
+Deployment examples can be found in the Model Deployment Guide.
+
+6. Model Usage
+
+The usage demos below demonstrate how to call our official API.
+
+For third-party APIs deployed with vLLM or SGLang, please note that:
+
+Note
+
+Chat with video content is an experimental feature and is only supported in our official API for now.
+
+The recommended temperature will be 1.0 for Thinking mode and 0.6 for Instant mode.
+
+The recommended top_p is 0.95.
+
+To use instant mode, you need to pass {'chat_template_kwargs': {"thinking": False}} in extra_body.
+
+Chat Completion
+
+This is a simple chat completion script which shows how to call K2.5 API in Thinking and Instant modes.
+
+import openai
+import base64
+import requests
+def simple_chat(client: openai.OpenAI, model_name: str):
+messages = [
+{'role': 'system', 'content': 'You are Kimi, an AI assistant created by Moonshot AI.'},
+{
+'role': 'user',
+'content': [
+{'type': 'text', 'text': 'which one is bigger, 9.11 or 9.9? think carefully.'}
+],
+},
+]
+response = client.chat.completions.create(
+model=model_name, messages=messages, stream=False, max_tokens=4096
+)
+print('====== Below is reasoning_content in Thinking Mode ======')
+print(f'reasoning content: {response.choices[0].message.reasoning_content}')
+print('====== Below is response in Thinking Mode ======')
+print(f'response: {response.choices[0].message.content}')
+
+# To use instant mode, pass {"thinking" = {"type":"disabled"}}
+response = client.chat.completions.create(
+model=model_name,
+messages=messages,
+stream=False,
+max_tokens=4096,
+extra_body={'thinking': {'type': 'disabled'}}, # this is for official API
+# extra_body= {'chat_template_kwargs': {"thinking": False}} # this is for vLLM/SGLang
+)
+print('====== Below is response in Instant Mode ======')
+print(f'response: {response.choices[0].message.content}')
+
+Chat Completion with visual content
+
+K2.5 supports Image and Video input.
+
+The following example demonstrates how to call K2.5 API with image input:
+
+import openai
+import base64
+import requests
+
+def chat_with_image(client: openai.OpenAI, model_name: str):
+url = 'https://huggingface.co/moonshotai/Kimi-K2.5/resolve/main/figures/kimi-logo.png'
+image_base64 = base64.b64encode(requests.get(url).content).decode()
+messages = [
+{
+'role': 'user',
+'content': [
+{'type': 'text', 'text': 'Describe this image in detail.'},
+{
+'type': 'image_url',
+'image_url': {'url': f'data:image/png;base64, {image_base64}'},
+},
+],
+}
+]
+
+response = client.chat.completions.create(
+model=model_name, messages=messages, stream=False, max_tokens=8192
+)
+print('====== Below is reasoning_content in Thinking Mode ======')
+print(f'reasoning content: {response.choices[0].message.reasoning_content}')
+print('====== Below is response in Thinking Mode ======')
+print(f'response: {response.choices[0].message.content}')
+
+# Also support instant mode if you pass {"thinking" = {"type":"disabled"}}
+response = client.chat.completions.create(
+model=model_name,
+messages=messages,
+stream=False,
+max_tokens=4096,
+extra_body={'thinking': {'type': 'disabled'}}, # this is for official API
+# extra_body= {'chat_template_kwargs': {"thinking": False}} # this is for vLLM/SGLang
+)
+print('====== Below is response in Instant Mode ======')
+print(f'response: {response.choices[0].message.content}')
+
+return response.choices[0].message.content
+
+The following example demonstrates how to call K2.5 API with video input:
+
+import openai
+import base64
+import requests
+
+def chat_with_video(client: openai.OpenAI, model_name:str):
+url = 'https://huggingface.co/moonshotai/Kimi-K2.5/resolve/main/figures/demo_video.mp4'
+video_base64 = base64.b64encode(requests.get(url).content).decode()
+messages = [
+{
+"role": "user",
+"content": [
+{"type": "text","text": "Describe the video in detail."},
+{
+"type": "video_url",
+"video_url": {"url": f"data:video/mp4;base64,{video_base64}"},
+},
+],
+}
+]
+
+response = client.chat.completions.create(model=model_name, messages=messages)
+print('====== Below is reasoning_content in Thinking Mode ======')
+print(f'reasoning content: {response.choices[0].message.reasoning_content}')
+print('====== Below is response in Thinking Mode ======')
+print(f'response: {response.choices[0].message.content}')
+
+# Also support instant mode if pass {"thinking" = {"type":"disabled"}}
+response = client.chat.completions.create(
+model=model_name,
+messages=messages,
+stream=False,
+max_tokens=4096,
+extra_body={'thinking': {'type': 'disabled'}}, # this is for official API
+# extra_body= {'chat_template_kwargs': {"thinking": False}} # this is for vLLM/SGLang
+)
+print('====== Below is response in Instant Mode ======')
+print(f'response: {response.choices[0].message.content}')
+return response.choices[0].message.content
+
+Interleaved Thinking and Multi-Step Tool Call
+
+K2.5 shares the same design of Interleaved Thinking and Multi-Step Tool Call as K2 Thinking. For usage example, please refer to the K2 Thinking documentation.
+
+Coding Agent Framework
+
+Kimi K2.5 works best with Kimi Code CLI as its agent framework — give it a try at https://www.kimi.com/code.
+
+7. License
+
+Both the code repository and the model weights are released under the Modified MIT License.
+
+9. Contact Us
+
+If you have any questions, please reach out at support@moonshot.cn.
+
+About
+
+Moonshot's most powerful model
+
+Resources
+
+Readme
+
+License
+
+View license
+
+Uh oh!
+
+There was an error while loading. Please reload this page.
+
+Activity 
+
+Custom properties 
+
+Stars
+
+2.1k
+stars
+
+Watchers
+
+18
+watching
+
+Forks
+
+280
+forks 
+
+Report repository
+
+Releases
+
+No releases published
+
+Packages
+0
+
+No packages published 
+
+Contributors
+2
+
+bigeagle
+bigeagle
+
+zhouzaida
+Zaida Zhou
+
+Footer
+
+© 2026 GitHub, Inc.
+
+Footer navigation
+
+Terms
+
+Privacy
+
+Security
+
+Status
+
+Community
+
+Docs
+
+Contact
+
+Manage cookies
+
+Do not share my personal information
+
+You can’t perform that action at this time.

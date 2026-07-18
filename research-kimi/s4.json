@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.kimi.com/en-cn/help/deep-research/deep-research-overview",
+    "name": "What Is Kimi Deep Research? Product Overview and How to Use It",
+    "snippet": "Tool use: independently calls tools such as browsers and code execution to process raw data and generate analytical conclusions;",
+    "host_name": "www.kimi.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/kimi/comments/1ujoevh/browsersearch_three_tools_zero_cost_and_your_ai",
+    "name": "browser-search — three tools, zero cost, and your AI agent learns to",
+    "snippet": "Deep Research mode: the agent is instructed to go beyond surface-level answers, cross-verify sources, cover every aspect Integrated Readability ...",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=eEkbIvwfXw0",
+    "name": "Kimi WebBridge Tutorial: Browser Automation with Local AI Agents",
+    "snippet": "AI agents can now control your browser — without sending a single byte to the cloud. Kimi WebBridge lets local AI agents like Claude Code ... Missing: Researcher | Show results with: Researcher",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/features/deep-research",
+    "name": "Kimi Deep Research: From Concept to Report",
+    "snippet": "Explore Kimi's Deep Research agent. Simply drop your questions and receive in-depth reports with rich charts, traceable citations, and multi-format output. Missing: Researcher | Show results with: Researcher",
+    "host_name": "www.kimi.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moonshotai.github.io/Kimi-Researcher",
+    "name": "Kimi-Researcher: End-to-End RL Training for Emerging Agentic",
+    "snippet": "Kimi-Researcher is an autonomous agentic and thinking model designed to solve complex problems through multi-step planning, reasoning, and tool use.",
+    "host_name": "moonshotai.github.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=8uood8A3h5k",
+    "name": "How to Research Anything with Kimi Research Agent - YouTube",
+    "snippet": "Want to research any topic faster and smarter using AI? In this Kimi Research Agent tutorial for beginners, you'll learn step by step how ...",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/kimi/comments/1uqtmvj/what_do_you_actually_use_browser_agents_for",
+    "name": "What do you actually use browser agents for? : r/kimi - Reddit",
+    "snippet": "I've been experimenting with AI agents that can control the browser (clicking, filling forms, navigating sites, pulling info, etc.)",
+    "host_name": "www.reddit.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://dev.to/sreejit_/kimi-webbridge-just-gave-ai-agents-hands-inside-your-browser-and-kept-your-data-local-b76",
+    "name": "Kimi WebBridge just gave AI agents hands inside your browser",
+    "snippet": "Kimi WebBridge — a Chrome/Edge extension paired with a local background service that lets AI agents operate your browser the way you would. ...",
+    "host_name": "dev.to",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.analyticsvidhya.com/blog/2026/05/kimi-webbridge",
+    "name": "Kimi WebBridge: Automating Browsers with Local AI Agents",
+    "snippet": "Moonshot AI's Kimi WebBridge brings this capability to Chrome and Edge, allowing local AI agents to safely interact with real browser sessions.",
+    "host_name": "www.analyticsvidhya.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.facebook.com/groups/aiautomationsforbusiness/posts/1415447109504145",
+    "name": "China launches Kimi-Researcher autonomous agent with HTML",
+    "snippet": "Kimi: Generates structured HTML reports with charts, metrics, and comparative analysis. Use Case: “Compare CoreWeave, Lambda Labs, Groq, and ...",
+    "host_name": "www.facebook.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

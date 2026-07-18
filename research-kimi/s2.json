@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.moonshot.ai",
+    "name": "Moonshot AI",
+    "snippet": "Welcome to explore the Dark Side of the Moon, seeking the optimal solution to convert energy into intelligence. Missing: system | Show results with: system",
+    "host_name": "www.moonshot.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=GwKoFpUV69M",
+    "name": "Kimi K2.5 and Agent Swarm explained - YouTube",
+    "snippet": "Moonshot finally released their new Kimi K2.5 now includes multimodality and agent swarm that can spawn up to 100 agents with 1500 tool ...",
+    "host_name": "www.youtube.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.infoq.com/news/2026/02/kimi-k25-swarm",
+    "name": "Moonshot AI Releases Open-Weight Kimi K2.5 Model with Vision  - InfoQ",
+    "snippet": "It also features an agent swarm mode, which can direct up to 100 sub-agents for attacking problems with parallel workflow.",
+    "host_name": "www.infoq.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/PromptEngineering/comments/1srjrdl/kimi_k26s_300agent_swarm_is_less_about_the_model",
+    "name": "Kimi K2.6's 300-agent swarm is less about the model and more  - Reddit",
+    "snippet": "Moonshot AI released Kimi K2.6 this week — open-source, multimodal, coordinates up to 300 sub-agents across 4,000-step plans.",
+    "host_name": "www.reddit.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.datacamp.com/tutorial/kimi-k2-agent-swarm-guide",
+    "name": "Kimi K2.5 and Agent Swarm: A Guide With Four Practical Examples",
+    "snippet": "Learn what Moonshot's Kimi K2.5 is, how Agent Swarm works, and see it in action through four hands-on, real-world experiments.",
+    "host_name": "www.datacamp.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moclaw.ai/blog/kimi-agent-swarm-claw-groups",
+    "name": "Kimi Agent Swarm and Claw Groups Explained | MoClaw Blog",
+    "snippet": "A Kimi AI agent is an autonomous worker inside Moonshot AI's Kimi K2.6 model that can plan a task, run steps on its own, and stop for a human ...",
+    "host_name": "moclaw.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@doubletaken/kimi-k2-5-redefining-ai-workflow-with-agent-swarm-2d50e76a7470",
+    "name": "Kimi K2.5: Redefining AI Workflow with Agent Swarm - Medium",
+    "snippet": "Kimi K2.5: Redefining AI Workflow with Agent Swarm On January 27, 2026, China's Moonshot AI released Kimi K2.5 as open-source.",
+    "host_name": "medium.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.verdent.ai/guides/kimi-k2-6-agent-swarm",
+    "name": "Kimi K2.6 Agent Swarm: 300 Agents, 4000 Steps - Verdent AI",
+    "snippet": "How Kimi K2.6's Agent Swarm coordinates 300 parallel sub-agents over 4000 steps, what it unlocks, and where it still breaks.",
+    "host_name": "www.verdent.ai",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.morphllm.com/kimi-k2-5-agent-swarm",
+    "name": "Kimi K2.5: Agent Swarm, Visual Coding, and Why It  - MorphLLM",
+    "snippet": "Moonshot AI's Kimi K2.5 runs 100 parallel sub-agents, scores 76.8% on SWE-bench Verified, and turns screenshots into working code. 1T parameters, open weights, ...",
+    "host_name": "www.morphllm.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://x.com/RoundtableSpace/status/2062704707932471592",
+    "name": "Here's an entire A-Z guide on setting up AI agent swarms Everything you",
+    "snippet": "Kimi K2.6, Moonshot AI's April 2026 open-weight flagship, is the most serious open-source implementation of this idea I've seen. Real tasks ...",
+    "host_name": "x.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

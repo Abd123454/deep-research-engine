@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.kimi.com/resources/multi-agent",
+    "name": "Multi-Agent System Explained: What It Is, Benefits, & Uses - Kimi AI",
+    "snippet": "Multi-agent systems use multiple AI agents to divide, coordinate, and complete complex tasks. Learn how they work, when to use them, and how to put them into ...",
+    "host_name": "www.kimi.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/resources/parallel-agent",
+    "name": "Parallel Agents Explained: Architecture, Patterns, and Uses - Kimi AI",
+    "snippet": "Parallel agents split complex tasks across multiple agents working concurrently, each with an isolated state and a defined scope.",
+    "host_name": "www.kimi.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moclaw.ai/blog/kimi-agent-swarm-claw-groups",
+    "name": "Kimi Agent Swarm and Claw Groups Explained | MoClaw Blog",
+    "snippet": "A Kimi AI agent is an autonomous worker inside Moonshot AI's Kimi K2.6 model that can plan a task, run steps on its own, and stop for a human ...",
+    "host_name": "moclaw.ai",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2602.02276v1",
+    "name": "Kimi K2.5: Visual Agentic Intelligence - arXiv",
+    "snippet": "K2.5 initiates an Agent Swarm through dynamic task decomposition, subagent instantiation, and parallel subtask scheduling. position that ...",
+    "host_name": "arxiv.org",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://kimik2ai.com/agent-mode",
+    "name": "Kimi Agent Mode: What It Does & How to Use It - Kimi AI",
+    "snippet": "Agent Mode is for tasks that take more than one step. Instead of giving a single answer, Kimi can plan the work, execute it, and keep refining ...",
+    "host_name": "kimik2ai.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.mindstudio.ai/blog/kimi-k2-300-sub-agents-4000-steps-4x-h100s-story-hermes-found",
+    "name": "Kimi K2 Runs 300 Sub-Agents Across 4000 Steps on 4x H100s",
+    "snippet": "The 300 sub-agent number implies a task decomposition strategy. Most multi-agent frameworks top out well below that in practice — not ...",
+    "host_name": "www.mindstudio.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://agentnativedev.medium.com/kimi-k2-5-agent-swarms-beat-us-ai-labs-open-source-vs-openai-anthropic-google-e703dae63a81",
+    "name": "Kimi K2.5 + Agent Swarms Beat US AI Labs: Open Source vs",
+    "snippet": "General Agent Benchmark: measures multi‑step workflows requiring tool orchestration. K2.5 shows 59.3 % improvement over K2 Thinking and 24.3 % ...",
+    "host_name": "agentnativedev.medium.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.digitalapplied.com/blog/kimi-k2-5-agent-swarm-open-source-guide",
+    "name": "Kimi K2.5: Agent Swarm Architecture Complete Guide - Digital Applied",
+    "snippet": "K2.5 discovers effective decomposition and coordination strategies by optimizing for task completion across thousands of training scenarios.",
+    "host_name": "www.digitalapplied.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.codecademy.com/article/kimi-k-2-5-complete-guide-to-moonshots-ai-model",
+    "name": "Kimi K2.5: Complete Guide to Moonshot's AI Model - Codecademy",
+    "snippet": "Agent Swarm technology allows the model to coordinate up to 100 specialized AI agents working simultaneously. Instead of processing tasks one step at a time ...",
+    "host_name": "www.codecademy.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://glamor-usc.github.io/twostep",
+    "name": "TwoStep: Multi-agent Task Planning using Classical Planners and",
+    "snippet": "We propose decomposing an N-agent planning problem into N single-agent planning problems by leveraging the human-like commonsense reasoning capabilities of LLMs ... Missing: Kimi | Show results with: Kimi",
+    "host_name": "glamor-usc.github.io",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

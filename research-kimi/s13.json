@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://deepinfra.com/blog/kimi-k2-6-api-benchmarks-latency-throughput-cost",
+    "name": "Kimi K2.6 API Benchmarks: Latency, TPS & Cost Analysis (2026)",
+    "snippet": "Benchmark improvements from K2.5 to K2.6 are concrete: SWE-Bench Pro moves from 50.7% to 58.6%, Terminal-Bench 2.0 from 50.8% to 66.7% ...",
+    "host_name": "deepinfra.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.swebench.com",
+    "name": "SWE-bench Leaderboards",
+    "snippet": "mini-SWE-agent scores up to 74% on SWE-bench Verified in 100 lines of Python code. We use mini-SWE-agent to evaluate all models with the same harness (details) ...",
+    "host_name": "www.swebench.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://flowtivity.ai/blog/kimi-k2-7-complete-review",
+    "name": "Kimi K2.7 Complete Review: Benchmarks, Cost, and  - Flowtivity",
+    "snippet": "Kimi K2.7 delivers strong benchmark scores across coding (SWE-bench, HumanEval), reasoning (MATH, GSM8K), and agentic tasks.",
+    "host_name": "flowtivity.ai",
+    "rank": 2,
+    "date": "Jul 12, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2.5",
+    "name": "MoonshotAI/Kimi-K2.5: Moonshot's most powerful model - GitHub",
+    "snippet": "Kimi K2.5 is an open-source, native multimodal agentic model built through continual pretraining on approximately 15 trillion mixed visual and text tokens ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/LocalLLaMA/comments/1pk4e27/updates_to_official_swebench_leaderboard_kimi_k2",
+    "name": "Updates to official SWE-bench leaderboard: Kimi K2 Thinking top",
+    "snippet": "Kimi K2 Thinking takes the top, surpassing minimax by 2.4%pts (that's 12 task instances). how performance scales with step My Hands-On Review of Kimi K2 Thinking: The Open-Source AI ... SWE-rebench Leaderboard (March, April and May 2026) - Reddit More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://kimi-k25.com/blog/kimi-k2-6-benchmark",
+    "name": "SWE-Bench, Terminal-Bench, BrowseComp (2026) - Kimi K2.5",
+    "snippet": "6 table, it posts 58.6 on SWE-Bench Pro, 66.7 on Terminal-Bench 2.0, 83.2 on BrowseComp, and 54.0 on HLE-Full with tools. I'm sticking to ...",
+    "host_name": "kimi-k25.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://serenitiesai.com/articles/kimi-k2-5-deep-review-agent-swarm-benchmarks-pricing-2026",
+    "name": "Kimi K2.5 Review 2026: Agent Swarm, SWE-Bench 76.8%, Pricing",
+    "snippet": "Kimi K2.5 deploys up to 100 parallel sub-agents, scores 76.8% on SWE-Bench Verified, and costs $0.60/$3.00 per million tokens.",
+    "host_name": "serenitiesai.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/blog/kimi-k2-6",
+    "name": "Kimi K2.6 Tech Blog: Advancing Open-Source Coding",
+    "snippet": "On Kimi Code Bench, our internal coding benchmark covering diverse complicated end-to-end tasks, Kimi K2.6 demonstrates significant improvements over Kimi K2.5.",
+    "host_name": "www.kimi.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/data-science-in-your-pocket/kimi-k2-benchmarks-explained-5b25dd6d3a3e",
+    "name": "Kimi-k2 Benchmarks explained - Medium",
+    "snippet": "In this blog post, we will be covering different benchmarks for Kimi-K2 understanding its performance and strong points.",
+    "host_name": "medium.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2507.20534v2",
+    "name": "Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "Kimi-K2-Instruct demonstrates state-of-the-art open-source performance on real-world SWE tasks. It outperforms most baselines on SWE-bench Verified (65.8%, 71.6 ...",
+    "host_name": "arxiv.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

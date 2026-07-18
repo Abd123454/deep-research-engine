@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/NousResearch/hermes-agent/issues/34519",
+    "name": "[Bug]: Fallback provider activation reuses stale api_messages",
+    "snippet": "You correctly diagnosed that api_messages is built once before the retry loop, so a mid-conversation fallback ( continue -ing back to the inner ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://pub.towardsai.net/building-retries-in-agents-how-to-build-ai-agents-that-survive-failures-32eedd2623f0",
+    "name": "Building Retries in Agents: How to Build AI Agents That Survive Failures",
+    "snippet": "A practical guide to handling LLM failures, tool errors, and crashed workflows — from building an 11-step production agent. Missing: Kimi | Show results with: Kimi",
+    "host_name": "pub.towardsai.net",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://trilogyai.substack.com/p/taming-tool-calling-with-kimi-k25",
+    "name": "Taming Tool Calling with Kimi K2.5 - Trilogy AI Center of Excellence",
+    "snippet": "When Kimi K2.5 picks the wrong tool, retrying with the error message doesn't reliably correct course. The model tends to enter degenerate loops ...",
+    "host_name": "trilogyai.substack.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@vasanthancomrads/handling-failures-in-agent-based-workflows-c0fd9489b2ee",
+    "name": "Handling Failures in Agent-Based Workflows | Medium",
+    "snippet": "Handling failures in agent-based workflows with retries, fallbacks, validation, and circuit breakers. Retry failed operations with delays. ... Missing: Kimi | Show results with: Kimi",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://hermes-agent.nousresearch.com/docs/user-guide/features/fallback-providers",
+    "name": "Fallback Providers | Hermes Agent - nous research",
+    "snippet": "Within a single turn, fallback activates at most once — if the fallback also fails, normal error handling takes over (retries, then error message).",
+    "host_name": "hermes-agent.nousresearch.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/pulse/how-build-fallback-logic-ai-powered-automation-without-treating-every-iuizf",
+    "name": "How to Build Fallback Logic Into AI-Powered Automation (Without",
+    "snippet": "Reliable AI error handling starts. Retry on Fail plus the Fallback Model switch, inside the AI Agent's settings panel.",
+    "host_name": "www.linkedin.com",
+    "rank": 5,
+    "date": "Jul 10, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.cognigy.com/ai/agents/develop/gen-ai-and-llms/fallback",
+    "name": "LLM Fallback - Cognigy Documentation",
+    "snippet": "Fallback is a mechanism designed to maintain continuous service when a main model fails to respond or encounters an error. Using a fallback ... Missing: Kimi | Show results with: Kimi",
+    "host_name": "docs.cognigy.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.activepieces.com/blog/how-to-handle-errors-in-production-ai-agents",
+    "name": "How to handle errors in production AI agents - Activepieces",
+    "snippet": "Log every retry attempt, fallback activation, and recovery action with enough context to reconstruct the failure path. Missing: Kimi | Show results with: Kimi",
+    "host_name": "www.activepieces.com",
+    "rank": 7,
+    "date": "Jul 10, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://machinelearningplus.com/gen-ai/langgraph-error-handling-retries-fallback-strategies",
+    "name": "LangGraph Error Handling: Retries & Fallback Strategies",
+    "snippet": "Make your LangGraph agents production-ready with retry logic, fallback paths, and error tracking that keeps pipelines alive when things go wrong. Written by ... Missing: Kimi | Show results with: Kimi",
+    "host_name": "machinelearningplus.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/NousResearch/hermes-agent/issues/43211",
+    "name": "Stale stream errors silently retry on same provider instead of triggering",
+    "snippet": "As a result, _try_activate_fallback() is never called, even when stale stream errors occur repeatedly within the same conversation turn. The ...",
+    "host_name": "github.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.youtube.com/watch?v=8uood8A3h5k",
+    "name": "How to Research Anything with Kimi Research Agent - YouTube",
+    "snippet": "Want to research any topic faster and smarter using AI? In this Kimi Research Agent tutorial for beginners, you'll learn step by step how ... Missing: executor | Show results with: executor",
+    "host_name": "www.youtube.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/help/deep-research/deep-research-overview",
+    "name": "Deep Research Overview - Kimi Help Center",
+    "snippet": "How Kimi-Researcher works? ... Deep Research operates asynchronously, taking 10–25 minutes for step-by-step reasoning, retrieval, and writing. Deliverables. Each ... Missing: executor | Show results with: executor\nDeep Research is Kimi's first Agent product, powered by the Kimi-Researcher model. It doesn't just answer questions — it works like a real researcher, autonomously completing the entire workflow from task planning to report delivery.",
+    "host_name": "www.kimi.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=417VXUjahpQ",
+    "name": "How to Research ANYTHING with Kimi Research Agent in MINUTES",
+    "snippet": "In this video, I will show you how to use Kimi Research Agent to conduct deep research on any topic using AI automation. Missing: Chat executor",
+    "host_name": "www.youtube.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/kimi/comments/1u3mzfm/watch_how_kimi_works_utilizing_subagents",
+    "name": "Watch how KIMI works - Utilizing sub-agents : r/kimi - Reddit",
+    "snippet": "the current KIMI Code can process tasks in parallel by generating sub-agents. Each has its own strengths and weaknesses,",
+    "host_name": "www.reddit.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://x.com/hasantoxr/article/2065757441963462964",
+    "name": "Kimi Agent Swarm Explained: How to Run 300 AI Agents in a Single",
+    "snippet": "The main agent acts as a CEO. It reads your request, figures out what kind of work needs to happen, and then hires up to 300 specialist sub- ... Missing: executor | Show results with: executor",
+    "host_name": "x.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=7eyZxUTYf1U",
+    "name": "How To Do Deep Research For Free With Kimi (No More ChatGPT)",
+    "snippet": "How To Do Deep Research For Free With Kimi (No More ChatGPT) Get my top secret 100+ AI tools here: https://ai-and-marketing.beehiiv.com/ 10 ... Missing: Chat executor",
+    "host_name": "www.youtube.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/shen-sean-chen_how-does-an-ai-deepresearch-agent-actually-activity-7378813404729266176-dpOR",
+    "name": "How does an AI DeepResearch Agent actually work? Think of its",
+    "snippet": "The agent state basically tracks the state for the entire research flow and all the history so that even for researcher, it will know what ...",
+    "host_name": "www.linkedin.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://youmind.com/landing/x-viral-articles/kimi-agent-swarm-300-agents-guide",
+    "name": "Kimi Agent Swarm: Complete A–Z Guide to How China Quietly Built",
+    "snippet": "Discover how Kimi Agent Swarm uses 300 parallel agents to automate massive research and content tasks that used to take weeks. YouMind tracks this viral ... Missing: executor | Show results with: executor",
+    "host_name": "youmind.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://wshuyi.medium.com/is-kimi-researcher-any-good-b36cbba6c937",
+    "name": "Is Kimi Researcher any good? - Shuyi Wang - Medium",
+    "snippet": "Kimi Researcher demonstrates the potential of AI-assisted research — it not only automates the collection of vast amounts of information and ... Missing: executor | Show results with: executor",
+    "host_name": "wshuyi.medium.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/en/deep-research",
+    "name": "Kimi Deep Research | From Investigation to Insights",
+    "snippet": "Kimi Deep Research: an AI agent for in-depth research. It breaks down complex questions, searches extensively, and delivers professional & long-form reports.",
+    "host_name": "www.kimi.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,213 @@
+URL: https://www.kimi.com/help/deep-research/deep-research-overview
+TITLE: Deep Research Overview - Kimi Help Center
+PUBLISHED: 
+
+ProductsProductsKimiAll-in-one agentic AI workspace
+Kimi WorkAI desktop agent for knowledge workers
+Kimi CodeAI code agent for terminal & IDE
+Kimi WebBridgeA browser extension for AI agents
+Kimi PlatformAccess the latest Kimi models
+
+FeaturesFeaturesSlidesAI presentation maker
+WebsitesAI website builder
+Deep ResearchGet thorough & multi-format reports
+SheetsBuild Excel formulas, pivots & charts
+DocsCreate, convert & review documents
+Kimi ClawDeploy 24/7 AI agents in one click
+
+ResearchResearchKimi K2.6Advancing Open-Source Coding
+Agent SwarmScale Out, Not Just Up
+WorldVQAAtomic World Knowledge in MLLMs
+Kimi K2.5Visual Agentic Intelligence
+Kimi Vendor VerifierRebuilding the Chain of Trust
+Kimi K2 ThinkingOpen-source thinking model
+Kimi K2Open Agentic Intelligence
+
+ResourcesResourcesKimi Code Introduction
+Parallel Agent
+Multi Agent
+Hermes Agent Overview
+Hermes API Integration
+OpenClaw SaaS
+How to Install OpenClaw on Mac
+AI Tools for Excel
+Vibe Coding Guide
+How to Vibe Code
+How to Build a Website from Scratch
+Refactor moonshot.ai with Kimi Code CLI
+Kimi AI Examples and Showcases
+
+PricingPricing
+HelpHelp
+Kimi K3Kimi K3
+
+Try Kimi
+
+Getting Started
+Agent Mode
+Kimi Claw
+Kimi WebBridge
+Slides
+Docs & Sheets
+Deep ResearchDeep Research
+Deep Research use cases & prompt library
+Deep Research is stuck or not returning results?
+Search or reasoning direction went wrong?
+What is the context length for Deep research?
+Credits deducted before task completion?
+Download or save
+
+Websites
+Membership
+Kimi Code
+Kimi API
+Kimi Business
+Others
+
+Help CenterDeep ResearchDeep Research
+
+Deep Research
+
+Deep Research is Kimi's first Agent product, powered by the Kimi-Researcher model. It doesn't just answer questions — it works like a real researcher, autonomously completing the entire workflow from task planning to report delivery.
+
+How Kimi-Researcher works?
+
+For every question, Kimi-Researcher independently completes the full research pipeline:
+
+StepDescription
+ClarificationProactively asks follow-up questions to build a clearer problem space
+Deep reasoningAverages 23 reasoning steps per task, organizing and resolving requirements
+Active searchPlans ~74 keywords, discovers 206 URLs, filters to top 3.2% highest-quality content
+Iterative reasoningEvaluates results to determine if additional searches are needed
+Tool invocationCalls browsers, code execution, and other tools to process data
+Report generationSynthesizes information into a structured long-form report with citations
+
+Deep Research operates asynchronously, taking 10–25 minutes for step-by-step reasoning, retrieval, and writing.
+
+Deliverables
+
+Each research task produces two deliverables:
+
+1. Text research report
+
+Average length: 10,000+ words
+
+~26 high-quality, traceable sources
+
+Citations embedded inline — click to jump to source
+
+2. Visual report
+
+Interactive, shareable dynamic HTML report
+
+Structured layout and mind maps
+
+Public sharing link available
+
+Use cases
+
+Best for: Investment analysis, industry research, academic topics, strategic planning, regulatory review, knowledge synthesis
+
+CategoryExamples
+Professional researchInvestment analysis, industry research, academic topics, strategic planning
+Information synthesisRegulatory review, complex document retrieval, multi-source consolidation
+Knowledge & educationTeaching materials, systematic surveys, deep topic exploration
+Everyday explorationLearn about topics of interest
+
+Not suitable for: Creative writing (fiction, screenplays), fortune-telling, resume writing, fixed-format templates, editable slides
+
+How to use Deep Research?
+
+Entry points:
+
+Web: kimi.com/deep-research
+
+Mobile: Kimi app → Taskbar → Deep Research Agent mode
+Steps:
+
+Enter your research question and send
+
+Respond to clarification questions to confirm direction (or click "Include everything" to skip)
+
+Monitor search keywords, reasoning process, and visited URLs in real time
+
+Receive two deliverables when complete:
+
+Deep Research report (Markdown): 10,000+ words with table of contents and traceable sources
+
+Visual report (HTML): Interactive, publicly shareable visual report
+
+Preview, download (PDF/Word), or share as needed
+
+Tips for best results
+
+1. Focus the scope
+
+Before submitting, consider specifying:
+
+Time range: "from 2023 to present"
+
+Geographic scope: "US market only"
+
+Source types: "prioritize official reports and academic papers"
+
+Question decomposition: Break broad questions into sub-questions
+
+2. Calibrate during clarification
+
+State directions you do not want covered
+
+Add specific dimensions or angles for focus
+
+Provide background context for complex questions
+
+Keep clarification responses concise and specific — overly long or unclear input may cause research drift.
+
+3. Be patient during execution
+
+Deep Research typically takes 10–25 minutes. The system runs in the background — you don't need to stay on the page.
+
+Do not click "Stop output" — this will terminate the research. If the page appears unresponsive, simply refresh.
+
+Important notes
+
+Execution time: 10–25 minutes. Task runs asynchronously — you'll be notified upon completion
+
+Credit refunds: Automatically refunded for tool invocation errors; submit feedback for off-direction research
+
+Input quality: Concise, well-defined questions produce better results
+
+Scope boundaries: For simple Q&A, use standard chat mode for faster responses
+
+Terms: Subject to Kimi User Service Agreement
+
+Related resources
+
+Technical report: Kimi-Researcher: End-to-End RL Training
+
+User gallery: kimi.com/deep-research
+
+PreviousKimi Sheets use cases & prompt libraryNextDeep Research use cases & prompt library
+
+How Kimi-Researcher works?
+Deliverables1. Text research report
+2. Visual report
+
+Use cases
+How to use Deep Research?
+Tips for best results1. Focus the scope
+2. Calibrate during clarification
+3. Be patient during execution
+
+Important notes
+Related resources
+
+English
+
+Products
+KimiOpen PlatformKimi CodePricingFeatures
+AI AgentAgent SwarmAI Website BuilderAI Document AgentAI Slides GeneratorAI Sheets AgentDeep ResearchCapabilities
+AI Python GeneratorAI C++ GeneratorAI HTML GeneratorAI Java GeneratorAI JS GeneratorAI Rust GeneratorCompany
+Moonshot AITerms of ServicePrivacy Policy
+
+Deep Research Overview - Kimi Help Center

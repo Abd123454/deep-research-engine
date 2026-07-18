@@ -124,7 +124,12 @@ export const EVAL_DATASET: EvalQuery[] = [
     type: "coding",
     codingTest: {
       language: "javascript",
-      test: "console.assert(binarySearch([1,2,3,4,5], 3) === 2, 'test 1')\nconsole.assert(binarySearch([1,2,3,4,5], 6) === -1, 'test 2')\nconsole.assert(binarySearch([1,2,3,4,5], 1) === 0, 'test 3')\nconsole.assert(binarySearch([], 1) === -1, 'test 4')",
+      // IMPORTANT: use a throwing assert helper rather than console.assert.
+      // Bun's console.assert does NOT throw on failure (it only logs), so a
+      // wrong/missing function would pass the test silently. The helper
+      // below throws on the first failed assertion, matching Python's
+      // `assert` semantics and ensuring objective pass/fail.
+      test: "function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed') }\nassert(binarySearch([1,2,3,4,5], 3) === 2, 'test 1')\nassert(binarySearch([1,2,3,4,5], 6) === -1, 'test 2')\nassert(binarySearch([1,2,3,4,5], 1) === 0, 'test 3')\nassert(binarySearch([], 1) === -1, 'test 4')\nconsole.log('All tests passed')",
     },
     difficulty: "medium",
   },
@@ -144,7 +149,12 @@ export const EVAL_DATASET: EvalQuery[] = [
     type: "coding",
     codingTest: {
       language: "javascript",
-      test: "console.assert(isPalindrome('racecar') === true, 'test 1')\nconsole.assert(isPalindrome('hello') === false, 'test 2')\nconsole.assert(isPalindrome('A man a plan a canal Panama') === true, 'test 3')\nconsole.assert(isPalindrome('') === true, 'test 4')",
+      // IMPORTANT: use a throwing assert helper rather than console.assert.
+      // Bun's console.assert does NOT throw on failure (it only logs), so a
+      // wrong/missing function would pass the test silently. The helper
+      // below throws on the first failed assertion, matching Python's
+      // `assert` semantics and ensuring objective pass/fail.
+      test: "function assert(cond, msg) { if (!cond) throw new Error(msg || 'assertion failed') }\nassert(isPalindrome('racecar') === true, 'test 1')\nassert(isPalindrome('hello') === false, 'test 2')\nassert(isPalindrome('A man a plan a canal Panama') === true, 'test 3')\nassert(isPalindrome('') === true, 'test 4')\nconsole.log('All tests passed')",
     },
     difficulty: "medium",
   },

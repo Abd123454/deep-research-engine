@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://flowith.io/blog/why-students-prefer-kimi-2m-token-pdf-analysis",
+    "name": "Why Students Prefer Kimi K2.5 for 2M Token PDF Analysis - Flowith Blog",
+    "snippet": "Kimi K2.5's 2M+ token context window allows students to process entire textbooks, dissertations, and multi-document research collections in a ...",
+    "host_name": "flowith.io",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2507.20534v1",
+    "name": "Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "For long-context tasks, we set the context window size to 128K tokens during evaluation, truncating any input that exceeds this limit to fit ... Missing: 2M | Show results with: 2M",
+    "host_name": "arxiv.org",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/kimi/comments/1ulmfey/kimi_users_doing_agentic_coding_how_do_you_handle",
+    "name": "kimi users doing agentic coding how do you handle context on longer runs - Reddit",
+    "snippet": "Divide up the work, make a plan, analyze data, then start a loop that spawns multiple agents for you. You don't need personalities and other ... Looking for a working model for long context retention better then Kimi 2.5 and cheaper then Claude. Is there any.... : r/SillyTavernAI Window context limit : r/kimi More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai/kimi-k2",
+    "name": "Kimi K2 is the large language model series developed by Moonshot AI team - GitHub",
+    "snippet": "Kimi K2 is a state-of-the-art mixture-of-experts (MoE) language model with 32 billion activated parameters and 1 trillion total parameters. Context Length 128K",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/data-and-beyond/kimi-k2-thinking-model-open-agentic-llm-that-redefines-intelligence-267c46b63ccb",
+    "name": "Kimi K2 Thinking model Open Agentic LLM That Redefines Intelligence ? | by TONI RAMCHANDANI | Data And Beyond | Medium",
+    "snippet": "The architecture offers a context window of up to 256 K tokens, meaning the model can maintain state over very long sequences (many documents, ... Missing: 2M | Show results with: 2M",
+    "host_name": "medium.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.securityscientist.net/blog/12-questions-and-answers-about-kimi-context-window",
+    "name": "12 Questions and Answers About kimi context window - Security Scientist",
+    "snippet": "Kimi K2.5 model features a 256k token window. You can input long blocks of code for debugging. The technical specs for the Kimi K2.5 model are clear: it ... Missing: 2M | Show results with: 2M",
+    "host_name": "www.securityscientist.net",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://intuitionlabs.ai/articles/kimi-k2-technical-deep-dive",
+    "name": "Kimi K2 Explained: A Technical Deep Dive into its MoE Architecture | IntuitionLabs",
+    "snippet": "It supports ultra-long contexts (up to 128K tokens) The architecture also supports extremely long context windows. In training, contexts of 4K ...",
+    "host_name": "intuitionlabs.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aitoolsreview.co.uk/insights/kimi-k2-5-review",
+    "name": "Kimi K2.5 Review: 1,000 Tokens/Sec Inference Breakthrough (June 2026) - AIToolsReview",
+    "snippet": "Long-Context Retrieval: Thanks to its 2M token context window, K2.5 handles \"needle-in-a-haystack\" retrieval tasks across massive document sets ...",
+    "host_name": "aitoolsreview.co.uk",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://benchlm.ai/tools/context-window",
+    "name": "LLM Context Window Comparison: How Much Can Each Model Hold? | BenchLM.ai",
+    "snippet": "Larger context windows let models read longer documents, hold longer conversations, and work with bigger codebases at once. Does a bigger context window mean a ...",
+    "host_name": "benchlm.ai",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://overchat.ai/ai-hub/kimi-k2-6",
+    "name": "Kimi K2.6 is Now on Overchat AI | AI Hub",
+    "snippet": "It boasts a 1-trillion-parameter Mixture-of-Experts architecture with 32B active parameters, 256K context window, and native multimodal input.",
+    "host_name": "overchat.ai",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

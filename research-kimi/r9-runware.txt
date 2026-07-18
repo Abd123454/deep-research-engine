@@ -1,0 +1,765 @@
+URL: https://runware.ai/docs/models/moonshotai-kimi-k2-6/guides/tool-calling
+TITLE: Building a tool-calling agent with Kimi K2.6 — Kimi K2.6 API
+PUBLISHED: 
+
+Building a tool-calling agent with Kimi K2.6 — Kimi K2.6 API | Runware Docs
+
+/ docs_
+Search⌘K
+
+↑↓ Navigateenter Openesc Close
+
+Dashboard
+
+Models
+PlatformModelsLearnChangelogStatus
+
+Getting StartedIntroduction
+Authentication
+
+Core ConceptsTask Polling
+Streaming
+Webhooks
+Errors
+Rate Limits
+Pricing
+
+SDKs & Integrations
+
+TypeScript SDK
+
+Python SDK
+CLI
+MCP
+Skills
+
+ComfyUI
+
+Vercel AI SDK
+OpenAI Compatibility
+
+JavaScript SDKLegacy
+
+Python SDKLegacy
+
+ComfyUILegacy
+
+UtilitiesModel Search
+Model Upload
+Account Management
+Media Storage
+Task Details
+
+Models Overview
+
+SortPopularityPopularityNewestA-Z
+
+CreatorAllAllAlibabaAnthropicBaiduBlack Forest LabsBriaByteDanceDeepSeekExactly AIFish AudioGoogleHeyGenHyper3DIdeogramImagineArtInworld AIKling AIKreaLightricksLumaMemories AIMeshyMetaMicrosoftMiniMaxMireloMoonshot AIOpenAIPicsartPixVersePruna AIRecraftReveRunDiffusionRunwaySkyworkSourcefulStability AIsync.Topaz LabsTripo AIVEEDViduxAIZ.ai
+
+CapabilitiesSelect capabilities...Text to ImageImage to ImageText to VideoImage to VideoVideo to VideoAudio to VideoText to AudioVideo to AudioAudio to AudioText to TextImage to TextVideo to TextAudio to TextText to 3DImage to 3DEditExtendPreprocessEdge DetectionDepth EstimationPose EstimationSegmentationSurface Normal EstimationLine ExtractionMaskRemove BackgroundUpscaleCaptionVectorizeAge ClassificationPrompt EnhanceTrainCheckpoint
+
+By 
+Released 
+
+Nano Banana 2 Lite
+Gemini Omni Flash
+Reve 2.1
+Seedream 5.0 Pro
+Z-Image Style LoRA Training
+Qwen-Image Style LoRA Training
+FLUX.1 [dev] Style LoRA Training
+HappyHorse 1.1
+Kling VIDEO 3.0 Turbo
+Claude Fable 5
+P-Video-Replace
+Ideogram 4.0
+Ideogram 4.0q
+Ideogram 4.0 Remix
+Runway Aleph 2.0
+MiniMax M3
+Exactly Illustrative Training
+Fish Audio S2.1 Pro
+Grok Imagine Video 1.5
+Claude Opus 4.8
+P-Video-Animate
+FLUX Virtual Try-On
+Krea 2 Large
+Gemini 3.5 Flash
+Recraft V4.1 Pro
+Recraft V4.1 Utility Pro
+Grok Imagine Image Quality
+UNI-1 Max
+HeyGen Avatar V
+P-Video-Avatar
+SkyReels V4
+DeepSeek-V4-Pro
+GPT-5.5
+Kling VIDEO 3.0 Omni 4K
+Kimi K2.6
+Gemini 3.1 Flash TTS
+ImagineArt 2.0
+MiniMax Music 2.6
+GLM-5.1
+Wan2.7 Image Pro
+Veo 3.1 Lite
+PixVerse V6
+FLUX.2 [klein] 9B KV
+MiniMax M2.7 Highspeed
+GPT-5.4 Nano
+GPT-5.4 Pro
+LTX-2.3 Fast
+Gemini 3.1 Flash Lite
+Seedream 5.0 Lite
+Gemini 3.1 Pro
+Claude Sonnet 4.6
+MiniMax M2.5
+Tripo 3D v3.1
+Qwen-Image-2.0
+Hunyuan 3D 3.1 Pro
+Kling VIDEO 3.0 Standard
+Kling VIDEO 3.0 Omni Pro
+Kling IMAGE O3
+Kling VIDEO 3.0 Pro
+Kling VIDEO 3.0 Omni Standard
+HeyGen Video Agent
+Vidu Q3
+Grok Imagine Image
+Z-Image
+Object Eraser
+Meshy-6
+Wan2.6 Flash
+FLUX.2 [klein] 4B
+ImagineArt 1.5 Pro
+LTX-2
+Qwen3-TTS 1.7B CustomVoice
+Seedance 1.5 Pro
+GLM-4.7
+GPT Image 1.5
+Ray3.2
+Wan2.6 Image
+Wan2.6
+Seedream 4.5
+Runway Gen-4.5
+ImagineArt 1.5
+Seedance 1.0 Pro Fast
+Vidu Q2 Turbo
+Veo 3.1
+LTX-2 Pro
+Rodin Gen-2
+Sora 2 Pro
+PixVerse V5 Fast
+Riverflow 2.5 Pro
+UNI-1
+Grok 4.3
+Inworld Realtime TTS-2
+HappyHorse-1.0
+DeepSeek-V4-Flash
+Kling VIDEO 3.0 4K
+GPT Image 2
+Claude Opus 4.7
+MiniMax Music Cover
+sync-3
+Wan2.7
+Seedance 2.0
+Seedance 2.0 Fast
+Gemma 4 31B
+Wan2.7 Image
+Topaz Labs Starlight Precise 2.5
+MiniMax M2.7
+GPT-5.4 Mini
+GPT-5.4
+LTX-2.3
+P-Video
+Nano Banana 2
+Recraft V4 Vector
+Recraft V4 Pro Vector
+Recraft V4 Pro
+Qwen3.5-397B
+Qwen-Image-2.0-Pro
+Kling IMAGE 3.0
+Riverflow 2.0 Pro
+Grok Imagine Video
+PixVerse V5.6
+FLUX.2 [klein] 9B
+Qwen3-TTS 1.7B Base
+Qwen3-TTS 1.7B VoiceDesign
+Qwen-Image-2512
+TRELLIS.2
+Gemini 3 Flash
+FLUX.2 [max]
+Kling IMAGE O1
+Kling VIDEO O1 Pro
+PixVerse V5.5
+Z-Image-Turbo
+FLUX.2 [dev]
+Nano Banana Pro
+MiniMax Hailuo 2.3 Fast
+Wan2.5-Preview
+Qwen-Image-Edit-Plus
+HeyGen Avatar IV
+Seed Audio 1.0
+Exactly Grain Film Look
+Exactly Warm Light
+Exactly Journey
+Exactly Extreme Contrast
+Exactly Bright Pulse
+Exactly Distant Reality
+Mirelo SFX 1.6
+Seedance 2.0 Mini
+P-Image-Try-On
+BytePlus Video Enhancement Pro
+Krea 2 Medium
+FLUX Erase
+Recraft V4.1 Utility
+Recraft V4.1
+Juggernaut Z
+PixVerse Modify
+ERNIE-Image
+ACE-Step v1.5 XL Base
+ACE-Step v1.5 XL SFT
+P-Image Upscale
+ACE-Step v1.5 XL Turbo
+Ideogram Layerize Text
+xAI Text-to-Speech
+Qwen3.5-27B
+Recraft Vectorize
+Recraft V4
+Hunyuan 3D 3.1 Rapid
+Vidu Q3 Turbo
+Riverflow 2.0 Fast
+MiniMax Speech 2.8
+Inworld TTS-1.5 Max
+Inworld TTS-1.5 Mini
+Bria FIBO Edit
+Bria Fibo Edit Tools
+FLUX.2 [klein] 9B Base
+FLUX.2 [klein] 4B Base
+Bria FIBO Lite
+ACE-Step v1.5 Base
+ACE-Step v1.5 Turbo
+TwinFlow Z-Image-Turbo
+Qwen-Image-Layered
+Bria Video Eraser
+react-1
+Kling VIDEO 2.6 Pro
+Kling VIDEO 2.6 Standard
+KlingAI Avatar 2.0 Standard
+KlingAI Avatar 2.0 Pro
+P-Image
+Kling VIDEO O1 Standard
+LTX-2 Retake
+Kandinsky 5.0 Image Lite
+FLUX.2 [pro]
+FLUX.2 [flex]
+SAM 3D Objects
+Dia2 2B
+P-Image-Edit
+MiniMax Hailuo 2.3
+LTX-2 Fast
+KlingAI 2.5 Turbo Standard
+Claude Haiku 4.5
+Veo 3.1 Fast
+Sora 2
+HunyuanImage-3.0
+VEED Fabric 1.0
+Vidu Q2 Pro
+Wan2.5-Preview Image
+KlingAI 2.5 Turbo Pro
+Aurora v1
+Aurora v1 Fast
+Seedream 4.0
+PixVerse V5
+Nano Banana
+Qwen-Image-Edit
+Runway Gen-4 Image Turbo
+GPT-5 Mini
+GPT-5 Nano
+Qwen-Image
+Runway Aleph
+Memories Video Captioning
+Memories Video Age Detection
+MiniMax Hailuo 02
+Bria 3.2
+Seedance 1.0 Pro
+Runway Gen-4 Image
+Ideogram 3.0 Edit
+Ideogram 3.0 Remix
+Runway Gen-4 Turbo
+HiDream-I1 Fast
+Ideogram 3.0
+Ideogram 3.0 Replace Background
+Ideogram 3.0 Reframe
+GPT Image 1
+FLUX.1 [schnell]
+Riverflow 2.5 Fast
+Krea 2 Turbo
+BytePlus Video Enhancement Standard
+FLUX Outpainting
+ERNIE-Image-Turbo
+Mirelo SFX 1.5
+lipsync-2-pro
+Dia 1.6B
+Stable Diffusion 3
+KlingAI 2.1 Standard
+KlingAI 2.1 Pro
+PixVerse V4.5
+GPT Image 1 Mini
+Vidu Q1
+HiDream-I1 Dev
+Qwen2.5-VL-7B Age Detector
+Vidu Q1
+Juggernaut Pro Flux
+PixVerse V4
+Open Age Detection
+FLUX.1.1 [pro] Ultra
+FLUX.1 [dev]
+ViT Age Classifier
+Llama 3.1 8B Prompt Enhancer
+Clarity
+BiRefNet Matting
+BiRefNet Portrait
+LLaVA-1.6-Mistral-7B
+BiRefNet HRSOD DHU
+BiRefNet General 512×512 FP16
+BiRefNet General
+BiRefNet Dis
+BiRefNet v1 Base
+BiRefNet Massive TR DIS5K TR TES
+BiRefNet v1 Base – COD
+CCSR
+RemBG v1.4
+Qwen2.5-VL-3B-Instruct
+Qwen2.5-VL-7B-Instruct
+Stable Diffusion XL v1.0 VAE Fix
+Stable Diffusion Latent Upscaler
+YOLOv8s Face
+YOLOv8s Person Seg
+Picsart Image Vectorizer
+SwinIR
+Real-ESRGAN
+OpenAI CLIP ViT-L/14
+MediaPipe Face Mesh
+MediaPipe Face Full
+Bria FIBO
+ByteDance Video Upscaler
+Ovi
+lipsync-2
+FLUX.1 Krea [dev]
+FLUX.1 Kontext [pro]
+KlingAI 2.1 Master
+ControlNet Preprocess MLSD
+ControlNet Preprocess Canny
+ControlNet Preprocess NormalBae
+ControlNet Preprocess Scribble
+ControlNet Preprocess Seg
+ControlNet Preprocess OpenPose
+ControlNet Preprocess Lineart
+ControlNet Preprocess Shuffle
+ControlNet Preprocess Lineart Anime
+ControlNet Preprocess Depth
+ControlNet Preprocess Tile
+ControlNet Preprocess SoftEdge
+Vidu Q1 Classic
+KlingAI 2.0 Master
+HiDream-I1 Full
+Juggernaut Base Flux
+Juggernaut Lightning Flux
+Ideogram 2a Remix
+Ideogram 2a
+OmniHuman-1
+MiniMax 01 Director
+Vidu 2.0
+KlingAI 1.6 Standard
+KlingAI 1.5 Standard
+KlingAI 1.5 Pro
+FLUX.1 Expand [pro]
+FLUX.1 Fill [dev]
+Vidu 1.5
+Bria RMBG v2.0
+FLUX.1 Fill [pro]
+Ideogram 2.0 Remix
+FLUX.1.1 [pro]
+KlingAI Lip-Sync
+MiniMax 01
+Ideogram 2.0
+KlingAI 1.0 Standard
+YOLOv8n Hand
+YOLOv8n Face
+YOLOv8n Person Seg
+MediaPipe Nose + Eyes Mesh
+MediaPipe Eyes + Lips Mesh
+MediaPipe Nose Mesh
+MediaPipe Lips Mesh
+MediaPipe Face Mesh Eyes Only
+MediaPipe Eyes Mesh
+MediaPipe Nose + Lips Mesh
+MediaPipe Face Short
+Bria Image Replace Background
+FLUX.1 [dev] SRPO
+Bria Video Increase Resolution
+OmniHuman-1.5
+PixVerse LipSync
+FLUX.1 Kontext [max]
+Bria Image Increase Resolution
+FLUX.1 Kontext [dev]
+Bria Video Background Removal
+MiniMax 01 Live
+PixVerse V3.5
+KlingAI 1.6 Pro
+KlingAI 1.0 Pro
+
+plus thousands of community models
+
+Learn OverviewWorkflowsText to image
+Image to image
+Inpainting
+Outpainting
+
+Generation SettingsPrompts
+Steps
+Dimensions
+Schedulers
+Seed
+CFG Scale
+CLIP Skip
+VAE
+
+EnhancementsControlNet
+LoRAs
+IP Adapters
+Embeddings
+
+Model Guides
+
+MODEL IDmoonshotai-kimi-k2-6
+live
+
+Kimi K2.6
+
+by Moonshot AIApril 20, 2026262K context
+Kimi K2.6 is Moonshot AI's latest flagship open model for coding, reasoning, multimodal understanding, and agentic execution. It is designed for long-horizon software tasks, reliable tool use, autonomous multi-step workflows, coordinated agent swarms, and visual understanding across image and video inputs in addition to text.
+Text to TextImage to TextVideo to TextCheckpoint
+
+API ReferenceINTEGRATE
+
+Complete technical specification for integration
+RequestResponse
+
+Examples4CODE
+
+Ready-to-use code snippets for common workflows
+
+Guides1LEARN
+
+Step-by-step tutorials for advanced use cases
+← All GuidesBuilding a tool-calling agent with Kimi K2.6
+How to give Kimi K2.6 access to your own functions through Runware's OpenAI-compatible endpoint: defining tools, running the call loop, making parallel tool calls, and controlling tool selection.
+Introduction
+Tool calling lets Kimi K2.6 pause mid-response to call functions you define, read what they return, and finish its answer with that data in hand. You describe each function as a JSON schema, the model decides when to call it and with what arguments, and your code runs the function and passes the result back. Kimi K2.6 is built for this style of work: it handles multi-step, long-horizon tasks and chains several tool calls together before it commits to an answer.
+Give Kimi K2.6 one instruction and four read/write tools (service health, logs, deploys, and a pager), and it works the problem end to end. From that single request it ran four tool calls across three rounds: it pulled health, deploys, and logs together, paged the on-call engineer based on what it found, then wrote up the incident, shown in full under The agent loop below.
+The model never saw your services directly. It only saw the tools you described and the JSON they returned. This guide builds that assistant from a single call up to the full loop.
+
+Connecting to the endpoint
+Tool calling runs over Runware's OpenAI-compatible Chat Completions endpoint at https://api.runware.ai/v1. Point any OpenAI client at that base URL with your Runware API key, and set the model to moonshotai-kimi-k2-6. The request and response follow the standard OpenAI tool-calling format, so existing agent code and frameworks work unchanged.
+Pythonfrom openai import OpenAI
+
+client = OpenAI(
+api_key="YOUR_RUNWARE_API_KEY",
+base_url="https://api.runware.ai/v1",
+)
+
+TypeScriptimport OpenAI from 'openai'
+
+const client = new OpenAI({
+apiKey: process.env.RUNWARE_API_KEY,
+baseURL: 'https://api.runware.ai/v1',
+})
+
+Anatomy of a tool call
+A tool call is a four-message round-trip. You send the conversation plus a list of tools, the model replies with a tool call instead of text, you run the function and send the result back as a tool message, and the model answers. Walk through one call against the payments service:
+1. Request{
+"model": "moonshotai-kimi-k2-6",
+"messages": [
+{ "role": "system", "content": "You are an on-call site-reliability assistant. Before answering, use the provided tools to inspect live service health, recent logs, and recent deploys. Be concise and decisive, cite the numbers you found, and recommend one concrete next action." },
+{ "role": "user", "content": "What is the current error rate on the payments service?" }
+],
+"tools": [
+{
+"type": "function",
+"function": {
+"name": "get_service_health",
+"description": "Return the current health of a service: status, error rate, and p95 latency.",
+"parameters": {
+"type": "object",
+"properties": {
+"service": { "type": "string", "enum": ["checkout", "payments", "search"] }
+},
+"required": ["service"]
+}
+}
+}
+],
+"tool_choice": "auto",
+"temperature": 0.2,
+"max_completion_tokens": 1024
+}
+
+2. Response{
+"id": "chatcmpl-1fb9303b72d3939c40a33ecd",
+"object": "chat.completion",
+"model": "moonshotai-kimi-k2-6",
+"choices": [
+{
+"index": 0,
+"message": {
+"role": "assistant",
+"content": null,
+"tool_calls": [
+{
+"id": "functions.get_service_health:0",
+"type": "function",
+"function": {
+"name": "get_service_health",
+"arguments": "{\"service\":\"payments\"}"
+}
+}
+]
+},
+"finish_reason": "tool_calls"
+}
+],
+"usage": { "prompt_tokens": 144, "completion_tokens": 17, "total_tokens": 161 }
+}
+
+3. Tool result{
+"role": "tool",
+"tool_call_id": "functions.get_service_health:0",
+"content": "{\"status\":\"healthy\",\"healthy\":true,\"errorRate\":0.002,\"p95LatencyMs\":180}"
+}
+
+4. Final answerThe payments service is currently **healthy** with an error rate of
+**0.2%** (0.002) and a p95 latency of **180 ms**. No immediate action is required.
+
+Three details carry the protocol. When finish_reason is tool_calls, the assistant message has no text to show the user yet: its content is null and the call lives in the tool_calls array. The arguments field is a JSON-encoded string, not an object, so you parse it before use. Your reply is a tool message whose tool_call_id must match the call's id, which is how the model pairs your result with the request it made. Append both the assistant message and your tool message to the history, send it back, and the model answers with finish_reason: "stop".
+
+The agent loop
+One call answers one question. Real tasks need a loop, because the model often calls more tools after seeing the first results. The rule is simple: send the conversation, append whatever comes back, and repeat until the model returns no more tool calls.
+Pythonimport json
+
+messages = [
+{"role": "system", "content": SYSTEM_PROMPT},
+{"role": "user", "content": "Checkout users are reporting failed orders in the last few minutes. Find out what is going on and take the appropriate action."},
+]
+
+while True:
+response = client.chat.completions.create(
+model="moonshotai-kimi-k2-6",
+messages=messages,
+tools=tools,
+)
+message = response.choices[0].message
+messages.append(message)
+
+if not message.tool_calls:
+break
+
+for call in message.tool_calls:
+args = json.loads(call.function.arguments)
+result = TOOL_IMPLS[call.function.name](args)
+messages.append({
+"role": "tool",
+"tool_call_id": call.id,
+"content": json.dumps(result),
+})
+
+print(messages[-1].content)
+
+TypeScriptconst messages = [
+{ role: 'system', content: SYSTEM_PROMPT },
+{ role: 'user', content: 'Checkout users are reporting failed orders in the last few minutes. Find out what is going on and take the appropriate action.' },
+]
+
+while (true) {
+const response = await client.chat.completions.create({
+model: 'moonshotai-kimi-k2-6',
+messages,
+tools,
+})
+const message = response.choices[0].message
+messages.push(message)
+
+if (!message.tool_calls) break
+
+for (const call of message.tool_calls) {
+const args = JSON.parse(call.function.arguments)
+const result = TOOL_IMPLS[call.function.name](args)
+messages.push({
+role: 'tool',
+tool_call_id: call.id,
+content: JSON.stringify(result),
+})
+}
+}
+
+console.log(messages.at(-1).content)
+
+Here is that loop end to end, from Kimi's first batch of calls to the stop that ends it:
+
+kimi · on-call
+systemYou are an on-call site-reliability assistant. Before answering, use the provided tools to inspect live service health, recent logs, and recent deploys. Be concise and decisive, cite the numbers you found, and recommend one concrete next action.
+Checkout users are reporting failed orders in the last few minutes. Find out what is going on and take the appropriate action.
+
+round 1tool_calls
+get_service_healthcheckout
+{ status: "degraded", errorRate: 0.182, p95LatencyMs: 4200 }
+
+get_deployscheckout
+{ deploys: ["v2.4.1 (live)", "v2.4.0 (superseded)"] }
+
+search_logscheckout, "error"
+{ matches: ["NullPointerException … applyPromo after v2.4.1", "Unhandled 500 on POST /api/checkout"] }
+
+round 2tool_calls
+page_engineercheckout, "Checkout degraded after v2.4.1…"
+{ paged: true, incidentId: "INC-4827" }
+
+round 3stop
+Status: Checkout is degraded — error rate is 18.2% and p95 latency is 4,200 ms.
+Root cause: Deploy v2.4.1 went live at 13:30. Logs show a NullPointerException in CheckoutController.applyPromo starting at 13:42, tied directly to the new release.
+Action taken: Paged the checkout on-call engineer and opened INC-4827.
+Recommended immediate next step: Roll back checkout to v2.4.0 to stop the bleeding while the team investigates the applyPromo bug.
+
+Round 2 is the step a single call can't reach. The model read the three results, concluded the v2.4.1 deploy was the cause, and chose a new action based on them: paging the team. A round that ends in tool_calls sends the loop around again, and the final stop is the model deciding it has enough to answer.
+Always bound the loop. A model can call tools for several rounds, and a bug in a tool (or a tool that keeps failing) can keep it looping. Cap the number of iterations and stop with a clear error when you hit the cap, rather than relying on the model to always finish on its own.
+
+Parallel tool calls
+When the model needs several independent pieces of information, it returns them as multiple entries in one tool_calls array rather than asking one round at a time. Asked for a health snapshot of three services, Kimi emitted all three calls in a single message:
+One assistant message, three tool calls{
+"message": {
+"role": "assistant",
+"content": null,
+"tool_calls": [
+{ "id": "functions.get_service_health:0", "type": "function", "function": { "name": "get_service_health", "arguments": "{\"service\":\"checkout\"}" } },
+{ "id": "functions.get_service_health:1", "type": "function", "function": { "name": "get_service_health", "arguments": "{\"service\":\"payments\"}" } },
+{ "id": "functions.get_service_health:2", "type": "function", "function": { "name": "get_service_health", "arguments": "{\"service\":\"search\"}" } }
+]
+},
+"finish_reason": "tool_calls"
+}
+
+The loop above already handles this: it iterates every entry in tool_calls and appends one tool message per call. Because each result is matched back by its own tool_call_id, you can run independent calls concurrently and append the results in any order. Once all three came back, the model answered in one line:
+**Checkout** is degraded (18.2% error rate, 4.2s p95 latency); **payments** and **search** are healthy.
+**Next action:** Investigate checkout immediately—roll back the most recent checkout deploy if one occurred within the latency/error-rate regression window.
+
+Controlling tool selection
+The tool_choice parameter decides how freely the model reaches for tools. The default, auto, is what every example above uses.
+ValueBehavior
+"auto"The model decides whether to call a tool. The default, and the right choice for most assistants.
+"none"The model answers with text and calls no tools, even if some are defined.
+"required"The model must call at least one tool before it can answer with text.
+{ "type": "function", "function": { "name": "..." } }The model must call the named function.
+
+Naming a function is useful when an action is already decided and you only need the model to fill in the arguments. Forcing page_engineer on a paging request guarantees the page fires:
+{
+"model": "moonshotai-kimi-k2-6",
+"messages": [ ... ],
+"tools": [ ... ],
+"tool_choice": { "type": "function", "function": { "name": "page_engineer" } }
+}
+
+Naming a function guarantees Kimi calls it, but the model may still issue other tool calls it judges necessary in the same turn. In the paging run above, Kimi paged as instructed and also called get_service_health and get_deploys to fill in the incident summary. If you need exactly one call and nothing else, expose only that one tool on the request.
+
+Designing tools Kimi can use well
+The model only ever sees the schemas you hand it, so a tool's name and description are its entire interface. Name functions like API endpoints, where get_service_health and search_logs read as actions and handler or doStuff give the model nothing to reason about. Treat the description as instructions for choosing between tools mid-conversation, not as a changelog entry.
+Constrain the arguments as tightly as the real inputs allow. An enum for a fixed set of values and required on the fields you depend on are the difference between a clean call and a malformed one. The service enum in these examples is why Kimi never invented a service name.
+What a tool returns matters as much as what it accepts, because the result becomes the model's next input. Compact JSON objects with named fields like { "status": "degraded", "errorRate": 0.182 } are easier to reason over than prose or large blobs. Keep the overall set small, too: a handful of well-scoped tools beats a large catalog, since overlapping tools force the model to guess which one you meant.
+
+Tips
+
+Echo every tool call back into the history. Append both the assistant message that requested the call and your tool reply. Dropping the assistant message breaks the tool_call_id pairing and the next request will error.
+
+Parse arguments defensively. It's a JSON string the model generated. Validate it against your schema before executing, and return an error object as the tool result if it doesn't fit, so the model can correct itself on the next round.
+
+Return errors as tool results, not exceptions. When a tool fails, send { "error": "..." } back as the tool message. The model can read that and adjust, where a thrown exception just ends the loop.
+
+Watch cached_tokens on long conversations. The system prompt and tool definitions repeat on every round, so Runware's prompt cache reuses them: across the incident's three rounds, usage.prompt_tokens_details.cached_tokens climbed from 0 to 608. Keeping the stable parts of your prompt in a fixed prefix maximizes that reuse.
+
+Set the action threshold in the system prompt. Whether the model gathers context before acting, or acts immediately, is shaped by instructions like "inspect health and logs before taking action." Tighten or loosen that line to match how much autonomy you want.
+
+On this pageTips
+On this page
+
+Introduction
+Connecting to the endpoint
+Anatomy of a tool call
+The agent loop
+Parallel tool calls
+Controlling tool selection
+Designing tools Kimi can use well
+Tips
+
+One API for all AI
+Product
+Models
+Platform
+Pricing
+
+About
+Docs
+Company
+Contact
+Blog
+
+Connect
+
+GitHub
+
+Discord
+
+Twitter
+
+LinkedIn
+
+YouTube
+
+Policies
+Privacy
+Cookies
+Cookie Preferences
+Terms of Use
+Security Disclosure
+Report Abuse
+
+© 2026 Runware, Inc. All rights reserved
+
+Ask AI
+×
+
+AI Provider
+
+Claude
+ChatGPT
+Mistral
+Bing
+
+What would you like to ask?
+
+Ask AI
+
+Send feedback
+×
+
+Email address
+
+Your feedback
+
+Send Feedback
+
+Cookies on Runware
+We use essential cookies to keep the site running. With your permission, we’d also like to use analytics and marketing cookies to improve Runware and understand how our website is used. You can change your preferences at any time.
+
+Accept allReject optional
+Manage preferences
+
+Privacy Policy
+Cookie Policy

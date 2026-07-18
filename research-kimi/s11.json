@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://github.com/MoonshotAI/kimi-code",
+    "name": "Kimi Code CLI — The Starting Point for Next-Gen Agents - GitHub",
+    "snippet": "Kimi Code CLI is an AI coding agent that runs in your terminal — it can read and edit code, run shell commands, search files, fetch web pages,  ...",
+    "host_name": "github.com",
+    "rank": 0,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai",
+    "name": "Moonshot AI - GitHub",
+    "snippet": "Kimi Code: A fast, versatile, and extensible AI coding agent that brings Kimi into your projects and development workflow.",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2.5",
+    "name": "MoonshotAI/Kimi-K2.5: Moonshot's most powerful model - GitHub",
+    "snippet": "Kimi K2.5 is an open-source, native multimodal agentic model. Kimi K2.5 works best with Kimi Code CLI as its agent framework — give it a try at https://www. ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/kimi-cli",
+    "name": "MoonshotAI/kimi-cli: Kimi Code CLI is your next CLI agent. - GitHub",
+    "snippet": "Kimi CLI is an AI agent that runs in the terminal, helping you complete software development tasks and terminal operations. It can read and edit code, execute ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai/kimi-k2",
+    "name": "Kimi K2 is the large language model series developed by Moonshot",
+    "snippet": "Kimi K2 is a state-of-the-art mixture-of-experts (MoE) language model with 32 billion activated parameters and 1 trillion total parameters.",
+    "host_name": "github.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/ai-models/kimi-k2-6",
+    "name": "Kimi K2.6 | Leading Open-Source Model in Coding & Agent",
+    "snippet": "Kimi K2.6 is an open-source model developed by Moonshot AI, Its weights and code are publicly available on Hugging Face and GitHub,",
+    "host_name": "www.kimi.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/LocalLLaMA/comments/1ulm1gt/kimi_k27_code_is_generally_available_in_github",
+    "name": "Kimi K2.7 Code is generally available in GitHub Copilot - Reddit",
+    "snippet": "Kimi K2.7 Code, an open-weight model, is now generally available in GitHub Copilot. Moonshot AI (official) $0.95. Kimi Code, our open-source ...",
+    "host_name": "www.reddit.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/agent0ai/agent-zero/discussions/1003",
+    "name": "Would you consider Adding Kimi / Kimi Code as LLM Provider #1003",
+    "snippet": "Request to add support for Moonshot AI's Kimi models. Kimi is a family of large language models developed by Moonshot AI, a leading Chinese AI company.",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moonshotai.github.io/kimi-cli/en/guides/getting-started.html",
+    "name": "Getting Started | Kimi Code CLI Docs",
+    "snippet": "What is Kimi Code CLI ​. Kimi Code CLI is an AI agent that runs in the terminal, helping you complete software development tasks and terminal operations. It can ...",
+    "host_name": "moonshotai.github.io",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://huggingface.co/moonshotai/Kimi-K2.7-Code",
+    "name": "moonshotai/Kimi-K2.7-Code - Hugging Face",
+    "snippet": "Model Introduction. Kimi K2.7 Code is a coding-focused agentic model built upon Kimi K2.6. With substantial improvements on real-world ...",
+    "host_name": "huggingface.co",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

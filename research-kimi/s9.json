@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.youtube.com/watch?v=cSzvZiHrruI",
+    "name": "Parallel Processing with Kimi 2.5 is INSANE - YouTube",
+    "snippet": "... tool calling and agent orchestration. With multimodal capabilities, parallel agent execution (up to 1500 agents/tools), and benchmarks ... Missing: concurrent | Show results with: concurrent",
+    "host_name": "www.youtube.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://runware.ai/docs/models/moonshotai-kimi-k2-6/guides/tool-calling",
+    "name": "Building a tool-calling agent with Kimi K2.6 - Runware",
+    "snippet": "Parallel tool calls When the model needs several independent pieces of information, it returns them as multiple entries in one tool_calls array",
+    "host_name": "runware.ai",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2602.02276v1",
+    "name": "Kimi K2.5: Visual Agentic Intelligence - arXiv",
+    "snippet": "Kimi K2.5, an open-source multimodal agentic model designed to advance general agentic intelligence. rely on sequential execution of tool calls ...",
+    "host_name": "arxiv.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://deepinfra.com/blog/kimi-k2-6-model-overview",
+    "name": "Kimi K2.6 Model Overview: Architecture, Features & Capabilities",
+    "snippet": "Kimi K2.6 supports persistent background agent execution, including continuous runs of 12+ hours with thousands of tool calls.",
+    "host_name": "deepinfra.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/AI_Agents/comments/1mgbql8/how_to_build_an_agent_that_can_call_multiple",
+    "name": "How to build an agent that can call multiple tools at once or loop by",
+    "snippet": "ReAct agents are designed to call one tool at a time, which means they don't natively support parallel execution of multiple tools within a ...",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@doubletaken/kimi-k2-5-redefining-ai-workflow-with-agent-swarm-2d50e76a7470",
+    "name": "Kimi K2.5: Redefining AI Workflow with Agent Swarm - Medium",
+    "snippet": "This approach achieves up to 4.5x speedup in execution time while handling up to 1,500 tool calls in parallel.",
+    "host_name": "medium.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/docs/tool_call_guidance.md",
+    "name": "Kimi-K2/docs/tool_call_guidance.md at main - GitHub",
+    "snippet": "Kimi-K2 may need to call tools multiple times until the model believes the current results can answer the user's question. Extract multiple tool calls",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://towardsai.com/p/machine-learning/100-ai-agents-1500-parallel-tool-calls-how-kimi-k2-5s-parl-framework-delivers-4-5x-speedup",
+    "name": "How Kimi K2.5's PARL Framework Delivers 4.5x Speedup - Towards AI",
+    "snippet": "The article discusses how Moonshot AI's Kimi K2.5 framework addresses the inefficiencies in traditional multi-agent AI systems by enabling ... Missing: concurrent | Show results with: concurrent",
+    "host_name": "towardsai.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.philschmid.de/kimi-composer-context",
+    "name": "How Kimi, Cursor, and Chroma Train Agentic Models with RL - Philschmid",
+    "snippet": "PARL: Parallel-Agent Reinforcement Learning ... Most agentic systems execute sequentially: think → tool call → observe → think → tool call. Agent ...",
+    "host_name": "www.philschmid.de",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/resources/parallel-agent",
+    "name": "Parallel Agents Explained: Architecture, Patterns, and Uses",
+    "snippet": "Kimi Agent Swarm is a practical example of a parallel multi-agent workflow. It can coordinate up to 300 sub-agents working in parallel and support over 4,000 tool calls per task.",
+    "host_name": "www.kimi.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

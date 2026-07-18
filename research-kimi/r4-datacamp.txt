@@ -1,0 +1,449 @@
+URL: https://www.datacamp.com/tutorial/kimi-k2-agent-swarm-guide
+TITLE: Kimi K2.5 and Agent Swarm: A Guide With Four Practical Examples
+PUBLISHED: 2026-01-29T00:00:00.000Z
+
+Kimi K2.5 and Agent Swarm: A Guide With Four Practical Examples | DataCamp
+700+ courses, half price 
+
+Buy Now 
+
+Skip to main content
+EN
+EnglishEspañolPortuguêsDeutschBetaFrançaisBetaItalianoBetaTürkçeBetaBahasa IndonesiaBetaTiếng ViệtBetaNederlandsBetaहिन्दीBeta日本語Beta한국어BetaPolskiBetaRomânăBetaРусскийBetaSvenskaBetaไทยBeta中文(简体)Beta
+More Information
+
+Log inGet Started
+
+TutorialsBlogs
+Tutorials
+docs
+Podcasts
+Cheat Sheets
+code-alongs
+Newsletter
+
+CategoryCategory
+Technologies 
+
+Discover content by tools and technology
+
+AI AgentsAI NewsArtificial IntelligenceAWSAzureBusiness IntelligenceChatGPTDatabricksdbtDockerExcelGenerative AIGitGoogle Cloud PlatformHugging FaceJavaJuliaKafkaKubernetesLarge Language ModelsMongoDBMySQLNoSQLOpenAIPostgreSQLPower BIPySparkPythonRScalaSnowflakeSpreadsheetsSQLSQLiteTableau
+
+Category
+Topics 
+
+Discover content by data science topics
+
+AI for BusinessBig DataCareer ServicesCloudData AnalysisData EngineeringData GovernanceData LiteracyData ScienceData VisualizationDataLabDeep LearningMachine LearningMLOpsNatural Language ProcessingVector Databases
+
+Browse Courses
+category
+
+Home
+Tutorials
+Artificial Intelligence
+
+Kimi K2.5 and Agent Swarm: A Guide With Four Practical Examples
+
+Learn what Moonshot’s Kimi K2.5 is, how Agent Swarm works, and see it in action through four hands-on, real-world experiments.
+
+List ContentsJan 29, 2026  · 10 min read
+
+ContentsWhat Is Kimi K2.5?
+
+What is Agent Swarm in Kimi K2.5?
+How does Kimi K2.5 Agent Swarm work?
+Why PARL(Parallel-Agent Reinforcement Learning) matters
+
+Kimi K2.5 Examples and Observations
+Research swarm
+Dataset creation and annotation
+Multimodal QA at scale 
+Coding up a game
+
+Conclusion
+
+Kimi K2.5 and Agent Swarm FAQs
+
+Kimi K2.5 is an open-source, multimodal model from Moonshot AI built for agentic workflows, not just chat. Rather than responding to isolated prompts, it can break down complex tasks, coordinate tool use, and produce structured outputs like tables, reports, plans, and code, across multi-step workflows.
+
+What makes Kimi K2.5 especially interesting is Agent Swarm. A self-directed mode where the model can dynamically spin up and orchestrate multiple sub-agents in parallel to speed up research, verification, and execution.
+
+In this tutorial, I’ll cover what Kimi K2.5 is and where it performs well, then focus on four hands-on experiments that show how Agent Swarm behaves in practice, including what it does impressively, where it falls short, and when it actually beats a single-agent setup.
+
+What Is Kimi K2.5?
+
+Kimi K2.5 is Moonshot AI’s open-source, natively multimodal model, which is built to handle text, images, video, and documents in one system. It extends Kimi K2 with continued pretraining on roughly 15T mixed text and visual tokens, and it’s designed to operate not just as a chatbot, but as an agentic system that can plan, use tools, and (in swarm mode) execute tasks in parallel.
+
+In practice, Kimi K2.5 stands out for three things:
+
+Multimodal reasoning: It can read dense visuals, reason over screenshots, and follow video context to produce structured outputs.
+
+Strong coding performance: Kimi K2.5 can turn a visual reference into working code and iterate via visual debugging.
+
+Agent-first execution: We can run this as a single agent, a tool-augmented agent, or in Agent Swarm (beta), where it can dynamically spawn many sub-agents for wide tasks like research, extraction, comparisons, and long workflows.
+
+Source: Kimi K2.5
+
+The above plots summarize Kimi K2.5’s performance across four categories: Agents, Coding, Image, and Video, with Kimi shown in blue and other leading frontier models shown as gray bars.
+
+Agents: Kimi is particularly strong on agent-style benchmarks, leading on HLE-Full (50.2) and BrowseComp (74.9), and performing competitively on DeepSearchQA (77.1). This supports the agentic positioning.
+
+Coding: It is competitive on SWE-Bench Verified and Multilingual benchmarks, with top closed models and clearly strong among open options, especially for practical engineering tasks.
+
+Image: Kimi also performs well on multimodal reasoning and document-heavy understanding, with solid MMMU/MathVision scores.
+
+Video: This model shows strong performance on LongVideoBench bechmark, which is a good signal for long-horizon video understanding rather than single-frame VQA.
+
+You can try Kimi K2.5 in multiple ways:
+
+Web-based chat
+
+API: https://platform.moonshot.ai
+
+Open-source weights: Hugging Face
+
+Kimi Code: Via terminal and IDE integration for agentic coding
+
+For reproducible benchmarks, Moonshot recommends using the official API or verified providers via Kimi Vendor Verifier.
+
+What is Agent Swarm in Kimi K2.5?
+
+Most multi-agent setups today are still hand-built; you define roles, wire a workflow, and hope the orchestration holds up as tasks get bigger. Kimi K2.5 Agent Swarm flips that model. 
+
+Instead of predefining agents and pipelines, K2.5 can self-direct a swarm, deciding when to parallelize, how many agents to spawn, what tools to use, and how to merge results, based on the task itself.
+
+It can autonomously create and coordinate an agent swarm of up to 100 sub-agents, executing parallel workflows across up to 1,500 tool calls, with no predefined roles.
+
+How does Kimi K2.5 Agent Swarm work?
+
+Under the hood, Agent Swarm introduces a trainable orchestrator that learns to decompose work into parallel subtasks and schedule them efficiently:
+
+Orchestrator decomposes the task into parallelizable chunks, such as finding sources, extracting data, verifying claims, and formatting output.
+
+It then instantiates sub-agents, which are typically frozen workers spun up to execute specific subtasks on demand.
+
+Sub-agents run concurrently, each using tools such as search, browsing, code interpreter, and file creation independently.
+
+It finally aggregates and reconciles outputs into a final structured deliverable like a report, spreadsheet, doc, or codebase plan.
+
+Why PARL(Parallel-Agent Reinforcement Learning) matters
+
+Kimi K2.5’s swarm behavior is trained using Parallel-Agent Reinforcement Learning (PARL), a training setup that makes parallelism itself a learnable skill. This matters because naive multi-agent systems often fail in two ways:
+
+Serial collapse: Even with many agents available, the system defaults to a slow single-threaded pattern.
+
+Fake parallelism: It spawns agents, but the work isn’t actually parallel or doesn’t reduce latency.
+
+PARL addresses this by shaping rewards over training. It encourages parallelism early and gradually shifts optimization toward end-to-end task quality, preventing fake parallelism. To make the optimization latency-aware, K2.5 evaluates performance using Critical Steps because spawning more agents only helps if it actually shortens the slowest path of execution rather than inflating coordination overhead.
+
+When the task is wide and tool-heavy, Agent Swarm can materially reduce time-to-output. Moonshot reports that, compared to a single-agent setup, K2.5 Swarm can cut execution time by ~3x to 4.5x, and internal evaluations show up to ~80% reduction in end-to-end runtime on complex workloads through true parallelization. 
+
+Kimi K2.5 Examples and Observations
+
+In this section, I’ll share my firsthand experience testing Kimi K2.5 Agent Swarm across diverse scenarios. Each example highlights how the swarm decomposes tasks, allocates agents, and where this approach genuinely helps or falls short in practice.
+
+Research swarm
+
+For my first experiment, I tested whether Kimi K2.5 Agent Swarm could tackle a high-stakes, real-world task like drafting a deployment plan for open-source LLMs.
+
+Prompt: 
+
+I want you to research best practices for deploying open-source LLMs in production. Focus on real deployment patterns rather than theory. If possible, have different agents look into, Inference stacks like vLLM, TGI, llama.cpp, Quantization strategies and hardware trade-offs, and cost control techniques. I want a short, structured guide with common architectures, trade-offs, and concrete recommendations for small teams vs large-scale deployments.
+
+Powered By 
+
+In this demo, Kimi K2.5 Agent Swarm immediately decomposed the prompt into parallel research tracks and spun up three dedicated sub-agents, namely InferenceStackResearcher, QuantizationHardwareResearcher, and CostControlResearcher. While each subagent name refers to the work they were allocated, it then fanned out work across multiple worker personas. 
+
+What I liked most was how the final output was a clean comparison table for inference stacks, along with concise recommendations and notes for quantization. You can also use the task progress bar to see how it decomposed the work upfront and tracked each subtask to completion.
+
+However, the downside is that some claims in the final write-up feel under-cited or too absolute, and the guide would be stronger with links, sources, and clearer assumptions (hardware, model size, batch size, context length), since production advice is highly context-dependent. Overall, it handled a complex, multi-part prompt and returned a crisp, immediately usable playbook that looks production-ready. 
+
+Dataset creation and annotation
+
+Next, I tested Agent Swarm on a dataset-building task by asking Kimi K2.5 to generate a 100-item math word-problem benchmark with solutions and difficulty labels. I also explicitly requested it use 20 agents to see how closely it follows the swarm-size constraint while maintaining quality.
+
+Prompt: 
+
+Build a small benchmark dataset of 100 math word problems with step-by-step solutions and difficulty labels. Use at least 20 agents to generate problems in parallel, verify solutions independently, and calibrate difficulty.
+
+Powered By 
+
+Kimi K2.5 Agent Swarm treated dataset creation as a three-phase pipeline, including generation, verification, and calibration. Although the prompt asked for at least 20 agents, the system autonomously spun up 25 sub-agents, prioritizing correctness over strict adherence to the requested count. It was interesting to observe that about five agents worked actively at a time while others queued and resumed as earlier subtasks completed, which suggests an internal scheduling mechanism. 
+
+Each generation agent handled a distinct math domain and produced five problems with step-by-step solutions, after which 10 agents were allocated to verification, and a smaller set of five agents focused on difficulty calibration. 
+
+The standout strength here is the clear separation of concerns and redundancy in verification, which materially improves dataset quality. The main downside is latency and a sequential bottleneck. 
+
+The full run took roughly 20–25 minutes, making this approach better suited for high-quality benchmark creation than rapid iteration. Even with 25 agents, some agents had to wait for others to finish, meaning the swarm is still limited by the logic of the steps.
+
+Still, the ability to dynamically adjust agent count for each subtask, reuse idle agents, and converge on a labeled dataset is a strong demonstration of how Agent Swarm behaves. 
+
+Multimodal QA at scale 
+
+Next, I pushed Kimi K2.5 into a multimodal workflow by providing multiple nutrition-label images and asking for a structured comparison. The goal was to see how well it can extract, normalize, and verify visual data.
+
+Prompt: 
+
+I’m sharing images of nutrition labels from 7 packaged food items. Analyze them and produce a clear comparison specifically:
+Extract fields like: calories, protein, total fat, sugar, sodium, from each label.Normalize all values to a per-100g basis so items are comparableDouble-check numeric consistency (e.g. serving size vs totals)Rank the products from healthiest to least healthy, explaining the reasoningReturn a comparison table with normalized values for all items. Also include a summary highlighting, best high-protein option, the lowest sugar option, and items to avoid and why.
+Assume the labels may vary in format and serving size. Resolve ambiguities where possible and note any missing or unclear values.
+
+Powered By 
+
+In this multimodal QA experiment, Kimi K2.5 Agent Swarm decomposed the task around one label per sub-agent, spinning up seven parallel sub-agents to extract nutritional fields from each image while a coordinating agent handled normalization, cross-checking, and ranking. 
+
+An interesting thing about Kimi is that the constraints you specify in the prompt (extraction, normalization, verification, ranking) effectively become the blueprint for how Kimi instantiates and assigns sub-agents.
+
+What stood out for me is how the swarm treated verification as an important step, i.e, after extraction, the orchestrator explicitly reconciled serving sizes, normalized values, and flagged ambiguities instead of silently guessing. The final synthesis step, which ranked products and called out best high-protein and low-sugar options, demonstrated strong aggregation logic across visual inputs.
+
+On the downside, analyzing 7 high-res images with a swarm is compute-heavy, making it a premium feature rather than a quick-chat tool. 
+
+This example also exposed a current limitation; while image-based multimodal analysis worked well, direct video input was not supported, so a follow-up attempt to generate a recipe from a cooking video could not be executed. 
+
+Overall, this demo highlights Agent Swarm’s strength in parallel visual extraction and structured reconciliation.
+
+Coding up a game
+
+Finally, I tested Kimi K2.5’s coding capabilities by asking it to build a fully interactive Bubble Shooter game from scratch. This experiment highlights how the model handles end-to-end, stateful code generation where coherence matters more than parallelism.
+
+Prompt: 
+
+```markdown
+
+Build a fully playable Bubble Shooter game that runs locally in a web browser. The game should support mouse and touch aiming, show a live aim guideline, fire colored bubbles from the bottom center, bounce shots off side walls, and snap bubbles to a grid at the top on collision. 
+
+Implement core gameplay logic including popping groups of three or more connected bubbles of the same color, dropping any disconnected clusters, tracking and displaying score, showing a next-bubble preview, and ending the game when bubbles cross a danger line near the bottom.
+
+Keep visuals simple but responsive, include a restart button, and finish with brief instructions on how to run and test the game locally.
+
+```
+
+In this game-building experiment, Kimi K2.5 Agent Swarm made a notably conservative choice by allocating just a single sub-agent to handle the entire task. 
+
+That decision itself is an interesting observation because the system correctly recognized that this was a tightly coupled, stateful coding problem where heavy parallelism would add coordination overhead without any benefit. 
+
+The agent produced a complete, locally runnable Bubble Shooter implementation with aiming, wall bounces, grid snapping, match-three popping, score tracking, and restart logic, showing both gameplay mechanics and UI flow. 
+
+What I particularly liked is that the output felt coherent and integrated, but the trade-off, however, is that refinement and polish would likely require iterative prompting, since everything runs through a single agent. 
+
+Overall, this example nicely demonstrates that Agent Swarm in Kimi K2.5 is not about always spawning more agents, but about using parallelism only when it genuinely improves outcomes.
+
+Conclusion
+
+In this tutorial, Kimi K2.5 demonstrated an ability to decompose complex tasks, allocate agents dynamically, and produce structured, decision-ready outputs that would traditionally require a small team rather than a single model.
+
+At the same time, the examples make its boundaries clear. 
+
+Agent Swarm excels on wide, tool-heavy workflows like research, dataset construction, and multimodal extraction, but offers little advantage for tightly coupled, stateful tasks such as interactive game development. 
+
+It also introduces real trade-offs around latency, cost, and iteration speed, especially when verification and reconciliation are prioritized over raw throughput.
+
+Overall, Kimi K2.5 offers a compelling blueprint for where agentic systems are headed. For developers and researchers comfortable experimenting with agent-based workflows, it’s one of the most interesting models to explore today.
+
+If you’re keen to learn more about how agentic AI works, I recommend checking out the AI Agent Fundamentals skill track.
+
+Kimi K2.5 and Agent Swarm FAQs
+Is Kimi K2.5 truly open source and free to use?
+Yes, Moonshot AI has released Kimi K2.5 under a Modified MIT License with weights available on Hugging Face. However, because it is a massive 1.04 Trillion parameter model (Mixture-of-Experts), running it locally requires enterprise-grade hardware (e.g., multiple H100 GPUs). For most users, the official API or Web UI is the most practical access point.
+
+What is the Kimi K2.5 API pricing?
+Kimi K2.5 offers competitive API pricing: $0.60 per 1M input tokens (dropping to $0.10 for cached inputs) and $3.00 per 1M output tokens. 
+
+What is the difference between Standard Chat and Agent Swarm?
+Standard chat is linear and single-threaded. Agent Swarm is a parallel orchestrator: it can autonomously break a prompt into sub-tasks and spawn up to 100 specialized sub-agents to execute them simultaneously. Swarm is best for "wide" tasks like deep research or bulk data extraction, while Chat is better for stateful, sequential tasks like coding a game.
+
+Does Kimi K2.5 support video input?
+Yes, the model is natively multimodal and supports video input up to 2K resolution. While it excels at long-context video benchmarks (like LongVideoBench), the feature is currently experimental, meaning it may occasionally struggle with complex instruction following in video-based agent workflows compared to static images.
+
+What is the context window size for Kimi K2.5?
+Kimi K2.5 supports a 256,000 token context window (approx. 200,000 words). This ultra-long context allows the model to process entire books, massive codebases, or long legal documents in a single pass without needing to chunk data, which is critical for maintaining accuracy in large swarms.
+
+Author
+Aashi DuttLinkedIn
+Twitter
+
+I am a Google Developers Expert in ML(Gen AI), a Kaggle 3x Expert, and a Women Techmakers Ambassador with 3+ years of experience in tech. I co-founded a health-tech startup in 2020 and am pursuing a master's in computer science at Georgia Tech, specializing in machine learning.
+
+TopicsArtificial Intelligence
+AI Agents
+Large Language Models
+
+Aashi Dutt Google Developers Expert in ML | Speaker | Kaggle 3x Expert 
+
+TopicsArtificial Intelligence
+AI Agents
+Large Language Models
+
+Kimi K2: A Guide With Six Practical Examples
+
+Kimi Claw Tutorial: A Guide With Practical Examples
+
+Kimi K2.6 API Tutorial: Building an AI Job Search Assistant
+
+Kimi K2 Thinking: Open-Source LLM Guide, Benchmarks, and Tools
+
+Kiro AI: A Guide With Practical Examples
+
+How to Run Kimi K2.5 Locally
+
+Top DataCamp Courses
+
+Course
+
+Designing Agentic Systems with LangChain
+3 hr
+12.5K
+
+Get to grips with the foundational components of LangChain agents and build custom chat agents.See DetailsRight Arrow
+Start Course
+Course
+
+Building AI Agents with Google ADK
+1 hr
+6.8K
+
+Build a customer-support assistant step-by-step with Google’s Agent Development Kit (ADK).See DetailsRight Arrow
+Start Course
+Course
+
+AI Agents with Hugging Face smolagents
+3 hr
+2.5K
+
+Learn how to build intelligent agents that reason, act, and solve real-world tasks using Python.See DetailsRight Arrow
+Start Course
+
+See MoreRight Arrow
+
+Related
+Tutorial
+
+Kimi K2: A Guide With Six Practical Examples
+Learn what Moonshot's Kimi K2 is, how to access it, and see it in action through six practical examples you can use.
+
+Aashi Dutt 
+
+Tutorial
+
+Kimi Claw Tutorial: A Guide With Practical Examples
+Learn how to use Kimi Claw to build AI workflows with scheduling, skills, and multi-step automation through hands-on experiments.
+
+Aashi Dutt 
+
+Tutorial
+
+Kimi K2.6 API Tutorial: Building an AI Job Search Assistant
+Build an AI agent with Kimi K2.6, Olostep, and the OpenAI Agents SDK that reads your CV, finds live roles, filters noise, and tells you exactly where to apply.
+
+Abid Ali Awan 
+
+Tutorial
+
+Kimi K2 Thinking: Open-Source LLM Guide, Benchmarks, and Tools
+Hands-on tutorial to run Kimi K2 Thinking, build tool-calling workflows, view transparent reasoning, and benchmark against GPT-5 and Claude 4.5.
+
+Bex Tuychiev 
+
+Tutorial
+
+Kiro AI: A Guide With Practical Examples
+Learn about Kiro, an AI IDE, and its features, installation, and how it compares to other AI coding tools like Cursor.
+
+Bex Tuychiev 
+
+Tutorial
+
+How to Run Kimi K2.5 Locally
+Learn how to run a top open-source model locally with llama.cpp, connect it to the Kimi CLI, and one-shot an interactive game using vibe coding.
+
+Abid Ali Awan 
+
+See MoreSee More
+
+Company
+About
+Press
+Careers
+Affiliates
+Partnerships
+Help Center
+Contact Us
+
+Learn
+Career Tracks
+Skill Tracks
+Courses
+Certifications
+Projects
+Assessments
+DataLab
+
+For Business
+Data & AI Skills
+Pricing
+Teams Plans
+Data & AI Unlimited plan
+Customer Stories
+
+Plans
+Pricing
+For Students
+Discounts & Promos
+Expense DataCamp
+Learner Stories
+For Universities
+DataCamp Donates
+
+Technologies
+Python
+R
+SQL
+Artificial Intelligence
+Power BI
+Excel
+ChatGPT
+
+Topics
+Artificial Intelligence
+Machine Learning
+Data Engineering
+Programming
+
+Courses
+Introduction to Python
+Introduction to SQL
+Introduction to R
+Introduction to Power BI
+Data Analysis in Excel
+Introduction to AI for Work
+
+Skill Tracks
+AI Fundamentals
+SQL Fundamentals
+Python Data Fundamentals
+Power BI Fundamentals
+Microsoft Azure Fundamentals (AZ-900)
+Understanding Data Topics
+
+Career Tracks
+Data Analyst in SQL
+Data Scientist in Python
+Data Scientist in R
+Data Analyst in Power BI
+Associate Data Engineer in SQL
+Associate AI Engineer for Data Scientists
+
+Certifications
+Data Analyst
+SQL Associate
+Data Scientist
+AI Engineer
+PowerBI (PL-300)
+Azure (AZ-900)
+
+Get the mobile app
+Download on the App StoreGet it on Google Play
+
+Privacy PolicyCookie NoticeDo Not Sell My Personal InformationAccessibilitySecurityTerms of Use
+© 2026 DataCamp, Inc. All Rights Reserved.

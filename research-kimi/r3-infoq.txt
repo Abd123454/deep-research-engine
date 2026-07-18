@@ -1,0 +1,649 @@
+URL: https://www.infoq.com/news/2026/02/kimi-k25-swarm/
+TITLE: Moonshot AI Releases Open-Weight Kimi K2.5 Model with Vision and Agent Swarm Capabilities
+PUBLISHED: 2026-02-17T14:00:00+0000
+
+Moonshot AI Releases Open-Weight Kimi K2.5 Model with Vision and Agent Swarm Capabilities - InfoQ
+
+Your choice regarding cookies on this site
+We use cookies to optimise site functionality and give you the best possible experience.
+
+I AcceptI Do Not AcceptSettings
+
+BT
+
+InfoQ Software Architects' Newsletter
+
+A monthly overview of things you need to know as an architect or aspiring architect.
+
+View an example
+
+Enter your e-mail address
+
+Select your country
+
+Select a country
+AfghanistanÅlandAlbaniaAlgeriaAmerican SamoaAndorraAngolaAnguillaAntarcticaAntigua and BarbudaArgentinaArmeniaArubaAustraliaAustriaAzerbaijanBahamasBahrainBangladeshBarbadosBelarusBelgiumBelizeBeninBermudaBhutanBoliviaBonaire, Sint Eustatius, and SabaBosnia and HerzegovinaBotswanaBouvet IslandBrazilBritish Indian Ocean TerritoryBrunei DarussalamBulgariaBurkina FasoBurundiCambodiaCameroonCanadaCape VerdeCayman IslandsCentral African RepublicChadChileChinaChristmas IslandCocos (Keeling) IslandsColombiaComorosCongo (Democratic Republic)Congo (People's Republic)Cook IslandsCosta RicaCote D'IvoireCroatiaCubaCuraçaoCyprusCzech RepublicDenmarkDjiboutiDominicaDominican RepublicEast TimorEcuadorEgyptEl SalvadorEquatorial GuineaEritreaEstoniaEthiopiaFalkland Islands (Malvinas)Faroe IslandsFijiFinlandFranceFrench GuianaFrench PolynesiaFrench Southern TerritoriesGabonGambiaGeorgiaGermanyGhanaGibraltarGreeceGreenlandGrenadaGuadeloupeGuamGuatemalaGuernseyGuineaGuinea-BissauGuyanaHaitiHeard Island and McDonald IslandsHondurasHong KongHungaryIcelandIndiaIndonesiaIranIraqIrelandIsle of ManIsraelItalyJamaicaJapanJerseyJordanKazakhstanKenyaKiribatiKosovoKuwaitKyrgyzstanLaosLatviaLebanonLesothoLiberiaLibyaLiechtensteinLithuaniaLuxembourgMacauMacedoniaMadagascarMalawiMalaysiaMaldivesMaliMaltaMarshall IslandsMartiniqueMauritaniaMauritiusMayotteMexicoMicronesiaMoldovaMonacoMongoliaMontenegroMontserratMoroccoMozambiqueMyanmarNamibiaNauruNepalNetherlandsNetherlands AntillesNew CaledoniaNew ZealandNicaraguaNigerNigeriaNiueNorfolk IslandNorth KoreaNorthern Mariana IslandsNorwayOmanPakistanPalauPalestinian TerritoryPanamaPapua New GuineaParaguayPeruPhilippinesPitcairnPolandPortugalPuerto RicoQatarReunionRomaniaRussian FederationRwandaSaint HelenaSaint Kitts and NevisSaint LuciaSaint MartinSaint Pierre and MiquelonSaint Vincent and the GrenadinesSaint-BarthélemySamoaSan MarinoSao Tome and PrincipeSaudi ArabiaSenegalSerbiaSeychellesSierra LeoneSingaporeSint MaartenSlovakiaSloveniaSolomon IslandsSomaliaSouth AfricaSouth Georgia and the South Sandwich IslandsSouth KoreaSouth SudanSpainSri LankaSudanSurinameSvalbard and Jan MayenSwazilandSwedenSwitzerlandSyriaTaiwanTajikistanTanzaniaThailandTogoTokelauTongaTrinidad and TobagoTunisiaTurkeyTurkmenistanTurks and Caicos IslandsTuvaluUgandaUkraineUnited Arab EmiratesUnited KingdomUnited States Minor Outlying IslandsUruguayUSAUzbekistanVanuatuVatican City (Holy See)VenezuelaVietnamVirgin Islands (British)Virgin Islands (U.S.)Wallis and FutunaWestern SaharaYemenZaireZambiaZimbabwe
+
+I consent to InfoQ.com handling my data as explained in this Privacy Notice.
+
+We protect your privacy.
+
+Close
+
+Live Webinar and Q&A: Building AI Agent Evals for High-Stakes Incident Response (Aug 6, 2026)
+
+Save Your Seat
+
+Close
+
+Toggle Navigation 
+
+Facilitating the Spread of Knowledge and Innovation in Professional Software Development
+
+English edition 
+
+English edition
+
+Chinese edition
+
+Japanese edition
+
+French edition
+
+Write for InfoQ
+
+Search
+
+Register
+Sign in
+
+Unlock the full InfoQ experience
+
+Unlock the full InfoQ experience by logging in! Stay updated with your favorite authors and topics, engage with content, and download exclusive resources.
+
+Log In
+or
+
+Don't have an InfoQ account?
+
+Register
+
+Stay updated on topics and peers that matter to youReceive instant alerts on the latest insights and trends.
+
+Quickly access free resources for continuous learningMinibooks, videos with transcripts, and training materials.
+
+Save articles and read at anytimeBookmark articles to read whenever youre ready.
+
+Logo - Back to homepage
+
+News
+Articles
+Presentations
+Podcasts
+Guides
+
+Topics
+
+Development
+
+Java
+
+Kotlin
+
+.Net
+
+C#
+
+Swift
+
+Go
+
+Rust
+
+JavaScript
+
+Featured in Development
+
+The Rust High Performance Talk You Did Not Expect
+
+Ruth Linehan explains how migrating high-performance caching services from Kotlin to Rust shattered internal preconceptions around delivery velocity and engineering overhead. She discusses the ergonomics of the Rust borrow checker, shares how compile-time safety shortens the developer feedback loop, and profiles how tools like Criterion and flamegraphs optimize concurrent code paths.
+
+All in development
+
+Follow Topic
+
+Architecture & Design
+
+Architecture
+
+Enterprise Architecture
+
+Scalability/Performance
+
+Design
+
+Case Studies
+
+Microservices
+
+Service Mesh
+
+Patterns
+
+Security
+
+Featured in Architecture & Design
+
+Comprehension at AI Speed: Building a Context Store for Evolutionary Architecture
+
+AI makes the first 80% of development feel fast, but hides architectural complexity until it's too late. To prevent system instability, engineering leaders must shift from raw throughput to systemic comprehension. By unifying spec-anchored SDD, TDD, and automated fitness functions into a repo-bound "Context Store," teams can ensure AI agents and human reviewers evolve code safely.
+
+All in architecture-design
+
+Follow Topic
+
+AI Infrastructure
+
+Big Data
+
+Machine Learning
+
+NoSQL
+
+Database
+
+Data Analytics
+
+Streaming
+
+Featured in AI, ML & Data Engineering
+
+From OTEL to SLMs: Distilling Frontier Model Behaviour from Production Telemetry
+
+Ben O'Mahony discusses building custom AI-powered Language Server Protocols (LSPs) that go beyond standard rule-based checkers. He explains how to instrument AI agents natively with OpenTelemetry to track concrete user actions (accepting, dismissing, or regenerating code fixes) as implicit labels, creating a continuous data flywheel to distill frontier capabilities into cheaper, local SLMs.
+
+All in ai-ml-data-eng
+
+Follow Topic
+
+Culture & Methods
+
+Agile
+
+Diversity
+
+Leadership
+
+Lean/Kanban
+
+Personal Growth
+
+Scrum
+
+Sociocracy
+
+Software Craftmanship
+
+Team Collaboration
+
+Testing
+
+UX
+
+Featured in Culture & Methods
+
+Road to Compliance: Will Your Internal Users Hate Your Platform Team?
+
+Davide de Paolis discusses the realities of rolling out cloud infrastructure compliance without fracturing developer relations. Drawing from a real-world platform team reboot at Sevdesk, he explains how to implement "minimum viable governance" on AWS, utilize event-driven Slack alerting to automate policy feedback, and shift from rigid enforcement to high-empathy, data-driven collaboration.
+
+All in culture-methods
+
+Follow Topic
+
+DevOps
+
+Infrastructure
+
+Continuous Delivery
+
+Automation
+
+Containers
+
+Cloud
+
+Observability
+
+Featured in DevOps
+
+Chaos Engineering GPU Clusters
+
+Bryan Oliver discusses the frontier of AI infrastructure: chaos engineering for large-scale GPU clusters. He shares how engineering leaders can handle complex topologies, network protocols like RDMA, and NUMA misalignments. Discover seven practical fault-injection strategies to maximize multi-million dollar hardware efficiency and build robust observability loops.
+
+All in devops
+
+Follow Topic
+
+Events
+
+Helpful links
+
+About InfoQ
+
+InfoQ Editors
+
+Write for InfoQ
+
+About C4Media
+
+Diversity
+
+Choose your language
+
+En
+
+中文
+
+日本
+
+Fr
+
+Aug21,2026
+
+Engineering Leadership Certification
+
+Work through leadership decisions with senior peers facing similar technical trade-offs. 
+Online. Register Now.
+
+Aug26,2026
+
+AI Security & Privacy Engineering Certification
+
+Secure and govern production AI systems, from sensitive data to guardrails, evals, and audits.
+Online. Register now.
+
+Nov16-20,2026
+
+QCon San Francisco
+
+What's working across AI, architecture, and leadership, from the teams doing it. 
+Register. Early bird ends July 14.
+
+Apr13-16,2027
+
+QCon London
+
+What early-adopter teams have proven in production, across 15 engineering tracks. 
+Register. Early bird ends July 14.
+
+InfoQ Homepage
+
+News
+
+Moonshot AI Releases Open-Weight Kimi K2.5 Model with Vision and Agent Swarm Capabilities
+
+AI, ML & Data Engineering
+
+QCon San Francisco (Nov 16-20): Deep technical sessions. Peer conversations that change how you think. 
+
+Moonshot AI Releases Open-Weight Kimi K2.5 Model with Vision and Agent Swarm Capabilities
+
+Feb 17, 2026
+
+2
+min read
+
+by
+
+Anthony Alford
+
+FollowSenior Director, Development at Genesys Cloud Services
+
+Follow us on 
+
+Youtube232K Followers
+
+Linkedin26K Followers
+
+InstagramNew
+
+RSS19K Readers
+
+X57.1k Followers
+
+Facebook21K Likes
+
+BlueskyNew
+
+Log in to listen to this article
+
+Loading audio
+
+Your browser does not support the audio element.
+
+0:00
+
+0:00
+
+Normal1.25x1.5x
+
+Like
+
+Reading list
+
+Moonshot AI released Kimi K2.5, their latest open-weight multimodal LLM. K2.5 excels at coding tasks, with benchmark scores comparable to frontier models such as GPT-5 and Gemini. It also features an agent swarm mode, which can direct up to 100 sub-agents for attacking problems with parallel workflow.
+
+Kimi K2.5 builds on the previous Kimi K2 MoE LLM. The new model adds vision functionality to its text-only predecessor. This in combination with its coding ability makes it excellent for front-end dev tasks. The model supports four modes of operation: Instant, Thinking, Agent, and Agent Swarm. The last is a research preview that can decompose tasks into subtasks which are executed in parallel by a group of sub-agents. Agent mode is designed to support office productivity tasks that involve outputting documents and spreadsheets. According to Moonshot AI:
+
+Grounded in advances in coding with vision, agent swarms, and office productivity, Kimi K2.5 represents a meaningful step toward AGI for the open-source community, demonstrating strong capability on real-world tasks under real-world constraints. Looking ahead, we will push further into the frontier of agentic intelligence, redefining the boundaries of AI in knowledge work.
+
+Kimi K2.5 extends the Kimi K2 architecture by including Moonshot's MoonViT-3D vision encoder. The team started with a Kimi K2 checkpoint and continued the pre-training process with another 15T tokens. This was followed by supervised fine-tuning and reinforcement learning.
+
+For the Agent Swarm feature, the Moonshot team developed a new RL technique, Parallel Agent Reinforcement Learning (PARL), to train Kimi K2.5 to decompose and parallel complex tasks. PARL was developed to address several challenges: training instability; ambiguous credit assignment; and "serial collapse", where the orchestrator simply runs a single agent. In PARL, the subagents are frozen and only the orchestrator is trained. The reward function incentivizes sub-agent creation and successful completion of sub-tasks.
+
+The Moonshot team evaluated Kimi K2.5 on a wide array of benchmarks. For Agent Swarm in particular, they used BrowseComp and WideSearch, which measure research and information retrieval capability. On BrowseComp, Kimi K2.5 outperformed GPT-5.2 Pro, and on WideSearch it outperformed Claude Opus 4.5. It also had "substantial wall-clock time reductions" due to the parallel execution. The Mooshot team also noted that Agent Swarm exhibits "proactive context control," which reduces the risk of context overflow and effectively scales overall context length without the need for context summarization.
+
+Andrew Ng's The Batch newsletter discussed Kimi K2.5, saying:
+
+Building an agentic workflow can improve a model’s performance on a particular task. Unlike predefined agentic workflows, Kimi K2.5 decides when a new subagent is necessary, what it should do, and when to delegate work to it. This automated agentic orchestration improves performance in tasks that are easy to perform in parallel...Kimi K2.5 shifts task execution from chain-of-thought reasoning to agentic teamwork. Instead of responding to prompts sequentially, it acts as a manager of separate workflows/models that execute different parts of the job in parallel.
+
+Kimi K2.5 is available on the web via a chat interface or Moonshot's API. The model weights are also available at Huggingface.
+
+About the Author
+
+Anthony Alford
+
+Anthony is a Senior Director, Development at Genesys where he is working on several AI and ML projects related to customer experience. He has over 20 years experience in designing and building scalable software. Anthony holds a Ph.D. degree in Electrical Engineering with specialization in Intelligent Robotics Software and has worked on various problems in the areas of human-AI interaction and predictive analytics for SaaS business optimization.
+
+Show moreShow less
+
+This content is in the AI, ML & Data Engineering topic
+
+Follow Topic
+
+Related Topics:
+
+AI, ML & Data Engineering
+AI, ML & Data Engineering
+
+Followers: 5992
+
+Follow Topic
+
+Agents
+Agents
+
+Followers: 70
+
+Follow Topic
+
+Related Editorial
+
+Cloud Native Infrastructure Emerges as the Foundation for Trustworthy Agentic AI
+
+QCon AI Boston: Production AI Moves Beyond Prompts to Platforms, Harnesses, and Evals
+
+AWS Continuum to Enable Agentic Code Security for Enterprises
+
+Stripe Benchmark Shows AI Agents Build Integrations but Struggle with Validation
+
+Postgres for Production Agents: Your Relational Foundation for Enterprise AI
+
+Related Sponsors
+
+From Log Noise to Incident Intelligence: A Maturity Model for AI-Assisted Observability
+
+Adopt AI Without Chaos -- Developer Agents That Work Inside Your App, Follow Your Architecture, and Keep Every Decision Traceable.
+
+How Agentic AI Works in Ops
+
+Build Best-of-Breed Apps with Agentic AI -- Infused with Architectural Guardrails for Deterministic Outcomes
+
+Alert Fatigue Is Costing You: The State of Production Reliability and AI Adoption
+
+Related Sponsor
+
+Explore the NeuBird AI Playground in a fully configured environment connected to live AWS telemetry. Try your first query!
+
+Related Content
+
+Related Content
+Cloud Native Infrastructure Emerges as the Foundation for Trustworthy Agentic AI
+Jul 17, 2026
+
+QCon AI Boston: Production AI Moves Beyond Prompts to Platforms, Harnesses, and Evals
+Jul 17, 2026
+
+IconAgentic AI Architecture
+Jul 03, 2026
+
+AWS Continuum to Enable Agentic Code Security for Enterprises
+Jul 16, 2026
+
+Stripe Benchmark Shows AI Agents Build Integrations but Struggle with Validation
+Jul 15, 2026
+
+IconPostgres for Production Agents: Your Relational Foundation for Enterprise AI
+Jul 15, 2026
+
+Google and Industry Partners Announce Agentic Resource Discovery Specification for AI Agents
+Jul 14, 2026
+
+Google's Genkit Ships Agents API with Detached Turns and Human-in-the-Loop for TypeScript and Go
+Jul 14, 2026
+
+How DoorDash Built an AI Shopping Assistant That Doesn’t Rely on the LLM Alone
+Jul 13, 2026
+
+Related Sponsors
+Top 20 AI SRE Tools in 2026: The Complete Guide
+AI is reshaping site reliability engineering, but not all AI SRE tools solve the same problem. This guide compares 20 leading platforms—from alert correlation to autonomous investigation—to help teams cut toil and reduce MTTR.
+
+The Hidden Waste Inside Most AWS Environments
+Most AWS waste isn't one big mistake — it's hundreds of small inefficiencies compounding quietly. From idle EC2 to NAT Gateway sprawl, here's where the money disappears and why traditional cost tools won't catch it.
+
+Sponsored by
+
+Related Content
+Cloudflare Introduces Temporary Accounts for Autonomous Worker Deployment
+Jul 10, 2026
+
+Slack Introduces Agent Driven End-to-End Testing to Improve Resilience in UI Test Automation
+Jul 10, 2026
+
+Airbnb Shares Architecture behind Sitar-Agent Dynamic Configuration Sidecar for Kubernetes Services
+Jul 08, 2026
+
+IconThe Multi-Agent Approach: Building Reliable and Controllable Software Development Automation
+Jul 08, 2026
+
+AWS Introduces Amazon S3 Annotations
+Jul 05, 2026
+
+Cloudflare Details Unified Data Platform Where Billing Workloads Account for 53% of Queries
+Jul 03, 2026
+
+The InfoQ Newsletter
+
+A round-up of last week’s content on InfoQ sent out every Tuesday. Join a community of over 250,000 senior developers.
+
+View an example
+
+Enter your e-mail address
+
+Select your country
+
+Select a country
+AfghanistanÅlandAlbaniaAlgeriaAmerican SamoaAndorraAngolaAnguillaAntarcticaAntigua and BarbudaArgentinaArmeniaArubaAustraliaAustriaAzerbaijanBahamasBahrainBangladeshBarbadosBelarusBelgiumBelizeBeninBermudaBhutanBoliviaBonaire, Sint Eustatius, and SabaBosnia and HerzegovinaBotswanaBouvet IslandBrazilBritish Indian Ocean TerritoryBrunei DarussalamBulgariaBurkina FasoBurundiCambodiaCameroonCanadaCape VerdeCayman IslandsCentral African RepublicChadChileChinaChristmas IslandCocos (Keeling) IslandsColombiaComorosCongo (Democratic Republic)Congo (People's Republic)Cook IslandsCosta RicaCote D'IvoireCroatiaCubaCuraçaoCyprusCzech RepublicDenmarkDjiboutiDominicaDominican RepublicEast TimorEcuadorEgyptEl SalvadorEquatorial GuineaEritreaEstoniaEthiopiaFalkland Islands (Malvinas)Faroe IslandsFijiFinlandFranceFrench GuianaFrench PolynesiaFrench Southern TerritoriesGabonGambiaGeorgiaGermanyGhanaGibraltarGreeceGreenlandGrenadaGuadeloupeGuamGuatemalaGuernseyGuineaGuinea-BissauGuyanaHaitiHeard Island and McDonald IslandsHondurasHong KongHungaryIcelandIndiaIndonesiaIranIraqIrelandIsle of ManIsraelItalyJamaicaJapanJerseyJordanKazakhstanKenyaKiribatiKosovoKuwaitKyrgyzstanLaosLatviaLebanonLesothoLiberiaLibyaLiechtensteinLithuaniaLuxembourgMacauMacedoniaMadagascarMalawiMalaysiaMaldivesMaliMaltaMarshall IslandsMartiniqueMauritaniaMauritiusMayotteMexicoMicronesiaMoldovaMonacoMongoliaMontenegroMontserratMoroccoMozambiqueMyanmarNamibiaNauruNepalNetherlandsNetherlands AntillesNew CaledoniaNew ZealandNicaraguaNigerNigeriaNiueNorfolk IslandNorth KoreaNorthern Mariana IslandsNorwayOmanPakistanPalauPalestinian TerritoryPanamaPapua New GuineaParaguayPeruPhilippinesPitcairnPolandPortugalPuerto RicoQatarReunionRomaniaRussian FederationRwandaSaint HelenaSaint Kitts and NevisSaint LuciaSaint MartinSaint Pierre and MiquelonSaint Vincent and the GrenadinesSaint-BarthélemySamoaSan MarinoSao Tome and PrincipeSaudi ArabiaSenegalSerbiaSeychellesSierra LeoneSingaporeSint MaartenSlovakiaSloveniaSolomon IslandsSomaliaSouth AfricaSouth Georgia and the South Sandwich IslandsSouth KoreaSouth SudanSpainSri LankaSudanSurinameSvalbard and Jan MayenSwazilandSwedenSwitzerlandSyriaTaiwanTajikistanTanzaniaThailandTogoTokelauTongaTrinidad and TobagoTunisiaTurkeyTurkmenistanTurks and Caicos IslandsTuvaluUgandaUkraineUnited Arab EmiratesUnited KingdomUnited States Minor Outlying IslandsUruguayUSAUzbekistanVanuatuVatican City (Holy See)VenezuelaVietnamVirgin Islands (British)Virgin Islands (U.S.)Wallis and FutunaWestern SaharaYemenZaireZambiaZimbabwe
+
+I consent to InfoQ.com handling my data as explained in this Privacy Notice.
+
+We protect your privacy.
+
+Development
+
+The Rust High Performance Talk You Did Not Expect
+
+How to Build More Resilient Local-First Applications with AT Protocol Infrastructure
+
+Cloudflare Identifies Race Condition in hyper’s HTTP/1 Implementation
+
+Architecture & Design
+
+Stripe Benchmark Shows AI Agents Build Integrations but Struggle with Validation
+
+Google and Industry Partners Announce Agentic Resource Discovery Specification for AI Agents
+
+Comprehension at AI Speed: Building a Context Store for Evolutionary Architecture
+
+Culture & Methods
+
+Developing and Deploying a Platform that the Business Understands and Developers Actually Want
+
+Road to Compliance: Will Your Internal Users Hate Your Platform Team?
+
+Formal Methods for Every Engineer in an AI-Powered Future
+
+AI, ML & Data Engineering
+
+From OTEL to SLMs: Distilling Frontier Model Behaviour from Production Telemetry
+
+QCon AI Boston: Production AI Moves Beyond Prompts to Platforms, Harnesses, and Evals
+
+Postgres for Production Agents: Your Relational Foundation for Enterprise AI
+
+DevOps
+
+Cloud Native Infrastructure Emerges as the Foundation for Trustworthy Agentic AI
+
+How Uber Builds Zone-Failure-Resilient OpenSearch Clusters
+
+Linkerd 2.20 Delivers Smarter Traffic Management and Dramatic Efficiency Gains
+
+The InfoQ Newsletter
+
+A round-up of last week’s content on InfoQ sent out every Tuesday. Join a community of over 250,000 senior developers.
+
+View an example
+
+Get a quick overview of content published on a variety of innovator and early adopter technologies
+
+Learn what you don’t know that you don’t know
+
+Stay up to date with the latest information from the topics you are interested in
+
+Enter your e-mail address
+
+Select your country
+
+Select a country
+AfghanistanÅlandAlbaniaAlgeriaAmerican SamoaAndorraAngolaAnguillaAntarcticaAntigua and BarbudaArgentinaArmeniaArubaAustraliaAustriaAzerbaijanBahamasBahrainBangladeshBarbadosBelarusBelgiumBelizeBeninBermudaBhutanBoliviaBonaire, Sint Eustatius, and SabaBosnia and HerzegovinaBotswanaBouvet IslandBrazilBritish Indian Ocean TerritoryBrunei DarussalamBulgariaBurkina FasoBurundiCambodiaCameroonCanadaCape VerdeCayman IslandsCentral African RepublicChadChileChinaChristmas IslandCocos (Keeling) IslandsColombiaComorosCongo (Democratic Republic)Congo (People's Republic)Cook IslandsCosta RicaCote D'IvoireCroatiaCubaCuraçaoCyprusCzech RepublicDenmarkDjiboutiDominicaDominican RepublicEast TimorEcuadorEgyptEl SalvadorEquatorial GuineaEritreaEstoniaEthiopiaFalkland Islands (Malvinas)Faroe IslandsFijiFinlandFranceFrench GuianaFrench PolynesiaFrench Southern TerritoriesGabonGambiaGeorgiaGermanyGhanaGibraltarGreeceGreenlandGrenadaGuadeloupeGuamGuatemalaGuernseyGuineaGuinea-BissauGuyanaHaitiHeard Island and McDonald IslandsHondurasHong KongHungaryIcelandIndiaIndonesiaIranIraqIrelandIsle of ManIsraelItalyJamaicaJapanJerseyJordanKazakhstanKenyaKiribatiKosovoKuwaitKyrgyzstanLaosLatviaLebanonLesothoLiberiaLibyaLiechtensteinLithuaniaLuxembourgMacauMacedoniaMadagascarMalawiMalaysiaMaldivesMaliMaltaMarshall IslandsMartiniqueMauritaniaMauritiusMayotteMexicoMicronesiaMoldovaMonacoMongoliaMontenegroMontserratMoroccoMozambiqueMyanmarNamibiaNauruNepalNetherlandsNetherlands AntillesNew CaledoniaNew ZealandNicaraguaNigerNigeriaNiueNorfolk IslandNorth KoreaNorthern Mariana IslandsNorwayOmanPakistanPalauPalestinian TerritoryPanamaPapua New GuineaParaguayPeruPhilippinesPitcairnPolandPortugalPuerto RicoQatarReunionRomaniaRussian FederationRwandaSaint HelenaSaint Kitts and NevisSaint LuciaSaint MartinSaint Pierre and MiquelonSaint Vincent and the GrenadinesSaint-BarthélemySamoaSan MarinoSao Tome and PrincipeSaudi ArabiaSenegalSerbiaSeychellesSierra LeoneSingaporeSint MaartenSlovakiaSloveniaSolomon IslandsSomaliaSouth AfricaSouth Georgia and the South Sandwich IslandsSouth KoreaSouth SudanSpainSri LankaSudanSurinameSvalbard and Jan MayenSwazilandSwedenSwitzerlandSyriaTaiwanTajikistanTanzaniaThailandTogoTokelauTongaTrinidad and TobagoTunisiaTurkeyTurkmenistanTurks and Caicos IslandsTuvaluUgandaUkraineUnited Arab EmiratesUnited KingdomUnited States Minor Outlying IslandsUruguayUSAUzbekistanVanuatuVatican City (Holy See)VenezuelaVietnamVirgin Islands (British)Virgin Islands (U.S.)Wallis and FutunaWestern SaharaYemenZaireZambiaZimbabwe
+
+I consent to InfoQ.com handling my data as explained in this Privacy Notice.
+
+We protect your privacy.
+
+InfoQ Online Certification Programs
+
+For Senior Engineers, Architects, and Technical Leaders
+
+AI Engineering with Hien Luu | July 25
+
+Architect with Luca Mezzalira | August 13
+
+AI Security & Privacy Engineering with
+Katharine Jarmul | August 26
+
+As your role becomes more senior, the work changes. You're no longer just implementing decisions; you're shaping the systems, trade-offs, and technical direction other teams depend on.
+These 5-week online programs give you a structured way to work through real decisions from your current role with senior peers from other companies.
+
+RESERVE YOUR PLACE
+
+Live online. 4 hours a week, for 5 weeks.
+
+Home
+
+Create account
+Log In
+
+QCon Conferences
+Events
+
+Write for InfoQ
+InfoQ Editors
+About InfoQ
+About C4Media
+
+Media Kit
+
+InfoQ Developer Marketing Blog
+
+Diversity
+
+Events
+
+Online InfoQ AI Engineering Certification
+
+July 25, 2026
+
+Online InfoQ Architect Certification
+
+August 13, 2026
+
+Online InfoQ Engineering Leadership Certification
+
+August 21, 2026
+
+Online InfoQ AI Security & Privacy Engineering Program
+
+August 26, 2026
+
+QCon San Francisco
+
+November 16-20, 2026
+
+QCon London 2027
+
+April 13-16, 2027
+
+Follow us on 
+
+Youtube232K Followers
+
+Linkedin26K Followers
+
+InstagramNew
+
+RSS19K Readers
+
+X57.1k Followers
+
+Facebook21K Likes
+
+BlueskyNew
+
+Stay in the know
+
+The InfoQ Podcast
+Engineering Culture Podcast
+The Software Architects' Newsletter
+
+General Feedback
+feedback@infoq.com
+
+Advertising
+sales@infoq.com
+
+Editorial
+editors@infoq.com
+
+Marketing
+marketing@infoq.com
+
+InfoQ.com and all content copyright © 2006-2026 C4Media Inc.
+
+Privacy Notice, Terms And Conditions, Cookie Policy
+
+Close
+
+BT

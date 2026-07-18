@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://moonshotai.github.io/Kimi-Researcher",
+    "name": "Kimi-Researcher: End-to-End RL Training for Emerging Agentic",
+    "snippet": "Kimi-Researcher is an autonomous agentic and thinking model designed to solve complex problems through multi-step planning, reasoning, and tool use.",
+    "host_name": "moonshotai.github.io",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai/Kimi-Researcher",
+    "name": "MoonshotAI/Kimi-Researcher - GitHub",
+    "snippet": "Contribute to MoonshotAI/Kimi-Researcher development by creating an account on GitHub. Search code, repositories, users, issues, pull requests... Project page ... Missing: Moonshot | Show results with: Moonshot",
+    "host_name": "github.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai",
+    "name": "Moonshot AI - GitHub",
+    "snippet": "Kimi K2: an open-source Mixture-of-Experts model with 32B activated parameters and 1T total parameters. It achieves state-of-the-art performance ...",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/orgs/MoonshotAI/repositories",
+    "name": "MoonshotAI repositories - GitHub",
+    "snippet": "Moonshot AI has 38 repositories available. Follow their code on GitHub. Kimi K2 is the large language model series developed by Moonshot AI team. Kimi- ...",
+    "host_name": "github.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/machinelearningnews/comments/1lj5unf/moonshot_ai_unveils_kimiresearcher_an",
+    "name": "Moonshot AI Unveils Kimi-Researcher: An Reinforcement Learning",
+    "snippet": "Moonshot AI has introduced Kimi-Researcher, an autonomous agent trained entirely through end-to-end reinforcement learning (RL) to handle complex reasoning and ...",
+    "host_name": "www.reddit.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/moonshotai/kimi-k2",
+    "name": "Kimi K2 is the large language model series developed by Moonshot",
+    "snippet": "Kimi K2 is a state-of-the-art mixture-of-experts (MoE) language model with 32 billion activated parameters and 1 trillion total parameters.",
+    "host_name": "github.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-Researcher/releases",
+    "name": "Releases · MoonshotAI/Kimi-Researcher - GitHub",
+    "snippet": "MoonshotAI/Kimi-Researcher development by creating an account on GitHub. You can create a release to package software, along with release notes and links to ... Missing: Moonshot | Show results with: Moonshot",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/agent0ai/agent-zero/discussions/1003",
+    "name": "Would you consider Adding Kimi / Kimi Code as LLM Provider #1003",
+    "snippet": "Kimi is a family of large language models developed by Moonshot AI, a leading Chinese AI company. com/moonshot-ai/kimi-code-cli",
+    "host_name": "github.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://enterprisedna.co/resources/news/kimi-k2-7-github-copilot-open-weight-enterprise-developers-2026",
+    "name": "The First Open-Weight AI Model Just Landed in GitHub Copilot",
+    "snippet": "Kimi K2.7 Code is built by Moonshot AI, a Beijing-based research lab that has been quietly building competitive foundation models. The model ...",
+    "host_name": "enterprisedna.co",
+    "rank": 8,
+    "date": "Jul 13, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.marktechpost.com/2025/06/24/moonshot-ai-unveils-kimi-researcher-an-reinforcement-learning-rl-trained-agent-for-complex-reasoning-and-web-scale-search",
+    "name": "Moonshot AI Unveils Kimi-Researcher: An Reinforcement Learning",
+    "snippet": "Moonshot AI introduces Kimi-Researcher, an RL-trained autonomous agent designed for complex reasoning, multi-turn search.",
+    "host_name": "www.marktechpost.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

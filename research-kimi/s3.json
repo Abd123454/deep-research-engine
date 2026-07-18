@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/abs/2507.20534",
+    "name": "[2507.20534] Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "We introduce Kimi K2, a Mixture-of-Experts (MoE) large language model with 32 billion activated parameters and 1 trillion total parameters. We ...",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://rdi.berkeley.edu/agentic-ai/slides/d11.pdf",
+    "name": "[PDF] Kimi K2: Open Agentic Intelligence - Berkeley RDI",
+    "snippet": "ABSTRACT. We introduce Kimi K2, a Mixture-of-Experts (MoE) large language model with 32 billion activated parameters and 1 trillion total parameters.",
+    "host_name": "rdi.berkeley.edu",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://help.apiyi.com/en/kimi-k2-5-paper-parameters-requirements-guide-en.html",
+    "name": "Kimi K2.5 Technical Paper Interpretation: Complete Guide to",
+    "snippet": "This article, based on the Kimi K2.5 official technical paper, systematically breaks down its trillion-parameter MoE architecture, training ...",
+    "host_name": "help.apiyi.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/towardsdev/kimi-k2-the-1-trillion-parameter-open-source-titan-rewriting-the-rules-of-ai-agents-86de16465eb6",
+    "name": "Kimi K2: The 1-Trillion Parameter Open-Source Titan Rewriting the",
+    "snippet": "It's a 1.04-trillion parameter Mixture-of-Experts (MoE) model, with 32 billion active parameters, meticulously engineered from the ground up ...",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://moonshotai.github.io/Kimi-K2",
+    "name": "Kimi K2: Open Agentic Intelligence",
+    "snippet": "Kimi K2 is our latest Mixture-of-Experts model with 32 billion activated parameters and 1 trillion total parameters. It achieves state-of-the-art ...",
+    "host_name": "moonshotai.github.io",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://intuitionlabs.ai/pdfs/kimi-k2-explained-a-technical-deep-dive-into-its-moe-architecture.pdf",
+    "name": "[PDF] Kimi K2 Explained: A Technical Deep Dive into its MoE Architecture",
+    "snippet": "In essence, Kimi K2 applied MoE at a grand scale: 1 trillion parameters behind the scenes, 32B in play per token, 7168-wide representations, and ...",
+    "host_name": "intuitionlabs.ai",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2.5",
+    "name": "MoonshotAI/Kimi-K2.5: Moonshot's most powerful model - GitHub",
+    "snippet": "Kimi K2.5 is an open-source, native multimodal agentic model built through continual pretraining on approximately 15 trillion mixed visual and text tokens ...",
+    "host_name": "github.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.baseten.co/blog/kimi-k2-explained-the-1-trillion-parameter-model-redefining-how-to-build-agents",
+    "name": "Kimi K2 Explained: The 1 Trillion Parameter Model - Baseten",
+    "snippet": "Kimi K2 is a 1 trillion parameter AI model from Moonshot Labs that excels at agentic tasks through three key innovations. Missing: report | Show results with: report",
+    "host_name": "www.baseten.co",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/preview/1980c532-5631-8c55-885f-517d380005e7",
+    "name": "Kimi K2: The World's Most Powerful Open-Source AI Agent",
+    "snippet": "The world's most powerful open-source AI agent, featuring a 1-trillion parameter Mixture-of-Experts architecture with 32 billion parameters activated per token.",
+    "host_name": "www.kimi.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://build.nvidia.com/moonshotai/kimi-k2.6/modelcard",
+    "name": "kimi-k2.6 Model by Moonshotai | NVIDIA NIM",
+    "snippet": "Built on a Mixture-of-Experts (MoE) architecture with 1 trillion total parameters (32B active), it delivers long-horizon coding capabilities across Rust, Go ...",
+    "host_name": "build.nvidia.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

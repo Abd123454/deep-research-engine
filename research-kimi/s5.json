@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://platform.kimi.ai/docs/guide/use-kimi-api-to-complete-tool-calls",
+    "name": "Use Kimi API for Tool Calls",
+    "snippet": "Each element in tool_calls represents one tool call: the Kimi large language model generates a unique id for each call, uses function.name to indicate the name ... Missing: protocol | Show results with: protocol\nWith tool_calls, the Kimi large language model can help you search the internet, query databases, and even control smart home devices. This page walks through the full flow — defining, registering, and executing tools — with an internet-search example, plus notes for streaming and other scenarios.",
+    "host_name": "platform.kimi.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.kimi.ai/docs/api/tool-use",
+    "name": "Tool Use - Kimi API Platform",
+    "snippet": "The Kimi API Platform provides K3, K2.7 Code, K2.6 and other large language model APIs, supporting long context, multimodal understanding, and Tool Calling. Missing: protocol | Show results with: protocol",
+    "host_name": "platform.kimi.ai",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://runware.ai/docs/models/moonshotai-kimi-k2-6/guides/tool-calling",
+    "name": "Building a tool-calling agent with Kimi K2.6 - Runware",
+    "snippet": "Tool calling lets Kimi K2.6 pause mid-response to call functions you define, read what they return, and finish its answer with that data in hand ...\nHow to give Kimi K2.6 access to your own functions through Runware's OpenAI-compatible endpoint: defining tools, running the call loop, making parallel tool calls, and controlling tool selection.",
+    "host_name": "runware.ai",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/LocalLLaMA/comments/1sp631h/are_you_guys_actually_using_local_tool_calling_or",
+    "name": "Are you guys actually using local tool calling or is it a collective prank? - Reddit",
+    "snippet": "You can enable native tool calling in the model settings. Bone stick defaults however do default to old “prompted” tool calls. Missing: protocol | Show results with: protocol",
+    "host_name": "www.reddit.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://vllm.ai/blog/2025-10-28-kimi-k2-accuracy",
+    "name": "Chasing 100% Accuracy: A Deep Dive into Debugging Kimi K2's Tool-Calling on vLLM",
+    "snippet": "Agentic workflows are reshaping our interaction with Large Language Models, and robust tool-calling is the engine driving this revolution. Missing: protocol | Show results with: protocol",
+    "host_name": "vllm.ai",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@marketing_novita.ai/novita-kimi-k2-api-support-function-calling-now-2d344ba3c297",
+    "name": "Novita Kimi K2 API Support Function Calling Now! - Medium",
+    "snippet": "Instead, it focuses on being a specialist agent with strengths in STEM, coding, and tool use, complemented by its function-calling capabilities. Missing: protocol | Show results with: protocol",
+    "host_name": "medium.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.promptingguide.ai/agents/function-calling",
+    "name": "Function Calling in AI Agents - Prompt Engineering Guide",
+    "snippet": "Function calling (also known as tool calling) is one of the core capabilities that powers modern LLM-based agents. Understanding how function ...",
+    "host_name": "www.promptingguide.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.answeroverflow.com/m/1480672803035287573",
+    "name": "\"Has anyone got kimi-coding/k2p5 working with tool calling in OpenClaw? My model responds but doesn' - Friends of the Crustacean - Answer Overflow",
+    "snippet": "My model responds but doesn't execute tools — it outputs the tool call as plain text instead. API key is set as KIMI_API_KEY. Is there ...",
+    "host_name": "www.answeroverflow.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.penligent.ai/hackinglabs/kimi-k3-jailbreak",
+    "name": "Kimi K3 Jailbreak Risk — Prompt Injection and the Coding Agent Security Boundary",
+    "snippet": "A coding agent that converts the same instruction into a privileged tool call has crossed a security boundary. That distinction is the ...",
+    "host_name": "www.penligent.ai",
+    "rank": 8,
+    "date": "Jul 17, 2026",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/docs/tool_call_guidance.md",
+    "name": "Kimi-K2/docs/tool_call_guidance.md at main - GitHub",
+    "snippet": "To enable the tool calling feature, you may need to set certain tool calling parser options when starting the service. See deploy_guidance for details. In Kimi-K2, a tool calling process includes: Suppose we have a function get_weather that can query the weather conditions in real-time.",
+    "host_name": "github.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

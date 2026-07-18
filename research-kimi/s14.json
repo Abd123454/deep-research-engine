@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://arxiv.org/html/2507.20534v1",
+    "name": "Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "We propose the MuonClip optimizer, which improves upon Muon with a novel QK-clip technique to address training instability while enjoying the ... Missing: compilation | Show results with: compilation",
+    "host_name": "arxiv.org",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/@gauritr01/the-truth-about-kimi-k2-pretraining-muon-optimizer-moe-unpacked-43554527d94a",
+    "name": "The Truth About KIMI K2 Pretraining: Muon Optimizer + MoE Unpacked",
+    "snippet": "Throughout the training process, Kimi K2 implements various strategies that enhance both computational efficiency and performance, from data ... Introduction · Data · Muon Optimizer · MuonClip Missing: compilation | Show results with: compilation",
+    "host_name": "medium.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://github.com/MoonshotAI/Kimi-K2/blob/main/README.md",
+    "name": "README.md - MoonshotAI/Kimi-K2 - GitHub",
+    "snippet": "Trained with the Muon optimizer, Kimi K2 achieves exceptional performance across frontier knowledge, reasoning, and coding tasks while being meticulously ... Missing: compilation | Show results with: compilation",
+    "host_name": "github.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.digitalocean.com/community/tutorials/post-training-agentic-models-kimi-k2",
+    "name": "Post-training Agentic Models: Kimi K2 - DigitalOcean",
+    "snippet": "This article takes a look at Kimi K2's post-training methodology: how it synthesizes agentic data, aligns behaviour via verifiable and self- ... Missing: compilation | Show results with: compilation",
+    "host_name": "www.digitalocean.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://huggingface.co/moonshotai/Kimi-K2-Base",
+    "name": "moonshotai/Kimi-K2-Base - Hugging Face",
+    "snippet": "Trained with the Muon optimizer, Kimi K2 achieves exceptional performance across frontier knowledge, reasoning, and coding tasks while being ... Missing: compilation | Show results with: compilation",
+    "host_name": "huggingface.co",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://ppwwyyxx.com/publication/kimi-k2",
+    "name": "Kimi K2: Open Agentic Intelligence | Yuxin's Homepage",
+    "snippet": "We propose the MuonClip optimizer, which improves upon Muon with a novel QK-clip technique to address training instability while enjoying the advanced token Missing: compilation | Show results with: compilation",
+    "host_name": "ppwwyyxx.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://cirra.ai/articles/kimi-k2-agentic-llm-mcp",
+    "name": "Kimi K2 Explained: Agentic Architecture & MCP Integration | Cirra",
+    "snippet": "An in-depth analysis of Kimi K2, an agentic LLM with a trillion-parameter MoE architecture. Learn its training, benchmarks, and MCP tool ... Missing: compilation | Show results with: compilation",
+    "host_name": "cirra.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://aman.ai/primers/ai/kimi-K2",
+    "name": "Aman's AI Journal • Kimi K2",
+    "snippet": "Kimi K2 introduces a custom optimizer called MuonClip. It's a refined version of the Muon optimizer, built specifically to handle these large MoE setups. Missing: compilation | Show results with: compilation",
+    "host_name": "aman.ai",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.baseten.co/blog/kimi-k2-explained-the-1-trillion-parameter-model-redefining-how-to-build-agents",
+    "name": "Kimi K2 Explained: The 1 Trillion Parameter Model - Baseten",
+    "snippet": "Kimi K2 is a 1 trillion parameter AI model from Moonshot Labs that excels at agentic tasks through three key innovations.",
+    "host_name": "www.baseten.co",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.kimi.com/blog/kimi-k2",
+    "name": "Kimi K2: Open Agentic Intelligence",
+    "snippet": "... Muon optimizer substantially outperforms the widely-used AdamW optimizer for LLM training. Kimi K2 was designed to further scale up ...",
+    "host_name": "www.kimi.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.promptingguide.ai/models/kimi-k2.5",
+    "name": "Kimi K2.5 | Prompt Engineering Guide",
+    "snippet": "Kimi K2.5 advances the state of the art through two main contributions: joint optimization of text and vision, and Agent Swarm for parallel ...",
+    "host_name": "www.promptingguide.ai",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/LocalLLaMA/comments/1qoml1n/leaked_kimi_k25s_full_system_prompt_tools",
+    "name": "[LEAKED] Kimi K2.5's full system prompt + tools (released <24h ago)",
+    "snippet": "You can download Kimi K2.5 and run it without a system prompt. The system prompt they use on the website is not super important. I JUST LEAKED KIMI K2.5S SYSTEM PROMPT : r/PromptEngineering Kimi K2.6 Autonomous Agent Workflow That Feels Like A Digital ... More results from www.reddit.com",
+    "host_name": "www.reddit.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.kimi.ai/docs/guide/use-kimi-k2-to-setup-agent",
+    "name": "Use Kimi K2.6 Model to Setup Agent",
+    "snippet": "The System prompt is an initial instruction received by the model before generating a response, and plays a critical role in determining the format, content, ...",
+    "host_name": "platform.kimi.ai",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=YNm3JcGi8Co&vl=en-US",
+    "name": "Kimi K2.6 Review: 300 AI Agents From One Prompt - YouTube",
+    "snippet": "GET KIMI K2.6: Try Agent Swarm today: https://go.davidalex.com/kimi Sign up to my newsletter: https://davidalex.com/contact I just deployed ... Missing: system engineering",
+    "host_name": "www.youtube.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://platform.kimi.ai/docs/guide/prompt-best-practice",
+    "name": "Best Practices for Prompts - Kimi API Platform",
+    "snippet": "A system prompt refers to the initial input or instruction that a model receives before generating text or responding. This prompt is crucial for the model's ...",
+    "host_name": "platform.kimi.ai",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/frontend-at-accenture/youre-using-kimi-ai-wrong-here-s-how-to-be-ahead-of-99-of-users-f5a850620792",
+    "name": "You're Using Kimi AI Wrong! Here's How to Be Ahead of 99% of Users",
+    "snippet": "Always set a clear system prompt / role + examples. Chunk huge inputs and index them; ask Kimi to cite context chunks. Use Kimi's tool/agent ...",
+    "host_name": "medium.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://docs.together.ai/docs/kimi-k2-quickstart",
+    "name": "Kimi K2 quickstart - Together AI docs",
+    "snippet": "Keep the system prompt simple - \"You are Kimi, an AI assistant created by Moonshot AI.\" is the recommended default. Matches the prompt used during instruction ...",
+    "host_name": "docs.together.ai",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/posts/tomashk_kimi-k2-thinking-might-be-the-worlds-most-activity-7392691985033125889-12uP",
+    "name": "How to Optimize Kimi K2 Thinking Prompts Automatically - LinkedIn",
+    "snippet": "30-60% of prompts will degrade when switching models— and manually reengineering the prompt can take anywhere from 4-40 hours of work. This is ...",
+    "host_name": "www.linkedin.com",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.verdent.ai/guides/kimi-agent-coding",
+    "name": "Kimi Agent for Coding: What Builders Should Know - Verdent Guides",
+    "snippet": "Kimi Agent for coding explained: how Kimi K2.6, Kimi Code, and agent workflows fit builder and developer use cases.",
+    "host_name": "www.verdent.ai",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/pdf/2507.20534?",
+    "name": "[PDF] Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "We generate thousands of distinct agents by synthesizing various system prompts and equipping them with different combinations of tools from our ...",
+    "host_name": "arxiv.org",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

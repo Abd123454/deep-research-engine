@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://www.kimi.com/blog/kimi-k2-thinking",
+    "name": "Introducing Kimi K2 Thinking",
+    "snippet": "Kimi K2 Thinking can execute up to 200 – 300 sequential tool calls without human interference, reasoning coherently across hundreds of steps to solve complex ... Missing: ACT | Show results with: ACT",
+    "host_name": "www.kimi.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.verdent.ai/guides/model/kimi-k2-thinking",
+    "name": "Kimi K2 Thinking - Verdent Guides",
+    "snippet": "Kimi K2 Thinking is useful when a coding task needs deliberate reasoning rather than a fast completion. It spends additional tokens to examine context, weigh ...",
+    "host_name": "www.verdent.ai",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://kimik2-thinking.org",
+    "name": "Kimi K2 Thinking: The Best Open-source Agentic Model",
+    "snippet": "Kimi K2 Thinking delivers state-of-the-art performance on complex reasoning tasks while maintaining cost efficiency.",
+    "host_name": "kimik2-thinking.org",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://medium.com/data-and-beyond/kimi-k2-thinking-model-open-agentic-llm-that-redefines-intelligence-267c46b63ccb",
+    "name": "Kimi K2 Thinking model Open Agentic LLM That Redefines",
+    "snippet": "Kimi K2 Thinking, an open-weights “thinking agent” model built not merely to respond, but to plan, act and self-correct.",
+    "host_name": "medium.com",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.linkedin.com/pulse/ai-101-what-so-special-kimi-k2-thinking-theturingpost-g1d2c",
+    "name": "AI 101: What is so special about Kimi K2 Thinking? - LinkedIn",
+    "snippet": "Kimi K2 Thinking is an open-source “thinking” model, essentially an AI agent that can reason step-by-step and use tools like a calculator, code ...",
+    "host_name": "www.linkedin.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://kimik2ai.com",
+    "name": "Kimi AI - Think Bigger. Search Smarter. Write Better with Kimi K3 - K2.7",
+    "snippet": "Built-in AI agents work directly. Kimi K2 Thinking Post-trained reasoning variant with of-thought and native tool use. Access Kimi K2 on web and mobile.  ...",
+    "host_name": "kimik2ai.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2507.20534v1",
+    "name": "Kimi K2: Open Agentic Intelligence - arXiv",
+    "snippet": "Kimi K2 achieves state-of-the-art performance among open-source non-thinking models,",
+    "host_name": "arxiv.org",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://skywork.ai/blog/agent/how-kimi-k2-thinks",
+    "name": "How Kimi K2 Thinks: Inside Its Multi-Step Reasoning Engine - Skywork",
+    "snippet": "Explore how Kimi K2 Thinking's reasoning engine works: from query parsing to 300-step tool orchestration. Technical deep dive.",
+    "host_name": "skywork.ai",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.deeplearning.ai/the-batch/kimi-k2-thinking-outperforms-proprietary-models-with-new-techniques-for-agentic-tool-use",
+    "name": "Kimi K2 Thinking Outperforms Proprietary Models With New",
+    "snippet": "Given a prompt, Kimi K2 Thinking interleaves reasoning, tool use (up to 300 calls), and planning. First it reasons about the task and then calls ...",
+    "host_name": "www.deeplearning.ai",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=AqaAnvM77jE",
+    "name": "Exploring Kimi K2 Thinking Agent - YouTube",
+    "snippet": "Ready to dive into the cutting-edge world of Web3? ​   What You'll Learn Join Jordan for a deep-dive live session on Kimi K2 Thinking — an ... Missing: planner | Show results with: planner",
+    "host_name": "www.youtube.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]

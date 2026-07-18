@@ -61,18 +61,72 @@ async function waitForJobCompletion(jobId: string, timeoutMs: number): Promise<v
   throw new Error(`Job ${jobId} timed out after ${timeoutMs}ms`);
 }
 
-/** Extract code blocks from LLM output. */
+/** Extract code blocks from LLM output.
+ *
+ * The swarm (and especially the synthesizer) often emits a fenced code
+ * block with the requested function. But it can also:
+ *   - emit MULTIPLE code blocks (one with an example, one with the actual
+ *     solution) — we want the longest one (the real solution);
+ *   - emit the function with NO fences, inline in prose — we recover it via
+ *     a function/def declaration heuristic;
+ *   - emit the function with a ```` ```ts ```` fence even when we asked for
+ *     javascript — accept ts/py/js as aliases.
+ *
+ * Returns the trimmed code on success, or "" if no plausible code block
+ * was found.
+ */
 function extractCode(text: string, language: string): string {
-  // Look for ```language\n...\n``` or ```\n...\n```
-  const langPattern = language === "python" ? "python" : "javascript|js";
-  const codeBlockRegex = new RegExp("```(?:" + langPattern + ")?\n([\\s\\S]*?)```", "i");
-  const match = text.match(codeBlockRegex);
-  if (match && match[1]) return match[1].trim();
+  if (!text) return "";
 
-  // Fallback: if no code block, check if the whole text looks like code.
-  // (Heuristic: contains function/def keyword)
-  if (/^(function |def |const |class )/m.test(text.trim())) {
-    return text.trim();
+  // Accepted language aliases for the fence header.
+  const langPattern = language === "python" ? "python|py" : "javascript|js|typescript|ts";
+  const fenceRegex = new RegExp(
+    "```(?:" + langPattern + ")?\\s*\\n([\\s\\S]*?)```",
+    "ig"
+  );
+
+  // Find ALL fenced code blocks and pick the longest one. The longest
+  // block is almost always the actual solution rather than a tiny example
+  // or a one-liner. (Kimi-style: prefer the block with the most substance.)
+  let bestBlock = "";
+  let match: RegExpExecArray | null;
+  while ((match = fenceRegex.exec(text)) !== null) {
+    const block = (match[1] || "").trim();
+    if (block.length > bestBlock.length) {
+      bestBlock = block;
+    }
+  }
+  if (bestBlock) {
+    return bestBlock;
+  }
+
+  // Fallback 1: the swarm sometimes writes the function inline in prose,
+  // with no fences. Try to extract from the first `function`/`def`/`const`/
+  // `class` keyword to the end of the text, then trim trailing prose.
+  // (Search ANYWHERE in the text, not just at line start — the model may
+  // prefix the declaration with "Here's the function:" or similar.)
+  const declRegex = language === "python"
+    ? /\b(def |class |async def )/
+    : /\b(function |const |let |var |class |async function )/;
+  const declMatch = text.match(declRegex);
+  if (declMatch && declMatch.index !== undefined) {
+    const candidate = text.slice(declMatch.index).trim();
+    // Strip a trailing ``` fence if the model opened one but never closed
+    // it, and any obvious trailing prose (lines that don't look like code).
+    const cleaned = candidate
+      .replace(/```[a-z]*\s*$/i, "")
+      .replace(/\n```$/g, "")
+      .trim();
+    if (cleaned.length > 0) {
+      return cleaned;
+    }
+  }
+
+  // Fallback 2: if the whole text looks like code (starts with a declaration),
+  // return it as-is.
+  const trimmed = text.trim();
+  if (/^(function |def |const |let |var |class |async function )/m.test(trimmed)) {
+    return trimmed;
   }
 
   return "";
@@ -97,6 +151,11 @@ export async function runEval(query: EvalQuery): Promise<EvalResult> {
   try {
     // ===== Research =====
     if (query.type === "research") {
+      // Rate-limit spacing: NVIDIA free-tier allows 40 req/min.
+      // Each research query makes ~15-20 LLM calls. Add 2s delay between
+      // queries so successive eval runs do not trip the 429 wall.
+      await new Promise((r) => setTimeout(r, 2000));
+
       const config = {
         query: query.query,
         depth: "standard" as const,
@@ -111,8 +170,52 @@ export async function runEval(query: EvalQuery): Promise<EvalResult> {
       };
 
       const job = createJob(query.query, config);
-      await runResearch(job.id);
-      await waitForJobCompletion(job.id, 180_000); // 3 min timeout
+
+      // Wrap runResearch in an exponential-backoff retry loop for 429s.
+      // The LLM provider already retries individual calls, but a sustained
+      // rate-limit storm (entire pipeline trips 429) needs a longer cool-off.
+      let lastResearchErr: unknown;
+      const maxResearchAttempts = 3;
+      for (let attempt = 0; attempt < maxResearchAttempts; attempt++) {
+        try {
+          await runResearch(job.id);
+          break;
+        } catch (err) {
+          lastResearchErr = err;
+          const msg = err instanceof Error ? err.message : String(err);
+          const is429 = /429|rate.?limit|too many requests/i.test(msg);
+          if (!is429 || attempt === maxResearchAttempts - 1) {
+            throw err;
+          }
+          // Exponential backoff: 4s, 8s.
+          const backoffMs = 4_000 * Math.pow(2, attempt);
+          logger.warn(
+            { module: "eval", queryId: query.id, attempt: attempt + 1, backoffMs, err: msg.slice(0, 120) },
+            "Research pipeline hit 429 — backing off before retry"
+          );
+          await new Promise((r) => setTimeout(r, backoffMs));
+        }
+      }
+      // If we exhausted retries without breaking, surface the last error.
+      if (lastResearchErr) {
+        // unreachable — the loop above either breaks or throws — but TS
+        // cannot infer that, so guard explicitly.
+        throw lastResearchErr;
+      }
+
+      try {
+        await waitForJobCompletion(job.id, 180_000); // 3 min timeout
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        // If the job itself tripped a 429 internally, give it one more
+        // shot at waiting (the job may still complete on its own).
+        if (/429|rate.?limit|too many requests/i.test(msg)) {
+          await new Promise((r) => setTimeout(r, 4_000));
+          await waitForJobCompletion(job.id, 60_000);
+        } else {
+          throw err;
+        }
+      }
 
       const finalJob = getJob(job.id);
       if (!finalJob) throw new Error("Job disappeared");

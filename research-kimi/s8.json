@@ -1,0 +1,92 @@
+[
+  {
+    "url": "https://agentnativedev.medium.com/kimi-k2-5-agent-swarms-beat-us-ai-labs-open-source-vs-openai-anthropic-google-e703dae63a81",
+    "name": "Kimi K2.5 + Agent Swarms Beat US AI Labs: Open Source vs",
+    "snippet": "On the τ²‑Bench Telecom test of agentic tool use, Kimi K2 Thinking achieved 93 % accuracy, outperforming GPT‑5 Codex (87 %) and MiniMax‑M2. K2. Missing: computer | Show results with: computer",
+    "host_name": "agentnativedev.medium.com",
+    "rank": 0,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.taskade.com/compare/kimi-vs-claude",
+    "name": "Kimi vs Claude 2026: Open-Weight Agentic Coding vs  - Taskade",
+    "snippet": "Rating 4.8 (146) Kimi K2.6 leads SWE-bench Pro 58.6% beating every premium frontier model. Claude leads on consumer chat, writing, and Artifacts.",
+    "host_name": "www.taskade.com",
+    "rank": 1,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.reddit.com/r/ClaudeAI/comments/1qtgd9e/kimi_agent_swarm_vs_opus",
+    "name": "Kimi Agent swarm vs Opus : r/ClaudeAI - Reddit",
+    "snippet": "agent swarms are faster or more productive than single LLM calls, I compared: Kimi K2.5 (agent swarm mode) Claude Opus … cise, decision-ready  ... Kimi Swarm vs Opus Kimi vs. Claude : r/kimi More results from www.reddit.com Missing: computer | Show results with: computer",
+    "host_name": "www.reddit.com",
+    "rank": 2,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.verdent.ai/guides/kimi-k2-6-vs-claude-opus-4-6-vs-gpt-5-4",
+    "name": "Kimi K2.6 vs Claude Opus 4.6 vs GPT-5.4 - Verdent AI",
+    "snippet": "Three-way comparison of Kimi K2.6, Claude Opus 4.6, and GPT-5.4 on agentic coding benchmarks, cost, and real trade-offs -built for long-horizon ...",
+    "host_name": "www.verdent.ai",
+    "rank": 3,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=WuOlqBsDg-w",
+    "name": "Claude Agent Teams VS Kimi Agent Swarm Explained  - YouTube",
+    "snippet": "Kimi Agent Swarm trial invite (100 seats): https://www.kimi.com/?invite=okc&code=zx7GyO7A Includes 3 runs, claim within 24 hours We're ... Missing: OpenAI computer",
+    "host_name": "www.youtube.com",
+    "rank": 4,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.devflokers.com/blog/kimi-ai-vs-gemini-vs-openai-vs-claude-2025-comparison",
+    "name": "Kimi AI vs Gemini vs OpenAI vs Claude: The Ultimate 2025",
+    "snippet": "We'll dive deep into each platform's features, performance benchmarks, pricing, and ideal use cases to determine which AI tool deserves your ...",
+    "host_name": "www.devflokers.com",
+    "rank": 5,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.digitalapplied.com/blog/multi-agent-orchestration-5-patterns-that-work",
+    "name": "Multi-Agent Orchestration: 5 Patterns That Work in 2026",
+    "snippet": "Swarm scales to 300 agents with Kimi K2.6 Multi-Agent Orchestration: With code sketches from the Claude Agent SDK,",
+    "host_name": "www.digitalapplied.com",
+    "rank": 6,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://arxiv.org/html/2602.02276v1",
+    "name": "Kimi K2.5: Visual Agentic Intelligence - arXiv",
+    "snippet": "To ensure fair comparison, Claude Opus 4.5 is evaluated solely with computer-use tools (excluding browser tools), a departure from the ...",
+    "host_name": "arxiv.org",
+    "rank": 7,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.codecademy.com/article/kimi-k-2-5-complete-guide-to-moonshots-ai-model",
+    "name": "Kimi K2.5: Complete Guide to Moonshot's AI Model - Codecademy",
+    "snippet": "BrowseComp achieves 74.9% in standard agent mode and 78.4% in Agent Swarm mode, compared to Claude Opus 4.5's 65.8% on standard benchmarks. DeepSearchQA ...",
+    "host_name": "www.codecademy.com",
+    "rank": 8,
+    "date": "",
+    "favicon": ""
+  },
+  {
+    "url": "https://www.youtube.com/watch?v=fnV0NTfBRHs",
+    "name": "I Tested Kimi K2.6 — 5x Cheaper, Better at UI, Agent Swarm",
+    "snippet": "Moonshot have just released Kimi K2.6 — an open-source model that stacks up against Claude Opus 4.6, GPT-5.4, and Gemini 3.1 Pro across most ... Missing: OpenAI comparison computer",
+    "host_name": "www.youtube.com",
+    "rank": 9,
+    "date": "",
+    "favicon": ""
+  }
+]
