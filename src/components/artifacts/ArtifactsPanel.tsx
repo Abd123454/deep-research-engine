@@ -23,7 +23,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   X, Copy, Check, Code2, FileText, Globe, Download, History,
-  Eye, Clock,
+  Eye, Clock, Pencil,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import DOMPurify from "dompurify";
@@ -35,6 +35,8 @@ import type { Artifact } from "@/lib/artifact-detector";
 interface ArtifactsPanelProps {
   artifact: Artifact;
   onClose: () => void;
+  /** Optional: open the artifact in Canvas mode (inline editor). */
+  onEditInCanvas?: () => void;
 }
 
 type TabKey = "preview" | "code" | "history";
@@ -59,7 +61,7 @@ const DOWNLOAD_META: Record<Artifact["type"], { ext: string; mime: string }> = {
   mermaid: { ext: "mmd", mime: "text/plain" },
 };
 
-export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onClose }: ArtifactsPanelProps) {
+export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onClose, onEditInCanvas }: ArtifactsPanelProps) {
   const [copied, setCopied] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<TabKey>("preview");
 
@@ -198,6 +200,18 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
           <Button variant="ghost" size="icon" onClick={downloadContent} className="h-7 w-7" aria-label="Download artifact" title="Download">
             <Download className="h-3.5 w-3.5" />
           </Button>
+          {onEditInCanvas && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onEditInCanvas}
+              className="h-7 w-7"
+              aria-label="Edit in Canvas"
+              title="Edit in Canvas"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          )}
           {(artifact.type === "research_report" || artifact.type === "markdown") && (
             <ExportMenu content={visibleContent} filename={artifact.title || "artifact"} />
           )}

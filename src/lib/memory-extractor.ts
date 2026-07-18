@@ -29,6 +29,11 @@ import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 import type { LongTermMemoryRow } from "./sqlite-types";
 import { logger } from "./logger";
 import { isConsentGranted } from "./consent";
+// P1-wave2 / Feature 2: Memory Graph — after storing a new memory,
+// extract relations against existing memories and persist them as
+// weighted edges in the memory_edges table. The graph powers both the
+// /api/memories/graph visualization and recallWithGraph expansion.
+import { extractRelations, storeMemoryEdges } from "./memory-graph";
 
 export interface MemoryExtraction {
   type: "fact" | "preference" | "context";
@@ -184,6 +189,38 @@ export async function storeMemories(
         "INSERT INTO long_term_memories (id, user_id, type, content, confidence) VALUES (?, ?, ?, ?, ?)"
       ).run(id, uid, mem.type, mem.content, mem.confidence);
       stored++;
+
+      // P1-wave2 / Feature 2: Memory Graph — extract relations between
+      // the newly-stored memory and the user's existing memories, then
+      // persist them as edges. Wrapped in try/catch so a graph failure
+      // never blocks the memory write (the write already succeeded at
+      // this point). The query excludes the just-inserted row by id so
+      // we don't compute a self-loop.
+      try {
+        const existingRows = db
+          .prepare(
+            "SELECT id, content FROM long_term_memories WHERE user_id = ? AND id != ?"
+          )
+          .all(uid, id) as Array<{ id: string; content: string }>;
+        if (existingRows.length > 0) {
+          const edges = extractRelations(
+            { id, content: mem.content },
+            existingRows
+          );
+          if (edges.length > 0) {
+            storeMemoryEdges(edges);
+          }
+        }
+      } catch (graphErr) {
+        // Non-fatal — see comment above.
+        logger.warn(
+          {
+            module: "memory-extractor",
+            err: graphErr instanceof Error ? graphErr.message : String(graphErr),
+          },
+          "Memory graph edge extraction failed (non-fatal)"
+        );
+      }
     }
     return stored;
   } catch (err) {

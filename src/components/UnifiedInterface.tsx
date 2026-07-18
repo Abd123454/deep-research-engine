@@ -40,6 +40,7 @@ import { OnboardingFlow } from "@/components/OnboardingFlow";
 // mobile/tablet it stays out of the way and the chat column takes the
 // full width.
 import { ArtifactsPanel } from "@/components/artifacts/ArtifactsPanel";
+import { CanvasPanel } from "@/components/canvas/CanvasPanel";
 import { detectArtifact as _detectArtifact, type Artifact } from "@/lib/artifact-detector";
 
 // Lazy load heavy drawers — they're only needed when opened.
@@ -144,6 +145,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   // by the panel's Close button. We also forward it to the optional
   // `onArtifact` prop so the page-level consumer (page.tsx) can react.
   const [activeArtifact, setActiveArtifact] = React.useState<Artifact | null>(null);
+  // P1-wave2 / Feature 1: Canvas Mode — when the user clicks "Edit in
+  // Canvas" in the ArtifactsPanel header, this state holds the artifact's
+  // raw source + language so CanvasPanel can mount on top of the
+  // artifacts column. Cleared by CanvasPanel's Close button or by
+  // starting a new chat (handleNewChat).
+  const [canvasArtifact, setCanvasArtifact] = React.useState<{ content: string; language: string } | null>(null);
   // P0-4: conversations list (backed by /api/chat/conversations). Fetched
   // on mount and refreshed after each send. `activeConversationId` tracks
   // the currently-selected row so the Sidebar can highlight it.
@@ -286,6 +293,9 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     // P0-1: closing the new-chat flow also dismisses any open artifact
     // panel — the user is starting fresh, the previous artifact is stale.
     setActiveArtifact(null);
+    // P1-wave2 / Feature 1: also dismiss the Canvas editor so the next
+    // chat starts without a stale editor overlay.
+    setCanvasArtifact(null);
   }
 
   function handleSend(text: string, files: AttachedFile[], mode: InputMode, tools: ToolKey[] = []) {
@@ -560,6 +570,33 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
         <ArtifactsPanel
           artifact={activeArtifact}
           onClose={() => handleArtifactChange(null)}
+          onEditInCanvas={() =>
+            setCanvasArtifact({
+              content: activeArtifact.content,
+              language: activeArtifact.language || activeArtifact.type,
+            })
+          }
+        />
+      )}
+
+      {/* P1-wave2 / Feature 1: CanvasPanel — inline editor overlay.
+          Slides in from the right on top of the artifacts column when
+          the user clicks "Edit in Canvas". onSave updates the active
+          artifact's content in-place so the preview re-renders with
+          the user's edits. */}
+      {canvasArtifact && (
+        <CanvasPanel
+          content={canvasArtifact.content}
+          language={canvasArtifact.language}
+          onClose={() => setCanvasArtifact(null)}
+          onSave={(editedContent) => {
+            if (activeArtifact) {
+              handleArtifactChange({ ...activeArtifact, content: editedContent });
+              // Sync the canvas state so the next "Reset" compares
+              // against the freshly-saved version.
+              setCanvasArtifact({ content: editedContent, language: canvasArtifact.language });
+            }
+          }}
         />
       )}
 
