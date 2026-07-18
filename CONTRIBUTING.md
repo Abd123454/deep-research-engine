@@ -150,6 +150,42 @@ AUTH_SECRET=any-random-string       # for NextAuth session signing
 7. **Test manually** — exercise the new behavior through the UI at `/`.
 8. **Push and open a PR** against `main`. Fill out the PR template and link any related issues.
 
+### ⛔ Branch Protection & Git Safety (CRITICAL)
+
+**Force push to `main` is BLOCKED.** This is enforced at the GitHub level (branch protection rules). This rule exists because a previous force push accidentally wiped 12 commits containing 26 P0 features — requiring emergency recovery from `git reflog`.
+
+**Rules enforced on `main`:**
+- `allow_force_pushes: false` — `git push --force` and `git push -f` will be **rejected** by GitHub
+- `allow_deletions: false` — the `main` branch cannot be deleted
+- `enforce_admins: true` — these rules apply to everyone, including repo owners
+
+**What to do instead of force push:**
+
+| Situation | ❌ Don't do this | ✅ Do this instead |
+|---|---|---|
+| Undo a commit | `git reset --hard HEAD~1 && git push --force` | `git revert HEAD` (creates a new commit that undoes the changes) |
+| Reword a commit message | `git commit --amend && git push --force` | Create a new commit with the corrected info, or use `git revert` + re-commit |
+| Squash commits | `git rebase -i && git push --force` | Squash on a feature branch before merging to `main` via PR |
+| Fix a bad merge | `git reset --hard origin/main && git push --force` | `git revert -m 1 <merge-commit>` |
+
+**If you absolutely must rewrite history** (e.g., removing secrets):
+1. Create a new branch: `git checkout -b fix/rewrite-history`
+2. Do the rewrite on that branch
+3. Open a PR and merge normally (this creates a merge commit, preserving history)
+4. If the rewrite MUST be on `main` directly, contact a repo admin to temporarily disable protection — but this should be extremely rare
+
+**Recovery if you've already done a force push locally:**
+```bash
+# Check reflog for lost commits
+git reflog | head -20
+
+# Cherry-pick the lost commit
+git cherry-pick <commit-hash>
+
+# Or reset to the lost commit (only works if you haven't pushed yet)
+git reset --hard <commit-hash>
+```
+
 ### Commit Message Convention
 
 We follow [Conventional Commits](https://www.conventionalcommits.org/):
