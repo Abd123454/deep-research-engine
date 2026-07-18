@@ -17,6 +17,7 @@ import { JSDOM } from "jsdom";
 import type { PageReadResult } from "./types";
 import { logger } from "./logger";
 import { withAbortSignal } from "./abort-utils";
+import { safeFetch } from "./safe-fetch";
 
 const MAX_CONTENT_LENGTH = 5 * 1024 * 1024; // 5MB
 const MAX_TEXT_CHARS = 6000; // cap per-page text to save tokens
@@ -112,7 +113,7 @@ async function readWikipediaViaApi(url: string, userSignal?: AbortSignal): Promi
     `https://en.wikipedia.org/w/api.php?action=query&prop=extracts` +
     `&explaintext&titles=${encodeURIComponent(title)}&format=json&origin=*&exlimit=1`;
 
-  const res = await fetch(apiUrl, {
+  const res = await safeFetch(apiUrl, {
     headers: { "User-Agent": WIKI_UA, Accept: "application/json" },
     signal: withAbortSignal(userSignal, 12000),
   });
@@ -141,7 +142,7 @@ async function readWikipediaViaApi(url: string, userSignal?: AbortSignal): Promi
 
 // ---------- Direct fetch + Readability (for non-Wikipedia URLs) ----------
 async function readPageDirect(url: string, userSignal?: AbortSignal): Promise<PageReadResult> {
-  const res = await fetch(url, {
+  const res = await safeFetch(url, {
     method: "GET",
     redirect: "follow",
     headers: {

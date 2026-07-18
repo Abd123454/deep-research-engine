@@ -117,6 +117,12 @@ const readFileTool: AgentTool = {
     const docId = String(params.document_id || "");
     if (!docId) return { tool: "read_file", success: false, output: "No document ID provided." };
 
+    // SECURITY (V5): validate docId is a safe identifier (UUID or alphanumeric),
+    // not a path traversal attempt (e.g. "../../../etc/passwd")
+    if (!/^[a-zA-Z0-9_-]+$/.test(docId)) {
+      return { tool: "read_file", success: false, output: "Invalid document ID." };
+    }
+
     try {
       const res = await fetch(`http://localhost:3000/api/documents/${docId}`);
       if (!res.ok) return { tool: "read_file", success: false, output: `Document not found (${res.status}).` };

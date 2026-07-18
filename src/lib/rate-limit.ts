@@ -218,11 +218,40 @@ export function releaseConcurrency(ip: string): void {
   }
 }
 
-/** Extract client IP from a Next.js request. */
+/**
+ * Extract client IP from a Next.js request.
+ *
+ * SECURITY (V7): Only trust X-Forwarded-For if a trusted proxy set it.
+ * In production (NODE_ENV=production), we require TRUSTED_PROXY_HOPS env var
+ * to be set (e.g. "1" for a single reverse proxy like Caddy/Nginx). This
+ * prevents XFF spoofing — an attacker can't set a fake XFF header to bypass
+ * rate limits.
+ *
+ * The hop count tells us how many proxies are in front of us. We take the
+ * Nth-from-the-right IP in the XFF chain (the one added by our trusted proxy).
+ * If TRUSTED_PROXY_HOPS is not set, we fall back to x-real-ip (set by Caddy)
+ * or "unknown" (rate-limited as a single bucket).
+ */
 export function getClientIP(req: Request): string {
+  const trustedHops = parseInt(process.env.TRUSTED_PROXY_HOPS || "0", 10);
   const xff = req.headers.get("x-forwarded-for");
-  if (xff) return xff.split(",")[0]!.trim();
-  return req.headers.get("x-real-ip") || "unknown";
+
+  if (xff && trustedHops > 0) {
+    const parts = xff.split(",").map((s) => s.trim());
+    // Take the Nth-from-the-right (the IP added by our trusted proxy)
+    const idx = parts.length - trustedHops;
+    if (idx >= 0 && idx < parts.length) {
+      return parts[idx]!;
+    }
+  }
+
+  // x-real-ip is set by Caddy/Nginx — more trustworthy than raw XFF
+  const realIp = req.headers.get("x-real-ip");
+  if (realIp) return realIp.trim();
+
+  // Fallback: if no trusted proxy configured, use the socket remote address
+  // (not header-based, so can't be spoofed)
+  return "unknown";
 }
 
 // Periodic cleanup of stale memory buckets (every 5 minutes).

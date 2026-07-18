@@ -17,6 +17,8 @@ import { NextRequest } from "next/server";
 import { runSwarm, serializeSSE, type SwarmEvent } from "@/lib/swarm";
 import { sanitizeInput } from "@/lib/prompt-security";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { requireAuth, getUserId } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -24,6 +26,11 @@ export const dynamic = "force-dynamic";
 const MAX_TASK_LENGTH = 2000;
 
 export async function POST(req: NextRequest) {
+  // Auth: require valid credentials. Swarm consumes significant LLM tokens.
+  const authError = requireAuth(req);
+  if (authError) return authError;
+  const userId = getUserId(req);
+
   // Parse body.
   let body: { task?: string };
   try {
@@ -51,7 +58,8 @@ export async function POST(req: NextRequest) {
 
   // Sanitize input (blocks prompt injection).
   const task = sanitizeInput(rawTask);
-  trackEvent("default", "feature_used", { feature: "swarm" });
+  trackEvent(userId, "feature_used", { feature: "swarm" });
+  logSensitiveAction("swarm.start", userId, req, { taskLength: task.length });
   if (!task) {
     return Response.json({ error: "Invalid input." }, { status: 400 });
   }

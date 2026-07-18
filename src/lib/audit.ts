@@ -41,6 +41,7 @@ export const SENSITIVE_ACTIONS = {
   "research.start": "research",
   "research.stop": "research",
   "research.delete": "research",
+  "swarm.start": "swarm",
   "code.execute": "code",
   "admin.access": "admin",
   // GDPR Art. 7 — demonstrable consent. Every grant / revoke of a consent

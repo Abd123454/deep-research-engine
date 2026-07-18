@@ -114,10 +114,16 @@ export async function DELETE(req: NextRequest) {
     }
 
     // Best-effort: SQLite-side artifacts/audit logs (dev coexistence).
+    // SECURITY (V4 fix): audit_logs are ANONYMIZED, not deleted, to comply
+    // with GDPR Art. 17 while preserving the audit trail required by GDPR
+    // Art. 30 (records of processing activities) and SOC 2 (CC7.2).
+    // We replace PII (user_id) with a hash, keeping the action + timestamp.
     try {
       const db = getDb();
       try {
-        const r = db.prepare("DELETE FROM audit_logs WHERE user_id = ?").run(userId);
+        const r = db.prepare(
+          "UPDATE audit_logs SET user_id = 'deleted:' || substr(hex(randomblob(8)), 1, 16), metadata = '{}' WHERE user_id = ?"
+        ).run(userId);
         auditLogs = r.changes;
       } catch { /* table may not exist */ }
       try {
@@ -185,7 +191,11 @@ export async function DELETE(req: NextRequest) {
     subscriptions = run("DELETE FROM subscriptions WHERE user_id = ?", userId);
     usageRecords = run("DELETE FROM usage_records WHERE user_id = ?", userId);
     preferences = run("DELETE FROM user_preferences WHERE user_id = ?", userId);
-    auditLogs = run("DELETE FROM audit_logs WHERE user_id = ?", userId);
+    // SECURITY (V4): anonymize audit_logs, don't delete — preserves SOC 2 trail
+    auditLogs = run(
+      "UPDATE audit_logs SET user_id = 'deleted:' || substr(hex(randomblob(8)), 1, 16), metadata = '{}' WHERE user_id = ?",
+      userId
+    );
     artifactStorage = run("DELETE FROM artifact_storage WHERE user_id = ?", userId);
 
     // Legacy `sessions` table has NO user_id column — it's single-tenant.
