@@ -221,3 +221,111 @@ export async function createPortalSession(
 
   return session.url;
 }
+
+// ---------- Metered billing ----------
+
+/**
+ * Report metered usage to Stripe for a metered subscription item.
+ *
+ * P1 feature: Stripe metered billing. Called by the usage-tracker
+ * flusher (src/lib/usage-tracker.ts) every 60 seconds with the
+ * aggregate quantity for each active metered subscription.
+ *
+ * API version compatibility: Stripe v17 deprecated
+ * `subscriptionItems.createUsageRecord` in favor of the new
+ * `billing.meterEvents.create` API (event-name based rather than
+ * subscription-item based). The installed stripe-node v22 only types
+ * the new API. We probe for the legacy method at runtime — if present
+ * (e.g. older stripe-node versions, or operators who pinned the
+ * legacy API), we use it (the spec's original API). Otherwise we
+ * fall back to the new meter-events API, mapping the subscription
+ * item id to a meter event name using the convention configured in
+ * the `STRIPE_METER_EVENT_NAME` env var (default: `quaesitor_usage`).
+ *
+ * Failures are swallowed (logged at error level) — usage reporting
+ * is best-effort. A failed report means the user might be slightly
+ * under-billed for one period; the next successful flush will catch
+ * up because the DB-side `usage_records` table is the source of
+ * truth (we re-sum the full period each flush, not just deltas).
+ *
+ * @param subscriptionItemId  The Stripe subscription item id (e.g.
+ *   `si_abc123`) — used by the legacy API. Ignored by the new
+ *   meter-events API (which is customer/meter based).
+ * @param quantity  The number of metered events to report. Must be
+ *   a non-negative integer. Stripe rejects floats and negative
+ *   numbers with a 400.
+ * @param customerId  Optional — the Stripe customer id. Required by
+ *   the new meter-events API (v17+). When omitted and the legacy API
+ *   is unavailable, the report is dropped (logged at warn level).
+ */
+export async function reportUsage(
+  subscriptionItemId: string,
+  quantity: number,
+  customerId?: string
+): Promise<void> {
+  if (!stripe) return;
+  if (!subscriptionItemId || quantity <= 0) return;
+
+  try {
+    // Probe for the legacy `subscriptionItems.createUsageRecord`
+    // method. The TypeScript types removed it in v17, but the
+    // runtime method may still exist on older stripe-node installs
+    // or operators who pinned a legacy API version. Use a typed
+    // cast so tsc stays happy without `any`.
+    const items = stripe.subscriptionItems as unknown as {
+      createUsageRecord?: (
+        id: string,
+        params: {
+          quantity: number;
+          timestamp: number;
+          action: "increment" | "set";
+        },
+        options?: unknown
+      ) => Promise<unknown>;
+    };
+
+    if (typeof items.createUsageRecord === "function") {
+      await items.createUsageRecord(subscriptionItemId, {
+        quantity,
+        timestamp: Math.floor(Date.now() / 1000),
+        action: "increment",
+      });
+      return;
+    }
+
+    // New API (stripe-node v17+): billing.meterEvents.create.
+    // This is event-name + customer + value based. We map the
+    // subscription item id to a meter event name via env var so
+    // operators can configure the meter in Stripe once and have
+    // every subscription report against it.
+    if (!customerId) {
+      logger.warn(
+        { subscriptionItemId, quantity },
+        "Stripe metered billing: legacy createUsageRecord unavailable and no customerId for new meter-events API — usage report dropped"
+      );
+      return;
+    }
+
+    const eventName =
+      process.env.STRIPE_METER_EVENT_NAME || "quaesitor_usage";
+    await stripe.billing.meterEvents.create({
+      event_name: eventName,
+      payload: {
+        stripe_customer_id: customerId,
+        value: String(quantity),
+      },
+      timestamp: Math.floor(Date.now() / 1000),
+    });
+  } catch (err) {
+    // P0-10: sanitize the error before logging — Stripe API errors
+    // can include the request URL with the secret key embedded.
+    logger.error(
+      {
+        err: err instanceof Error ? err.message : String(err),
+        subscriptionItemId,
+        quantity,
+      },
+      "Failed to report usage to Stripe"
+    );
+  }
+}

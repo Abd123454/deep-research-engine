@@ -205,6 +205,25 @@ function initSqliteSchema(db: SqliteDatabase): void {
       UNIQUE(user_id, type, period)
     );
     CREATE INDEX IF NOT EXISTS idx_usage_user_period ON usage_records(user_id, period);
+
+    -- Developer platform API keys (P1 feature). The raw key is NEVER
+    -- stored — only its SHA-256 hash. The raw key is returned to the
+    -- caller exactly ONCE at creation time and is unrecoverable after.
+    -- key_prefix stores the first 12 chars (qaesitor_.... style)
+    -- so the listing UI can identify which key is which without
+    -- exposing the secret.
+    CREATE TABLE IF NOT EXISTS api_keys (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL,
+      key_hash TEXT UNIQUE NOT NULL,
+      key_prefix TEXT NOT NULL,
+      name TEXT NOT NULL,
+      last_used_at DATETIME,
+      created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+      expires_at DATETIME
+    );
+    CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id);
+    CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash);
   `);
 }
 

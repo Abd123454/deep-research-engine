@@ -14,8 +14,10 @@
 // local convenience), but a server-start warning is logged.
 
 import { NextRequest, NextResponse } from "next/server";
+import * as crypto from "crypto";
 import { env } from "./env";
 import { logger } from "./logger";
+import { getDb } from "./db";
 
 const REALM = "Quaesitor";
 const FALLBACK_USER_ID = "default";
@@ -216,4 +218,159 @@ export function requireAdminAccess(req: NextRequest): NextResponse | null {
     );
   }
   return null;
+}
+
+// ---------- API key auth (developer platform) ----------
+//
+// P1 feature: programmatic API access via `Bearer qaesitor_...` tokens.
+// The /api/v1/* namespace uses `requireApiKey` instead of `requireAuth`.
+// Keys are SHA-256 hashed at rest — the raw key is shown to the caller
+// exactly once at creation time (see POST /api/keys) and is unrecoverable.
+//
+// The key format is `qaesitor_${randomBytes(24).toString("base64url")}`
+// (~32 chars of entropy after the prefix). The prefix `qaesitor_` is what
+// we sniff for in the Authorization header before hashing — it lets us
+// distinguish an API-key request from a Basic-auth request without
+// parsing the credential payload.
+
+const API_KEY_PREFIX = "qaesitor_";
+const API_KEY_BEARER_PREFIX = `Bearer ${API_KEY_PREFIX}`;
+
+/**
+ * Lazily create the `api_keys` table if it doesn't exist. This is called
+ * from `requireApiKey` so the public-API namespace keeps working even on
+ * a fresh database that was never migrated. The table is also created
+ * eagerly by `initSqliteSchema` (see src/lib/db.ts) — this is just
+ * defense-in-depth.
+ */
+function ensureApiKeysTable(): void {
+  try {
+    const db = getDb();
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS api_keys (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        key_hash TEXT UNIQUE NOT NULL,
+        key_prefix TEXT NOT NULL,
+        name TEXT NOT NULL,
+        last_used_at DATETIME,
+        created_at DATETIME NOT NULL DEFAULT (datetime('now')),
+        expires_at DATETIME
+      )
+    `);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_user ON api_keys(user_id)`);
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
+  } catch (err) {
+    // Fail-soft — if the table can't be created (read-only FS, etc.),
+    // the lookup below will throw and the caller gets a 500. We log
+    // here so the operator sees the underlying error.
+    logger.warn(
+      { module: "auth", err: err instanceof Error ? err.message : String(err) },
+      "Failed to ensure api_keys table exists"
+    );
+  }
+}
+
+/**
+ * Validate a `Bearer qaesitor_...` Authorization header against the
+ * `api_keys` table. Returns the resolved `{ userId }` on success, or a
+ * 401/500 `NextResponse` on failure.
+ *
+ * On success, the key's `last_used_at` column is updated (best-effort —
+ * a failure to update the timestamp does NOT block the request).
+ *
+ * SECURITY: the lookup is by SHA-256 hash, never by raw key. The raw key
+ * is not stored anywhere — not in the DB, not in logs, not in metrics.
+ * Constant-time comparison is unnecessary here because the lookup is via
+ * a hash index (the DB's own B-tree compare is not timing-sensitive in a
+ * way that leaks the hash).
+ *
+ * Use this in /api/v1/* routes INSTEAD of `requireAuth`:
+ *
+ *   const apiAuth = requireApiKey(req);
+ *   if (apiAuth instanceof NextResponse) return apiAuth;
+ *   const userId = apiAuth.userId;
+ */
+export function requireApiKey(
+  req: NextRequest
+): { userId: string } | NextResponse {
+  const authHeader = req.headers.get("authorization");
+  if (!authHeader?.startsWith(API_KEY_BEARER_PREFIX)) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "API key required. Use 'Bearer qaesitor_...'.",
+      },
+      {
+        status: 401,
+        headers: {
+          "WWW-Authenticate": 'Bearer realm="Quaesitor API"',
+        },
+      }
+    );
+  }
+
+  const rawKey = authHeader.slice(API_KEY_BEARER_PREFIX.length);
+
+  // Defensive: a header that starts with the prefix but has no key body
+  // is treated as missing (401, not 500).
+  if (!rawKey) {
+    return NextResponse.json(
+      { ok: false, error: "API key required. Use 'Bearer qaesitor_...'." },
+      { status: 401 }
+    );
+  }
+
+  const keyHash = crypto.createHash("sha256").update(rawKey).digest("hex");
+
+  try {
+    ensureApiKeysTable();
+    const db = getDb();
+    const row = db
+      .prepare(
+        "SELECT user_id FROM api_keys WHERE key_hash = ? AND (expires_at IS NULL OR expires_at > datetime('now'))"
+      )
+      .get(keyHash) as { user_id: string } | undefined;
+
+    if (!row) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid or expired API key." },
+        { status: 401 }
+      );
+    }
+
+    // Best-effort: stamp `last_used_at`. A failure here MUST NOT block
+    // the request — we already verified the key. Logged at warn level
+    // so a misbehaving DB shows up in ops dashboards without breaking
+    // the API call.
+    try {
+      db.prepare(
+        "UPDATE api_keys SET last_used_at = datetime('now') WHERE key_hash = ?"
+      ).run(keyHash);
+    } catch (err) {
+      logger.warn(
+        { module: "auth", err: err instanceof Error ? err.message : String(err) },
+        "Failed to update api_keys.last_used_at"
+      );
+    }
+
+    return { userId: row.user_id };
+  } catch (err) {
+    logger.error(
+      { module: "auth", err: err instanceof Error ? err.message : String(err) },
+      "API key validation failed (DB error)"
+    );
+    return NextResponse.json(
+      { ok: false, error: "API key validation failed." },
+      { status: 500 }
+    );
+  }
+}
+
+/**
+ * Constant-time string comparison. Re-exported for tests that want to
+ * verify the auth module's internal helper. Not part of the public API.
+ */
+export function _timingSafeEqual(a: string, b: string): boolean {
+  return timingSafeEqual(a, b);
 }

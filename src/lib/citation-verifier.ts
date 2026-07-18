@@ -14,6 +14,22 @@
 //                 a simplified NLI check using keyword overlap + negation words.
 //                 Not full NLI — it catches obvious contradictions but will miss
 //                 paraphrased or antonym-based contradictions.
+//
+// P1 enhancement: an LLM-backed NLI verifier (`verifyWithNLI`) is available
+// via the async `verifyCitationWithNLI` / `verifyAllCitationsWithNLI`
+// wrappers. It uses the fast LLM to classify the claim-source relationship
+// as "supports" | "contradicts" | "irrelevant" with full paraphrase
+// understanding. The result is surfaced as `nliVerdict` on the
+// `CitationCheck` and cached for 7 days (TTL) keyed by
+// `nli:${sha256(claim+source)}`.
+//
+// The NLI pass is gated behind `NLI_VERIFIER_ENABLED === "true"` — it is
+// OFF by default so the test suite (which exercises the sync `verifyCitation`)
+// never makes real LLM calls. Production deployments that want the deeper
+// NLI check set the env var; the sync path remains the fallback.
+
+import * as crypto from "crypto";
+import { logger } from "./logger";
 
 export interface Source {
   url: string;
@@ -34,6 +50,19 @@ export interface CitationCheck {
    * likely contradiction. Only populated when `supportsClaim === "contradicts"`.
    */
   warning?: string;
+  /**
+   * P1 enhancement: the LLM-backed NLI verdict on the claim/source
+   * relationship. Only populated when:
+   *   - the async `verifyCitationWithNLI` / `verifyAllCitationsWithNLI`
+   *     wrappers are used (the sync `verifyCitation` does NOT call the LLM),
+   *   - AND `NLI_VERIFIER_ENABLED === "true"` in the environment,
+   *   - AND the source has text content to verify against.
+   *
+   * One of "supports" | "contradicts" | "irrelevant". When the LLM call
+   * fails (network, auth, parse), the field is set to "irrelevant" (fail
+   * safe — we never want a broken LLM to upgrade a citation to "supports").
+   */
+  nliVerdict?: "supports" | "contradicts" | "irrelevant";
 }
 
 export interface VerificationReport {
@@ -467,6 +496,299 @@ export function verifyAllCitations(
   // Collect a warning string for every contradicted citation. Older
   // callers ignore `warnings`; UI surfaces that opt in can render them
   // as a banner above the verification table.
+  const warnings: string[] = [];
+  for (const d of details) {
+    if (d.supportsClaim === "contradicts" && d.warning) {
+      warnings.push(`${d.url}: ${d.warning}`);
+    }
+  }
+
+  return {
+    total: details.length,
+    verified: details.filter((d) => d.supportsClaim === "verified").length,
+    unverified: details.filter((d) => d.supportsClaim === "unverified").length,
+    contradicts: details.filter((d) => d.supportsClaim === "contradicts").length,
+    details,
+    warnings,
+  };
+}
+
+// ============================================================================
+// P1 enhancement — LLM-backed NLI (Natural Language Inference) verifier.
+// ============================================================================
+//
+// The sync `verifyCitation` above uses keyword overlap + negation detection.
+// That catches obvious contradictions ("X is not Y") but misses paraphrased
+// or antonym-based contradictions ("X is closed" vs source "X is open").
+//
+// The async wrappers below (`verifyCitationWithNLI`,
+// `verifyAllCitationsWithNLI`) layer an LLM-based NLI pass on top: they
+// ask the fast model to classify the claim/source relationship as
+// "supports" | "contradicts" | "irrelevant" with full paraphrase
+// understanding. The verdict is surfaced as `nliVerdict` on the
+// `CitationCheck` (alongside, not replacing, the sync `supportsClaim`).
+//
+// Gating:
+//   - `NLI_VERIFIER_ENABLED === "true"` must be set in the environment.
+//     OFF by default — the test suite (which calls the sync `verifyCitation`)
+//     must never make real LLM calls.
+//   - When disabled, the async wrappers fall back to the sync path and
+//     `nliVerdict` is left `undefined`.
+//
+// Caching:
+//   - Results are cached in a `Map` keyed by `nli:${sha256(claim+source)}`.
+//   - TTL is 7 days (citation/source content rarely changes; LLM calls
+//     are expensive).
+//   - The cache is process-local (in-memory). For multi-process
+//     deployments, a shared cache (Redis) would be a future enhancement.
+//   - The cache is bounded to 10_000 entries (LRU-ish eviction: when
+//     full, we drop the oldest 25% before inserting). This prevents
+//     unbounded memory growth in long-running processes.
+
+const NLI_CACHE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+const NLI_CACHE_MAX_ENTRIES = 10_000;
+
+interface NliCacheEntry {
+  verdict: "supports" | "contradicts" | "irrelevant";
+  expiresAt: number;
+}
+
+const nliCache = new Map<string, NliCacheEntry>();
+
+/**
+ * Check whether the NLI verifier is enabled. Exposed for tests so they
+ * can assert the gating behavior without setting env vars directly.
+ */
+export function isNliVerifierEnabled(): boolean {
+  return process.env.NLI_VERIFIER_ENABLED === "true";
+}
+
+/**
+ * Hash a (claim, source) pair into a stable cache key. SHA-256 truncated
+ * to 32 hex chars — collisions on 16^32 are astronomically unlikely for
+ * realistic citation volumes.
+ */
+function nliCacheKey(claim: string, sourceText: string): string {
+  const hash = crypto
+    .createHash("sha256")
+    .update(`${claim}\n---\n${sourceText}`)
+    .digest("hex");
+  return `nli:${hash.slice(0, 32)}`;
+}
+
+/**
+ * Look up a cached NLI verdict. Returns `undefined` on miss or expiry.
+ * Side-effect: evicts the expired entry on a TTL miss (lazy eviction —
+ * keeps the common path cheap).
+ */
+function nliCacheGet(key: string): NliCacheEntry | undefined {
+  const entry = nliCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() > entry.expiresAt) {
+    nliCache.delete(key);
+    return undefined;
+  }
+  return entry;
+}
+
+/**
+ * Store an NLI verdict in the cache. When the cache is full, drop the
+ * oldest 25% of entries before inserting (approximate LRU — we don't
+ * track access order, just insertion order via Map iteration).
+ */
+function nliCacheSet(
+  key: string,
+  verdict: "supports" | "contradicts" | "irrelevant"
+): void {
+  if (nliCache.size >= NLI_CACHE_MAX_ENTRIES) {
+    // Drop the oldest 25% — Map preserves insertion order, so the
+    // first N/4 entries are the oldest. This is a coarse eviction
+    // strategy but sufficient for a 10k-entry cache.
+    const dropCount = Math.floor(NLI_CACHE_MAX_ENTRIES / 4);
+    let dropped = 0;
+    for (const k of nliCache.keys()) {
+      nliCache.delete(k);
+      dropped++;
+      if (dropped >= dropCount) break;
+    }
+  }
+  nliCache.set(key, {
+    verdict,
+    expiresAt: Date.now() + NLI_CACHE_TTL_MS,
+  });
+}
+
+/**
+ * Clear the NLI cache. Exposed for tests that want to assert on cache
+ * behavior without re-running the LLM call.
+ */
+export function clearNliCache(): void {
+  nliCache.clear();
+}
+
+const NLI_PROMPT = `You are a fact-checker. Given a CLAIM and a SOURCE TEXT, determine if the source text supports, contradicts, or is irrelevant to the claim.
+
+Respond with EXACTLY one word:
+- "supports" — the source text directly supports the claim
+- "contradicts" — the source text contradicts the claim
+- "irrelevant" — the source text is not relevant to the claim
+
+Do not include any other text.`;
+
+/**
+ * Run the LLM-backed NLI classification on a (claim, sourceText) pair.
+ *
+ * Returns one of "supports" | "contradicts" | "irrelevant". The function
+ * NEVER throws — on any failure (LLM unreachable, auth error, parse
+ * failure, timeout), it returns "irrelevant" (fail safe: a broken LLM
+ * must never upgrade a citation to "supports").
+ *
+ * The claim is truncated to 500 chars and the source text to 2000 chars
+ * before being sent to the LLM — enough context for the model to make
+ * a judgment, bounded enough to keep the token cost predictable.
+ *
+ * Caching: results are cached for 7 days keyed by `nli:${hash(claim+source)}`.
+ * A cache hit does NOT call the LLM.
+ */
+async function verifyWithNLI(
+  claim: string,
+  sourceText: string
+): Promise<"supports" | "contradicts" | "irrelevant"> {
+  // Fast path: empty inputs are "irrelevant" by definition.
+  if (!claim || !sourceText) return "irrelevant";
+
+  // Cache lookup BEFORE the dynamic import — a cache hit avoids both
+  // the LLM call AND the cost of importing the llm-provider module.
+  const cacheKey = nliCacheKey(claim, sourceText);
+  const cached = nliCacheGet(cacheKey);
+  if (cached) return cached.verdict;
+
+  try {
+    // Dynamic import so the test suite (which imports this file for
+    // the sync `verifyCitation`) doesn't pull the full LLM provider
+    // graph into the test bundle. The import is only evaluated when
+    // NLI is actually invoked.
+    const { getLLM } = await import("./llm-provider");
+    const llm = await getLLM();
+    const result = await llm.fast({
+      messages: [
+        { role: "system", content: NLI_PROMPT },
+        {
+          role: "user",
+          content: `CLAIM: ${claim.slice(0, 500)}\n\nSOURCE TEXT: ${sourceText.slice(0, 2000)}\n\nVerdict:`,
+        },
+      ],
+      // Low temperature — we want a deterministic classification, not
+      // creative text generation. The model is asked for one word; a
+      // higher temperature would risk "Sure! The answer is: supports"
+      // which our parser would still handle but adds noise.
+      temperature: 0,
+      maxTokens: 10,
+    });
+    const verdict = result.content.trim().toLowerCase();
+    let parsed: "supports" | "contradicts" | "irrelevant";
+    if (verdict.includes("support")) {
+      parsed = "supports";
+    } else if (verdict.includes("contradict")) {
+      parsed = "contradicts";
+    } else {
+      parsed = "irrelevant";
+    }
+    nliCacheSet(cacheKey, parsed);
+    return parsed;
+  } catch (err) {
+    // Fail safe: a broken LLM never upgrades a citation to "supports".
+    // The error is logged at debug level (not warn/error) because NLI
+    // is an enhancement, not a critical path — operators running
+    // without an LLM key configured shouldn't see a flood of warnings.
+    logger.debug(
+      {
+        module: "citation-verifier",
+        err: err instanceof Error ? err.message : String(err),
+      },
+      "NLI verifier LLM call failed — returning 'irrelevant' (fail safe)"
+    );
+    return "irrelevant";
+  }
+}
+
+/**
+ * Async wrapper around `verifyCitation` that adds an LLM-backed NLI
+ * verdict on top of the sync verification.
+ *
+ * When `NLI_VERIFIER_ENABLED === "true"` and the source has text
+ * content, this calls `verifyWithNLI` and attaches the verdict as
+ * `nliVerdict` on the returned `CitationCheck`. The sync
+ * `supportsClaim` field is unchanged — NLI is additive, not a
+ * replacement.
+ *
+ * When NLI is disabled (the default), this is equivalent to
+ * `verifyCitation` — same return value, just wrapped in a Promise.
+ * No LLM call is made.
+ *
+ * Use this in routes that can `await` (research-engine, deep-research).
+ * Sync callers (test suite, eval runner) should keep using
+ * `verifyCitation` directly.
+ */
+export async function verifyCitationWithNLI(
+  url: string,
+  citedText: string,
+  sources: Source[]
+): Promise<CitationCheck> {
+  const base = verifyCitation(url, citedText, sources);
+
+  // Gate: NLI is opt-in via env var. When disabled, return the sync
+  // result unchanged (no LLM call, no nliVerdict field).
+  if (!isNliVerifierEnabled()) return base;
+
+  // Gate: NLI only adds value when the source has text content. If the
+  // source is URL-only (no excerpt/text), the LLM has nothing to
+  // reason about — skip the call.
+  const normalizeUrl = (u: string) =>
+    u.replace(/\/$/, "").toLowerCase().trim();
+  const normalizedCitationUrl = normalizeUrl(url);
+  const source = sources.find(
+    (s) => normalizeUrl(s.url) === normalizedCitationUrl
+  );
+  const sourceText = source?.text || source?.excerpt || "";
+  if (!sourceText) return base;
+
+  // Run NLI. The verdict is cached (7-day TTL) so repeat calls on the
+  // same (claim, source) pair are free.
+  const nliVerdict = await verifyWithNLI(citedText, sourceText);
+  return { ...base, nliVerdict };
+}
+
+/**
+ * Async wrapper around `verifyAllCitations` that adds LLM-backed NLI
+ * verdicts to each citation in the report.
+ *
+ * When NLI is disabled, this is equivalent to `verifyAllCitations`.
+ * When enabled, each `CitationCheck` in `details` gets an `nliVerdict`
+ * field populated (when the source has text). The aggregate counts
+ * (`verified`, `unverified`, `contradicts`) are based on the sync
+ * `supportsClaim` and are NOT changed by NLI — NLI is additive signal
+ * surfaced per-citation, not a replacement for the sync classification.
+ *
+ * The NLI calls are run concurrently (`Promise.all`) — for a report
+ * with 20 citations, this is 20 parallel fast-LLM calls (cached after
+ * the first run). The cache makes repeat verification of the same
+ * report essentially free.
+ */
+export async function verifyAllCitationsWithNLI(
+  report: string,
+  sources: Source[]
+): Promise<VerificationReport> {
+  // Fast path: NLI disabled → just call the sync version.
+  if (!isNliVerifierEnabled()) {
+    return verifyAllCitations(report, sources);
+  }
+
+  const citations = extractCitations(report);
+  const details = await Promise.all(
+    citations.map((c) => verifyCitationWithNLI(c.url, c.citedText, sources))
+  );
+
   const warnings: string[] = [];
   for (const d of details) {
     if (d.supportsClaim === "contradicts" && d.warning) {

@@ -38,6 +38,13 @@ export const SENSITIVE_ACTIONS = {
   "connector.create": "connector",
   "connector.delete": "connector",
   "connector.credentials_access": "connector",
+  // Developer platform — API key lifecycle. Every create / revoke is
+  // auditable so a compromised key's blast radius can be reconstructed
+  // from the audit trail. The `key_prefix` (e.g. "qaesitor_••••") is
+  // included in the metadata so the audit log identifies WHICH key was
+  // rotated without exposing the secret.
+  "apikey.create": "apikey",
+  "apikey.delete": "apikey",
   "research.start": "research",
   "research.stop": "research",
   "research.delete": "research",
