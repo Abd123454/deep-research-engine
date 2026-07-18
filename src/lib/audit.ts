@@ -61,6 +61,26 @@ export const SENSITIVE_ACTIONS = {
   // is for the narrower `/api/memory/export` endpoint that exports ONLY
   // the user's long-term memories + embeddings + access metadata.
   "memory.export": "memory",
+  // RBAC — multi-tenant workspace membership lifecycle. Every create /
+  // invite / remove is auditable so a workspace admin's invite/remove
+  // history can be reconstructed from the audit trail. The workspace
+  // (project) id and the target member's userId are included in the
+  // metadata so the audit log identifies WHO was added/removed by WHOM.
+  "workspace.create": "workspace",
+  "workspace.invite": "workspace",
+  "workspace.remove": "workspace",
+  // MCP transport lifecycle — connecting to / disconnecting from external
+  // MCP servers is an auditable action because it potentially exposes
+  // research/chat content to a third-party server. The server id and
+  // transport type (stdio / sse) are recorded in metadata.
+  "mcp.connect": "mcp",
+  "mcp.disconnect": "mcp",
+  // Computer Use — every browser automation action (click / type /
+  // scroll / navigate / screenshot) is auditable because the model can
+  // do anything a desktop user can. The action type and (for click /
+  // scroll) the target coordinates are recorded. The base64 screenshot
+  // is NOT logged (size + privacy).
+  "computer_use.action": "computer_use",
 } as const;
 
 export type SensitiveAction = keyof typeof SENSITIVE_ACTIONS;
