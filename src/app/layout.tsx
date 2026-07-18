@@ -8,6 +8,8 @@ import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SessionProvider } from "@/components/SessionProvider";
 import { CookieConsent } from "@/components/CookieConsent";
 import { FeedbackWidget } from "@/components/FeedbackWidget";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
+import { OfflineIndicator } from "@/components/pwa/OfflineIndicator";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -81,6 +83,8 @@ export default function RootLayout({
             {children}
             <Toaster />
             <SonnerToaster />
+            <InstallPrompt />
+            <OfflineIndicator />
             <CookieConsent />
             <FeedbackWidget />
             </SessionProvider>

@@ -8,10 +8,11 @@ import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
 import { requireAuth } from "@/lib/auth";
+import { NextRequest } from "next/server";
 
 const MAX_MESSAGE_CHARS = 10_000;
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const authFail = requireAuth(req);
   if (authFail) return authFail;
 

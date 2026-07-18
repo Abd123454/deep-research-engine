@@ -51,7 +51,6 @@ if (
   !process.env.CREDENTIALS_ENCRYPTION_KEY &&
   !process.env.AUTH_PASSWORD
 ) {
-  // eslint-disable-next-line no-console
   console.warn(
     "[SECURITY] Using dev fallback key for credentials encryption. " +
       "Set CREDENTIALS_ENCRYPTION_KEY or AUTH_PASSWORD for production."
