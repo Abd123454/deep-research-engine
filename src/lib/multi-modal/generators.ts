@@ -45,7 +45,7 @@ export async function generateVoice(text: string, options: { voice?: string } = 
 
 export interface VideoGenResult { url: string; duration: number; cost: number; }
 
-export async function generateVideo(prompt: string): Promise<VideoGenResult> {
+export async function generateVideo(_prompt: string): Promise<VideoGenResult> {
   if (process.env.RUNWAY_API_KEY) {
     throw new Error("Runway ML integration requires async polling — not yet implemented.");
   }
@@ -54,7 +54,7 @@ export async function generateVideo(prompt: string): Promise<VideoGenResult> {
 
 export interface MusicGenResult { url: string; duration: number; cost: number; }
 
-export async function generateMusic(prompt: string): Promise<MusicGenResult> {
+export async function generateMusic(_prompt: string): Promise<MusicGenResult> {
   if (process.env.SUNO_API_KEY) {
     throw new Error("Suno API integration requires async polling — not yet implemented.");
   }

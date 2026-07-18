@@ -4,8 +4,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { trackEvent } from "@/lib/analytics";
 import { analyzeImage } from "@/lib/vision";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const { image, mimeType, prompt } = body;
@@ -20,9 +24,9 @@ export async function POST(req: NextRequest) {
   trackEvent("default", "feature_used", { feature: "vision" });
     const result = await analyzeImage(image, mimeType, prompt);
     return NextResponse.json({ ok: true, ...result });
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { ok: false, error: err instanceof Error ? err.message : "Vision analysis failed." },
+      { ok: false, error: "Vision analysis failed." },
       { status: 500 }
     );
   }

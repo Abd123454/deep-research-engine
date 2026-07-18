@@ -3,11 +3,15 @@
 
 import { NextRequest } from "next/server";
 import { getDocument, deleteDocument } from "@/lib/document-store";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const doc = getDocument(id);
   if (!doc) {
@@ -29,9 +33,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const deleted = deleteDocument(id);
   if (!deleted) {

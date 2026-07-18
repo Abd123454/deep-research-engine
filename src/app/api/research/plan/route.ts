@@ -149,8 +149,9 @@ export async function POST(req: NextRequest) {
       },
       retriever: getRetriever(),
     });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+  } catch {
+    // Return only a generic message to the client to avoid leaking stack
+    // traces or internal paths from downstream failures.
+    return NextResponse.json({ ok: false, error: "Plan generation failed." }, { status: 500 });
   }
 }

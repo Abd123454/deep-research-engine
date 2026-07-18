@@ -3,11 +3,15 @@
 
 import { NextRequest } from "next/server";
 import { getSession, deleteSession } from "@/lib/session-store";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const session = getSession(id);
   if (!session) {
@@ -17,9 +21,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const deleted = deleteSession(id);
   if (!deleted) {

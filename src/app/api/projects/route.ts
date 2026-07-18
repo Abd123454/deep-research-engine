@@ -6,10 +6,14 @@ import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { ProjectRow } from "@/lib/sqlite-types";
+import { requireAuth } from "@/lib/auth";
 
 const DEFAULT_USER_ID = "default";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   if (isPostgresAvailable()) {
     try {
       const prisma = await getPrismaDb();
@@ -57,6 +61,9 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const name = body.name?.trim();

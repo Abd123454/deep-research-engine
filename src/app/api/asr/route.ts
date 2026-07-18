@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { transcribeAudio } from "@/lib/asr";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const { audio, format, language } = body;

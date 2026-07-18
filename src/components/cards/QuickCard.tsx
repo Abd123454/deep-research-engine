@@ -10,6 +10,7 @@ import { Zap, AlertCircle } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import { useT } from "@/components/i18n/locale-provider";
 import { ExportMenu } from "@/components/export/ExportMenu";
+import { TTSButton } from "@/components/voice/TTSButton";
 import { CompassLogo } from "@/components/CompassLogo";
 
 interface QuickCardProps {
@@ -141,7 +142,8 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
                 <span className="inline-block h-3 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
               )}
               {!streaming && (
-                <div className="ml-auto">
+                <div className="ml-auto flex items-center gap-0.5">
+                  <TTSButton text={response} />
                   <ExportMenu content={response} filename="quick-answer" />
                 </div>
               )}

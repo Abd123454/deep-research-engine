@@ -5,13 +5,17 @@
 // (small file, no caching needed at this layer — Next.js will cache the
 // route itself in production).
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { readFileSync } from "fs";
 import { join } from "path";
+import { requireAuth } from "@/lib/auth";
 
-export const dynamic = "force-static";
+export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const specPath = join(process.cwd(), "docs", "api", "openapi.yaml");
   const spec = readFileSync(specPath, "utf-8");
   return new NextResponse(spec, {

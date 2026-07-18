@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { trackEvent } from "@/lib/analytics";
 import { synthesizeSpeech } from "@/lib/tts";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const { text, voice, speed } = body;

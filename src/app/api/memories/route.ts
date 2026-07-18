@@ -3,13 +3,20 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getMemories, storeMemories, type MemoryExtraction } from "@/lib/memory-extractor";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const memories = await getMemories(null);
   return NextResponse.json({ ok: true, memories });
 }
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const memories: MemoryExtraction[] = Array.isArray(body.memories) ? body.memories : [];

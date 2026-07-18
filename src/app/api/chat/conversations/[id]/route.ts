@@ -6,11 +6,15 @@ import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { ConversationRow, MessageRow } from "@/lib/sqlite-types";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
 
   if (isPostgresAvailable()) {
@@ -51,9 +55,12 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
 
   if (isPostgresAvailable()) {

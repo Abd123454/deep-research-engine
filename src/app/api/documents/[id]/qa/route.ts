@@ -11,11 +11,15 @@ import {
   type QAMode,
 } from "@/lib/document-qa";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
+import { requireAuth } from "@/lib/auth";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const doc = getDocument(id);
   if (!doc) {

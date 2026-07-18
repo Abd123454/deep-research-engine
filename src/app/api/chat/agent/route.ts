@@ -7,6 +7,7 @@ import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agen
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { requireAuth } from "@/lib/auth";
 import {
   getOrCreateConversation,
   saveMessage,
@@ -23,6 +24,9 @@ const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   let body: { conversationId?: string; message?: string; skill?: string };
   try { body = await req.json(); } catch {
     return Response.json({ error: "Invalid JSON." }, { status: 400 });

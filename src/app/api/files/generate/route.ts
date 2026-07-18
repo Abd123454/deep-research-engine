@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { trackEvent } from "@/lib/analytics";
 import { generateFile, type FileType } from "@/lib/file-generator";
+import { requireAuth } from "@/lib/auth";
 
 const VALID_TYPES: FileType[] = ["pdf", "docx", "pptx", "xlsx", "md"];
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const { type, title, content, userId } = body;
@@ -29,7 +33,7 @@ export async function POST(req: NextRequest) {
       mimeType: result.mimeType,
       key: result.key,
     });
-  } catch (err) {
-    return NextResponse.json({ ok: false, error: err instanceof Error ? err.message : "File generation failed." }, { status: 500 });
+  } catch {
+    return NextResponse.json({ ok: false, error: "File generation failed." }, { status: 500 });
   }
 }

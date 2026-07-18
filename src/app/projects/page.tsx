@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Plus, Folder, FileText, Clock } from "lucide-react";
+import { Plus, Folder, Clock } from "lucide-react";
 
 interface Project {
   id: string;
@@ -17,7 +17,6 @@ export default function ProjectsPage() {
   const [showCreate, setShowCreate] = React.useState(false);
   const [newName, setNewName] = React.useState("");
   const [newDesc, setNewDesc] = React.useState("");
-  const [newInstructions, setNewInstructions] = React.useState("");
 
   React.useEffect(() => {
     fetch("/api/projects")

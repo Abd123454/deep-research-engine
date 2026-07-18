@@ -4,14 +4,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/research-store";
 import { toPublicJob } from "@/lib/types";
+import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const job = getJob(id);
   if (!job) {

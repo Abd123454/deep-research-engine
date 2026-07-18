@@ -7,10 +7,14 @@ import { getLLM, type LLMMessage } from "@/lib/llm-provider";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
+import { requireAuth } from "@/lib/auth";
 
 const MAX_MESSAGE_CHARS = 10_000;
 
 export async function POST(req: Request) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   // Rate limit — same limiter as research, to prevent abuse.
   const ip =
     req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||

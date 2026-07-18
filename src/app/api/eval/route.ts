@@ -65,16 +65,19 @@ export async function POST(req: NextRequest) {
   try {
     const result = await runEvalSuite({ queries: body.queries });
     return NextResponse.json(result);
-  } catch (err) {
+  } catch {
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Eval failed" },
+      { error: "Eval failed" },
       { status: 500 }
     );
   }
 }
 
 // GET: return the dataset (metadata only, no execution).
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   return NextResponse.json({
     queries: EVAL_DATASET.map((q) => ({
       id: q.id,

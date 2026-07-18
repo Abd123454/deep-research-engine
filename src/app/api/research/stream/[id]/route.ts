@@ -14,9 +14,10 @@
 import * as Sentry from "@sentry/nextjs";
 
 
-import { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/research-store";
 import { toPublicJob } from "@/lib/types";
+import { requireAuth } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -26,13 +27,16 @@ const STREAMING_SAMPLE_INTERVAL_MS = 100; // faster polling during report stream
 const MAX_STREAM_DURATION_MS = 30 * 60 * 1000;
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   const { id } = await params;
   const job = getJob(id);
   if (!job) {
-    return new Response(JSON.stringify({ ok: false, error: "Job not found." }), {
+    return new NextResponse(JSON.stringify({ ok: false, error: "Job not found." }), {
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
@@ -139,7 +143,7 @@ export async function GET(
 }
       }
 
-      _req.signal.addEventListener("abort", () => {
+      req.signal.addEventListener("abort", () => {
         cleanup();
       });
     },

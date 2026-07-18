@@ -5,10 +5,14 @@
 
 import { NextRequest } from "next/server";
 import { exportReport, isSupportedFormat } from "@/lib/export";
+import { requireAuth } from "@/lib/auth";
 
 const MAX_CONTENT_CHARS = 500_000; // 500K chars ≈ a very long report
 
 export async function POST(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   let body: { content?: string; format?: string; filename?: string };
   try {
     body = await req.json();
@@ -48,9 +52,9 @@ export async function POST(req: NextRequest) {
         "Content-Length": String(result.buffer.length),
       },
     });
-  } catch (err) {
+  } catch {
     return Response.json(
-      { error: err instanceof Error ? err.message : "Export failed." },
+      { error: "Export failed." },
       { status: 500 }
     );
   }

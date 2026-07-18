@@ -22,7 +22,9 @@ import {
   Globe, Microscope, Terminal, Image as ImageIcon,
   Volume2, FileText, Users, Wrench,
 } from "lucide-react";
-import { useT } from "@/components/i18n/locale-provider";
+import { useT, useLocale } from "@/components/i18n/locale-provider";
+import { DepthIndicator, type Depth } from "@/components/DepthIndicator";
+import { MicButton } from "@/components/voice/MicButton";
 import { cn } from "@/lib/utils";
 
 export type InputMode = "auto" | "research" | "quick" | "chat" | "swarm";
@@ -86,6 +88,7 @@ const ALLOWED_TYPES = [
 
 export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaRef: externalRef, mode: controlledMode, onModeChange }: UnifiedInputProps) {
   const t = useT();
+  const { locale } = useLocale();
   const [internalText, setInternalText] = React.useState("");
   const text = value !== undefined ? value : internalText;
   const setText = (v: string) => {
@@ -103,12 +106,20 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
   };  const [modeOpen, setModeOpen] = React.useState(false);
   const [tools, setTools] = React.useState<ToolKey[]>([]);
   const [toolsOpen, setToolsOpen] = React.useState(false);
+  const [depth, setDepth] = React.useState<Depth>("standard");
   const [error, setError] = React.useState("");
   const internalTextareaRef = React.useRef<HTMLTextAreaElement>(null);
   const textareaRef = externalRef || internalTextareaRef;
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const modeRef = React.useRef<HTMLDivElement>(null);
   const toolsRef = React.useRef<HTMLDivElement>(null);
+
+  // Mic transcript: append to existing text (with separator if needed).
+  function handleTranscript(transcript: string) {
+    const trimmed = transcript.trim();
+    if (!trimmed) return;
+    setText(text ? `${text} ${trimmed}` : trimmed);
+  }
 
   // Auto-resize textarea.
   React.useEffect(() => {
@@ -283,6 +294,9 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                 <Paperclip className="h-4 w-4" />
               </button>
 
+              {/* Voice input — microphone records audio, sends to /api/asr, appends transcript */}
+              <MicButton onTranscript={handleTranscript} language={locale} />
+
               {/* Tools dropdown */}
               <div ref={toolsRef} className="relative">
                 <button
@@ -380,6 +394,11 @@ export function UnifiedInput({ onSend, disabled, value, onValueChange, textareaR
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Depth indicator — Quaesitor signature: ●○○ Quick / ●●○ Standard / ●●● Deep */}
+              <div className="hidden sm:flex items-center pl-1">
+                <DepthIndicator depth={depth} onChange={setDepth} />
               </div>
             </div>
 

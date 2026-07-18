@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserPreferenceRow } from "@/lib/sqlite-types";
 import { logger } from "@/lib/logger";
+import { requireAuth } from "@/lib/auth";
 
 const DEFAULT_PREFS = {
   preferredLanguage: "auto",
@@ -16,7 +17,10 @@ const DEFAULT_PREFS = {
   timezone: null as string | null,
 };
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   // Try Postgres.
   if (isPostgresAvailable()) {
     try {
@@ -56,6 +60,9 @@ export async function GET() {
 }
 
 export async function PUT(req: NextRequest) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+
   try {
     const body = await req.json();
     const prefs = {
