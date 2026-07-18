@@ -19,6 +19,7 @@ import {
 // `= 15`, causing inconsistent tool-call ceilings depending on the
 // entrypoint.
 import { MAX_TOOL_ITERATIONS } from "@/lib/swarm-constants";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 const MAX_HISTORY = 20;
 const DEFAULT_USER_ID = "default";
@@ -117,14 +118,19 @@ export async function POST(req: NextRequest) {
         controller.close();
         // Memory consent gate (Ethical #4) + explicit memory command (Ethical #5).
         // Explicit "remember that..." commands bypass the opt-in gate.
+        // V3 audit fix: `isMemoryExtractionEnabled` now reads the consent
+        // ledger (GDPR Art. 7) and is async — `await` it.
         const memoryCmd = detectMemoryCommand(message);
         if (memoryCmd.isMemoryCommand && memoryCmd.content) {
           storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
-        } else if (isMemoryExtractionEnabled(userId)) {
+        } else if (await isMemoryExtractionEnabled(userId)) {
           extractAndStoreMemories(userId, `user: ${message}\nassistant: ${fullResponse}`).catch(() => {});
         }
       } catch (err) {
-        send({ error: err instanceof Error ? err.message : String(err) });
+        // P0-10: sanitize the error before sending to the client —
+        // LLM provider errors can include the request URL, Authorization
+        // header, or connection string, all of which contain secrets.
+        send({ error: sanitizeError(err) });
         controller.close();
       } finally {
         releaseConcurrency(ip);

@@ -647,18 +647,78 @@ function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise
   ]);
 }
 
+export interface RunSwarmOptions {
+  /**
+   * The user invoking the swarm. Used for per-user isolation of any
+   * memory recall / tool execution performed by swarm workers, and
+   * for plan-limit attribution. When omitted, the swarm runs in
+   * "legacy" mode with no per-user scoping (kept for backward
+   * compatibility with the existing tests and the eval runner).
+   */
+  userId?: string;
+  /**
+   * Cooperative-cancellation signal. When the caller aborts (e.g. the
+   * HTTP client closed the SSE stream), the swarm checks `signal.aborted`
+   * between phases and short-circuits. The signal is also forwarded
+   * to LLM calls that opt into supporting it (currently none — the
+   * `LLMCompletionOptions` interface does not yet accept `signal` —
+   * but the field is plumbed through so future LLM provider changes
+   * can wire it up without touching the swarm layer again).
+   */
+  signal?: AbortSignal;
+}
+
 export async function runSwarm(
   task: string,
-  emit: SwarmEventEmitter
+  emit: SwarmEventEmitter,
+  opts?: RunSwarmOptions
 ): Promise<{ plan: SwarmPlan; finalReport: string }> {
+  // P0-3 (per-user isolation): capture opts up-front so workers/synth
+  // can read userId/signal from the closure without threading them
+  // through every internal call.
+  const userId = opts?.userId;
+  const signal = opts?.signal;
+
+  // Cooperative-cancellation helper: if the caller's AbortSignal has
+  // fired, throw a synthetic "swarm cancelled" error so the current
+  // phase bails out cleanly. Called between phases (plan → workers,
+  // workers → synth) and once before each phase starts.
+  const assertNotCancelled = (phase: string) => {
+    if (signal?.aborted) {
+      throw new Error(`Swarm cancelled before ${phase} (caller aborted).`);
+    }
+  };
+
   // Phase 1: Plan.
+  assertNotCancelled("plan");
   const subtasks = await planSwarm(task);
   const plan: SwarmPlan = { taskId: crypto.randomUUID(), task, subtasks };
   emit({ type: "swarm_start", taskId: plan.taskId, plan });
 
+  // P0-3: log the userId (when present) so swarm invocations are
+  // attributable in the audit trail. Falling back to "anonymous" for
+  // legacy callers (eval runner, tests) keeps the log line shape
+  // stable.
+  logger.debug(
+    { module: "swarm", taskId: plan.taskId, userId: userId ?? "anonymous", subtaskCount: subtasks.length },
+    "Swarm started"
+  );
+
   // Phase 2: Run workers in parallel (with per-worker timeout).
+  assertNotCancelled("workers");
   const workerResults = await Promise.allSettled(
     subtasks.map(async (subtask) => {
+      // P0-3: per-worker cancellation check. If the caller aborted
+      // mid-flight (e.g. user closed the SSE tab), skip workers that
+      // haven't started yet.
+      if (signal?.aborted) {
+        emit({ type: "agent_done", agentId: subtask.id, error: "cancelled" });
+        return {
+          role: subtask.role,
+          subtask: subtask.description,
+          output: "(agent skipped: swarm cancelled)",
+        };
+      }
       emit({ type: "agent_start", agentId: subtask.id, role: subtask.role, task: subtask.description });
       try {
         const output = await withTimeout(
@@ -686,6 +746,7 @@ export async function runSwarm(
   );
 
   // Phase 3: Synthesize (with timeout).
+  assertNotCancelled("synthesis");
   const finalReport = await withTimeout(
     synthesizeSwarm(task, outputs, emit),
     SYNTH_TIMEOUT_MS,

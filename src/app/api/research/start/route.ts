@@ -17,6 +17,7 @@ import { enqueueResearch, isQueueAvailable } from "@/lib/queue";
 import { getCachedResearch } from "@/lib/research-cache";
 import { persistJob } from "@/lib/research-store";
 import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -212,13 +213,16 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         // Enqueue failed (Redis down mid-request?) — fall back to inline
         // so the user's request still completes.
+        // P0-10: sanitize the error before logging — BullMQ/Redis
+        // errors can include the connection URL with embedded
+        // credentials.
         logger.error(
-          { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
+          { module: "research", jobId: job.id, err: sanitizeError(err) },
           "enqueueResearch failed — falling back to inline execution"
         );
         runResearch(job.id).catch((e: unknown) => {
           logger.error(
-            { module: "research", jobId: job.id, err: e instanceof Error ? e.message : String(e) },
+            { module: "research", jobId: job.id, err: sanitizeError(e) },
             "runResearch threw"
           );
         });
@@ -229,8 +233,11 @@ export async function POST(req: NextRequest) {
         "REDIS_URL not set — running research inline. For production, set REDIS_URL and run `bun run worker` to use BullMQ."
       );
       runResearch(job.id).catch((err: unknown) => {
+        // P0-10: sanitize the error before logging — research-engine
+        // failures can include LLM provider errors with the request
+        // URL / Authorization header.
         logger.error(
-          { module: "research", jobId: job.id, err: err instanceof Error ? err.message : String(err) },
+          { module: "research", jobId: job.id, err: sanitizeError(err) },
           "runResearch threw"
         );
       });

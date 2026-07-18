@@ -7,6 +7,7 @@ import { stripe } from "@/lib/stripe";
 import { logger } from "@/lib/logger";
 import { getDb } from "@/lib/db";
 import { logSensitiveAction } from "@/lib/audit";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export async function POST(req: NextRequest) {
   if (!stripe) return NextResponse.json({ error: "Stripe not configured" }, { status: 503 });
@@ -19,7 +20,11 @@ export async function POST(req: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, sig, process.env.STRIPE_WEBHOOK_SECRET || "");
   } catch (err) {
-    logger.error({ err: err instanceof Error ? err.message : String(err) }, "Stripe webhook signature verification failed");
+    // P0-10: sanitize the error before logging — Stripe signature
+    // verification errors can include the raw header value, which may
+    // contain the webhook signing secret if a buggy upstream proxy
+    // echoed it back.
+    logger.error({ err: sanitizeError(err) }, "Stripe webhook signature verification failed");
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -61,7 +66,9 @@ export async function POST(req: NextRequest) {
             }
           }
         } catch (err) {
-          logger.warn({ err: err instanceof Error ? err.message : String(err) }, "Failed to read plan from Stripe subscription, falling back to metadata");
+          // P0-10: sanitize the error before logging — Stripe API
+          // errors can include the request URL with the secret key.
+          logger.warn({ err: sanitizeError(err) }, "Failed to read plan from Stripe subscription, falling back to metadata");
           if (session.metadata?.plan && ["free", "pro", "team", "enterprise"].includes(session.metadata.plan)) {
             plan = session.metadata.plan;
           }
@@ -92,12 +99,55 @@ export async function POST(req: NextRequest) {
       }
 
       case "customer.subscription.updated": {
+        // V4 audit fix: previously this handler updated ONLY the
+        // subscription `status`. If a customer upgraded / downgraded
+        // their plan via the Stripe portal (e.g. pro → team), the
+        // `plan` column in our DB stayed stale — causing plan-limits
+        // enforcement to use the wrong tier until the next checkout.
+        // We now retrieve the full subscription from Stripe, read the
+        // price's `lookup_key` (which we set to "free" | "pro" |
+        // "team" | "enterprise" when creating products), and update
+        // both `status` and `plan` in one query.
         const sub = event.data.object;
         try {
           const db = getDb();
-          db.prepare(`UPDATE subscriptions SET status = ?, updated_at = datetime('now') WHERE stripe_subscription_id = ?`)
-            .run(sub.status, sub.id);
-          logger.info({ subscriptionId: sub.id, status: sub.status }, "Subscription updated");
+
+          // Read the actual plan from the Stripe price lookup_key.
+          // Falls back to status-only update if Stripe is unreachable
+          // or the price has no lookup_key (shouldn't happen for our
+          // products, but we don't want to break the webhook on a
+          // malformed price).
+          let plan: string | undefined;
+          if (stripe) {
+            try {
+              const fullSub = await stripe.subscriptions.retrieve(sub.id, {
+                expand: ["items.data.price"],
+              });
+              const lookupKey = fullSub.items.data[0]?.price?.lookup_key;
+              if (lookupKey && ["free", "pro", "team", "enterprise"].includes(lookupKey)) {
+                plan = lookupKey;
+              }
+            } catch (err) {
+              logger.warn(
+                { err: sanitizeError(err), subscriptionId: sub.id },
+                "Failed to retrieve subscription from Stripe — updating status only"
+              );
+            }
+          }
+
+          // Update both status and plan when we have a valid plan;
+          // otherwise fall back to status-only (preserves the previous
+          // behavior for the malformed-price edge case).
+          if (plan) {
+            db.prepare(
+              "UPDATE subscriptions SET status = ?, plan = ?, updated_at = datetime('now') WHERE stripe_subscription_id = ?"
+            ).run(sub.status, plan, sub.id);
+          } else {
+            db.prepare(
+              "UPDATE subscriptions SET status = ?, updated_at = datetime('now') WHERE stripe_subscription_id = ?"
+            ).run(sub.status, sub.id);
+          }
+          logger.info({ subscriptionId: sub.id, status: sub.status, plan }, "Subscription updated");
         } catch (err) {
   Sentry.captureException(err);
 /* ignore */ 

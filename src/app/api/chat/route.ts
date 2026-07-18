@@ -29,6 +29,7 @@ import {
   type ChatMessage,
 } from "@/lib/chat-store";
 import { requireAuth, getUserId } from "@/lib/auth";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 const MAX_HISTORY = 20;
 
@@ -200,8 +201,9 @@ export async function POST(req: NextRequest) {
         // Non-blocking: extract memories.
         //
         // Memory consent gate (Ethical #4): automatic extraction only runs
-        // when the user has explicitly opted in via /api/preferences/memory.
-        // Default is FALSE (opt-in, not opt-out).
+        // when the user has explicitly granted the `memoryExtraction`
+        // consent in the consent_ledger table (GDPR Art. 7 compliant —
+        // V3 audit fix). Default is FALSE (opt-in, not opt-out).
         //
         // Exception (Ethical #5): if the user's message started with an
         // explicit memory command ("remember that...", "تذكر أن..."), store
@@ -210,11 +212,15 @@ export async function POST(req: NextRequest) {
         const memoryCmd = detectMemoryCommand(message);
         if (memoryCmd.isMemoryCommand && memoryCmd.content) {
           storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
-        } else if (isMemoryExtractionEnabled(userId)) {
+        } else if (await isMemoryExtractionEnabled(userId)) {
           extractAndStoreMemories(userId, `user: ${message}\nassistant: ${result.content}`).catch(() => {});
         }
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        // P0-10: sanitize the error before sending to the client —
+        // downstream LLM provider errors can include the request URL,
+        // Authorization header, or connection string, all of which
+        // contain secrets.
+        const msg = sanitizeError(err);
         controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
         controller.close();
       } finally {

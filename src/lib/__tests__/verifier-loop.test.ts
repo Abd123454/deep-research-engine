@@ -38,10 +38,10 @@ vi.mock("../llm-provider", () => {
 });
 
 // Mock code-sandbox to simulate code execution failures.
+// V2 audit fix: the vm helpers (runJavaScript, runPython) have been
+// removed from code-sandbox.ts. Only `runCode` remains.
 vi.mock("../code-sandbox", () => ({
   runCode: vi.fn(),
-  runJavaScript: vi.fn(),
-  runPython: vi.fn(),
 }));
 
 // Mock agent-tools executeToolCall and detectToolCall.

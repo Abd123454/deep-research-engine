@@ -9,6 +9,27 @@ vi.mock("../retriever", () => ({
   ]),
 }));
 
+// V2 audit fix: the vm fallback was removed from code-sandbox.ts.
+// Docker is the only execution backend — but the react-agent test
+// suite runs in CI without Docker. Mock `runCode` so the `run_code`
+// tool tests focus on the wrapper logic, not on actual code execution.
+// The mock echoes a deterministic output that the assertions look for.
+//
+// `vi.hoisted()` ensures the mock is available when the (hoisted)
+// `vi.mock` factory runs — top-level `const` declarations are NOT
+// visible inside `vi.mock` factories because the factory is hoisted
+// above them.
+const { mockRunCode } = vi.hoisted(() => ({
+  mockRunCode: vi.fn(async (language: string, _code: string) => ({
+    success: true,
+    output: language === "python" ? "9" : "4",
+    executionTimeMs: 1,
+  })),
+}));
+vi.mock("../code-sandbox", () => ({
+  runCode: mockRunCode,
+}));
+
 // Mock fetch for read_file tool.
 const fetchMock = vi.fn();
 vi.stubGlobal("fetch", fetchMock);
@@ -19,6 +40,12 @@ import { getSkill } from "../skills";
 beforeEach(() => {
   fetchMock.mockReset();
   vi.clearAllMocks();
+  // Default: runCode succeeds and echoes a deterministic output.
+  mockRunCode.mockImplementation(async (language: string, _code: string) => ({
+    success: true,
+    output: language === "python" ? "9" : "4",
+    executionTimeMs: 1,
+  }));
 });
 
 describe("ReAct — tool execution", () => {

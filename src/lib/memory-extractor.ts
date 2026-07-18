@@ -28,6 +28,7 @@ import { embed } from "./embeddings";
 import { getDb, isPostgresAvailable, getPrismaDb } from "./db";
 import type { LongTermMemoryRow } from "./sqlite-types";
 import { logger } from "./logger";
+import { isConsentGranted } from "./consent";
 
 export interface MemoryExtraction {
   type: "fact" | "preference" | "context";
@@ -285,107 +286,104 @@ export async function extractAndStoreMemories(
 
 // ---------- Memory consent gate (Ethical #4) ----------
 //
-// Reads the `memory_consent` column from `user_preferences`. The column is
-// added lazily via ALTER TABLE on first read (SQLite's `ALTER TABLE ADD
-// COLUMN` is idempotent-ish — wrapped in try/catch so a duplicate add
-// doesn't crash). Postgres path: a Prisma migration would add the column
-// properly; the SQLite path here is the dev-default.
+// V3 audit fix — the canonical source of truth for "did this user opt
+// in to automatic memory extraction?" is now the **consent_ledger**
+// table (see src/lib/consent.ts), not the legacy
+// `user_preferences.memory_consent` column. This brings memory
+// extraction under GDPR Art. 7 ("demonstrable consent") — every
+// grant / revoke is audit-logged via `consent.update`, with a
+// timestamp and policy version, in a single table that all consented
+// actions read from.
 //
-// DEFAULT IS FALSE. Memory extraction is opt-in — the user must explicitly
-// turn it on via /api/preferences/memory. Routes that auto-extract
-// memories MUST call this first.
-
-const CONSENT_COLUMN = "memory_consent";
-
-function ensureConsentColumn(): void {
-  try {
-    const db = getDb();
-    // SQLite: ALTER TABLE ADD COLUMN is silent if the column already exists
-    // when wrapped in try/catch (the duplicate-column error is caught).
-    db.exec(`ALTER TABLE user_preferences ADD COLUMN ${CONSENT_COLUMN} INTEGER DEFAULT 0`);
-  } catch {
-    // Column already exists — expected on subsequent calls.
-  }
-}
+// The legacy `memory_consent` column is still written by
+// `/api/preferences/memory` POST and `/api/consent` POST (as a
+// denormalized cache), but it is no longer READ by this gate. The
+// consent ledger is the only source of truth.
+//
+// Because `isConsentGranted` is async (it queries the DB), this
+// function is now async. Callers (`/api/chat`, `/api/chat/agent`,
+// `/api/memories/extract`, the memory worker) MUST `await` it. The
+// sync `isMemoryExtractionEnabledAsync` alias is kept for backward
+// compatibility with route handlers that already used it.
+//
+// DEFAULT IS FALSE. Memory extraction is opt-in — the user must
+// explicitly grant the `memoryExtraction` consent key via
+// `/api/consent` or `/api/preferences/memory`.
 
 /**
- * Returns true if the user has opted in to automatic memory extraction.
+ * Returns true if the user has granted the `memoryExtraction` consent
+ * in the consent ledger.
  *
- * OPT-IN by default: returns false when the user has no preference row,
- * when the column is missing, or when the column value is 0/null. Only
- * returns true when the user has explicitly set consent to 1 via
- * /api/preferences/memory.
+ * OPT-IN by default: returns false when the user has no ledger row,
+ * when the ledger is unavailable, or when the row's `granted` flag is
+ * false. Only returns true when the user has explicitly granted the
+ * consent (via `/api/consent` or `/api/preferences/memory` POST).
+ *
+ * V3 audit fix: this is now ASYNC (was sync) because `isConsentGranted`
+ * performs a DB query. All callers must `await` it.
  */
-export function isMemoryExtractionEnabled(userId: string): boolean {
-  // Postgres path: defer to the preferences table via Prisma. Prisma
-  // doesn't have the `memory_consent` column in the current schema, so
-  // we read it raw via $queryRaw when Postgres is configured.
-  if (isPostgresAvailable()) {
-    // Defer to the SQLite path for the synchronous fast-path. The async
-    // variant below is preferred for routes that can await — but most
-    // callers (chat, agent) want the sync answer so they don't block the
-    // stream. The sync Postgres path falls through to SQLite (which is
-    // always available as a fallback in dual-mode deployments).
-  }
-
+export async function isMemoryExtractionEnabled(userId: string): Promise<boolean> {
+  // Check the consent ledger first (GDPR Art. 7 compliant). This is
+  // the canonical source of truth — the legacy `user_preferences.memory_consent`
+  // column is no longer consulted.
   try {
-    ensureConsentColumn();
-    const db = getDb();
-    const row = db
-      .prepare(`SELECT ${CONSENT_COLUMN} AS consent FROM user_preferences WHERE user_id = ?`)
-      .get(userId) as { consent: number } | undefined;
-    return !!(row && row.consent === 1);
+    return await isConsentGranted(userId, "memoryExtraction");
   } catch (err) {
+    // The consent ledger lookup threw (DB unavailable, table missing,
+    // connection error, …). Fail-closed: memory extraction is opt-in,
+    // so when we can't verify consent we MUST NOT extract.
     logger.warn(
       { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
-      "isMemoryExtractionEnabled lookup failed — defaulting to false (opt-in)"
+      "isMemoryExtractionEnabled — consent ledger lookup failed, defaulting to false (opt-in)"
     );
     return false;
   }
 }
 
 /**
- * Async variant — preferred for routes that can await. Reads from Postgres
- * via Prisma's $queryRaw when configured, falling back to the sync SQLite
- * path.
+ * Async alias for `isMemoryExtractionEnabled`. Kept for backward
+ * compatibility with route handlers that imported the `_Async` suffix
+ * before the V3 audit fix made the canonical function async.
+ *
+ * @deprecated Use `isMemoryExtractionEnabled` directly — it is now async.
  */
 export async function isMemoryExtractionEnabledAsync(userId: string): Promise<boolean> {
-  if (isPostgresAvailable()) {
-    try {
-      const prisma = await getPrismaDb();
-      if (prisma) {
-        const rows = await prisma.$queryRaw<Array<{ consent: number }>>`
-          SELECT memory_consent AS consent FROM user_preferences WHERE user_id = ${userId} LIMIT 1
-        `;
-        if (Array.isArray(rows) && rows.length > 0) {
-          return rows[0]!.consent === 1;
-        }
-        return false;
-      }
-    } catch (err) {
-      logger.warn(
-        { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
-        "isMemoryExtractionEnabledAsync Postgres lookup failed — falling back to SQLite"
-      );
-    }
-  }
   return isMemoryExtractionEnabled(userId);
 }
 
 /**
- * Set the user's memory consent flag. Used by /api/preferences/memory.
- * Writes to the `memory_consent` column on the existing user_preferences
- * row (creates the row if missing — INSERT OR REPLACE pattern).
+ * Set the user's memory consent flag. Used by /api/preferences/memory
+ * and /api/consent (as a side-effect when `memoryExtraction` changes).
+ *
+ * V3 audit fix: this writes ONLY to the legacy `user_preferences.memory_consent`
+ * column as a denormalized cache. The canonical source of truth is the
+ * `consent_ledger` table (written by `setConsent()` in `consent.ts`).
+ * The legacy column is kept in sync so any code paths that haven't yet
+ * migrated to read the ledger continue to see consistent state.
  */
+const LEGACY_CONSENT_COLUMN = "memory_consent";
+
+function ensureConsentColumn(): void {
+  try {
+    const db = getDb();
+    // SQLite: ALTER TABLE ADD COLUMN is silent if the column already
+    // exists when wrapped in try/catch (the duplicate-column error is
+    // caught).
+    db.exec(`ALTER TABLE user_preferences ADD COLUMN ${LEGACY_CONSENT_COLUMN} INTEGER DEFAULT 0`);
+  } catch {
+    // Column already exists — expected on subsequent calls.
+  }
+}
+
 export function setMemoryExtractionConsent(userId: string, enabled: boolean): void {
   try {
     ensureConsentColumn();
     const db = getDb();
     const value = enabled ? 1 : 0;
     db.prepare(
-      `INSERT INTO user_preferences (user_id, ${CONSENT_COLUMN})
+      `INSERT INTO user_preferences (user_id, ${LEGACY_CONSENT_COLUMN})
        VALUES (?, ?)
-       ON CONFLICT(user_id) DO UPDATE SET ${CONSENT_COLUMN} = excluded.${CONSENT_COLUMN}`
+       ON CONFLICT(user_id) DO UPDATE SET ${LEGACY_CONSENT_COLUMN} = excluded.${LEGACY_CONSENT_COLUMN}`
     ).run(userId, value);
   } catch (err) {
     logger.warn(

@@ -19,6 +19,8 @@ import { sanitizeInput } from "@/lib/prompt-security";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
 import { requireAuth, getUserId } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
+import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +32,21 @@ export async function POST(req: NextRequest) {
   const authError = requireAuth(req);
   if (authError) return authError;
   const userId = getUserId(req);
+
+  // P0-3 (per-user isolation + plan limits): gate swarm access behind
+  // the plan-limits layer. The "swarm" resource is currently a
+  // structural cap (max agents per plan, not a metered monthly quota),
+  // so `checkLimit` returns `allowed: true` for all plans — but the
+  // gate is wired up so a future change to meter swarm usage (e.g.
+  // "free plan: 5 swarms/month") can be enforced by editing
+  // `plan-limits-data.ts` without touching this route.
+  const planCheck = checkPlanLimit(userId, "swarm");
+  if (!planCheck.allowed) {
+    return Response.json(
+      { ok: false, error: "Swarm limit reached. Upgrade at /pricing for more concurrent agents." },
+      { status: 402 }
+    );
+  }
 
   // Parse body.
   let body: { task?: string };
@@ -91,9 +108,19 @@ export async function POST(req: NextRequest) {
       };
 
       try {
-        await runSwarm(task, emit);
+        // P0-3 (per-user isolation): pass the resolved userId and the
+        // request's AbortSignal down to runSwarm. The userId is used
+        // for audit-trail attribution and for per-user memory/tool
+        // isolation inside the swarm workers. The signal lets the
+        // swarm bail out cleanly when the client closes the SSE
+        // stream (no more wasted LLM tokens after the user navigates
+        // away).
+        await runSwarm(task, emit, { userId, signal: abortController.signal });
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
+        // P0-10: sanitize the error before sending to the client —
+        // LLM provider errors can include the request URL, Authorization
+        // header, or connection string, all of which contain secrets.
+        const msg = sanitizeError(err);
         emit({ type: "error", message: msg });
       } finally {
         releaseConcurrency(ip);

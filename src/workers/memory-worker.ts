@@ -20,7 +20,8 @@ export const memoryWorker = createMemoryWorker(async (data) => {
   logger.info({ userId }, "Memory worker processing job");
 
   // Consent gate (Ethical #4): default is FALSE.
-  if (!isMemoryExtractionEnabled(userId)) {
+  // V3 audit fix: reads the consent_ledger table (GDPR Art. 7) — async.
+  if (!(await isMemoryExtractionEnabled(userId))) {
     // Exception (Ethical #5): scan the conversation for explicit memory
     // commands ("remember that..."). These bypass the consent gate
     // because the user directly asked us to remember.

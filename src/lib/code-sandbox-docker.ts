@@ -3,7 +3,29 @@
 // Security: --network=none, --read-only, --tmpfs, --user 1000:1000,
 // memory limit 256m, CPU limit 0.5, 10s timeout.
 //
-// Falls back to vm-based sandbox (code-sandbox.ts) when Docker is not available.
+// V2 audit fix: the vm fallback has been removed entirely. Docker is
+// the ONLY execution backend for untrusted code. Callers that need
+// the legacy vm helpers should migrate to `runCodeDocker` directly —
+// there is no longer a `runCode`-via-vm path to fall back to.
+//
+// P0-8 (hardening audit): container naming + extra security flags:
+//   - `--name` now includes a random 8-hex suffix so two concurrent
+//     sandboxes cannot collide on the same `sandbox-${sessionId}` name
+//     (which previously caused `docker run` to fail with "name already
+//     in use" if a stale container hadn't been reaped yet).
+//   - `--init` runs an init process inside the container so zombie
+//     children are reaped (without it, a child that orphaned its
+//     parent would linger as PID 1 with no reaper).
+//   - `--memory-swap=${MEMORY_LIMIT}` disables swap (set to the same
+//     value as `--memory`, so the kernel cannot page the container's
+//     anonymous memory to disk — protects the host's swap partition
+//     from a memory-hoarding sandbox).
+//   - `--ulimit nofile=64:64` + `--ulimit nproc=64:64` cap the
+//     number of open file descriptors and processes per user inside
+//     the container, hardening against fd-exhaustion and fork bombs
+//     (defense-in-depth on top of `--pids-limit`).
+//   - `docker rm -f <name>` is run BEFORE `docker run` to clean up
+//     any stale container left behind by a previous crashed run.
 import * as Sentry from "@sentry/nextjs";
 
 
@@ -57,6 +79,31 @@ export async function runCodeDocker(
 
     await fs.writeFile(path.join(tempDir, filename), code);
 
+    // P0-8 (hardening audit): container name includes a random 8-hex
+    // suffix so two concurrent sandboxes cannot collide. Previously
+    // `--name sandbox-${sessionId}` would fail with "name already in
+    // use" if a stale container hadn't been reaped by `--rm` (e.g. the
+    // host OOM-killed docker between the container exit and the
+    // reaper running). The random suffix makes collisions effectively
+    // impossible.
+    const containerName = `quaesitor-sandbox-${sessionId}-${crypto.randomBytes(4).toString("hex")}`;
+
+    // P0-8: defensively clean up any stale container with the same
+    // name before starting a new one. With the random suffix this
+    // should never collide, but `docker rm -f` is idempotent and
+    // cheap — and if we ever revert to a deterministic name (e.g.
+    // for testability), this guard is what prevents the collision
+    // from breaking the sandbox.
+    try {
+      await execAsync(`docker rm -f ${containerName} 2>/dev/null`, {
+        timeout: 5_000,
+      });
+    } catch {
+      // Ignore — container doesn't exist (the common case) or docker
+      // is unreachable (the subsequent `docker run` will surface a
+      // better error).
+    }
+
     // P0-93: full Docker security flag set. Each flag is a separate
     // layer of defense — removing any one weakens the sandbox.
     //
@@ -83,20 +130,42 @@ export async function runCodeDocker(
     //   never runs as root, even if it tries to).
     // --memory=256m --cpus=0.5          → resource caps so a runaway
     //   process cannot starve the host.
+    //
+    // P0-8 additions:
+    // --init                            → run tini as PID 1 inside the
+    //   container, so orphaned/zombie child processes are reaped
+    //   (default PID 1 in a container doesn't reap zombies — they
+    //   accumulate until the container exits).
+    // --memory-swap=256m                → set swap limit equal to the
+    //   memory limit, effectively disabling swap for the container.
+    //   Without this, the kernel can page the container's anonymous
+    //   memory to the host's swap — a memory-hogging sandbox would
+    //   exhaust the host's swap partition instead of being OOM-killed.
+    // --ulimit nofile=64:64             → cap open file descriptors
+    //   per process at 64 (default is typically 1048576 on Linux —
+    //   a sandbox that opens thousands of fds could exhaust the
+    //   host's file table or exhaust its own PID limit indirectly).
+    // --ulimit nproc=64:64              → cap processes per user at 64
+    //   (defense-in-depth on top of `--pids-limit=64` — the latter
+    //   is per-container, this is per-UID inside the container).
     const { stdout, stderr } = await execAsync(
       `docker run --rm ` +
         `--security-opt=no-new-privileges ` +
         `--cap-drop=ALL ` +
         `--pids-limit=64 ` +
         `--memory=${MEMORY_LIMIT} ` +
+        `--memory-swap=${MEMORY_LIMIT} ` +
         `--cpus=${CPU_LIMIT} ` +
+        `--ulimit nofile=64:64 ` +
+        `--ulimit nproc=64:64 ` +
+        `--init ` +
         `--network=none ` +
         `--read-only ` +
         `--tmpfs /tmp:rw,nosuid,nodev,size=64m ` +
         `--workdir /app ` +
         `--user 1000:1000 ` +
         `-v ${tempDir}:/app:ro ` +
-        `--name sandbox-${sessionId} ` +
+        `--name ${containerName} ` +
         `${image} ${cmd}`,
       { timeout: TIMEOUT_MS, maxBuffer: 1024 * 1024 }
     );
@@ -127,18 +196,32 @@ export async function isDockerAvailable(): Promise<boolean> {
   }
 }
 
-// Smart dispatcher — mirrors the policy in code-sandbox.ts:
-//   - Docker first (with the full P0-93 security flag set).
-//   - If Docker is NOT available AND `DOCKER_HOST` is set → hard error.
-//   - If Docker is NOT available AND `DOCKER_HOST` is NOT set → fall
-//     back to `runCode` (which itself may take the deprecated vm path
-//     with a one-shot deprecation banner). The `provider` field on the
-//     returned object reflects which backend actually ran the code.
+// Smart dispatcher — V2 audit fix: Docker is the ONLY execution
+// backend. Mirrors the policy in code-sandbox.ts:
+//   - If `ENABLE_CODE_EXEC != "true"` → disabled error.
+//   - If Docker is available → run via `runCodeDocker`.
+//   - If Docker is NOT available → hard Docker-required error.
+//   (There is no longer a vm fallback path.)
 export async function runCodeSmart(
   language: string,
   code: string
 ): Promise<{ success: boolean; output: string; error?: string; executionTimeMs: number; provider: string }> {
   const start = Date.now();
+
+  // Import here so this module can be loaded in environments where
+  // `code-sandbox.ts` would otherwise create a circular import.
+  const { CODE_EXEC_ENABLED } = await import("./code-sandbox");
+
+  // Disabled?
+  if (!CODE_EXEC_ENABLED) {
+    return {
+      success: false,
+      output: "",
+      error: "Code execution is disabled. Set ENABLE_CODE_EXEC=true to enable (requires a proper sandbox — see SECURITY.md).",
+      executionTimeMs: Date.now() - start,
+      provider: "none",
+    };
+  }
 
   // Try Docker first if available.
   if (await isDockerAvailable()) {
@@ -163,35 +246,17 @@ export async function runCodeSmart(
       }
     } catch (err) {
       Sentry.captureException(err);
-      // Fall through to the fallback policy below.
+      // Fall through to the Docker-required error below.
     }
   }
 
-  // P0-93 fallback policy: hard-error if DOCKER_HOST is set (operator
-  // expected Docker to work), otherwise delegate to runCode which will
-  // apply the same DOCKER_HOST check + deprecation warning before
-  // touching the vm helpers.
-  if (process.env.DOCKER_HOST) {
-    return {
-      success: false,
-      output: "",
-      error: "Docker is required for code execution. Install Docker or set ENABLE_CODE_EXEC=false. (The vm fallback was removed in P0-93 — see SECURITY.md.)",
-      executionTimeMs: Date.now() - start,
-      provider: "none",
-    };
-  }
-
-  try {
-    const { runCode } = await import("./code-sandbox");
-    const result = await runCode(language, code);
-    return { ...result, provider: "vm" };
-  } catch (err) {
-    return {
-      success: false,
-      output: "",
-      error: err instanceof Error ? err.message : String(err),
-      executionTimeMs: Date.now() - start,
-      provider: "none",
-    };
-  }
+  // V2 audit fix: Docker is required. No vm fallback.
+  return {
+    success: false,
+    output: "",
+    error: "Docker is required for code execution. Set ENABLE_CODE_EXEC=true and install Docker.",
+    executionTimeMs: Date.now() - start,
+    provider: "none",
+  };
 }
+
