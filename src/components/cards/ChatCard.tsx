@@ -64,8 +64,18 @@ interface ProviderAttribution {
 interface ChatCardProps {
   initialMessage: string;
   conversationId?: string;
-  /** Called when an artifact is detected (streaming or final). */
-  onArtifact?: (a: Artifact | null) => void;
+  /**
+   * Called when an artifact is detected (streaming or final).
+   *
+   * P2-final-wave / Feature 1: the second argument `streaming` is `true`
+   * while the LLM is still emitting tokens (the artifact's `content` is
+   * a PARTIAL — the live, growing body) and `false` once the canonical
+   * `detectArtifact` pass has run on the completed response. Parents
+   * use the flag to decide whether to render the panel in "live preview"
+   * mode (passing `streamingContent` to ArtifactsPanel) or in "final"
+   * mode (using `artifact.content` only).
+   */
+  onArtifact?: (a: Artifact | null, streaming?: boolean) => void;
   /**
    * P0-8: optional source list for inline citation hover cards. When
    * provided, `[1]` / `[2]` / etc. patterns in the assistant's messages
@@ -124,6 +134,14 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   // The check is cheap (regex on the last 500 chars) but we still throttle
   // because token batches can arrive every few ms and we don't want to
   // re-run the regex on every keystroke-equivalent.
+  //
+  // P2-final-wave / Feature 1: AUTO-OPEN the ArtifactsPanel. In addition
+  // to setting `streamArtifact` for the inline button, we forward the
+  // partial artifact to the parent via `onArtifact(streamArtifact, true)`
+  // so the panel mounts immediately and starts rendering the live preview.
+  // The parent tracks `streaming=true` and passes `streamingContent` to
+  // ArtifactsPanel, which renders the partial as it grows — the user
+  // watches the code/document fill in, like watching code being typed.
   React.useEffect(() => {
     if (!streaming || !streamingResponse) return;
     const now = Date.now();
@@ -147,10 +165,35 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
     });
   }, [streaming, streamingResponse]);
 
+  // P2-final-wave / Feature 1: forward the partial artifact to the parent
+  // whenever it changes during streaming. This is what makes the
+  // ArtifactsPanel mount + render the live preview automatically — the
+  // user no longer has to click "Artifact detected →" to open the panel.
+  // The button below the streaming message is kept as a manual re-open
+  // affordance for when the user has dismissed the panel.
+  //
+  // The dependency array is intentionally just `[streamArtifact]` — we
+  // don't want to re-fire on every render. `onArtifact` is captured from
+  // the closure; if it changes (rare — parent's useCallback is stable),
+  // the effect re-binds, which is fine.
+  React.useEffect(() => {
+    if (!streamArtifact) return;
+    onArtifact?.(streamArtifact, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streamArtifact]);
+
   // P0-5: when the stream completes, run the canonical `detectArtifact`
   // pass and clear the partial. If a final artifact is found, notify the
   // parent (which opens the ArtifactsPanel). If none is found but a
   // partial was visible, notify with `null` so the parent can close it.
+  //
+  // P2-final-wave / Feature 1: pass `streaming=false` so the parent
+  // switches ArtifactsPanel out of live-preview mode and into final mode
+  // (using `artifact.content` for the canonical version). If the final
+  // artifact is null but a partial was visible (e.g. the user clicked
+  // stop mid-code-block and `detectArtifact` couldn't match the unclosed
+  // fence), fall back to the partial so the user can still see what was
+  // streamed.
   React.useEffect(() => {
     if (streaming) return;
     if (!streamingResponse && messages.length === 0) return;
@@ -160,11 +203,16 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
     const text = lastAssistant?.content || "";
     if (!text) {
       setStreamArtifact(null);
+      if (onArtifact) onArtifact(null, false);
       return;
     }
     const finalArtifact = detectArtifactFinal(text);
+    // If no final artifact was detected but a partial was visible,
+    // preserve the partial as the final (so the user can see what was
+    // streamed before the response was interrupted).
+    const artifactToReport = finalArtifact ?? streamArtifact ?? null;
     setStreamArtifact(null);
-    if (onArtifact) onArtifact(finalArtifact);
+    if (onArtifact) onArtifact(artifactToReport, false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [streaming]);
 
@@ -584,7 +632,7 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               <div className="mt-2">
                 <button
                   type="button"
-                  onClick={() => onArtifact?.(streamArtifact)}
+                  onClick={() => onArtifact?.(streamArtifact, true)}
                   className="inline-flex items-center gap-1.5 rounded-md border border-[#8b4513]/30 dark:border-[#b5673a]/30 bg-[#8b4513]/5 dark:bg-[#b5673a]/10 px-2 py-1 font-ui text-[11px] font-medium text-[#8b4513] dark:text-[#b5673a] hover:border-[#8b4513]/50 dark:hover:border-[#b5673a]/50 hover:bg-[#8b4513]/10 dark:hover:bg-[#b5673a]/15 transition-colors"
                   aria-label={`Open ${streamArtifact.type} artifact in side panel`}
                   title={`Open ${streamArtifact.type} artifact in side panel (partial — full content will arrive when streaming completes)`}

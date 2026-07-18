@@ -145,6 +145,14 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   // by the panel's Close button. We also forward it to the optional
   // `onArtifact` prop so the page-level consumer (page.tsx) can react.
   const [activeArtifact, setActiveArtifact] = React.useState<Artifact | null>(null);
+  // P2-final-wave / Feature 1: Streaming Artifacts. `artifactStreaming`
+  // is `true` while ChatCard is still emitting tokens (the active
+  // artifact's `content` is a PARTIAL — the live, growing body). When
+  // `true`, we pass `streamingContent={activeArtifact.content}` to
+  // ArtifactsPanel so it renders the live preview (with a "Streaming…"
+  // badge + blinking caret). When `false` (or undefined), the panel
+  // renders the canonical `artifact.content` as the final version.
+  const [artifactStreaming, setArtifactStreaming] = React.useState(false);
   // P1-wave2 / Feature 1: Canvas Mode — when the user clicks "Edit in
   // Canvas" in the ArtifactsPanel header, this state holds the artifact's
   // raw source + language so CanvasPanel can mount on top of the
@@ -162,8 +170,14 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   // P0-1: wrap setActiveArtifact so we also forward to the optional
   // page-level onArtifact prop. Keeps page.tsx's `setArtifact` state in
   // sync without coupling UnifiedInterface to it.
-  const handleArtifactChange = React.useCallback((a: Artifact | null) => {
+  //
+  // P2-final-wave / Feature 1: accept the `streaming` flag from ChatCard
+  // and track it in `artifactStreaming`. The page-level consumer
+  // (`_onArtifact`) doesn't need the flag — it only cares about the
+  // final artifact — so we strip it before forwarding.
+  const handleArtifactChange = React.useCallback((a: Artifact | null, streaming?: boolean) => {
     setActiveArtifact(a);
+    setArtifactStreaming(streaming === true && a !== null);
     _onArtifact?.(a);
   }, [_onArtifact]);
 
@@ -293,6 +307,9 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     // P0-1: closing the new-chat flow also dismisses any open artifact
     // panel — the user is starting fresh, the previous artifact is stale.
     setActiveArtifact(null);
+    // P2-final-wave / Feature 1: also clear the streaming flag so the
+    // next chat starts in "final" mode (no live-preview badge).
+    setArtifactStreaming(false);
     // P1-wave2 / Feature 1: also dismiss the Canvas editor so the next
     // chat starts without a stale editor overlay.
     setCanvasArtifact(null);
@@ -569,6 +586,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       {activeArtifact && (
         <ArtifactsPanel
           artifact={activeArtifact}
+          streamingContent={artifactStreaming ? activeArtifact.content : undefined}
           onClose={() => handleArtifactChange(null)}
           onEditInCanvas={() =>
             setCanvasArtifact({

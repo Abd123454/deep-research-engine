@@ -89,6 +89,23 @@ export const SENSITIVE_ACTIONS = {
   // read_file on a private key, for example, must not land in the
   // audit trail). See /api/device-control.
   "device_control.action": "device_control",
+  // P2-final-wave / Feature 2: Real-time Collaboration. Every create /
+  // join / leave / inspect of a Yjs collaboration session is auditable
+  // so an operator can reconstruct who collaborated on what document
+  // and when. The `op` field in metadata ("create" / "join" / "leave"
+  // / "inspect") distinguishes the action; the `sessionId` + (for
+  // create) `documentId` are recorded for correlation. See
+  // /api/collab/[sessionId].
+  "collab.session": "collab",
+  // P2-final-wave / Feature 3: Video Understanding. Every video
+  // analysis request is auditable because (a) it's CPU-intensive (DoS
+  // surface) and (b) the video content may contain sensitive information
+  // (a screen recording, a whiteboard with proprietary info, etc.).
+  // The videoPath / videoUrl is recorded (capped at 500 chars) so an
+  // operator can reconstruct what was analyzed and by whom. The
+  // ANALYSIS RESULT (keyframes + transcript) is NOT logged — it can be
+  // large and contain sensitive content. See /api/video/analyze.
+  "video.analyze": "video",
 } as const;
 
 export type SensitiveAction = keyof typeof SENSITIVE_ACTIONS;

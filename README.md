@@ -6,6 +6,94 @@
 
 **Quaesitor** (from Latin *quaerere* — "to seek/investigate") is a complete AI platform that evolved through 12 development rounds from a single research script into a 16-feature workstation. It's not just a chat wrapper — it's a multi-agent system with real research capabilities, code execution, and persistent memory.
 
+---
+
+## Quick Start
+
+```bash
+# 1. Clone
+git clone https://github.com/Abd123454/deep-research-engine.git
+cd deep-research-engine
+
+# 2. Install
+bun install  # or: npm install (both work, no flags needed)
+
+# 3. Configure
+cp .env.example .env
+# Edit .env: set NVIDIA_API_KEY (free at https://build.nvidia.com/)
+
+# 4. Run
+bun run dev
+
+# Open http://localhost:3000
+```
+
+**That's it.** No Docker required for dev. No database setup (SQLite is built-in). No Redis required (in-memory fallback).
+
+### What you get:
+- 🧠 Deep research with 6-stage pipeline + citation verification
+- 🤖 Agent swarm with 10 specialized roles (including device controller)
+- 💬 Multi-turn chat with streaming + memory
+- 🔒 Enterprise security (MFA, RBAC, audit logs, GDPR endpoints)
+- 🎨 Independent "Amber & Ink" design (not a clone of any product)
+- 📱 Mobile app scaffold (Expo)
+- 🔌 Connectors framework (Slack, Notion, Drive, GitHub, Jira)
+- 💳 Stripe billing with metered usage
+- 🌍 Self-hosted, AGPL-3.0, $0/month
+
+---
+
+## Features
+
+| Category | Feature | Status |
+|----------|---------|--------|
+| **AI Engine** | Deep research (6-stage pipeline) | ✅ |
+| | Agent swarm (10 roles + parallel tools) | ✅ |
+| | Multi-provider fallback (NVIDIA→OpenAI→Anthropic→Ollama) | ✅ |
+| | Citation verification + NLI + self-critique | ✅ |
+| | Prompt caching + research result cache | ✅ |
+| **UX** | 3-column layout (Sidebar + Chat + Artifacts) | ✅ |
+| | Canvas Mode (inline editing) | ✅ |
+| | Command Palette (Cmd+K) | ✅ |
+| | Inline citation hover cards | ✅ |
+| | Streaming token animation | ✅ |
+| | Streaming artifacts (live preview during generation) | ✅ |
+| | Dark mode crossfade | ✅ |
+| | Mobile responsive + sans-serif | ✅ |
+| **Security** | MFA (TOTP RFC 6238) | ✅ |
+| | RBAC (owner/admin/editor/viewer) | ✅ |
+| | Docker sandbox (hardened) | ✅ |
+| | SSRF protection (safeFetch) | ✅ |
+| | CSRF protection | ✅ |
+| | CSP + HSTS + security headers | ✅ |
+| | Audit logging (27+ actions) | ✅ |
+| | Sanitize errors (no secret leakage) | ✅ |
+| **Memory** | 5-layer memory system | ✅ |
+| | pgvector semantic search | ✅ |
+| | Memory Graph (entity-relation) | ✅ |
+| | Consent ledger (GDPR Art. 7) | ✅ |
+| | Memory export (GDPR Art. 20) | ✅ |
+| **Platform** | API Keys + public API | ✅ |
+| | MCP transport (stdio + SSE) | ✅ |
+| | Connectors (Slack/Notion/Drive/GitHub/Jira) | ✅ |
+| | Computer Use (Playwright + Docker) | ✅ |
+| | Device Control Agent (Win/macOS/Linux) | ✅ |
+| | Real-time collaboration (Yjs + WebSocket) | ✅ |
+| | Video understanding (keyframes + transcript) | ✅ |
+| **Billing** | Stripe subscriptions | ✅ |
+| | Metered billing (pay-as-you-go) | ✅ |
+| | Plan limits enforcement | ✅ |
+| **Compliance** | 11 legal documents | ✅ |
+| | GDPR endpoints (Art. 7, 17, 20) | ✅ |
+| | SOC 2 Type II readiness | ✅ |
+| | SOC 2 Type II audit prep (control mapping) | ✅ |
+| | Branch protection (no force push) | ✅ |
+| **Mobile** | Expo app scaffold | ✅ |
+| | Biometric auth ready | ✅ |
+| | Push notifications ready | ✅ |
+
+---
+
 ## Why Quaesitor exists
 
 I was paying $20/month for Perplexity Pro just for deep research. I wanted something I could run on my own server, with no limits, that I could hack on. This is that thing.
@@ -14,7 +102,7 @@ It's not as polished as commercial tools. It probably never will be. But it's mi
 
 ---
 
-## Features
+## Feature Overview
 
 ### Research & Knowledge
 - **Deep Research** — 6-stage pipeline: plan → decompose → search → gap analysis → round 2 → synthesize. Citation verification checks every URL.
@@ -48,7 +136,7 @@ It's not as polished as commercial tools. It probably never will be. But it's mi
 
 ---
 
-## Quick Start
+## Quick Start (Detailed Setup)
 
 ```bash
 git clone https://github.com/Abd123454/deep-research-engine.git

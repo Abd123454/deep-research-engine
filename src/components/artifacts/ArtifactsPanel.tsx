@@ -23,7 +23,7 @@ import * as React from "react";
 import { motion } from "framer-motion";
 import {
   X, Copy, Check, Code2, FileText, Globe, Download, History,
-  Eye, Clock, Pencil,
+  Eye, Clock, Pencil, Radio,
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 import DOMPurify from "dompurify";
@@ -37,6 +37,25 @@ interface ArtifactsPanelProps {
   onClose: () => void;
   /** Optional: open the artifact in Canvas mode (inline editor). */
   onEditInCanvas?: () => void;
+  /**
+   * P2-final-wave / Feature 1: Streaming Artifacts.
+   *
+   * When provided (non-empty), the panel renders a LIVE-UPDATING preview
+   * of this content instead of `artifact.content`. This is the partial
+   * text the LLM is still emitting — the panel re-renders on every token
+   * so the user watches the content fill in, like watching code being typed.
+   *
+   * While `streamingContent` is provided:
+   *   - The displayed source = `streamingContent` (not `visibleContent`).
+   *   - Version history is NOT reset (so the final snapshot replaces the
+   *     initial one cleanly when streaming completes).
+   *   - A pulsing "Streaming…" badge appears in the header.
+   *
+   * When `streamingContent` is `undefined` (or empty), the panel falls
+   * back to the canonical `visibleContent` (from version history) — this
+   * is the post-stream state where `artifact.content` is the final text.
+   */
+  streamingContent?: string;
 }
 
 type TabKey = "preview" | "code" | "history";
@@ -61,7 +80,7 @@ const DOWNLOAD_META: Record<Artifact["type"], { ext: string; mime: string }> = {
   mermaid: { ext: "mmd", mime: "text/plain" },
 };
 
-export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onClose, onEditInCanvas }: ArtifactsPanelProps) {
+export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onClose, onEditInCanvas, streamingContent }: ArtifactsPanelProps) {
   const [copied, setCopied] = React.useState(false);
   const [activeTab, setActiveTab] = React.useState<TabKey>("preview");
 
@@ -77,37 +96,76 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
   // When the artifact content changes (e.g. a new artifact is loaded),
   // reset the version history so we don't carry snapshots across
   // unrelated artifacts.
+  //
+  // P2-final-wave / Feature 1: SKIP the reset while `streamingContent`
+  // is provided. During streaming, `artifact.content` changes on every
+  // token (the parent feeds the live partial back through `onArtifact`).
+  // Resetting versions on every token would (a) blow away the History
+  // tab and (b) cause React to thrash. Instead, we capture the FINAL
+  // content as the initial version once when streaming completes
+  // (`streamingContent` transitions from non-empty → undefined).
   const firstContent = React.useRef(artifact.content);
+  const wasStreaming = React.useRef(false);
   React.useEffect(() => {
+    const isStreaming = !!streamingContent;
+    if (isStreaming) {
+      wasStreaming.current = true;
+      // Don't reset versions mid-stream — keep the panel stable.
+      return;
+    }
+    if (wasStreaming.current) {
+      // Streaming just completed. Capture the final `artifact.content`
+      // as the initial version. This is the canonical version that
+      // `detectArtifact` produced on the completed response.
+      wasStreaming.current = false;
+      firstContent.current = artifact.content;
+      const ts = new Date().toISOString();
+      setVersions([{ ts, content: artifact.content, label: "Initial" }]);
+      setActiveVersionIdx(0);
+      return;
+    }
+    // Non-streaming content change (e.g. user loaded a different artifact).
     if (artifact.content !== firstContent.current) {
       firstContent.current = artifact.content;
       const ts = new Date().toISOString();
       setVersions([{ ts, content: artifact.content, label: "Initial" }]);
       setActiveVersionIdx(0);
     }
-  }, [artifact.content]);
+  }, [artifact.content, streamingContent]);
 
   // The currently-visible source — either the live artifact.content or
   // a historical snapshot, depending on which version is selected.
+  // P2-final-wave / Feature 1: when `streamingContent` is provided,
+  // we render THAT (the live partial) instead of the version snapshot.
+  // The version history is preserved (see effect above) so when
+  // streaming completes, the panel switches cleanly to the final
+  // `artifact.content` without losing state.
   const visibleContent = versions[activeVersionIdx]?.content ?? artifact.content;
+  const displayContent = streamingContent || visibleContent;
+  const isStreaming = !!streamingContent;
 
   // Sanitize SVG content to prevent XSS attacks.
   // The LLM can generate SVG with <script> or onload="..." handlers.
   // DOMPurify strips dangerous tags and attributes while preserving
   // safe SVG elements (paths, circles, text, etc.).
+  //
+  // P2-final-wave / Feature 1: sanitize the `displayContent` (which is
+  // the live `streamingContent` during streaming, or `visibleContent`
+  // after). This means partial SVGs are also sanitized — a malicious
+  // payload can't sneak in mid-stream.
   const sanitizedSvg = React.useMemo(() => {
-    if (artifact.type !== "svg") return visibleContent;
-    if (typeof window === "undefined") return visibleContent; // SSR safety
-    return DOMPurify.sanitize(visibleContent, {
+    if (artifact.type !== "svg") return displayContent;
+    if (typeof window === "undefined") return displayContent; // SSR safety
+    return DOMPurify.sanitize(displayContent, {
       USE_PROFILES: { svg: true, html: true },
       ADD_TAGS: ["svg", "path", "circle", "rect", "line", "text", "g", "polyline", "polygon", "ellipse", "defs", "use", "linearGradient", "radialGradient", "stop"],
       FORBID_TAGS: ["script", "object", "embed", "iframe", "link", "style"],
       FORBID_ATTR: ["onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur", "onchange", "onsubmit"],
     });
-  }, [visibleContent, artifact.type]);
+  }, [displayContent, artifact.type]);
 
   function copyContent() {
-    navigator.clipboard.writeText(visibleContent);
+    navigator.clipboard.writeText(displayContent);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   }
@@ -119,7 +177,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
       .replace(/[^a-z0-9]+/g, "-")
       .replace(/^-+|-+$/g, "") || "artifact";
     const filename = `${baseName}.${meta.ext}`;
-    const blob = new Blob([visibleContent], { type: meta.mime });
+    const blob = new Blob([displayContent], { type: meta.mime });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -193,6 +251,20 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
         </div>
         <span className="text-sm font-ui font-medium truncate text-[#2a2620] dark:text-[#e8e3d8]">{artifact.title || "Artifact"}</span>
         <span className="text-[10px] font-ui text-[#6b6358] dark:text-[#9a9080] uppercase tracking-wide">{artifact.type}</span>
+        {/* P2-final-wave / Feature 1: streaming badge. While the LLM is
+            still emitting tokens, show a pulsing "Streaming…" indicator
+            so the user knows the content is filling in live. The badge
+            disappears when `streamingContent` becomes undefined
+            (streaming complete). */}
+        {isStreaming && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-[#8b4513]/10 dark:bg-[#b5673a]/15 px-2 py-0.5 text-[10px] font-ui font-medium text-[#8b4513] dark:text-[#b5673a]"
+            aria-label="Streaming — content is still being generated"
+          >
+            <Radio className="h-2.5 w-2.5 animate-pulse" aria-hidden="true" />
+            Streaming
+          </span>
+        )}
         <div className="ml-auto flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={copyContent} className="h-7 w-7" aria-label="Copy content" title="Copy">
             {copied ? <Check className="h-3.5 w-3.5 text-[#8b4513]" /> : <Copy className="h-3.5 w-3.5" />}
@@ -213,7 +285,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
             </Button>
           )}
           {(artifact.type === "research_report" || artifact.type === "markdown") && (
-            <ExportMenu content={visibleContent} filename={artifact.title || "artifact"} />
+            <ExportMenu content={displayContent} filename={artifact.title || "artifact"} />
           )}
           <Button variant="ghost" size="icon" onClick={onClose} className="h-7 w-7" aria-label="Close panel" title="Close">
             <X className="h-4 w-4" />
@@ -258,7 +330,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
             {(artifact.type === "html" || artifact.type === "react") && (
               <iframe
                 sandbox="allow-scripts"
-                srcDoc={artifact.type === "react" ? wrapReact(visibleContent) : visibleContent}
+                srcDoc={artifact.type === "react" ? wrapReact(displayContent) : displayContent}
                 className="w-full h-full border-0 min-h-[400px]"
                 title={artifact.title || "Preview"}
               />
@@ -269,7 +341,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
             )}
 
             {artifact.type === "mermaid" && (
-              <MermaidRenderer content={visibleContent} />
+              <MermaidRenderer content={displayContent} />
             )}
 
             {artifact.type === "code" && (
@@ -277,13 +349,27 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
               // rendered without the "raw" framing so the user can
               // read it as a document).
               <pre className="p-4 text-sm font-mono overflow-x-auto bg-[#f4f1ea]/30 dark:bg-[#322e28]/30">
-                <code>{visibleContent}</code>
+                <code>{displayContent}</code>
+                {/* P2-final-wave / Feature 1: blinking caret at the end
+                    of the streamed code. Mirrors the chat-stream cursor. */}
+                {isStreaming && (
+                  <span
+                    className="inline-block h-3.5 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5 align-middle"
+                    aria-hidden="true"
+                  />
+                )}
               </pre>
             )}
 
             {(artifact.type === "research_report" || artifact.type === "markdown") && (
               <article className="p-5 prose prose-quaesitor font-body leading-[1.7] max-w-none dark:prose-invert">
-                <ReactMarkdown>{visibleContent}</ReactMarkdown>
+                <ReactMarkdown>{displayContent}</ReactMarkdown>
+                {isStreaming && (
+                  <span
+                    className="inline-block h-4 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5 align-middle"
+                    aria-hidden="true"
+                  />
+                )}
               </article>
             )}
           </>
@@ -293,7 +379,7 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
           <div className="flex flex-col h-full">
             <div className="shrink-0 flex items-center justify-between px-3 py-1.5 border-b border-[#d9d4c7]/60 dark:border-[#3d3830]/60 bg-[#f4f1ea]/40 dark:bg-[#1c1a17]">
               <span className="text-[10px] font-mono text-[#6b6358] dark:text-[#9a9080] uppercase tracking-wide">
-                {artifact.language || "source"} · {visibleContent.length.toLocaleString()} chars
+                {artifact.language || "source"} · {displayContent.length.toLocaleString()} chars{isStreaming ? " · streaming" : ""}
               </span>
               <button
                 onClick={copyContent}
@@ -305,7 +391,13 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
               </button>
             </div>
             <pre className="flex-1 p-4 text-sm font-mono overflow-auto bg-[#f4f1ea]/30 dark:bg-[#322e28]/30">
-              <code>{visibleContent}</code>
+              <code>{displayContent}</code>
+              {isStreaming && (
+                <span
+                  className="inline-block h-3.5 w-1.5 bg-[#8b4513] dark:bg-[#b5673a] animate-pulse ml-0.5 align-middle"
+                  aria-hidden="true"
+                />
+              )}
             </pre>
           </div>
         )}
