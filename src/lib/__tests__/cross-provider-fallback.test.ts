@@ -3,35 +3,37 @@
 // Verifies that when all NVIDIA models fail, the LLM provider falls back
 // to OpenAI → Anthropic → Ollama, and that when no provider is available
 // it throws a clear error.
+//
+// NOTE: vitest v4 requires regular functions (not arrow) for mockImplementation
+// when the mock is used as a constructor with `new`. Arrow functions throw
+// "X is not a constructor".
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 // ---------- Mock the provider modules ----------
-// We mock each provider module so we can control success/failure without
-// making real HTTP calls.
-
-const mockOpenAI = { OpenAIProvider: vi.fn() };
-const mockAnthropic = { AnthropicProvider: vi.fn() };
-const mockOllama = { OllamaProvider: vi.fn() };
-
-vi.mock("../llm-providers/openai", () => mockOpenAI);
-vi.mock("../llm-providers/anthropic", () => mockAnthropic);
-vi.mock("../llm-providers/ollama", () => mockOllama);
+vi.mock("../llm-providers/openai", () => ({
+  OpenAIProvider: vi.fn(),
+}));
+vi.mock("../llm-providers/anthropic", () => ({
+  AnthropicProvider: vi.fn(),
+}));
+vi.mock("../llm-providers/ollama", () => ({
+  OllamaProvider: vi.fn(),
+}));
 
 // Mock env so we can control which providers are "configured".
 vi.mock("../env", () => ({
-  env: vi.fn((key: string, fallback = "") => {
-    const vals: Record<string, string> = {};
-    return vals[key] ?? fallback;
-  }),
+  env: vi.fn((key: string, fallback = "") => fallback),
   envList: vi.fn((_key: string, fallback = "") =>
     fallback ? fallback.split(",") : []
   ),
 }));
 
-// Import after mocks are set up.
 import { getLLM } from "../llm-provider";
 import { env } from "../env";
+import { OpenAIProvider } from "../llm-providers/openai";
+import { AnthropicProvider } from "../llm-providers/anthropic";
+import { OllamaProvider } from "../llm-providers/ollama";
 
 function makeProviderResult(provider: string, content: string) {
   return {
@@ -43,22 +45,35 @@ function makeProviderResult(provider: string, content: string) {
   };
 }
 
+// Helper: set up a provider constructor mock that returns the given instance.
+// MUST use a regular function (not arrow) because it's called with `new`.
+function mockProviderConstructor(
+  fn: ReturnType<typeof vi.fn>,
+  instance: Record<string, unknown>
+) {
+  fn.mockImplementation(function () {
+    return instance;
+  });
+}
+
 describe("Cross-provider fallback (Round 11 wiring)", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset env mock to return empty by default.
-    (env as ReturnType<typeof vi.fn>).mockImplementation((key: string, fallback = "") => {
-      const vals: Record<string, string> = {};
-      return vals[key] ?? fallback;
-    });
+
+    // Default env: no providers configured.
+    (env as ReturnType<typeof vi.fn>).mockImplementation((key: string, fallback = "") => fallback);
+
+    // Default providers: empty objects (tests override).
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, {});
+    mockProviderConstructor(AnthropicProvider as ReturnType<typeof vi.fn>, {});
+    mockProviderConstructor(OllamaProvider as ReturnType<typeof vi.fn>, {});
   });
 
   afterEach(() => {
-    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
   });
 
   it("falls back to OpenAI when NVIDIA fails and OPENAI_API_KEY is set", async () => {
-    // Configure env: NVIDIA key set (so nvidiaCompleteSingle runs) but it will fail.
     (env as ReturnType<typeof vi.fn>).mockImplementation((key: string, fallback = "") => {
       const vals: Record<string, string> = {
         NVIDIA_API_KEY: "invalid-nvidia-key",
@@ -68,14 +83,12 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       return vals[key] ?? fallback;
     });
 
-    // OpenAI provider succeeds.
     const openaiInstance = {
       smart: vi.fn().mockResolvedValue(makeProviderResult("openai", "OpenAI fallback success")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
 
-    // Mock fetch so NVIDIA's HTTP call fails.
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "NVIDIA down" }), { status: 500 })
     );
@@ -111,8 +124,8 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       smart: vi.fn().mockResolvedValue(makeProviderResult("anthropic", "Anthropic fallback success")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
-    mockAnthropic.AnthropicProvider.mockImplementation(() => anthropicInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
+    mockProviderConstructor(AnthropicProvider as ReturnType<typeof vi.fn>, anthropicInstance);
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "NVIDIA down" }), { status: 500 })
@@ -155,9 +168,9 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       smart: vi.fn().mockResolvedValue(makeProviderResult("ollama", "Ollama fallback success")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
-    mockAnthropic.AnthropicProvider.mockImplementation(() => anthropicInstance);
-    mockOllama.OllamaProvider.mockImplementation(() => ollamaInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
+    mockProviderConstructor(AnthropicProvider as ReturnType<typeof vi.fn>, anthropicInstance);
+    mockProviderConstructor(OllamaProvider as ReturnType<typeof vi.fn>, ollamaInstance);
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "NVIDIA down" }), { status: 500 })
@@ -194,8 +207,8 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       smart: vi.fn().mockRejectedValue(new Error("Anthropic down")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
-    mockAnthropic.AnthropicProvider.mockImplementation(() => anthropicInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
+    mockProviderConstructor(AnthropicProvider as ReturnType<typeof vi.fn>, anthropicInstance);
 
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "NVIDIA down" }), { status: 500 })
@@ -220,7 +233,6 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       return vals[key] ?? fallback;
     });
 
-    // NVIDIA streams 1 token then fails mid-stream.
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(
         `data: {"choices":[{"delta":{"content":"partial"}}]}\n\ndata: [DONE]\n\n`,
@@ -233,19 +245,16 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       smart: vi.fn().mockResolvedValue(makeProviderResult("openai", "should not reach")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
 
     const llm = await getLLM();
     const tokens: string[] = [];
-    // This will stream "partial" and then the stream ends (no error, just incomplete).
-    // The point is: if a token was emitted, we should NOT fallback.
     const result = await llm.smart({
       messages: [{ role: "user", content: "test" }],
       stream: true,
       onToken: (t: string) => tokens.push(t),
     });
 
-    // NVIDIA returned content (even if partial), so no fallback needed.
     expect(result.content).toContain("partial");
     expect(openaiInstance.smart).not.toHaveBeenCalled();
 
@@ -253,7 +262,6 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
   });
 
   it("falls back to OpenAI on NVIDIA 401 auth error (not 500)", async () => {
-    // Configure env: NVIDIA key set (so nvidiaCompleteSingle runs) but returns 401.
     (env as ReturnType<typeof vi.fn>).mockImplementation((key: string, fallback = "") => {
       const vals: Record<string, string> = {
         NVIDIA_API_KEY: "revoked-nvidia-key",
@@ -263,14 +271,12 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
       return vals[key] ?? fallback;
     });
 
-    // OpenAI provider succeeds.
     const openaiInstance = {
       smart: vi.fn().mockResolvedValue(makeProviderResult("openai", "OpenAI via 401 fallback")),
       fast: vi.fn(),
     };
-    mockOpenAI.OpenAIProvider.mockImplementation(() => openaiInstance);
+    mockProviderConstructor(OpenAIProvider as ReturnType<typeof vi.fn>, openaiInstance);
 
-    // Mock fetch so NVIDIA returns 401 Unauthorized (real auth error, not 500).
     const fetchMock = vi.fn().mockResolvedValue(
       new Response(JSON.stringify({ error: "Invalid API Key" }), {
         status: 401,
@@ -280,10 +286,6 @@ describe("Cross-provider fallback (Round 11 wiring)", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const llm = await getLLM();
-    // Before the fix, this would throw "NVIDIA_API_KEY invalid or expired.
-    // Skipping fallback chain." — bypassing crossProviderFallback entirely.
-    // After the fix, it should break out of the NVIDIA model loop and fall
-    // through to crossProviderFallback, which succeeds via OpenAI.
     const result = await llm.smart({
       messages: [{ role: "user", content: "test" }],
     });

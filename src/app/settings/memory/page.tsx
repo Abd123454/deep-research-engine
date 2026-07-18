@@ -181,7 +181,7 @@ export default function MemoryPage() {
               style={{ backgroundColor: memoryEnabled ? "#8b4513" : "#d9d4c7" }}
             >
               <span
-                className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm transition-transform duration-200 ${memoryEnabled ? "translate-x-6" : "translate-x-1"}`}
+                className={`inline-block h-5 w-5 transform rounded-full bg-[#faf8f3] border border-[#d9d4c7] transition-transform duration-200 ${memoryEnabled ? "translate-x-6" : "translate-x-1"}`}
               />
               <span className="sr-only">{memoryEnabled ? "Memory extraction is ON" : "Memory extraction is OFF"}</span>
             </button>

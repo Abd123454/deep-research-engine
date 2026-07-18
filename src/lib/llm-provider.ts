@@ -24,6 +24,9 @@ import * as Sentry from "@sentry/nextjs";
 import type { LLMProvider } from "./types";
 import { env, envList } from "./env";
 import { logger } from "./logger";
+import { OpenAIProvider } from "./llm-providers/openai";
+import { AnthropicProvider } from "./llm-providers/anthropic";
+import { OllamaProvider } from "./llm-providers/ollama";
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -383,7 +386,7 @@ async function crossProviderFallback(
   // 1. OpenAI
   if (env("OPENAI_API_KEY")) {
     try {
-      const { OpenAIProvider } = await import("./llm-providers/openai");
+      
       const provider = new OpenAIProvider();
       const result = await provider.smart(opts);
       logger.info({ module: "llm-provider", provider: "openai" }, "Cross-provider fallback succeeded via OpenAI");
@@ -398,7 +401,7 @@ async function crossProviderFallback(
   // 2. Anthropic
   if (env("ANTHROPIC_API_KEY")) {
     try {
-      const { AnthropicProvider } = await import("./llm-providers/anthropic");
+      
       const provider = new AnthropicProvider();
       const result = await provider.smart(opts);
       logger.info({ module: "llm-provider", provider: "anthropic" }, "Cross-provider fallback succeeded via Anthropic");
@@ -413,7 +416,7 @@ async function crossProviderFallback(
   // 3. Ollama (local — always worth trying if URL is set)
   if (env("OLLAMA_URL")) {
     try {
-      const { OllamaProvider } = await import("./llm-providers/ollama");
+      
       const provider = new OllamaProvider();
       const result = await provider.smart(opts);
       logger.info({ module: "llm-provider", provider: "ollama" }, "Cross-provider fallback succeeded via Ollama");
@@ -468,7 +471,7 @@ async function crossProviderFastFallback(
 
   if (env("OPENAI_API_KEY")) {
     try {
-      const { OpenAIProvider } = await import("./llm-providers/openai");
+      
       const provider = new OpenAIProvider();
       const result = await provider.fast(opts);
       logger.info({ module: "llm-provider", provider: "openai", path: "fast" }, "Cross-provider fast fallback succeeded via OpenAI");
@@ -482,7 +485,7 @@ async function crossProviderFastFallback(
 
   if (env("ANTHROPIC_API_KEY")) {
     try {
-      const { AnthropicProvider } = await import("./llm-providers/anthropic");
+      
       const provider = new AnthropicProvider();
       const result = await provider.fast(opts);
       logger.info({ module: "llm-provider", provider: "anthropic", path: "fast" }, "Cross-provider fast fallback succeeded via Anthropic");
@@ -496,7 +499,7 @@ async function crossProviderFastFallback(
 
   if (env("OLLAMA_URL")) {
     try {
-      const { OllamaProvider } = await import("./llm-providers/ollama");
+      
       const provider = new OllamaProvider();
       const result = await provider.fast(opts);
       logger.info({ module: "llm-provider", provider: "ollama", path: "fast" }, "Cross-provider fast fallback succeeded via Ollama");
