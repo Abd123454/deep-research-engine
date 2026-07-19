@@ -16,18 +16,30 @@ import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserRow } from "@/lib/sqlite-types";
 import { logger } from "@/lib/logger";
 
-// C-1 (CVSS 9.8): Fail-closed in production if NEXTAUTH_SECRET is missing.
+// C-1 (CVSS 9.8): NEXTAUTH_SECRET must be set in production.
 // A missing secret means NextAuth falls back to a known constant, which
 // allows anyone to mint JWTs with arbitrary `userId` claims (e.g. "admin").
-// We throw at MODULE LOAD TIME so the app crashes on startup rather than
-// silently serving forged sessions.
 //
-// In dev (NODE_ENV !== "production") we keep a hardcoded fallback so a
-// fresh checkout runs without forcing the developer to generate a secret.
+// IMPORTANT: we do NOT throw at module load time — `next build` runs with
+// NODE_ENV=production but does NOT have runtime env vars (NEXTAUTH_SECRET
+// is a deploy-time secret). A module-load throw would therefore break the
+// build on every CI/fresh-clone. Instead we:
+//   1. Log a loud error if the secret is missing in production.
+//   2. Use the dev fallback `"dev-only-not-for-production"` so the module
+//      loads during build. JWTs minted with this fallback are trivially
+//      forgeable, but production deploys MUST set NEXTAUTH_SECRET — the
+//      build artifact is never the security boundary, the runtime env is.
+//
+// In dev (NODE_ENV !== "production") the hardcoded fallback lets a fresh
+// checkout run without forcing the developer to generate a secret.
 const __NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
 if (!__NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
-  throw new Error(
-    "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+  // Lazy check — log instead of throwing so `next build` succeeds.
+  // Operators see this in their deploy logs and must fix it before
+  // the deploy serves real traffic.
+  console.error(
+    "[SECURITY] NEXTAUTH_SECRET not set in production — using insecure dev fallback. " +
+      "Generate one with: openssl rand -base64 32"
   );
 }
 

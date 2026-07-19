@@ -40,6 +40,12 @@ import {
 import { requireApiKey } from "@/lib/auth";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { recordUsage } from "@/lib/usage-tracker";
+// Rate-limit imports — apply the same start-rate gate as /api/research/start
+// so a single API key can't DoS the chat endpoint with unbounded QPS.
+// `checkStartRateLimit` enforces max 5 starts/min + 3 concurrent + 50/day per
+// client IP; `releaseConcurrency` MUST be called when the stream completes
+// (success or error) so the concurrent slot doesn't leak.
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 
 const MAX_HISTORY = 20;
 
@@ -51,6 +57,11 @@ export async function POST(req: NextRequest) {
   // The `instanceof Response` check above narrows the union — at this
   // point apiAuth is `{ userId }`.
   const userId = apiAuth.userId;
+
+  // Client IP is resolved up-front because it's needed both for the
+  // rate-limit gate (below, just before the stream starts) and for the
+  // releaseConcurrency call in the stream's finally block.
+  const clientIP = getClientIP(req);
 
   let body: { conversationId?: string; message?: string };
   try {
@@ -109,48 +120,85 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const conversationId = await getOrCreateConversation(
-    body.conversationId || null,
-    userId,
-    message
-  );
+  // Rate-limit: applied as the LAST gate before the stream starts so the
+  // cheap validation paths (400/402/503 above) don't acquire a concurrency
+  // slot they'd then have to release. The 429 response includes Retry-After
+  // so well-behaved SDKs can back off gracefully. The concurrency slot is
+  // released in the stream's `finally` below — see the comment there for
+  // why a leak there would permanently exhaust the per-IP budget.
+  const rateLimit = await checkStartRateLimit(clientIP);
+  if (!rateLimit.ok) {
+    return Response.json(
+      { ok: false, error: rateLimit.reason },
+      {
+        status: 429,
+        headers: rateLimit.retryAfterSec
+          ? { "Retry-After": String(rateLimit.retryAfterSec) }
+          : undefined,
+      }
+    );
+  }
 
-  await saveMessage(conversationId, "user", message);
-  trackEvent(userId, "api_v1_chat_message_sent", {
-    conversationId,
-    messageLength: message.length,
-  });
-
-  // Record usage for metered billing (P1 feature). The record is
-  // buffered in the usage_records table; the flusher in
-  // usage-tracker.ts reports it to Stripe every 60 seconds if the
-  // user is on a metered plan. Failures are swallowed — billing is
-  // best-effort and must NOT block the chat response.
-  recordUsage(userId, "chat");
-
-  const history = await getHistory(conversationId);
-
-  // The v1 API uses the same character prompt as the dashboard so
-  // responses are consistent across surfaces. Memory recall is
-  // intentionally NOT wired up here — the v1 API is a low-level
-  // primitive for integrators, and silently injecting recalled
-  // memories into a programmatic request would be surprising.
-  const systemPrompt = QUAESITOR_CHARACTER;
-
-  const llmMessages: LLMMessage[] = [
-    { role: "system", content: systemPrompt },
-    ...history.slice(-MAX_HISTORY - 1, -1).map((m: ChatMessage) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
-    { role: "user", content: message },
-  ];
-
-  const llm = await getLLM();
+  // ---------- Pre-stream setup ----------
+  // These calls run AFTER the rate-limit slot is acquired but BEFORE the
+  // stream's `finally` is wired up. If any of them throws (DB locked, LLM
+  // provider init failure, etc.), the slot would leak. We wrap them in a
+  // try-catch that releases the slot on error so the per-IP concurrent
+  // budget can never be permanently exhausted by a transient setup error.
+  let conversationId: string;
+  let llmMessages: LLMMessage[];
+  let llm: Awaited<ReturnType<typeof getLLM>>;
+  let expectedDisplay: ReturnType<typeof getProviderDisplayInfo>;
+  let expectedModel: string;
   const encoder = new TextEncoder();
+  try {
+    conversationId = await getOrCreateConversation(
+      body.conversationId || null,
+      userId,
+      message
+    );
 
-  const expectedDisplay = getProviderDisplayInfo(llm.provider);
-  const expectedModel = llm.smartModels[0] || "unknown";
+    await saveMessage(conversationId, "user", message);
+    trackEvent(userId, "api_v1_chat_message_sent", {
+      conversationId,
+      messageLength: message.length,
+    });
+
+    // Record usage for metered billing (P1 feature). The record is
+    // buffered in the usage_records table; the flusher in
+    // usage-tracker.ts reports it to Stripe every 60 seconds if the user
+    // is on a metered plan. Failures are swallowed — billing is
+    // best-effort and must NOT block the chat response.
+    recordUsage(userId, "chat");
+
+    const history = await getHistory(conversationId);
+
+    // The v1 API uses the same character prompt as the dashboard so
+    // responses are consistent across surfaces. Memory recall is
+    // intentionally NOT wired up here — the v1 API is a low-level
+    // primitive for integrators, and silently injecting recalled
+    // memories into a programmatic request would be surprising.
+    const systemPrompt = QUAESITOR_CHARACTER;
+
+    llmMessages = [
+      { role: "system", content: systemPrompt },
+      ...history.slice(-MAX_HISTORY - 1, -1).map((m: ChatMessage) => ({
+        role: m.role as "user" | "assistant",
+        content: m.content,
+      })),
+      { role: "user", content: message },
+    ];
+
+    llm = await getLLM();
+    expectedDisplay = getProviderDisplayInfo(llm.provider);
+    expectedModel = llm.smartModels[0] || "unknown";
+  } catch (err) {
+    // Pre-stream setup failed — release the rate-limit slot before
+    // returning the error so the per-IP concurrent budget isn't leaked.
+    releaseConcurrency(clientIP);
+    const msg = sanitizeError(err);
+    return Response.json({ ok: false, error: msg }, { status: 500 });
+  }
 
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -212,6 +260,15 @@ export async function POST(req: NextRequest) {
           encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
         );
         controller.close();
+      } finally {
+        // Release the rate-limit concurrency slot whether the stream
+        // succeeded or failed. Without this, a single client that opens
+        // 3 streams and lets them hang would permanently exhaust the
+        // per-IP concurrent budget (MAX_CONCURRENT=3 in rate-limit.ts),
+        // blocking ALL further chat requests from that IP until the
+        // process restarts. The release is idempotent (decrement stops
+        // at 0 — see releaseConcurrency in rate-limit.ts).
+        releaseConcurrency(clientIP);
       }
     },
   });

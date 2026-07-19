@@ -174,6 +174,53 @@ export function requireAuth(req: NextRequest): NextResponse | null {
     }
   }
 
+  // Email verification check (opt-in via AUTH_REQUIRE_EMAIL_VERIFY=true).
+  //
+  // When an operator sets AUTH_REQUIRE_EMAIL_VERIFY=true, requests using
+  // Basic-Auth credentials are rejected with 403 if the authed user's
+  // `email_verified` column is 0 (or the column/table is missing — we treat
+  // a missing column as "verification not tracked, allow" to avoid breaking
+  // legacy single-user deployments that haven't run the migration).
+  //
+  // Default: OFF. This is opt-in because:
+  //   1. Existing single-user deployments don't have email verification
+  //      wired up (no SMTP, no verification_tokens flow), so turning it on
+  //      by default would lock out every existing operator.
+  //   2. The C-2 verification_tokens module exists but the registration
+  //      flow that mints+emails tokens is not yet the default auth path.
+  //   3. Multi-tenant NextAuth deployments that want this gate can set
+  //      AUTH_REQUIRE_EMAIL_VERIFY=true after wiring up /api/auth/register
+  //      + /api/auth/verify.
+  if (process.env.AUTH_REQUIRE_EMAIL_VERIFY === "true") {
+    try {
+      const db = getDb();
+      const row = db
+        .prepare("SELECT email_verified FROM users WHERE username = ?")
+        .get(env("AUTH_USERNAME")) as { email_verified?: number } | undefined;
+      // `email_verified` is a 0/1 INTEGER column in the SQLite users table
+      // (Postgres uses a Boolean — but Basic-Auth mode is SQLite-only; the
+      // Postgres path goes through NextAuth, which has its own email-
+      // verification gate). A truthy non-zero value means verified.
+      if (row && !row.email_verified) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "Email not verified. Check your inbox for a verification link, or request a new one at /api/auth/verify.",
+          },
+          { status: 403 }
+        );
+      }
+    } catch {
+      // Table or column might not exist on a fresh DB that hasn't run the
+      // migration adding `email_verified`. Skip the check — failing closed
+      // here would lock out every operator on first deploy, which is worse
+      // than allowing an unverified-email request through. The operator
+      // should run the migration to get the column; once it exists, the
+      // check enforces correctly.
+    }
+  }
+
   return null;
 }
 

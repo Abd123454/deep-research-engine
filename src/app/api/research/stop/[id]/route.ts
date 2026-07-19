@@ -37,6 +37,21 @@ export async function POST(
     );
   }
 
+  // Ownership check: only the user who STARTED the job may cancel it.
+  // Without this, any authenticated user could cancel any other user's
+  // research job (denial-of-service) by guessing/enumerating job IDs.
+  // `job.userId` defaults to "default" for legacy/basic-auth deployments
+  // (see research-store.ts: createJob + recordToJob) — in single-tenant
+  // mode every user resolves to "default", so this check is a no-op there.
+  // In multi-tenant NextAuth deployments, the userId is the NextAuth user
+  // id and the check correctly isolates per-user jobs.
+  if (job.userId && job.userId !== userId) {
+    return NextResponse.json(
+      { ok: false, error: "Not authorized to cancel this job." },
+      { status: 403 }
+    );
+  }
+
   // 1. Abort all in-flight HTTP requests (real cancellation).
   if (job.abortController) {
     job.abortController.abort("Cancelled by user");

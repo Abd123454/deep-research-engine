@@ -65,6 +65,9 @@ worklog.md
 
 # Database
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 /db/
 
 # OS files
