@@ -125,6 +125,95 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
   return null;
 }
 
+/**
+ * v6 audit fix — rehash-on-login: transparently upgrade legacy bcrypt
+ * hashes to the current OWASP-recommended cost factor (12). When a user
+ * successfully authenticates against a hash whose cost factor is below
+ * the current floor, we re-hash the just-verified plaintext password
+ * at the new cost and persist it. This lets the cost-factor migration
+ * happen incrementally (no offline batch rehash required) and bounds
+ * the worst case: every legacy hash is upgraded within one login
+ * window of the user returning to the app.
+ *
+ * Failure is non-fatal: if the DB update fails (locked, network blip),
+ * the login still succeeds — the user just keeps the old hash until
+ * their next login. The error is logged + sent to Sentry so we can
+ * surface a persistent failure if it happens repeatedly.
+ *
+ * @param userId   the user's DB id (used for the UPDATE WHERE clause)
+ * @param email    the user's email (fallback for SQLite legacy path
+ *                 — kept for parity with the audit's prescribed snippet
+ *                 but the userId path is preferred)
+ * @param password the just-verified plaintext password
+ * @param hash     the existing bcrypt hash (whose cost we inspect)
+ */
+async function rehashPasswordIfNeeded(
+  userId: string,
+  email: string,
+  password: string,
+  hash: string
+): Promise<void> {
+  // bcrypt hash format: `$2a$<cost>$<22-char-salt><31-char-hash>`
+  // (also `$2b$` / `$2y$`). split("$")[2] is the cost as a string.
+  // Parse as Number so single-digit costs ("5", "8") compare correctly
+  // — a lexicographic string compare would treat "5" > "12" and skip
+  // the rehash (a bug the v6 audit's literal snippet had).
+  const parts = hash.split("$");
+  const cost = Number(parts[2]);
+  if (!Number.isFinite(cost) || cost >= 12) return;
+
+  try {
+    const newHash = await bcrypt.hash(password, 12);
+    if (isPostgresAvailable()) {
+      try {
+        const prisma = await getPrismaDb();
+        if (prisma) {
+          await prisma.user.updateMany({
+            where: { id: userId },
+            data: { passwordHash: newHash },
+          });
+          logger.info(
+            { module: "nextauth", userId, oldCost: cost, newCost: 12 },
+            "rehashPasswordIfNeeded: upgraded bcrypt cost (Postgres)"
+          );
+          return;
+        }
+      } catch (err) {
+        Sentry.captureException(err);
+        // Fall through to SQLite — same fallback pattern as findUserByEmail.
+      }
+    }
+    try {
+      const db = getDb();
+      db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(
+        newHash,
+        userId
+      );
+      logger.info(
+        { module: "nextauth", userId, oldCost: cost, newCost: 12 },
+        "rehashPasswordIfNeeded: upgraded bcrypt cost (SQLite)"
+      );
+    } catch (err) {
+      // Non-fatal: the login already succeeded. The user will retry
+      // the rehash on next login. Logged + Sentry'd so a persistent
+      // DB failure surfaces in observability.
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "nextauth", userId, email, err: err instanceof Error ? err.message : String(err) },
+        "rehashPasswordIfNeeded: DB update failed — login still succeeds, rehash deferred"
+      );
+    }
+  } catch (err) {
+    // bcrypt.hash failure (extremely unlikely — only on invalid input
+    // or OOM). Same treatment: log + Sentry, login still succeeds.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "nextauth", userId, err: err instanceof Error ? err.message : String(err) },
+      "rehashPasswordIfNeeded: bcrypt.hash failed — login still succeeds, rehash deferred"
+    );
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -141,6 +230,18 @@ export const authOptions: NextAuthOptions = {
 
         const isValid = await bcrypt.compare(credentials.password, user.passwordHash);
         if (!isValid) return null;
+
+        // v6 audit fix — rehash-on-login: transparently upgrade legacy
+        // bcrypt hashes (cost < 12) to the current OWASP recommendation.
+        // Fire-and-forget-ish: we `await` so the DB write happens before
+        // the response, but failures are swallowed inside the helper
+        // (login still succeeds — the rehash is retried next time).
+        await rehashPasswordIfNeeded(
+          user.id,
+          user.email,
+          credentials.password,
+          user.passwordHash
+        );
 
         return { id: user.id, email: user.email, name: user.name || undefined };
       },

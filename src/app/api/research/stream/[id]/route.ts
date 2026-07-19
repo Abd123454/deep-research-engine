@@ -17,7 +17,7 @@ import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 import { getJob } from "@/lib/research-store";
 import { toPublicJob } from "@/lib/types";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getUserId } from "@/lib/auth";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -33,6 +33,7 @@ export async function GET(
   const authFail = requireAuth(req);
   if (authFail) return authFail;
 
+  const userId = getUserId(req);
   const { id } = await params;
   const job = getJob(id);
   if (!job) {
@@ -40,6 +41,19 @@ export async function GET(
       status: 404,
       headers: { "Content-Type": "application/json" },
     });
+  }
+
+  // Ownership check (v6 audit fix): only the user who STARTED the job may
+  // stream it. Without this, any authenticated user could read another
+  // user's research report + sub-queries by guessing/enumerating job IDs.
+  // Mirrors the check in /api/research/stop/[id] (added in v4). In
+  // single-tenant Basic-Auth deployments `job.userId` defaults to "default"
+  // and the check is a no-op (every user resolves to "default").
+  if (job.userId && job.userId !== userId) {
+    return new NextResponse(
+      JSON.stringify({ ok: false, error: "Not authorized to view this job." }),
+      { status: 403, headers: { "Content-Type": "application/json" } }
+    );
   }
 
   const encoder = new TextEncoder();

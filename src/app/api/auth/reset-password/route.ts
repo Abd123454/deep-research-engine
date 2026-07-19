@@ -94,8 +94,11 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Hash the new password (bcrypt, 10 rounds — matches the register route).
-  const passwordHash = await bcrypt.hash(password, 10);
+  // Hash the new password (bcrypt, 12 rounds — OWASP recommendation;
+  // matches the register route). All new passwords get the upgraded
+  // cost factor; existing hashes still at cost 10 are upgraded
+  // transparently on next login (see src/app/api/auth/[...nextauth]/route.ts).
+  const passwordHash = await bcrypt.hash(password, 12);
   const updated = await updateUserPassword(consumed.userId, passwordHash);
   if (!updated) {
     // The token was valid but the user no longer exists — surface a

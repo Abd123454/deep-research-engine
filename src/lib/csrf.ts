@@ -23,8 +23,10 @@
 //   }
 //
 // To mint a token (cookie-based auth only), call `issueCsrfToken()` from a
-// logged-in GET handler and set both the cookie and return the token in
-// JSON for the client to send back as `x-csrf-token`.
+// logged-in GET handler, then `setCsrfCookie(res, token)` to set the
+// HttpOnly+SameSite=Strict cookie, and return the token in the JSON body
+// so the client can send it back as `x-csrf-token` on state-changing
+// requests.
 
 import { NextRequest, NextResponse } from "next/server";
 
@@ -76,7 +78,8 @@ export function validateCsrf(req: NextRequest): NextResponse | null {
  *
  * Call this from a logged-in GET handler (e.g. `/api/auth/csrf`) and:
  *   1. Set the returned token as an HttpOnly+SameSite=Strict cookie named
- *      `csrf-token`.
+ *      `csrf-token` (use `setCsrfCookie` below — it sets the correct
+ *      security flags).
  *   2. Return it in the JSON body so the client can send it back as the
  *      `x-csrf-token` header on state-changing requests.
  *
@@ -90,6 +93,54 @@ export function issueCsrfToken(): string {
   // `globalThis.crypto` is available in Node 19+ and edge runtime.
   globalThis.crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Set the CSRF double-submit cookie on a NextResponse.
+ *
+ * v6 audit fix: the cookie MUST be set with `httpOnly: true` and
+ * `sameSite: "strict"` to prevent:
+ *   - **XSS exfiltration** of the token (httpOnly blocks `document.cookie`
+ *     reads from injected scripts; without it, an XSS payload could steal
+ *     the CSRF token and forge state-changing requests).
+ *   - **Cross-site request submission** (sameSite=strict blocks the
+ *     cookie from being sent on cross-site requests, so a CSRF attack
+ *     can't even submit the double-submit cookie — the server-side
+ *     header-vs-cookie comparison fails before the request reaches
+ *     business logic).
+ *
+ * `secure: true` in production ensures the cookie is only set over HTTPS
+ * (prevents network-layer interception on plain-HTTP transports). In dev
+ * (NODE_ENV !== "production") `secure` is false so localhost HTTP works.
+ *
+ * Usage (cookie-based auth GET handler, e.g. `/api/auth/csrf`):
+ *
+ *   import { issueCsrfToken, setCsrfCookie } from "@/lib/csrf";
+ *
+ *   export async function GET(req: NextRequest) {
+ *     const token = issueCsrfToken();
+ *     const res = NextResponse.json({ token });
+ *     setCsrfCookie(res, token);
+ *     return res;
+ *   }
+ *
+ * The token is also returned in the JSON body — the client reads it from
+ * the response and sends it back as the `x-csrf-token` header on the
+ * next POST/PUT/PATCH/DELETE.
+ */
+export function setCsrfCookie(res: NextResponse, token: string): void {
+  res.cookies.set(CSRF_COOKIE, token, {
+    httpOnly: true,
+    sameSite: "strict",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    // 24h — matches the NextAuth session-token lifetime. A shorter
+    // lifetime would force re-fetching the CSRF token more often than
+    // the session itself refreshes, which is annoying for users
+    // mid-flow. A longer lifetime would extend the window for a
+    // stolen-token CSRF attack (mitigated by httpOnly + sameSite).
+    maxAge: 60 * 60 * 24,
+  });
 }
 
 // Constant-time string compare to prevent timing attacks on token validation.

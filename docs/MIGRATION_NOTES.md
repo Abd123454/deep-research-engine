@@ -23,6 +23,43 @@ bcryptjs is pure JS (3x slower than native bcrypt). Migration:
 **Migration effort:** 1 day
 **Priority:** P2 (performance improvement)
 
+### bcrypt cost factor 10 → 12 (DONE — v6 audit fix)
+
+The OWASP password-storage cheat sheet recommends bcrypt cost factor
+**12** (or higher — pick the highest value your auth latency budget
+allows). The codebase previously used cost **10**, which was the
+bcryptjs default but is now below the OWASP floor.
+
+**Completed in the v6 audit fix pass:**
+
+1. `src/app/api/auth/register/route.ts` — `bcrypt.hash(password, 10)`
+   → `bcrypt.hash(password, 12)`. All new account registrations get
+   the upgraded cost factor.
+2. `src/app/api/auth/reset-password/route.ts` — same change. All
+   password resets get the upgraded cost factor.
+3. `src/app/api/auth/[...nextauth]/route.ts` — added a
+   `rehashPasswordIfNeeded(userId, email, password, hash)` helper
+   called from the NextAuth credentials `authorize()` callback after
+   a successful `bcrypt.compare`. It parses the bcrypt hash's cost
+   factor (from `$2a$<cost>$<salt><hash>` → `Number(parts[2])`) and,
+   if the cost is below 12, re-hashes the just-verified plaintext
+   password at cost 12 and persists it via the same Postgres →
+   SQLite fallback pattern as `findUserByEmail`. Failures are
+   non-fatal (login still succeeds; the rehash is retried next time).
+
+**Result:** legacy hashes at cost 10 are transparently upgraded
+incrementally (no offline batch rehash required). Within one login
+window of every active user returning to the app, the entire user
+table is on cost 12. Inactive users keep their cost-10 hash (still
+secure, just below the OWASP floor) until they next sign in.
+
+**Native bcrypt migration (bcryptjs → bcrypt):** still PLANNED. The
+rehash-on-login mechanism above is forward-compatible — when the
+native `bcrypt` package replaces `bcryptjs`, the same
+`rehashPasswordIfNeeded` helper can additionally detect a
+`$2a$`-prefix hash (bcryptjs default) and rehash using `$2b$`
+(native bcrypt default) on next login, with no further code changes.
+
 ## Dependency vulnerabilities — `bun audit` results (2026-07-19, fix-7-remaining)
 
 `bun update` was run to bring all compatible-range deps to the latest

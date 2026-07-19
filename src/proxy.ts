@@ -38,7 +38,28 @@ function isAllowedOrigin(origin: string): boolean {
   const allowed = process.env.ALLOWED_ORIGINS;
   if (allowed) {
     const list = allowed.split(",").map((s) => s.trim());
-    if (list.includes(origin) || list.includes("*")) return true;
+    // v6 audit fix: ALLOWED_ORIGINS=* is a wildcard that disables the
+    // CORS allowlist entirely. In production this is a security incident
+    // (any origin can POST to /api/research/start and burn tokens /
+    // trigger LLM calls). Reject it loudly so operators see the error
+    // in the boot log. In dev, allow it with a warning so a fresh
+    // checkout with ALLOWED_ORIGINS=* still works for local testing.
+    if (list.includes("*")) {
+      if (process.env.NODE_ENV === "production") {
+        console.error(
+          "[SECURITY] ALLOWED_ORIGINS=* is not allowed in production. " +
+            "Set specific origins (comma-separated), e.g. " +
+            "ALLOWED_ORIGINS=https://app.quaesitor.com,https://staging.quaesitor.com."
+        );
+        return false;
+      }
+      console.warn(
+        "[SECURITY] ALLOWED_ORIGINS=* allows all origins — use only in dev. " +
+          "Set specific origins before deploying to production."
+      );
+      return true;
+    }
+    if (list.includes(origin)) return true;
   }
 
   return false;

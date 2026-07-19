@@ -8,12 +8,21 @@
 //   - long_term_memories
 //   - research_jobs
 //   - documents (metadata + extracted text)
-//   - projects (with connectors — credentials decrypted)
+//   - projects (with connectors — credentials MASKED, never plaintext)
 //   - subscriptions
 //   - usage_records
 //   - user_preferences
 //   - audit_logs (this user's)
 //   - artifact_storage (this user's)
+//
+// SECURITY (v6 audit fix): connector credentials are exported in MASKED
+// form (e.g. "••••abcd"), never plaintext. The GDPR portability right
+// covers the user's OWN data — third-party API tokens / OAuth secrets
+// are NOT the user's data (they're credentials issued to Quaesitor by
+// the third party), and leaking them in a JSON download would let a
+// compromised account exfiltrate connected-service access. Users who
+// need to re-establish a connector must re-authenticate with the third
+// party (OAuth flow) or paste a fresh token (manual flow).
 //
 // Requires auth (refuses anonymous access when AUTH_USERNAME/PASSWORD set).
 import * as Sentry from "@sentry/nextjs";
@@ -23,7 +32,7 @@ import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { logSensitiveAction } from "@/lib/audit";
-import { decryptCredentials } from "@/lib/credentials";
+import { decryptCredentials, maskCredentials } from "@/lib/credentials";
 import type {
   ConversationRow,
   MessageRow,
@@ -39,6 +48,25 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 const EXPORT_FILENAME = "quaesitor-data-export.json";
+
+/**
+ * v6 audit fix: decrypt then MASK connector credentials for safe export.
+ * Returns `{}` for null/empty payloads (no credentials stored) — callers
+ * assign the return value directly to the `credentials` field of the
+ * exported connector object.
+ *
+ * We decrypt (rather than just returning a fixed placeholder) so the
+ * masked tail (last 4 chars) lets the user identify WHICH credential
+ * is stored (e.g. "ghp_…abcd" vs "ghp_…wxyz") without revealing the
+ * secret itself.
+ */
+function safeMaskCredentials(
+  payload: string | null | undefined
+): Record<string, string> {
+  const creds = decryptCredentials<Record<string, string>>(payload);
+  if (!creds) return {};
+  return maskCredentials(creds);
+}
 
 export async function GET(req: NextRequest) {
   // Refuse anonymous access when auth is configured.
@@ -82,12 +110,16 @@ export async function GET(req: NextRequest) {
           prisma.userPreference.findMany({ where: { userId } }),
         ]);
 
-        // Decrypt connector credentials for the export.
+        // v6 audit fix: MASK connector credentials for export. Previously
+        // this called `decryptCredentials(c.credentials)` directly —
+        // leaking plaintext GitHub/Stripe/Slack tokens in the JSON
+        // download. The masked form `"••••" + last4` lets the user
+        // identify which credential is stored without revealing it.
         const projectsWithSafeConnectors = projects.map((p) => ({
           ...p,
           connectors: p.connectors.map((c) => ({
             ...c,
-            credentials: decryptCredentials(c.credentials),
+            credentials: safeMaskCredentials(c.credentials),
           })),
         }));
 
@@ -196,9 +228,12 @@ export async function GET(req: NextRequest) {
           ...projectIds
         ).map((c) => ({
           ...c,
-          // Decrypt for export — but expose via the `credentialsDecrypted`
-          // key to avoid colliding with the raw `credentials` column.
-          credentialsDecrypted: decryptCredentials(c.credentials),
+          // v6 audit fix: MASK credentials for export — previously
+          // `decryptCredentials(c.credentials)` was assigned directly,
+          // leaking plaintext tokens in the JSON download. Now we
+          // decrypt-then-mask so the user sees "••••abcd" (identifiable
+          // but not usable as a credential).
+          credentialsDecrypted: safeMaskCredentials(c.credentials),
         }))
       : [];
     const subscriptions = all<{

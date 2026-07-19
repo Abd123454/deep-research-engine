@@ -561,3 +561,164 @@ describe("10. NEXTAUTH_SECRET behavior", () => {
     ).rejects.toThrow("NEXTAUTH_SECRET must be set");
   });
 });
+
+// ============================================================================
+// Test 11 — device-control path validation (NC-1, v5 audit fix).
+// `validatePath` is not exported, so we test via the public `readFile`
+// API: a request for `/etc/passwd` must be rejected with the
+// "Path not allowed" error message before any fs.readFileSync fires.
+// On Windows, `path.resolve("/etc/passwd")` becomes `C:\etc\passwd`,
+// which is also outside `ALLOWED_BASE` — so the test is cross-platform.
+// ============================================================================
+describe("11. device-control: validatePath rejects /etc/passwd (NC-1)", () => {
+  it("readFile('/etc/passwd') is blocked with 'Path not allowed'", async () => {
+    const { readFile } = await import("../../lib/device-control");
+    const result = readFile("/etc/passwd");
+    expect(result.success).toBe(false);
+    expect(result.action).toBe("read_file");
+    // The exact ALLOWED_BASE depends on os.homedir() + env, but the
+    // error message always starts with the literal "Path not allowed".
+    expect(String(result.error)).toMatch(/Path not allowed/i);
+    // Critical: must NOT mention /etc/passwd contents (i.e. must not
+    // have actually read the file).
+    expect(String(result.output ?? "")).not.toContain("root:");
+  });
+
+  it("readFile('<workspace>/../../etc/passwd') is also blocked (no `..` bypass)", async () => {
+    const { readFile } = await import("../../lib/device-control");
+    // `..` traversal — path.resolve collapses it to /etc/passwd, which
+    // is outside ALLOWED_BASE. The startsWith check on the resolved
+    // path catches this.
+    const result = readFile(`${process.env.DEVICE_CONTROL_WORKSPACE || ""}/../../etc/passwd`);
+    expect(result.success).toBe(false);
+    expect(String(result.error)).toMatch(/Path not allowed/i);
+  });
+});
+
+// ============================================================================
+// Test 12 — DOMPurify print path (NC-2, v5 audit fix). The printReport
+// function in deep-research.tsx builds an HTML document with
+// `DOMPurify.sanitize(marked.parse(report))`. marked preserves raw HTML
+// in markdown (so a `<script>` in the report survives the markdown
+// pass); DOMPurify is the security boundary that strips it before
+// innerHTML assignment. This test simulates that chain — marked is
+// loaded via CDN at runtime so we mock its output as the identity on
+// raw-HTML payloads (which is what marked actually does for inline HTML).
+// ============================================================================
+describe("12. DOMPurify print path: strips <script> from marked.parse output (NC-2)", () => {
+  beforeAll(async () => {
+    // DOMPurify needs a DOM. In Node we provide jsdom. Reuse the
+    // window/document set up by test 4 if it ran first; otherwise
+    // initialize fresh.
+    if (typeof globalThis.window === "undefined") {
+      const { JSDOM } = await import("jsdom");
+      const dom = new JSDOM("<!DOCTYPE html><html><body></body></html>");
+      (globalThis as unknown as { window: unknown }).window = dom.window;
+      (globalThis as unknown as { document: Document }).document =
+        dom.window.document;
+    }
+  });
+
+  it("marked-style raw HTML payload with <script> is sanitized to safe HTML", async () => {
+    const { default: DOMPurify } = await import("dompurify");
+    // Simulate marked.parse() output for a markdown source containing
+    // an inline <script>. marked passes raw HTML through unchanged
+    // (it does NOT escape or strip inline HTML by default — that's
+    // why DOMPurify is required downstream).
+    const markedOutput =
+      '<h1>Report</h1>\n' +
+      '<p>Some findings.</p>\n' +
+      '<script>alert("exfiltrate")</script>\n' +
+      '<img src="x" onerror="alert(1)">';
+
+    // printReport calls `DOMPurify.sanitize(marked.parse(report))`
+    // with NO options — the default config strips <script> tags and
+    // on* event-handler attributes.
+    const clean = DOMPurify.sanitize(markedOutput);
+
+    expect(clean).not.toContain("<script");
+    expect(clean).not.toContain("onerror");
+    expect(clean).not.toContain('alert("exfiltrate")');
+    // Safe content survives.
+    expect(clean).toContain("<h1>Report</h1>");
+    expect(clean).toContain("Some findings.");
+  });
+});
+
+// ============================================================================
+// Test 13 — CORS localhost blocked in production (NM-1, v5 audit fix).
+// The `isAllowedOrigin` function in src/proxy.ts gates the localhost
+// array on `process.env.NODE_ENV !== "production"`. In production, an
+// Origin: http://localhost:3000 header must NOT be allowed (a
+// misconfigured prod deploy listening on localhost, or an attacker who
+// tricks a user into visiting localhost, must not bypass CORS).
+// We test via the exported `proxy()` function — the actual middleware
+// entry point — by constructing a NextRequest with a localhost Origin
+// and asserting the response is 403.
+// ============================================================================
+describe("13. CORS: localhost Origin blocked in production (NM-1)", () => {
+  const origNodeEnv = process.env.NODE_ENV;
+  const origAllowedOrigins = process.env.ALLOWED_ORIGINS;
+  const env = process.env as unknown as Record<string, string | undefined>;
+
+  afterEach(() => {
+    // Restore env so subsequent tests get vitest defaults.
+    if (origNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = origNodeEnv;
+    if (origAllowedOrigins === undefined) delete process.env.ALLOWED_ORIGINS;
+    else process.env.ALLOWED_ORIGINS = origAllowedOrigins;
+    // Reset the module cache so the next test re-imports proxy.ts
+    // under the (potentially changed) env. proxy.ts reads
+    // process.env.NODE_ENV inside the function body (not at module
+    // load), but resetting keeps the test isolated.
+    vi.resetModules();
+  });
+
+  it("rejects Origin: http://localhost:3000 with 403 in production", async () => {
+    env.NODE_ENV = "production";
+    // Make sure ALLOWED_ORIGINS doesn't include "*" — that would
+    // bypass the localhost check entirely (the "*" branch is tested
+    // separately in fix #4).
+    delete process.env.ALLOWED_ORIGINS;
+
+    const { proxy } = await import("../../proxy");
+    const req = new NextRequest("https://example.com/api/research/start", {
+      method: "POST",
+      headers: {
+        // Basic Auth bypasses the CSRF gate so we reach the origin
+        // check (which is what we're testing).
+        authorization: "Basic dXNlcjpwYXNz",
+        origin: "http://localhost:3000",
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+    const res = await proxy(req);
+    expect(res.status).toBe(403);
+    const body = await res.json();
+    expect(String(body.error).toLowerCase()).toContain("origin");
+  });
+
+  it("allows Origin: http://localhost:3000 in dev (non-production)", async () => {
+    env.NODE_ENV = "development";
+    delete process.env.ALLOWED_ORIGINS;
+
+    const { proxy } = await import("../../proxy");
+    const req = new NextRequest("https://example.com/api/research/start", {
+      method: "POST",
+      headers: {
+        authorization: "Basic dXNlcjpwYXNz",
+        origin: "http://localhost:3000",
+        "content-type": "application/json",
+      },
+      body: "{}",
+    });
+    const res = await proxy(req);
+    // Dev allows localhost — should pass through (status 200 from
+    // NextResponse.next()).
+    expect(res.status).toBe(200);
+    expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
+      "http://localhost:3000"
+    );
+  });
+});

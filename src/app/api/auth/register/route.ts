@@ -138,7 +138,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const passwordHash = await bcrypt.hash(password, 10);
+    // OWASP-recommended bcrypt cost factor is 12 (was 10). Cost 12
+    // adds ~50ms to hashing on modern hardware — acceptable for a
+    // once-per-account operation. Existing hashes at cost 10 are
+    // transparently upgraded on next login (see the rehash-on-login
+    // logic in src/app/api/auth/[...nextauth]/route.ts).
+    const passwordHash = await bcrypt.hash(password, 12);
 
     // SENSITIVE ACTION: account creation. The "userId" for the audit
     // entry is the new user's email — they don't have an authenticated
