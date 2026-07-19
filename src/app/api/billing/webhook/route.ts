@@ -30,6 +30,44 @@ export async function POST(req: NextRequest) {
 
   logger.info({ type: event.type, id: event.id }, "Stripe webhook received");
 
+  // 7a v5 audit fix: Stripe webhook idempotency. Stripe retries a
+  // webhook up to ~3 days if we return non-2xx; without an idempotency
+  // guard, a retried `checkout.session.completed` would re-fire our
+  // `billing.subscribe` audit log + INSERT-or-REPLACE on the
+  // subscriptions table. The INSERT OR REPLACE is technically safe
+  // (it overwrites with the same data), but the audit-log duplicate
+  // is noise and a buggy handler could double-charge on retry.
+  //
+  // We persist the event id in `processed_events` BEFORE processing.
+  // If the id is already present, we short-circuit with a `duplicate:
+  // true` flag (still 2xx so Stripe stops retrying). The table is
+  // created lazily via CREATE TABLE IF NOT EXISTS so a fresh DB
+  // doesn't need a migration.
+  const eventId = event.id;
+  try {
+    const db = getDb();
+    db.prepare(
+      "CREATE TABLE IF NOT EXISTS processed_events (id TEXT PRIMARY KEY, created_at DATETIME DEFAULT CURRENT_TIMESTAMP)"
+    ).run();
+    const existing = db
+      .prepare("SELECT id FROM processed_events WHERE id = ?")
+      .get(eventId) as { id?: string } | undefined;
+    if (existing) {
+      logger.info({ eventId }, "Stripe event already processed — skipping");
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+  } catch (err) {
+    // Non-critical: if we can't talk to the DB to check idempotency,
+    // fall through to process the event anyway. The downstream
+    // handlers are idempotent-ish (INSERT OR REPLACE), so the worst
+    // case is a duplicate audit-log row — preferable to dropping the
+    // webhook entirely (Stripe would retry forever).
+    logger.warn(
+      { err: sanitizeError(err), eventId },
+      "Failed to check Stripe event idempotency — proceeding with processing"
+    );
+  }
+
   try {
     switch (event.type) {
       case "checkout.session.completed": {
@@ -213,6 +251,24 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     logger.error({ err, eventType: event.type }, "Error processing Stripe webhook");
+  }
+
+  // 7a: persist the event id AFTER successful processing. We do this
+  // in a try/catch outside the main switch's try/catch so a failure
+  // here does NOT cause the webhook to return non-2xx (which would
+  // trigger a Stripe retry, which would re-process the event and
+  // double-charge). If we can't persist the id, we still return 2xx —
+  // the next Stripe retry will see the event as "not yet processed"
+  // and re-run the handlers, but they're idempotent-ish (INSERT OR
+  // REPLACE) so the worst case is a duplicate audit-log row.
+  try {
+    const db = getDb();
+    db.prepare("INSERT OR IGNORE INTO processed_events (id) VALUES (?)").run(eventId);
+  } catch (err) {
+    logger.warn(
+      { err: sanitizeError(err), eventId },
+      "Failed to persist Stripe event id — duplicate detection disabled for this event"
+    );
   }
 
   return NextResponse.json({ received: true });

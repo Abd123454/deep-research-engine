@@ -475,6 +475,25 @@ export function DeepResearch() {
 
   function printReport() {
     if (!job?.report) return;
+    // NC-2 (CVSS 7.1) v5 audit fix: sanitize the markdown→HTML output
+    // with DOMPurify BEFORE assigning to innerHTML. `marked.parse()`
+    // alone passes through raw HTML in the markdown source, so a
+    // research report containing `<script>alert(1)</script>` (e.g.
+    // from a poisoned web page that was scraped into the report)
+    // would execute when the user prints.
+    //
+    // DOMPurify is loaded BEFORE marked so it's available on the
+    // window when the inline script runs. Both scripts come from the
+    // jsdelivr CDN with `crossorigin="anonymous"` so a future SRI
+    // hash can be added without a CORS renegotiation.
+    //
+    // NOTE on SRI: jsdelivr serves `marked/marked.min.js` as a
+    // floating tag (latest version) so a fixed SRI hash would break
+    // on every release. To pin SRI, replace the URL with a versioned
+    // path like `marked@12.0.0/marked.min.js` and generate the hash
+    // via `curl -s https://cdn.jsdelivr.net/npm/marked@12.0.0/marked.min.js | openssl dgst -sha384 -binary | openssl base64 -A`.
+    // The current floating-tag setup is the trade-off for staying
+    // current; DOMPurify is the actual security boundary.
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${job.plan?.title || "Deep Research Report"}</title>
 <style>body{font-family:Georgia,serif;max-width:800px;margin:2rem auto;padding:0 1rem;line-height:1.7;color:#1a1a1a}
 h1{font-size:1.8rem}h2{font-size:1.4rem;margin-top:2rem}h3{font-size:1.1rem}
@@ -483,9 +502,10 @@ code{background:#f4f4f4;padding:2px 6px;border-radius:3px;font-size:0.9em}
 pre{background:#f4f4f4;padding:1rem;border-radius:6px;overflow-x:auto}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #ddd;padding:8px}
 @media print{body{margin:0}}</style></head><body>
-<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3/dist/purify.min.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" crossorigin="anonymous"></script>
 <div id="content"></div>
-<script>document.getElementById('content').innerHTML=marked.parse(${JSON.stringify(job.report)});window.print();</script>
+<script>document.getElementById('content').innerHTML=DOMPurify.sanitize(marked.parse(${JSON.stringify(job.report)}));window.print();</script>
 </body></html>`;
     const w = window.open("", "_blank");
     if (w) { w.document.write(html); w.document.close(); }

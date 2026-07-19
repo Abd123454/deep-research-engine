@@ -28,7 +28,7 @@
 // available in the edge runtime.
 
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth, getUserId } from "@/lib/auth";
+import { requireAuth, getUserId, requireAdminAccess } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
 import { sanitizeError } from "@/lib/sanitize-error";
 import { logger } from "@/lib/logger";
@@ -72,6 +72,15 @@ function auditMetadata(
 }
 
 export async function POST(req: NextRequest) {
+  // NC-1 (CVSS 9.8) v5 audit fix: device-control exposes the user's
+  // filesystem + shell at near-arbitrary scope. In addition to the
+  // library-level path/command allowlists, the route is now admin-only
+  // via `requireAdminAccess`. Operators must set ADMIN_IP_ALLOWLIST
+  // (comma-separated IPs) to lock device-control to known operational
+  // egress IPs. When ADMIN_IP_ALLOWLIST is unset, the check is a no-op
+  // (preserves existing dev/preview behavior).
+  const adminFail = requireAdminAccess(req);
+  if (adminFail) return adminFail;
   // Auth: device control exposes the user's filesystem + shell. Only
   // the authenticated user can invoke it. (API-key auth is intentionally
   // NOT supported here — programmatic device control should go through

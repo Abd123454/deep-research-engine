@@ -22,6 +22,7 @@ import { sendEmail } from "@/lib/email";
 import { createRequestLogger, generateRequestId, logger } from "@/lib/logger";
 import { createVerificationToken } from "@/lib/verification-tokens";
 import type { UserRow } from "@/lib/sqlite-types";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 
 const ForgotSchema = z.object({
   email: z.string().email("Invalid email."),
@@ -81,57 +82,80 @@ export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
   const log = createRequestLogger(requestId, { module: "auth/forgot-password" });
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch (err) {
-  Sentry.captureException(err);
-// Still 200 — don't leak parse errors.
-    return NextResponse.json({ ok: true });
-  
-}
-
-  const parsed = ForgotSchema.safeParse(body);
-  if (!parsed.success) {
-    // 200 to avoid leaking whether email format is valid vs. registered.
-    return NextResponse.json({ ok: true });
-  }
-
-  const { email } = parsed.data;
-
-  try {
-    const user = await findUserByEmail(email);
-    if (user) {
-      // C-2 fix: persist a real single-use reset token in the
-      // verification_tokens table (1h expiry). /api/auth/reset-password
-      // consumes it atomically before updating the password.
-      const token = await createVerificationToken(user.id, "password_reset");
-      const resetUrl = `${APP_URL}/reset-password?token=${token}`;
-      await sendEmail(user.email, "password-reset", {
-        name: user.name || undefined,
-        resetUrl,
-      });
-      log.info({ userId: user.id }, "Password reset email sent");
-
-      // Dev mode: RESEND_API_KEY is unset → sendEmail is a no-op. Return
-      // the raw token so the developer / e2e test can paste it into the
-      // reset form without a real email round-trip. The token is still
-      // 256 bits of random — returning it over HTTPS to the same email
-      // owner is safe.
-      const devMode = !process.env.RESEND_API_KEY;
-      if (devMode) {
-        return NextResponse.json({ ok: true, devToken: token });
-      }
-    } else {
-      log.info({ email }, "No account found for email — silently skipping");
-    }
-  } catch (err) {
-    log.error(
-      { err: err instanceof Error ? err.message : String(err) },
-      "Failed to process forgot-password"
+  // NH-1 (CVSS 6.5) v5 audit fix: rate-limit password-reset attempts per
+  // client IP. Forgot-password is an unauthenticated endpoint that
+  // triggers an email send — without a rate limit, an attacker could
+  // enumerate emails or amplify email volume to a victim's inbox.
+  // The concurrent slot is released in the finally block below.
+  const ip = getClientIP(req);
+  const rl = await checkStartRateLimit(ip);
+  if (!rl.ok) {
+    // NOTE: still return 200 to avoid leaking whether the email is
+    // registered (matches the existing user-enumeration defense).
+    // The 429 only fires under sustained abuse, which is itself a
+    // signal that the request wasn't a legit user typo.
+    return NextResponse.json(
+      { ok: false, error: "Too many attempts. Please try again later." },
+      { status: 429, headers: rl.retryAfterSec ? { "Retry-After": String(rl.retryAfterSec) } : {} }
     );
   }
 
-  // Always 200 to prevent email enumeration.
-  return NextResponse.json({ ok: true });
+  try {
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch (err) {
+  Sentry.captureException(err);
+// Still 200 — don't leak parse errors.
+    return NextResponse.json({ ok: true });
+
+}
+
+    const parsed = ForgotSchema.safeParse(body);
+    if (!parsed.success) {
+      // 200 to avoid leaking whether email format is valid vs. registered.
+      return NextResponse.json({ ok: true });
+    }
+
+    const { email } = parsed.data;
+
+    try {
+      const user = await findUserByEmail(email);
+      if (user) {
+        // C-2 fix: persist a real single-use reset token in the
+        // verification_tokens table (1h expiry). /api/auth/reset-password
+        // consumes it atomically before updating the password.
+        const token = await createVerificationToken(user.id, "password_reset");
+        const resetUrl = `${APP_URL}/reset-password?token=${token}`;
+        await sendEmail(user.email, "password-reset", {
+          name: user.name || undefined,
+          resetUrl,
+        });
+        log.info({ userId: user.id }, "Password reset email sent");
+
+        // Dev mode: RESEND_API_KEY is unset → sendEmail is a no-op. Return
+        // the raw token so the developer / e2e test can paste it into the
+        // reset form without a real email round-trip. The token is still
+        // 256 bits of random — returning it over HTTPS to the same email
+        // owner is safe.
+        const devMode = !process.env.RESEND_API_KEY;
+        if (devMode) {
+          return NextResponse.json({ ok: true, devToken: token });
+        }
+      } else {
+        log.info({ email }, "No account found for email — silently skipping");
+      }
+    } catch (err) {
+      log.error(
+        { err: err instanceof Error ? err.message : String(err) },
+        "Failed to process forgot-password"
+      );
+    }
+
+    // Always 200 to prevent email enumeration.
+    return NextResponse.json({ ok: true });
+  } finally {
+    // NH-1: release the rate-limit concurrency slot.
+    releaseConcurrency(ip);
+  }
 }

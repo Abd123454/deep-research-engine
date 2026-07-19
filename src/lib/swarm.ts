@@ -41,6 +41,7 @@ import { getLLM, type LLMMessage } from "./llm-provider";
 import { detectToolCall, executeToolCall, getToolsDescription, type ToolCall } from "./agent-tools";
 import { logger } from "./logger";
 import { MAX_TOOL_ITERATIONS } from "./swarm-constants";
+import { runWithConcurrency } from "./concurrency";
 
 // ---------- Types ----------
 
@@ -747,10 +748,21 @@ export async function runSwarm(
     "Swarm started"
   );
 
-  // Phase 2: Run workers in parallel (with per-worker timeout).
+  // Phase 2: Run workers with BOUNDED concurrency (was unbounded
+  // Promise.allSettled — 7b v5 audit fix). A plan that fans out to 6+
+  // workers would fire 6 simultaneous LLM calls, blowing the NVIDIA
+  // free-tier rate limit (3 concurrent). Cap at 3 to respect provider
+  // limits; workers run sequentially in groups of 3.
+  //
+  // We use `runWithConcurrency` (Promise.all semantics under the hood)
+  // instead of `Promise.allSettled` because the mapper already wraps
+  // its body in try/catch — it never rejects, so allSettled's
+  // rejection-tolerance is unnecessary. The returned shape matches
+  // the previous `r.value` for fulfilled results.
   assertNotCancelled("workers");
-  const workerResults = await Promise.allSettled(
-    subtasks.map(async (subtask) => {
+  const workerResults = await runWithConcurrency(
+    subtasks,
+    async (subtask) => {
       // P0-3: per-worker cancellation check. If the caller aborted
       // mid-flight (e.g. user closed the SSE tab), skip workers that
       // haven't started yet.
@@ -780,13 +792,14 @@ export async function runSwarm(
           output: `(agent failed: ${msg})`,
         };
       }
-    })
+    },
+    3,
   );
 
   // Collect results (including failures, which become error notes).
-  const outputs = workerResults.map((r) =>
-    r.status === "fulfilled" ? r.value : { role: "generalist" as AgentRole, subtask: "unknown", output: "(worker crashed)" }
-  );
+  // workerResults already holds the fulfilled values (the mapper
+  // never rejects — see try/catch above).
+  const outputs = workerResults;
 
   // Phase 3: Synthesize (with timeout).
   assertNotCancelled("synthesis");

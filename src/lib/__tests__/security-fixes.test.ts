@@ -144,6 +144,20 @@ vi.mock("@/lib/logger", () => ({
   },
 }));
 
+// v5 audit fix NH-1: the NextAuth route now imports `@/lib/rate-limit`
+// (for the per-IP sign-in throttle). The dynamic-import test
+// re-triggers the module-load check under different env, so the
+// alias must resolve to a mock — otherwise vitest's alias resolver
+// fails with "Cannot find package '@/lib/rate-limit'" when the route
+// module is re-imported after vi.resetModules(). The mock returns
+// a permissive rate-limit result (ok: true) so the wrapper passes
+// through to the real NextAuth handler.
+vi.mock("@/lib/rate-limit", () => ({
+  checkStartRateLimit: vi.fn(async () => ({ ok: true })),
+  releaseConcurrency: vi.fn(),
+  getClientIP: vi.fn(() => "127.0.0.1"),
+}));
+
 // Import after vi.mock (vitest hoists the mock above these imports).
 import {
   createVerificationToken,

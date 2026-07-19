@@ -17,14 +17,21 @@ import { validateCsrf } from "./lib/csrf";
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
 function isAllowedOrigin(origin: string): boolean {
-  // Same-origin is always allowed — we check against the Host header.
-  // Also allow localhost variants for dev.
-  const localhost = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-  ];
+  // NM-1 (CVSS 5.5) v5 audit fix: only allow localhost origins in
+  // non-production. In production, localhost/127.0.0.1 origins are
+  // rejected outright — a misconfigured production deploy that
+  // happens to listen on localhost (or an attacker who can trick a
+  // user into visiting http://localhost:3000) must not be able to
+  // bypass the CORS allowlist via a literal-localhost Origin header.
+  const localhost =
+    process.env.NODE_ENV !== "production"
+      ? [
+          "http://localhost:3000",
+          "http://127.0.0.1:3000",
+          "http://localhost:3001",
+          "http://127.0.0.1:3001",
+        ]
+      : [];
   if (localhost.includes(origin)) return true;
 
   // Check ALLOWED_ORIGINS env var (comma-separated).

@@ -32,6 +32,7 @@ import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { createRequestLogger, generateRequestId } from "@/lib/logger";
 import { logSensitiveAction } from "@/lib/audit";
 import { setConsent } from "@/lib/consent";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 
 const MIN_AGE = 13;
 
@@ -77,6 +78,21 @@ function computeAge(isoDob: string, now: Date = new Date()): number {
 export async function POST(req: NextRequest) {
   const requestId = generateRequestId();
   const log = createRequestLogger(requestId, { module: "auth/register" });
+
+  // NH-1 (CVSS 6.5) v5 audit fix: rate-limit registration attempts per
+  // client IP to blunt credential-stuffing / account-creation abuse.
+  // `checkStartRateLimit` enforces max 5/min + 3 concurrent + 50/day
+  // per IP. The concurrent counter is released in a finally block
+  // below so short-lived auth requests don't pin the bucket.
+  const ip = getClientIP(req);
+  const rl = await checkStartRateLimit(ip);
+  if (!rl.ok) {
+    return NextResponse.json(
+      { ok: false, error: "Too many attempts. Please try again later." },
+      { status: 429, headers: rl.retryAfterSec ? { "Retry-After": String(rl.retryAfterSec) } : {} }
+    );
+  }
+
   try {
     const body = await req.json();
     const parsed = RegisterSchema.safeParse(body);
@@ -231,5 +247,11 @@ export async function POST(req: NextRequest) {
     }
   } catch {
     return NextResponse.json({ ok: false, error: "Invalid request." }, { status: 400 });
+  } finally {
+    // NH-1: release the rate-limit concurrency slot reserved at the
+    // top of the handler. Auth requests are short-lived — without
+    // this release, the per-IP concurrent cap of 3 would saturate
+    // after 3 requests and block all subsequent auth from that IP.
+    releaseConcurrency(ip);
   }
 }

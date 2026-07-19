@@ -229,8 +229,13 @@ export function requireAuth(req: NextRequest): NextResponse | null {
  * by `requireAdminAccess` in addition to `requireAuth` so operators can
  * further restrict them to a known IP allowlist (e.g. corporate NAT or
  * bastion hosts) even when auth credentials have been issued.
+ *
+ * NC-1 v5 audit fix: `/api/device-control` is now in the admin list
+ * because it exposes the user's filesystem + shell at near-arbitrary
+ * scope. The library-level path/command allowlists are defense-in-depth;
+ * the IP allowlist here is the operator-facing control.
  */
-const ADMIN_ROUTES = ["/api/mcp", "/api/audit-logs"];
+const ADMIN_ROUTES = ["/api/mcp", "/api/audit-logs", "/api/device-control"];
 
 /**
  * IP allowlist guard for sensitive admin routes.

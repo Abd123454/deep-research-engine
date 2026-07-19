@@ -21,6 +21,7 @@ import { readPages } from "./page-reader";
 import { getJob } from "./research-store";
 import { persistJob } from "./research-store";
 import { setCachedResearch } from "./research-cache";
+import { runWithConcurrency } from "./concurrency";
 import { releaseConcurrency } from "./rate-limit";
 import { envInt } from "./env";
 import { logger } from "./logger";
@@ -762,9 +763,15 @@ async function extractFindings(
   }
   if (current.length > 0) batches.push(current);
 
-  // Process ALL batches IN PARALLEL (was sequential — big speedup for multi-batch extracts).
-  const batchResults = await Promise.all(
-    batches.map(async (batch, bi) => {
+  // Process ALL batches with BOUNDED concurrency (was unbounded
+  // Promise.all — 7b v5 audit fix). A research job with 8 batches
+  // would fire 8 simultaneous LLM calls, blowing the NVIDIA free-tier
+  // rate limit (3 concurrent). Cap at 3 to respect provider limits;
+  // batches run sequentially in groups of 3, which is still ~3×
+  // faster than fully-serial.
+  const batchResults = await runWithConcurrency(
+    batches,
+    async (batch, bi) => {
       const context = batch
         .map((p, i) => {
           const snippet = p.text.slice(0, 3000).trim();
@@ -800,7 +807,8 @@ Extract the key findings as a markdown list. Each item should start with "- " an
         const msg = err instanceof Error ? err.message : String(err);
         return `_(Extraction failed for batch ${bi + 1}: ${msg})_`;
       }
-    })
+    },
+    3,
   );
 
   return batchResults.join("\n\n");
@@ -1313,8 +1321,15 @@ export async function runResearch(jobId: string): Promise<void> {
       "searching",
       `Round 1 — processing ${round1SubQueries.length} sub-questions in parallel...`
     );
-    await Promise.all(
-      round1SubQueries.map((sq, i) => {
+    // 7b v5 audit fix: bound round-1 fan-out to 3 concurrent
+    // processSubQuery calls. Each processSubQuery fires its own
+    // searchWeb + readPages + extractFindings chain — unbounded
+    // Promise.all would fan out N×M×K upstream HTTP requests, blowing
+    // the NVIDIA free-tier rate limit (3 concurrent). The mapper's
+    // `.catch()` ensures a single failure doesn't reject the batch.
+    await runWithConcurrency(
+      round1SubQueries,
+      (sq, i) => {
         log(
           job,
           "info",
@@ -1328,7 +1343,8 @@ export async function runResearch(jobId: string): Promise<void> {
           sq.finishedAt = Date.now();
           log(job, "error", "searching", `Sub-question failed: "${sq.question}" — ${msg}`);
         });
-      })
+      },
+      3,
     );
     log(job, "success", "searching", `Round 1 complete — all ${round1SubQueries.length} sub-questions processed.`);
     think(job, "searching",
@@ -1407,8 +1423,12 @@ export async function runResearch(jobId: string): Promise<void> {
             "searching",
             `Round 2 — processing ${round2SubQueries.length} gap-fills in parallel...`
           );
-          await Promise.all(
-            round2SubQueries.map((sq, i) => {
+          // 7b v5 audit fix: same bounded-concurrency cap as round 1
+          // (3 concurrent) — gap-fills are the same per-subquery LLM
+          // fan-out, just for fewer items.
+          await runWithConcurrency(
+            round2SubQueries,
+            (sq, i) => {
               log(
                 job,
                 "info",
@@ -1422,7 +1442,8 @@ export async function runResearch(jobId: string): Promise<void> {
                 sq.finishedAt = Date.now();
                 log(job, "error", "searching", `Gap-fill failed: "${sq.question}" — ${msg}`);
               });
-            })
+            },
+            3,
           );
           log(job, "success", "searching", `Round 2 complete.`);
           job.stats.roundsCompleted = 2;

@@ -15,14 +15,17 @@ const nextConfig: NextConfig = {
     serverActions: { bodySizeLimit: "50mb" },
     proxyClientMaxBodySize: "50mb",
     // P-1: optimizePackageImports makes Next.js tree-shake the named exports
-    // of these large icon/animation libraries at build time, instead of
+    // of these large icon/animation/markdown libraries at build time, instead of
     // bundling the entire index. lucide-react alone ships 1k+ icons; without
     // this, every page that imports a single icon pulls the whole module
     // into the dev server's module graph (slower HMR + slower cold start).
+    // v5 audit fix #8: added `react-markdown` so its named exports
+    // (Components, ComponentProps, etc.) are tree-shaken per-route.
     optimizePackageImports: [
       "lucide-react",
       "@radix-ui/react-icons",
       "framer-motion",
+      "react-markdown",
     ],
   },
   // Turbopack needs an explicit project root so its NFT (Node File Trace)

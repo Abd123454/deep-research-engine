@@ -15,6 +15,8 @@ import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserRow } from "@/lib/sqlite-types";
 import { logger } from "@/lib/logger";
+import { NextRequest, NextResponse } from "next/server";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 
 // C-1 (CVSS 9.8): NEXTAUTH_SECRET must be set in production.
 // A missing secret means NextAuth falls back to a known constant, which
@@ -164,4 +166,45 @@ export const authOptions: NextAuthOptions = {
 };
 
 const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
+
+// NH-1 (CVSS 6.5) v5 audit fix: wrap the NextAuth handler with a
+// per-IP rate limit on POST requests (the credential sign-in verb).
+// NextAuth internally routes GET (csrf token, session fetch, signout
+// form) and POST (signin, signout, csrf verify). Only POST hits the
+// credentials provider — that's the brute-force surface we want to
+// throttle. GETs are passed through unmodified (they're cheap and
+// happen on every page load).
+//
+// `checkStartRateLimit` enforces max 5/min + 3 concurrent + 50/day
+// per IP. The concurrent slot is released in the finally block so
+// short-lived auth requests don't pin the bucket.
+const rateLimitedHandler = async (req: NextRequest) => {
+  if (req.method === "POST") {
+    const ip = getClientIP(req);
+    const rl = await checkStartRateLimit(ip);
+    if (!rl.ok) {
+      return NextResponse.json(
+        { error: "Too many attempts. Please try again later." },
+        {
+          status: 429,
+          headers: rl.retryAfterSec
+            ? { "Retry-After": String(rl.retryAfterSec) }
+            : {},
+        }
+      );
+    }
+    try {
+      // NextAuth's handler accepts a NextRequest in App Router and
+      // returns a NextResponse. The runtime signature is loose — we
+      // cast through `unknown` because the @types package types it
+      // for the Pages Router (NextApiRequest/NextApiResponse) and the
+      // App Router signature is inferred at the route-module boundary.
+      return (await (handler as unknown as (req: NextRequest) => Promise<NextResponse>)(req)) as NextResponse;
+    } finally {
+      releaseConcurrency(ip);
+    }
+  }
+  return (handler as unknown as (req: NextRequest) => Promise<NextResponse>)(req);
+};
+
+export { rateLimitedHandler as GET, rateLimitedHandler as POST };

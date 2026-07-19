@@ -8,6 +8,16 @@ import * as Sentry from "@sentry/nextjs";
 import * as React from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Square, Copy, Check, Leaf, Lightbulb, PanelRight } from "lucide-react";
+// v5 audit fix #8: ReactMarkdown is statically imported (not lazy-loaded)
+// because it renders the streaming assistant response — `streamingResponse`
+// is updated on every SSE token. Lazy-loading via React.lazy + Suspense
+// would show a fallback on the FIRST token of every stream (the chunk
+// is fetched on-demand after the first render), causing visible flicker
+// at the start of every assistant turn. The static import is ~14KB
+// gzipped and shared across all chat-bearing routes (UnifiedInterface,
+// ResearchCard, DocumentCard), so the per-route cost is amortized by
+// Next.js's automatic chunk sharing. `optimizePackageImports` in
+// next.config.ts tree-shakes the named exports.
 import ReactMarkdown from "react-markdown";
 import {
   estimateChatCarbon,
