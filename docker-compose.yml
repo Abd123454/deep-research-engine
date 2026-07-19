@@ -1,11 +1,16 @@
-# Docker Compose for Deep Research Engine.
+# Docker Compose for Quaesitor.
 #
 # Usage:
 #   1. Copy .env.example to .env and fill in NVIDIA_API_KEY
-#   2. docker compose up -d
-#   3. Open http://localhost:3000
+#   2. Set POSTGRES_PASSWORD and REDIS_PASSWORD in .env (do NOT use the
+#      defaults in production)
+#   3. docker compose up -d
+#   4. Open http://localhost:3000
 #
-# Includes PostgreSQL (5-layer memory) + Redis (distributed rate limiting).
+# Includes PostgreSQL (5-layer memory + pgvector) + Redis (distributed
+# rate limiting + BullMQ). Both datastores are bound to 127.0.0.1 only
+# so they are not reachable from outside the host — the app container
+# talks to them over the internal compose network.
 
 services:
   deep-research:
@@ -17,14 +22,34 @@ services:
       - .env
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://deepresearch:deepresearch@postgres:5432/deepresearch
-      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://deepresearch:${POSTGRES_PASSWORD:-deepresearch}@postgres:5432/deepresearch
+      - REDIS_URL=redis://:${REDIS_PASSWORD:-}@redis:6379
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
     restart: unless-stopped
+    # --- Security hardening ---
+    # no-new-privileges: the process cannot escalate capabilities via
+    #   setuid binaries (defense-in-depth against container escapes).
+    # cap_drop ALL + cap_add CHOWN/SETUID/SETGID: drop every Linux
+    #   capability, then re-add the minimum Next.js's standalone server
+    #   needs to switch to the non-root user (setuid in the Dockerfile's
+    #   USER directive).
+    # read_only: the root filesystem is mounted read-only; tmpfs is
+    #   provided for /tmp (Next.js writes caches, upload buffers, etc).
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETUID
+      - SETGID
+    read_only: true
+    tmpfs:
+      - /tmp:size=256m,mode=1777
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
@@ -37,12 +62,16 @@ services:
     container_name: deep-research-postgres
     environment:
       POSTGRES_USER: deepresearch
-      POSTGRES_PASSWORD: deepresearch
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deepresearch}
       POSTGRES_DB: deepresearch
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    # Bind to 127.0.0.1 only — the database is reachable from the host
+    # for ops (`psql -h 127.0.0.1 -U deepresearch`) but NOT from the
+    # public network interface. The app container reaches it over the
+    # internal compose network, not via this published port.
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U deepresearch"]
       interval: 10s
@@ -53,8 +82,15 @@ services:
   redis:
     image: redis:7-alpine
     container_name: deep-research-redis
+    # Bind to 127.0.0.1 only — same reasoning as Postgres above.
+    # Require a password (set REDIS_PASSWORD in .env for production).
+    # `--requirepass ""` (the default when REDIS_PASSWORD is unset) is
+    # accepted by Redis but disables auth — fine for local dev, NOT for
+    # any deploy that exposes Redis to other hosts. The 127.0.0.1 bind
+    # already prevents remote access; the password is defense-in-depth.
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-}", "--bind", "0.0.0.0"]
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     restart: unless-stopped

@@ -1,0 +1,9 @@
+# Default owner
+* @Abd123454
+
+# Security-critical files
+/src/lib/auth.ts @Abd123454
+/src/lib/credentials.ts @Abd123454
+/src/lib/safe-fetch.ts @Abd123454
+/src/lib/code-sandbox.ts @Abd123454
+/src/proxy.ts @Abd123454

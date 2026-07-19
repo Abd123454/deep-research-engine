@@ -1,5 +1,47 @@
 # Changelog
 
+## [4.0.0] — 2026-07-19 (public launch)
+
+### Public Launch Release
+- First stable public release. See `RELEASE_NOTES.md` for the full
+  announcement and `docs/LAUNCH_CHECKLIST.md` for the pre-launch checklist.
+- Version unified across `package.json`, `README.md`, `CHANGELOG.md`,
+  `EVAL.md`, and `docs/api/openapi.yaml` (audit fix D-1).
+
+### Documentation & production-readiness (audit follow-up)
+- `SECURITY.md` rewritten to reflect the actual security posture — Basic
+  + NextAuth + MFA + API Keys auth on 60+ routes, persisted jobs
+  (SQLite/Postgres), Redis-backed rate limiting with in-memory fallback,
+  and `prompt-security.ts` Unicode/homoglyph/multilingual injection
+  defense (audit fix D-2).
+- `.env.example` expanded with 9 missing critical variables —
+  `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `SENTRY_DSN`,
+  `MFA_SECRET`, `CREDENTIALS_ENCRYPTION_KEY`, `LOG_LEVEL`,
+  `SENTRY_ORG`, `SENTRY_PROJECT`, `NEXTAUTH_SECRET` (audit fix D-3).
+- `setup.sh` rewritten as a proper one-shot bootstrap script (prereqs,
+  install, env copy, prisma generate, OCR data, NVIDIA_API_KEY check)
+  (audit fix D-4).
+- `docs/api/openapi.yaml` expanded with 10 missing endpoints:
+  `/api/auth/register`, `/api/auth/forgot-password`,
+  `/api/billing/checkout`, `/api/billing/portal`,
+  `/api/billing/subscription`, `/api/v1/chat`, `/api/keys`,
+  `/api/device-control`, `/api/workspaces`, `/api/consent` (audit fix
+  D-5).
+- `docker-compose.yml` hardened — Postgres/Redis bound to `127.0.0.1`,
+  Redis `--requirepass`, app container `no-new-privileges`, `cap_drop:
+  ALL`, `read_only: true` with tmpfs `/tmp` (audit fix P-1).
+- `.github/CODEOWNERS`, `.github/settings.yml` (branch protection),
+  CI security job with gitleaks secret scanning (audit fixes P-2..P-4).
+
+### Dependency hygiene
+- Removed `tailwindcss-animate` (duplicate — `tw-animate-css` is the
+  Tailwind v4 compatible replacement already in `devDependencies`)
+  (audit fix Dep-1).
+- Added `docs/MIGRATION_NOTES.md` documenting the planned next-auth v4 →
+  Auth.js v5 and bcryptjs → bcrypt migrations (audit fix Dep-2).
+
+---
+
 ## [3.3.1] — 2026-07-17 (commit c623e09)
 
 ### Fixed

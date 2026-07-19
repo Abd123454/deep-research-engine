@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Quaesitor API
-  version: "1.0.0"
+  version: "4.0.0"
   description: |
     Quaesitor is a self-hostable research, chat, and multi-agent swarm platform
     with a dual-mode database (SQLite + Postgres), cross-provider LLM fallback
@@ -47,6 +47,14 @@ tags:
     description: GDPR Art. 7 consent ledger (read + update)
   - name: Auth
     description: Authentication — MFA enrollment, verification, and disable
+  - name: Billing
+    description: Stripe checkout, portal, subscription, and usage endpoints
+  - name: APIKeys
+    description: Long-lived bearer tokens for programmatic API access
+  - name: DeviceControl
+    description: Cross-platform device-control agent (Win/macOS/Linux)
+  - name: Workspaces
+    description: Multi-tenant workspaces with role-based membership
   - name: MCP
     description: Model Context Protocol server marketplace and install state
   - name: Metrics
@@ -93,7 +101,7 @@ paths:
                       database: ok
                       llm: ok
                     timestamp: "2026-07-18T12:00:00.000Z"
-                    version: "3.2.0"
+                    version: "4.0.0"
                     uptime: 12483
                     uptimeHuman: "12s"
                 degraded:
@@ -103,7 +111,7 @@ paths:
                       database: ok
                       llm: degraded
                     timestamp: "2026-07-18T12:00:00.000Z"
-                    version: "3.2.0"
+                    version: "4.0.0"
                     uptime: 12483
                     uptimeHuman: "12s"
         "503":
@@ -122,7 +130,7 @@ paths:
                       database: down
                       llm: ok
                     timestamp: "2026-07-18T12:00:00.000Z"
-                    version: "3.2.0"
+                    version: "4.0.0"
                     uptime: 12483
                     uptimeHuman: "12s"
 
@@ -1349,6 +1357,559 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a new account (COPPA/GDPR Art. 8 age gate)
+      description: |
+        Creates a new user with email + password (bcrypt-hashed). Enforces
+        an age gate: requires either `dateOfBirth` (YYYY-MM-DD) or
+        `ageConfirmed=true`. Users under 13 are refused with HTTP 403
+        (COPPA / GDPR Art. 8). On success, sends a verification email
+        (when `RESEND_API_KEY` is set) and audit-logs the registration.
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+                  maxLength: 200
+                dateOfBirth:
+                  type: string
+                  format: date
+                  description: YYYY-MM-DD. Used to compute age for the COPPA gate.
+                ageConfirmed:
+                  type: boolean
+                  description: Alternative to dateOfBirth — caller asserts 13+.
+      responses:
+        "201":
+          description: Account created. Verification email queued (if Resend configured).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  userId: { type: string, format: uuid }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          description: Underage (COPPA / GDPR Art. 8 refusal).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email already registered.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: Request a password-reset email
+      description: |
+        Always returns HTTP 200 (even for unknown emails) to prevent
+        user-enumeration via timing or response-code differences. When
+        the email matches a real account, a single-use reset token is
+        written to the `verification_tokens` table (15-min TTL) and a
+        reset-link email is queued (if `RESEND_API_KEY` is set). The
+        token is consumed on first use at `/api/auth/reset-password`.
+      operationId: forgotPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        "200":
+          description: Reset email queued (or silently no-op'd for unknown emails).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, default: true }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/billing/checkout:
+    post:
+      tags: [Billing]
+      summary: Create a Stripe Checkout Session
+      description: |
+        Creates a Stripe Checkout Session for the given `priceId` (or
+        `plan` lookup key). Sets `client_reference_id` to the
+        authenticated user's id so the webhook can attribute the
+        subscription. Returns a `url` the client should redirect to.
+        Requires auth (`requireAuth`). Audit-logged as
+        `billing.checkout.start`.
+      operationId: createCheckoutSession
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                priceId: { type: string, description: Stripe price id (sk_...). }
+                plan:
+                  type: string
+                  enum: [free, pro, team, enterprise]
+                  description: Alternative to priceId — resolved via lookup_key.
+                successUrl: { type: string, format: uri }
+                cancelUrl: { type: string, format: uri }
+      responses:
+        "200":
+          description: Checkout session created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  url: { type: string, format: uri, description: Redirect the browser here. }
+                  sessionId: { type: string, description: Stripe checkout session id. }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "402":
+          description: Plan limit reached (existing subscription blocks the new one).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/billing/portal:
+    post:
+      tags: [Billing]
+      summary: Open the Stripe customer portal
+      description: |
+        Creates a Stripe Billing Portal session for the authenticated
+        user's customer record (matched by email). Returns a `url` the
+        client redirects to. Used for the "Manage subscription" /
+        "Update card" / "Cancel" flows — Stripe handles the UI.
+      operationId: createPortalSession
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                returnUrl: { type: string, format: uri, description: Where Stripe redirects after the portal. }
+      responses:
+        "200":
+          description: Portal session created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  url: { type: string, format: uri }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No Stripe customer record exists for this user yet.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/billing/subscription:
+    get:
+      tags: [Billing]
+      summary: Read the current user's subscription state
+      description: |
+        Returns the cached subscription row for the authenticated user
+        — `plan`, `status`, `currentPeriodEnd`, `cancelAtPeriodEnd`,
+        and metered-usage counters (queries this period, etc.). The row
+        is kept in sync by the Stripe webhook
+        (`/api/billing/webhook`). When no subscription exists, returns
+        `{ plan: "free", status: "none" }`.
+      operationId: getSubscription
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Subscription state.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Subscription"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/billing/usage:
+    get:
+      tags: [Billing]
+      summary: Read metered-usage counters for the current billing period
+      description: |
+        Returns the authenticated user's usage for the current billing
+        period — research jobs, chat messages, tokens consumed, file
+        generations, etc. Used by the dashboard usage widget and the
+        plan-limit gate (`checkLimit`). Counts reset at
+        `currentPeriodEnd`.
+      operationId: getBillingUsage
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Usage counters.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan: { type: string, enum: [free, pro, team, enterprise] }
+                  periodStart: { type: string, format: date-time }
+                  periodEnd: { type: string, format: date-time }
+                  usage:
+                    type: object
+                    properties:
+                      researchJobs: { type: integer }
+                      chatMessages: { type: integer }
+                      tokens: { type: integer }
+                      fileGenerations: { type: integer }
+                  limits:
+                    type: object
+                    description: Plan-specific caps for each usage key (null = unlimited).
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/v1/chat:
+    post:
+      tags: [Chat]
+      summary: Public API chat (bearer-token auth)
+      description: |
+        Programmatic chat endpoint for the public API. Authenticates via
+        a long-lived API key (`Authorization: Bearer qsk_...`) issued at
+        `/api/keys`, NOT via the Basic-Auth session used by the web UI.
+        Returns the same SSE token stream as `/api/chat`. Subject to
+        per-key rate limits (stricter than the web UI). The API key's
+        `scopes` field must include `chat:write`.
+      operationId: postPublicChat
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [message]
+              properties:
+                message: { type: string, minLength: 1 }
+                conversationId: { type: string, format: uuid }
+                stream:
+                  type: boolean
+                  default: true
+                  description: If false, returns the full response as JSON instead of SSE.
+      responses:
+        "200":
+          description: SSE stream (default) or full JSON response (when `stream=false`).
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: Same framing as `/api/chat`.
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  reply: { type: string }
+                  conversationId: { type: string, format: uuid }
+                  tokensUsed: { type: integer }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          description: Missing or invalid API key.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "403":
+          description: API key lacks the `chat:write` scope.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/keys:
+    get:
+      tags: [APIKeys]
+      summary: List the current user's API keys
+      description: |
+        Returns the metadata for every API key owned by the
+        authenticated user. The key secret itself is NEVER returned
+        (only the bcrypt-hashed version is stored; the plaintext is
+        shown once at creation time). Use the `lastUsedAt` field to
+        detect stale keys for rotation.
+      operationId: listApiKeys
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: API key list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  keys:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ApiKey"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [APIKeys]
+      summary: Create a new API key
+      description: |
+        Mints a new long-lived bearer token (`qsk_...`). The plaintext
+        key is returned EXACTLY ONCE in the response — store it
+        securely; only the bcrypt hash is persisted. Optional `scopes`
+        restrict what the key can do (e.g. `chat:write`,
+        `research:write`, `read`). Optional `expiresAt` sets an
+        expiry. Audit-logged as `apikey.create`.
+      operationId: createApiKey
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name:
+                  type: string
+                  maxLength: 100
+                  description: Human label for the key.
+                scopes:
+                  type: array
+                  items: { type: string }
+                  description: Scope strings (e.g. `chat:write`, `research:write`, `read`).
+                expiresAt:
+                  type: string
+                  format: date-time
+                  description: Optional expiry. Omit for a non-expiring key.
+      responses:
+        "201":
+          description: Key created. The plaintext `key` is shown only here.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  key: { type: string, description: "The plaintext key (qsk_...). Store it — it will not be shown again." }
+                  id: { type: string, format: uuid }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/device-control:
+    post:
+      tags: [DeviceControl]
+      summary: Execute a device-control action (Win/macOS/Linux)
+      description: |
+        Drives the cross-platform device-control agent — file system
+        ops, process management, app launch, clipboard, screenshots,
+        etc. Heavily restricted: requires auth + the `device:write`
+        scope (admin role by default), AND a per-request confirmation
+        token for destructive actions (file delete, process kill). All
+        actions are audit-logged as `device.control.execute` with the
+        command, target, and outcome.
+      operationId: executeDeviceControl
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action, target]
+              properties:
+                action:
+                  type: string
+                  enum: [file.read, file.write, file.delete, process.list, process.kill, app.launch, clipboard.read, clipboard.write, screenshot]
+                target:
+                  type: string
+                  description: Path / process name / app id — depends on `action`.
+                args:
+                  type: object
+                  description: Action-specific arguments (e.g. file contents for `file.write`).
+                confirmToken:
+                  type: string
+                  description: Required for destructive actions (file.delete, process.kill). Obtained via a separate confirmation flow.
+      responses:
+        "200":
+          description: Action executed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  result: { type: object, description: Action-specific result payload. }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Missing `device:write` scope or destructive action without `confirmToken`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/workspaces:
+    get:
+      tags: [Workspaces]
+      summary: List workspaces the current user belongs to
+      description: |
+        Returns the workspaces the authenticated user is a member of,
+        with their role (`owner` / `admin` / `editor` / `viewer`) and
+        membership metadata. Used by the workspace switcher in the
+        sidebar.
+      operationId: listWorkspaces
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: Workspace membership list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  workspaces:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WorkspaceMembership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Workspaces]
+      summary: Create a new workspace
+      description: |
+        Creates a new workspace and adds the authenticated user as the
+        `owner` (the only role that can transfer ownership or delete the
+        workspace). Audit-logged as `workspace.create`.
+      operationId: createWorkspace
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string, maxLength: 100 }
+                slug: { type: string, maxLength: 60, description: URL-safe slug. Auto-generated from name if omitted. }
+      responses:
+        "201":
+          description: Workspace created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  workspace: { $ref: "#/components/schemas/Workspace" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          description: Slug already taken.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   parameters:
     JobIdPath:
@@ -1412,6 +1973,15 @@ components:
         HTTP Basic auth. Only enforced when both `AUTH_USERNAME` and
         `AUTH_PASSWORD` are set as environment variables. When unset, the
         endpoint is open.
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: qsk
+      description: |
+        Long-lived API key (`qsk_...`) issued at `POST /api/keys`. Sent
+        as `Authorization: Bearer qsk_...`. Used by the public API
+        (`/api/v1/*`) and programmatic clients. Scopes are checked
+        per-route (e.g. `chat:write`, `research:write`).
 
   schemas:
     Error:
@@ -1775,3 +2345,100 @@ components:
               type: integer
             enterprise:
               type: integer
+
+    Subscription:
+      type: object
+      description: |
+        The authenticated user's subscription state. Mirrored from
+        Stripe via the webhook — the cache is the source of truth for
+        the plan-limit gate.
+      properties:
+        plan:
+          type: string
+          enum: [free, pro, team, enterprise]
+        status:
+          type: string
+          enum: [none, active, trialing, past_due, canceled, incomplete]
+        stripeCustomerId:
+          type: string
+          nullable: true
+        stripeSubscriptionId:
+          type: string
+          nullable: true
+        currentPeriodStart:
+          type: string
+          format: date-time
+          nullable: true
+        currentPeriodEnd:
+          type: string
+          format: date-time
+          nullable: true
+        cancelAtPeriodEnd:
+          type: boolean
+          default: false
+
+    ApiKey:
+      type: object
+      description: |
+        Metadata for an API key. The secret itself is NEVER included —
+        only the bcrypt hash is stored at rest, and the plaintext is
+        shown to the user exactly once at creation time.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          description: Human label.
+        scopes:
+          type: array
+          items: { type: string }
+          description: Scope strings (e.g. `chat:write`, `research:write`, `read`).
+        prefix:
+          type: string
+          description: First 8 chars of the key (e.g. `qsk_abcd`) — used to identify which key made a request without exposing the secret.
+        lastUsedAt:
+          type: string
+          format: date-time
+          nullable: true
+        lastUsedIp:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    Workspace:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        slug:
+          type: string
+          description: URL-safe slug.
+        ownerId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+
+    WorkspaceMembership:
+      type: object
+      description: A user's membership in a workspace, with role.
+      properties:
+        workspace:
+          $ref: "#/components/schemas/Workspace"
+        role:
+          type: string
+          enum: [owner, admin, editor, viewer]
+        joinedAt:
+          type: string
+          format: date-time

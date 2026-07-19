@@ -1,8 +1,8 @@
-# Evaluation Baseline — v3.4.0 (post-Kimi study, with raw evidence)
+# Evaluation Baseline — v4.0.0 (post-Kimi study, with raw evidence)
 
 ## Summary
 - **Date:** 2026-07-18
-- **Version:** v3.4.0 (post-fixes, post-Kimi study)
+- **Version:** v4.0.0 (post-fixes, post-Kimi study)
 - **Total queries:** 20
 - **Verified passes (raw output):** 7/20 (factual 5/5 + coding 2/2 verified)
 - **Rate-limited (couldn't verify):** 13/20 (coding 3 + research 10)

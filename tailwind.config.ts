@@ -1,5 +1,13 @@
 import type { Config } from "tailwindcss";
-import tailwindcssAnimate from "tailwindcss-animate";
+
+// NOTE: This file is the legacy v3-style config. Tailwind v4 (which
+// this project uses) reads its config from `src/app/globals.css` via
+// the `@import "tailwindcss"` + `@theme inline` directives. This file
+// is kept only for IDE IntelliSense and any tooling that still loads
+// it; it is NOT consumed by the PostCSS pipeline (no `@config`
+// directive in globals.css). Animations are provided by `tw-animate-css`
+// (imported in globals.css) — the old `tailwindcss-animate` dependency
+// was removed as a duplicate (audit fix Dep-1).
 
 const config: Config = {
   darkMode: "class",
@@ -59,6 +67,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [tailwindcssAnimate],
+  plugins: [],
 };
 export default config;
