@@ -14,6 +14,40 @@ export default defineConfig({
     include: ["**/__tests__/**/*.test.ts"],
     css: false,
     setupFiles: ["./vitest.setup.ts"],
+    // Coverage configuration. Thresholds are only enforced when `--coverage`
+    // is passed (i.e. `bun run test:coverage`) — they do NOT affect
+    // `bun run test`, which is the gate for every PR + CI run. This lets
+    // us ship coverage goals without forcing every dev test-run to also
+    // instrument the codebase (instrumentation slows test exec ~30%).
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "json", "html"],
+      // Reports go to ./coverage/ — already in .gitignore.
+      reportsDirectory: "./coverage",
+      // Exclude test setup, type definitions, and config files from
+      // the coverage report (they're not production code).
+      exclude: [
+        "node_modules/",
+        "dist/",
+        ".next/",
+        "coverage/",
+        "**/__tests__/**",
+        "**/*.test.ts",
+        "**/*.config.ts",
+        "**/*.d.ts",
+        "vitest.setup.ts",
+        "src/types/**",
+      ],
+      thresholds: {
+        // Floor — prevents catastrophic coverage regressions. The
+        // current codebase is well above these (see `bun run test:coverage`
+        // output for actual numbers). Tighten in future passes.
+        statements: 80,
+        branches: 70,
+        functions: 80,
+        lines: 80,
+      },
+    },
   },
   // Prevent Vite from auto-loading postcss.config.mjs (which uses
   // @tailwindcss/postcss — not needed for unit tests and breaks vitest).

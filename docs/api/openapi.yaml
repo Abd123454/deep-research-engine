@@ -1910,6 +1910,1093 @@ paths:
         "500":
           $ref: "#/components/responses/InternalError"
 
+  /api/auth/verify:
+    post:
+      tags: [Auth]
+      summary: Verify an email address with a single-use token
+      description: |
+        Consumes the `email_verification` token issued at registration
+        (see `POST /api/auth/register`). The token is single-use — the
+        `verification_tokens` row is marked `used_at = NOW()` on first
+        successful verification; subsequent calls with the same token
+        return 410 Gone. Sets `users.email_verified = true` on success.
+        Always returns 200 for a well-formed request body, even if the
+        token is invalid, to prevent user-enumeration via response codes.
+      operationId: verifyEmail
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token:
+                  type: string
+                  description: The verification token from the email link.
+      responses:
+        "200":
+          description: |
+            Verification processed. `verified: true` if the token was
+            valid + unused, `verified: false` if the token was invalid
+            or already consumed (response code is still 200 to prevent
+            enumeration).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  verified: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "410":
+          description: Token already consumed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: Reset password with a single-use token
+      description: |
+        Consumes the `password_reset` token issued by
+        `POST /api/auth/forgot-password`. Single-use — the token is
+        marked consumed on first successful reset. The new password is
+        bcrypt-hashed and persisted; all existing JWTs for this user
+        are invalidated (the user must re-authenticate). 15-min TTL
+        on the token.
+      operationId: resetPassword
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token:
+                  type: string
+                  description: The reset token from the email link.
+                password:
+                  type: string
+                  minLength: 8
+                  description: The new password.
+      responses:
+        "200":
+          description: Password reset. User can now log in with the new password.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "410":
+          description: Token already consumed or expired.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/keys/{id}:
+    delete:
+      tags: [APIKeys]
+      summary: Revoke an API key
+      description: |
+        Marks the API key as revoked (soft-delete — the row is retained
+        for audit). The key's bcrypt hash is set to `null` so any
+        future request presenting the key is rejected with 401.
+        Requires auth — only the key's owner can revoke their own keys.
+        Audit-logged as `apikey.revoke`.
+      operationId: revokeApiKey
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The API key id (UUID) to revoke.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Key revoked. No response body.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Attempt to revoke a key owned by another user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/workspaces/{id}/members:
+    get:
+      tags: [Workspaces]
+      summary: List workspace members
+      description: |
+        Returns the membership roster of a workspace — userId, role
+        (`owner` / `admin` / `editor` / `viewer`), and joinedAt. The
+        caller must be a member of the workspace; otherwise 403.
+      operationId: listWorkspaceMembers
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace id (UUID).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Workspace member list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  members:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/WorkspaceMembership"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Caller is not a member of this workspace.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Workspaces]
+      summary: Invite a user to a workspace
+      description: |
+        Adds a user to the workspace with the given role. Only
+        `owner` / `admin` can invite; `editor` and `viewer` get 403.
+        The invited user must already have an account (matched by
+        email). Audit-logged as `workspace.member.add`.
+      operationId: addWorkspaceMember
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace id (UUID).
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, role]
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: The invitee's email — must match an existing account.
+                role:
+                  type: string
+                  enum: [admin, editor, viewer]
+                  description: Role to assign. `owner` cannot be assigned here (transfer is a separate flow).
+      responses:
+        "201":
+          description: Member added.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  membership: { $ref: "#/components/schemas/WorkspaceMembership" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Caller lacks `owner`/`admin` role.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          description: Invitee email does not match any account.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: User is already a member.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    delete:
+      tags: [Workspaces]
+      summary: Remove a user from a workspace
+      description: |
+        Removes a member from the workspace. The caller must be the
+        workspace `owner` or be removing themselves (self-leave).
+        Owners cannot be removed (transfer ownership first).
+        Audit-logged as `workspace.member.remove`.
+      operationId: removeWorkspaceMember
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Workspace id (UUID).
+          schema:
+            type: string
+            format: uuid
+        - name: userId
+          in: query
+          required: true
+          description: The userId of the member to remove.
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Member removed. No response body.
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Caller lacks `owner` role and is not removing themselves, or attempting to remove the owner.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Cannot remove the workspace owner — transfer ownership first.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/mcp/connect:
+    post:
+      tags: [MCP]
+      summary: Connect an MCP server
+      description: |
+        Establishes a connection to an MCP (Model Context Protocol)
+        server — either stdio (local subprocess) or SSE (remote HTTP).
+        The connection is registered with the orchestrator so the
+        swarm / chat agents can call its tools. Requires auth; the
+        connection is scoped to the caller's userId. Audit-logged as
+        `mcp.connect`.
+      operationId: connectMcpServer
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [transport, serverId]
+              properties:
+                transport:
+                  type: string
+                  enum: [stdio, sse]
+                  description: MCP transport — `stdio` for local, `sse` for remote.
+                serverId:
+                  type: string
+                  description: MCP server id from the marketplace (e.g. `arxiv`, `pubmed`).
+                command:
+                  type: string
+                  description: Required for `stdio` — the executable to launch (e.g. `npx`).
+                args:
+                  type: array
+                  items: { type: string }
+                  description: Required for `stdio` — argv for the subprocess.
+                url:
+                  type: string
+                  format: uri
+                  description: Required for `sse` — the remote MCP endpoint URL.
+                env:
+                  type: object
+                  description: Optional env vars for the subprocess (stdio) or headers (sse).
+      responses:
+        "200":
+          description: Connection established.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  connectionId: { type: string, format: uuid }
+                  tools:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        description: { type: string }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Server not in marketplace (or install not permitted).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/mcp/disconnect:
+    post:
+      tags: [MCP]
+      summary: Disconnect an MCP server
+      description: |
+        Tears down a previously-established MCP connection. For stdio
+        transports, the subprocess is SIGTERM'd (then SIGKILL'd after
+        5s if it doesn't exit). Tools from the disconnected server
+        are removed from the orchestrator's tool registry. Idempotent
+        — disconnecting an already-disconnected server returns 200.
+        Audit-logged as `mcp.disconnect`.
+      operationId: disconnectMcpServer
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [connectionId]
+              properties:
+                connectionId:
+                  type: string
+                  format: uuid
+                  description: The connection id returned by `POST /api/mcp/connect`.
+      responses:
+        "200":
+          description: Disconnected (or was already disconnected).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Connection belongs to another user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/billing/webhook:
+    post:
+      tags: [Billing]
+      summary: Stripe webhook receiver
+      description: |
+        Receives Stripe webhook events (checkout.session.completed,
+        customer.subscription.updated, customer.subscription.deleted,
+        invoice.payment_failed). Verifies the Stripe-Signature header
+        against `STRIPE_WEBHOOK_SECRET`. Updates the user's
+        subscription cache + plan-limit gate. Idempotent — events
+        are deduplicated by Stripe event id.
+      operationId: stripeWebhook
+      security: []
+      parameters:
+        - name: Stripe-Signature
+          in: header
+          required: true
+          description: Stripe webhook signature (verifies the body).
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: The raw Stripe event payload.
+      responses:
+        "200":
+          description: Event processed (or duplicate, which is a no-op).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  received: { type: boolean }
+        "400":
+          description: Invalid signature or unparseable body.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/chat/conversations:
+    get:
+      tags: [Chat]
+      summary: List chat conversations
+      description: |
+        Returns the authenticated user's chat conversations, most
+        recent first. Paginated — `cursor` is a conversation id
+        (returned in the last page's `nextCursor` field); pass it as
+        `?cursor=...` to fetch the next page.
+      operationId: listConversations
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          description: Pagination cursor (conversation id).
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        "200":
+          description: Conversation list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  conversations:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string, format: uuid }
+                        title: { type: string }
+                        lastMessageAt: { type: string, format: date-time }
+                        messageCount: { type: integer }
+                  nextCursor:
+                    type: string
+                    nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Chat]
+      summary: Create a new chat conversation
+      description: |
+        Creates a new conversation with an optional title. The first
+        user message is sent separately via `POST /api/chat` with the
+        `conversationId` returned here.
+      operationId: createConversation
+      security:
+        - basicAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                title:
+                  type: string
+                  maxLength: 200
+                  description: Optional. Auto-generated from the first message if omitted.
+      responses:
+        "201":
+          description: Conversation created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  conversationId: { type: string, format: uuid }
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/memories:
+    get:
+      tags: [Memory]
+      summary: List the user's memories
+      description: |
+        Returns the user's long-term memories (layer 2 of the 5-layer
+        memory system). Paginated by `cursor` (memory id). Filterable
+        by `kind` (preference / fact / event / relationship / skill).
+      operationId: listMemories
+      security:
+        - basicAuth: []
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [preference, fact, event, relationship, skill]
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        "200":
+          description: Memory list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  memories:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Memory"
+                  nextCursor:
+                    type: string
+                    nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Memory]
+      summary: Create a memory
+      description: |
+        Manually add a long-term memory. (Most memories are created
+        automatically by the memory extractor from chat messages —
+        this endpoint is for explicit user additions like "remember
+        that I prefer dark mode.") Requires consent — if the user has
+        not consented to long-term memory storage, returns 403.
+      operationId: createMemory
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content, kind]
+              properties:
+                content:
+                  type: string
+                  maxLength: 2000
+                kind:
+                  type: string
+                  enum: [preference, fact, event, relationship, skill]
+                source:
+                  type: string
+                  description: Optional. Defaults to `manual`.
+      responses:
+        "201":
+          description: Memory created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  memory: { $ref: "#/components/schemas/Memory" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: User has not consented to long-term memory storage (GDPR Art. 7).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/memories/{id}:
+    delete:
+      tags: [Memory]
+      summary: Delete a memory
+      description: |
+        Soft-deletes a memory (sets `deletedAt`). The memory is no
+        longer returned by `GET /api/memories` or used by the recall
+        pipeline. Only the memory's owner can delete it.
+      operationId: deleteMemory
+      security:
+        - basicAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Memory id (UUID).
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Memory deleted. No response body.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Memory belongs to another user.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/audit-logs:
+    get:
+      tags: [Audit]
+      summary: List audit log entries (admin only)
+      description: |
+        Returns the audit log — every security-sensitive action
+        (auth, billing, device-control, MFA, key management, etc.)
+        is recorded here. Admin-only: requires the `audit:read`
+        scope or the `ADMIN_IP_ALLOWLIST` env var to match the
+        caller's IP. Paginated by `cursor`.
+      operationId: listAuditLogs
+      security:
+        - basicAuth: []
+      parameters:
+        - name: userId
+          in: query
+          required: false
+          description: Filter to a specific user's actions.
+          schema:
+            type: string
+        - name: action
+          in: query
+          required: false
+          description: Filter to a specific action (e.g. `apikey.create`).
+          schema:
+            type: string
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 100
+            maximum: 500
+      responses:
+        "200":
+          description: Audit log entries.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  logs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AuditLog"
+                  nextCursor:
+                    type: string
+                    nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Caller lacks `audit:read` scope or admin IP allowlist rejected.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/asr:
+    post:
+      tags: [Media]
+      summary: Speech-to-text (ASR)
+      description: |
+        Transcribes an audio file (mp3, wav, m4a, webm) using NVIDIA
+        Riva (primary) or Whisper (fallback). The audio is sent as
+        multipart form data. Returns the full transcript + segment
+        timestamps. Files larger than `MAX_DOCUMENT_SIZE_MB` are
+        rejected with 413.
+      operationId: transcribeAudio
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                language:
+                  type: string
+                  description: Optional. BCP-47 language code (e.g. `en`, `ar`).
+      responses:
+        "200":
+          description: Transcription complete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  text: { type: string }
+                  segments:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        start: { type: number }
+                        end: { type: number }
+                        text: { type: string }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: File too large.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/video/analyze:
+    post:
+      tags: [Media]
+      summary: Analyze a video (keyframes + transcript)
+      description: |
+        Extracts keyframes + transcribes the audio track from a video
+        file. Requires `VIDEO_UNDERSTANDING_ENABLED=true` AND ffmpeg +
+        Whisper installed on the host. Returns a 503 if either is
+        missing — callers should check `isVideoUnderstandingAvailable`
+        client-side and show a clean message instead of relying on
+        the 503.
+      operationId: analyzeVideo
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                keyframeInterval:
+                  type: integer
+                  default: 5
+                  description: Extract one keyframe every N seconds.
+                maxKeyframes:
+                  type: integer
+                  default: 20
+                  description: Hard cap on keyframes.
+                transcribe:
+                  type: boolean
+                  default: true
+      responses:
+        "200":
+          description: Analysis complete.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  analysis: { $ref: "#/components/schemas/VideoAnalysis" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: File too large.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          description: Video understanding not available (no ffmpeg / Whisper).
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /api/preferences:
+    get:
+      tags: [Preferences]
+      summary: Get the user's preferences
+      description: |
+        Returns the user's UI + behaviour preferences (theme, language,
+        default search depth, etc.). Falls back to defaults if the
+        user has never set any.
+      operationId: getPreferences
+      security:
+        - basicAuth: []
+      responses:
+        "200":
+          description: User preferences.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  preferences:
+                    type: object
+                    additionalProperties: true
+                    description: Arbitrary key-value preference map.
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    put:
+      tags: [Preferences]
+      summary: Update the user's preferences
+      description: |
+        Replaces the user's preferences with the provided object.
+        Existing keys not in the request body are removed (full
+        replace, not merge). For partial updates, use the per-key
+        endpoints (e.g. `PUT /api/preferences/memory`).
+      operationId: updatePreferences
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              description: The full preference map to persist.
+      responses:
+        "200":
+          description: Preferences updated.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
+  /api/documents:
+    get:
+      tags: [Documents]
+      summary: List the user's uploaded documents
+      description: |
+        Returns metadata for documents the user has uploaded (PDF,
+        DOCX, TXT, MD). Does NOT return the document contents — use
+        `GET /api/documents/{id}` for that. Paginated by `cursor`.
+      operationId: listDocuments
+      security:
+        - basicAuth: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+      responses:
+        "200":
+          description: Document list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  documents:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Document"
+                  nextCursor:
+                    type: string
+                    nullable: true
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+    post:
+      tags: [Documents]
+      summary: Upload a document
+      description: |
+        Uploads a document for use as research context / chat
+        attachment. Multipart form data. Files larger than
+        `MAX_DOCUMENT_SIZE_MB` (default 50MB) are rejected with 413.
+        The file is virus-scanned (clamav if available) and the
+        MIME type is verified against the extension.
+      operationId: uploadDocument
+      security:
+        - basicAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                  maxLength: 200
+                  description: Optional. Defaults to the filename.
+      responses:
+        "201":
+          description: Document uploaded.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  document: { $ref: "#/components/schemas/Document" }
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "413":
+          description: File too large.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "415":
+          description: Unsupported media type.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+
 components:
   parameters:
     JobIdPath:
@@ -2442,3 +3529,165 @@ components:
         joinedAt:
           type: string
           format: date-time
+
+    Memory:
+      type: object
+      description: |
+        A long-term memory record (layer 2 of the 5-layer memory
+        system). The `content` is the raw memory text; `kind`
+        classifies it for recall filters.
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        content:
+          type: string
+          description: The memory text (max 2000 chars).
+        kind:
+          type: string
+          enum: [preference, fact, event, relationship, skill]
+        source:
+          type: string
+          description: |
+            How the memory was created — `manual` (via `POST /api/memories`),
+            `extractor` (auto-extracted from chat), `import` (bulk import).
+        createdAt:
+          type: string
+          format: date-time
+        deletedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: Set when soft-deleted. Null when active.
+
+    AuditLog:
+      type: object
+      description: |
+        A single audit-log entry — one row per security-sensitive
+        action. The `action` string follows a `domain.verb` convention
+        (e.g. `apikey.create`, `auth.login`, `billing.checkout.start`).
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          nullable: true
+          description: Null for unauthenticated actions (e.g. failed login).
+        action:
+          type: string
+          description: The audit action key (e.g. `apikey.create`).
+        target:
+          type: string
+          nullable: true
+          description: The resource id acted upon (e.g. the API key id).
+        ip:
+          type: string
+          nullable: true
+        userAgent:
+          type: string
+          nullable: true
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Action-specific context (never secrets — those are redacted).
+        createdAt:
+          type: string
+          format: date-time
+
+    Document:
+      type: object
+      description: |
+        Metadata for an uploaded document. The actual file contents
+        are stored separately (S3-compatible or local filesystem);
+        this row is the index.
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        filename:
+          type: string
+          description: The original uploaded filename.
+        mimeType:
+          type: string
+          description: Verified MIME type (e.g. `application/pdf`).
+        sizeBytes:
+          type: integer
+        storageKey:
+          type: string
+          description: The object-storage key (S3 / local path).
+        createdAt:
+          type: string
+          format: date-time
+
+    VideoAnalysis:
+      type: object
+      description: |
+        The structured result of a video analysis — keyframes +
+        transcript + metadata, ready to feed into a vision model.
+      properties:
+        duration:
+          type: number
+          description: Total duration in seconds.
+        keyframes:
+          type: array
+          items:
+            $ref: "#/components/schemas/VideoKeyframe"
+        transcript:
+          $ref: "#/components/schemas/VideoTranscript"
+          nullable: true
+        metadata:
+          type: object
+          properties:
+            width: { type: integer }
+            height: { type: integer }
+            fps: { type: number }
+            codec: { type: string }
+        summary:
+          type: string
+          description: Optional natural-language summary (vision-model generated).
+        scenes:
+          type: array
+          items:
+            type: object
+            properties:
+              start: { type: number }
+              end: { type: number }
+              label: { type: string }
+
+    VideoKeyframe:
+      type: object
+      properties:
+        timestamp:
+          type: number
+          description: Frame timestamp in seconds.
+        base64:
+          type: string
+          description: JPEG thumbnail as base64 (no data-URI prefix).
+        description:
+          type: string
+          nullable: true
+          description: Optional vision-model description of the frame.
+
+    VideoTranscript:
+      type: object
+      properties:
+        segments:
+          type: array
+          items:
+            type: object
+            properties:
+              start: { type: number }
+              end: { type: number }
+              text: { type: string }
+        fullText:
+          type: string
+          description: All segments joined with a space.

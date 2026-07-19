@@ -20,25 +20,61 @@ import { logger } from "@/lib/logger";
 // A missing secret means NextAuth falls back to a known constant, which
 // allows anyone to mint JWTs with arbitrary `userId` claims (e.g. "admin").
 //
-// IMPORTANT: we do NOT throw at module load time — `next build` runs with
-// NODE_ENV=production but does NOT have runtime env vars (NEXTAUTH_SECRET
-// is a deploy-time secret). A module-load throw would therefore break the
-// build on every CI/fresh-clone. Instead we:
-//   1. Log a loud error if the secret is missing in production.
-//   2. Use the dev fallback `"dev-only-not-for-production"` so the module
-//      loads during build. JWTs minted with this fallback are trivially
-//      forgeable, but production deploys MUST set NEXTAUTH_SECRET — the
-//      build artifact is never the security boundary, the runtime env is.
+// IMPORTANT — three-mode behaviour:
+//   1. `next build` — NEXT_PHASE is `phase-production-build` (main
+//        compilation) or `phase-build-data-collection` (page-data
+//        collection worker — same name as the audit's prescribed
+//        constant, kept for forward-compat). The build runs with
+//        NODE_ENV=production but has NO runtime env vars. A module-load
+//        throw would break every CI / fresh-clone build. We use the
+//        dev fallback silently so the build succeeds.
+//      Also covers `phase-export` (next export).
+//   2. Runtime production server (`next start`): NEXT_PHASE is
+//      `phase-production-server`. THROW if NEXTAUTH_SECRET is missing —
+//      the deploy environment MUST set it. Fail-closed is the security
+//      boundary.
+//   3. Dev (`next dev`): NEXT_PHASE is `phase-development-server`.
+//      Use the dev fallback with a loud warning. Lets a fresh checkout
+//      run without forcing the developer to generate a secret first.
 //
-// In dev (NODE_ENV !== "production") the hardcoded fallback lets a fresh
-// checkout run without forcing the developer to generate a secret.
+// The build artifact is never the security boundary — the runtime env is.
+// This three-mode check keeps the build green AND makes the runtime
+// fail-closed if an operator forgets to set the secret.
 const __NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
-if (!__NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
-  // Lazy check — log instead of throwing so `next build` succeeds.
-  // Operators see this in their deploy logs and must fix it before
-  // the deploy serves real traffic.
+const __NEXT_PHASE = process.env.NEXT_PHASE;
+// All Next.js phases that indicate we're inside `next build` (or
+// `next export`) — NOT a real production server. Module load here must
+// not throw, because the build worker doesn't have deploy-time env vars.
+//   - "phase-production-build"        — main compilation
+//   - "phase-build-data-collection"   — page-data collection worker
+//                                       (forward-compat name; not in
+//                                       current Next.js constants but
+//                                       prescribed by the v4 audit)
+//   - "phase-export"                  — next export
+const __IS_BUILD_PHASE =
+  __NEXT_PHASE === "phase-production-build" ||
+  __NEXT_PHASE === "phase-build-data-collection" ||
+  __NEXT_PHASE === "phase-export";
+// Runtime production: NODE_ENV=production AND NEXT_PHASE is the runtime
+// server phase (or unset, for non-Next.js runtime environments).
+const __IS_RUNTIME_PRODUCTION =
+  process.env.NODE_ENV === "production" &&
+  (__NEXT_PHASE === "phase-production-server" || __NEXT_PHASE === undefined) &&
+  !__IS_BUILD_PHASE;
+
+if (!__NEXTAUTH_SECRET && __IS_RUNTIME_PRODUCTION) {
+  // Fail-closed: the runtime cannot mint JWTs without a real secret.
+  // Operators see this error in the boot log and the process exits.
+  throw new Error(
+    "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+  );
+}
+
+if (!__NEXTAUTH_SECRET && !__IS_BUILD_PHASE && !__IS_RUNTIME_PRODUCTION) {
+  // Dev mode — warn loudly so a developer who copies their .env into a
+  // prod deploy still notices the fallback in the logs.
   console.error(
-    "[SECURITY] NEXTAUTH_SECRET not set in production — using insecure dev fallback. " +
+    "[SECURITY] NEXTAUTH_SECRET not set — using insecure dev fallback. " +
       "Generate one with: openssl rand -base64 32"
   );
 }

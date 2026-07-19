@@ -5,7 +5,7 @@
 // a single named failure rather than a cascading test explosion. Mocks
 // are kept minimal — we test the security boundary, not the DB plumbing.
 //
-// Modules covered (9):
+// Modules covered (10):
 //   1. verification-tokens — single-use create/consume semantics
 //   2. AUTH_DEV_BYPASS      — isAuthOptional is opt-in, not NODE_ENV-based
 //   3. getUserId            — resolves Basic-auth caller → AUTH_USERNAME
@@ -15,6 +15,7 @@
 //   7. sanitizeError        — strips Bearer tokens + API-key patterns
 //   8. maskCredentials      — returns masked tail, not plaintext
 //   9. MFA per-user         — getUserMfaSecret reads from user_mfa table
+//  10. NEXTAUTH_SECRET      — three-mode check (build / runtime-prod / dev)
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from "vitest";
 import { NextRequest } from "next/server";
@@ -115,6 +116,32 @@ vi.mock("@/lib/db", () => ({
   getDb: () => mockDb,
   isPostgresAvailable: () => false,
   getPrismaDb: async () => null,
+}));
+
+// The NextAuth route module also imports `@/lib/logger` (pino) and
+// `@/lib/sqlite-types` (type-only). Type imports are erased at compile
+// time, but `@/lib/logger` is a runtime import — when test 10 below
+// dynamically re-imports the route to re-trigger the NEXTAUTH_SECRET
+// module-load check, pino would otherwise be initialized (writes to
+// stdout, picks up real LOG_LEVEL, etc.). Mocking it keeps the test
+// focused on the secret check and silent on logger side effects.
+vi.mock("@/lib/logger", () => ({
+  logger: {
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    trace: vi.fn(),
+    child: vi.fn(() => ({
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      fatal: vi.fn(),
+      trace: vi.fn(),
+    })),
+  },
 }));
 
 // Import after vi.mock (vitest hoists the mock above these imports).
@@ -456,5 +483,67 @@ describe("9. MFA per-user: getUserMfaSecret reads from user_mfa table", () => {
     process.env.MFA_SECRET = "LEGACY_SHARED_SECRET";
     // No row in the table for user-3.
     expect(getUserMfaSecret("user-3")).toBe("LEGACY_SHARED_SECRET");
+  });
+});
+
+// ============================================================================
+// Test 10 — NEXTAUTH_SECRET behavior: the C-1 fix has three modes
+// (build phase: silent fallback / runtime production: throw / dev: warn +
+// fallback). The module-load check runs when the route file is first
+// imported, so each test must (a) reset the module cache, (b) set the
+// env to match the mode, (c) dynamically import the route file so the
+// check re-runs under the new env.
+// ============================================================================
+describe("10. NEXTAUTH_SECRET behavior", () => {
+  const origSecret = process.env.NEXTAUTH_SECRET;
+  const origPhase = process.env.NEXT_PHASE;
+  const origNodeEnv = process.env.NODE_ENV;
+  const env = process.env as unknown as Record<string, string | undefined>;
+
+  afterEach(() => {
+    // Restore every env var we touched so subsequent tests get the
+    // vitest-default env (NODE_ENV=test, no NEXT_PHASE, etc.).
+    if (origSecret === undefined) delete process.env.NEXTAUTH_SECRET;
+    else process.env.NEXTAUTH_SECRET = origSecret;
+    if (origPhase === undefined) delete process.env.NEXT_PHASE;
+    else process.env.NEXT_PHASE = origPhase;
+    if (origNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = origNodeEnv;
+    // Clear the module cache so the next import re-runs the check.
+    vi.resetModules();
+  });
+
+  it("uses dev fallback when NEXTAUTH_SECRET not set and not runtime production", async () => {
+    // Dev mode: no NEXTAUTH_SECRET, no NEXT_PHASE (not a build), NODE_ENV
+    // is not "production" (vitest sets it to "test" by default).
+    delete process.env.NEXTAUTH_SECRET;
+    delete process.env.NEXT_PHASE;
+    env.NODE_ENV = "development";
+
+    // Re-import the route module — its top-level check runs again under
+    // the new env. The mock for `@/lib/db` is hoisted by vitest and
+    // survives vi.resetModules, so the dynamic import resolves to the
+    // mocked DB (no real Postgres/SQLite call at module load).
+    const mod = await import(
+      "../../app/api/auth/[...nextauth]/route"
+    );
+    expect(mod.authOptions.secret).toBe("dev-only-not-for-production");
+    expect(typeof mod.authOptions.secret).toBe("string");
+  });
+
+  it("throws when NEXTAUTH_SECRET not set in runtime production", async () => {
+    // Runtime production: NODE_ENV=production AND NEXT_PHASE is NOT
+    // "phase-build-data-collection" (we use the production-server phase
+    // explicitly so the build-phase guard doesn't fire).
+    delete process.env.NEXTAUTH_SECRET;
+    process.env.NEXT_PHASE = "phase-production-server";
+    env.NODE_ENV = "production";
+
+    // Dynamic import wraps the module-load throw in a rejected promise.
+    // The error message must include the literal "NEXTAUTH_SECRET must
+    // be set" so operators see exactly what to fix in the boot log.
+    await expect(
+      import("../../app/api/auth/[...nextauth]/route")
+    ).rejects.toThrow("NEXTAUTH_SECRET must be set");
   });
 });

@@ -1,3 +1,5 @@
+// STUB: Full implementation requires ffmpeg + whisper. See docs/MIGRATION_NOTES.md
+//
 // Video Understanding — extract keyframes + audio transcript for vision models.
 //
 // P2-final-wave / Feature 3: interface + stubs for video analysis. Real

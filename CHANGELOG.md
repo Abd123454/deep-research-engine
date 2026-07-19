@@ -2,6 +2,33 @@
 
 ## [4.0.0] — 2026-07-19 (public launch)
 
+### Fixed — v4.0.0 post-audit (commit b8b91c8)
+- Build regression: NEXTAUTH_SECRET check no longer crashes `next build`.
+  Replaced the lazy `console.error` (added in fix-7-remaining to keep the
+  build green) with a proper three-mode check on `NEXT_PHASE`:
+  `phase-build-data-collection` → silent dev fallback (build succeeds),
+  `phase-production-server` without `NEXTAUTH_SECRET` → throw
+  (fail-closed at runtime), dev → warn + fallback.
+- 25 security tests added for 9 modules (verification-tokens,
+  AUTH_DEV_BYPASS, getUserId, DOMPurify, safeFetch, CSRF, sanitizeError,
+  maskCredentials, MFA) — `src/lib/__tests__/security-fixes.test.ts`.
+- 2 NEW behavior tests for the three-mode NEXTAUTH_SECRET check (uses dev
+  fallback / throws in runtime production) — total 27 tests in the
+  security-fixes suite.
+- npm audit: `bun update` reduced 14 → 13 vulns (all dev/build-time,
+  0 production-runtime vulns).
+- LAUNCH_CHECKLIST: 19/61 → 25+/61 items checked (was 0/61 before
+  fix-7-remaining); remaining unchecked items genuinely require external
+  infrastructure (Docker daemon, GitHub Actions run, prod deploy).
+- `/api/research/stop/[id]`: ownership check added — returns 403 if the
+  job belongs to another user (was previously callable by any user).
+- `/api/v1/chat`: rate limit wired (`checkStartRateLimit` +
+  `releaseConcurrency`) so the public API can't be abused for
+  token-budget denial-of-service.
+- `email_verified` enforcement: opt-in via `AUTH_REQUIRE_EMAIL_VERIFY=true`.
+  When set, login is rejected with 403 until the user clicks the
+  verification link emailed at registration.
+
 ### Public Launch Release
 - First stable public release. See `RELEASE_NOTES.md` for the full
   announcement and `docs/LAUNCH_CHECKLIST.md` for the pre-launch checklist.

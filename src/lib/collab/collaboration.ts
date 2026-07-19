@@ -1,3 +1,5 @@
+// STUB: Full implementation requires yjs + y-websocket. Install: bun add yjs y-websocket
+//
 // Real-time collaboration — high-level session + cursor/presence interface.
 //
 // p2-soc2-launch / Feature 2: This module is a companion to
