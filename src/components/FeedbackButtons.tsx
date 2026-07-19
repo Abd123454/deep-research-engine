@@ -64,6 +64,7 @@ export function FeedbackButtons({ messageId, conversationId }: FeedbackButtonsPr
           context: { messageId, conversationId },
         }),
       });
+    // eslint-disable-next-line no-empty
     } catch {
       // Silent failure — feedback is an optional signal, not a
       // user-blocking action. The "Thanks!" indicator still shows
@@ -86,6 +87,7 @@ export function FeedbackButtons({ messageId, conversationId }: FeedbackButtonsPr
       });
       setCommentSubmitted(true);
       setShowModal(false);
+    // eslint-disable-next-line no-empty
     } catch {
       // Same silent-failure policy as `submit`.
     } finally {

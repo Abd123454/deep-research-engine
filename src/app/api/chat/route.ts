@@ -18,7 +18,7 @@ import { trackEvent } from "@/lib/analytics";
 import { getLLM, getProviderDisplayInfo, type LLMMessage } from "@/lib/llm-provider";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
-import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
 import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
@@ -71,7 +71,10 @@ export async function POST(req: NextRequest) {
   const message = sanitizeInput(injectionCheck.sanitized);
 
   // Rate limit.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  // getClientIP respects TRUSTED_PROXY_HOPS so an attacker can't spoof
+  // the XFF header to bypass rate limits.
+  const ip = getClientIP(req);
   const rl = await checkStartRateLimit(ip);
   if (!rl.ok) {
     return Response.json({ error: rl.reason }, { status: 429 });

@@ -11,6 +11,7 @@
 //   const result = await readPageWithJS(url);
 //   if (result.success) { /* use result.text */ }
 import * as Sentry from "@sentry/nextjs";
+import { logger } from "./logger";
 
 
 import type { Browser, BrowserType } from "playwright";
@@ -117,8 +118,17 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
       wordCount: countWords(truncated),
     };
   } catch (err) {
-  Sentry.captureException(err);
-// Handle abort specially.
+    // Non-critical at the call-site level: page reading failed (Playwright
+    // launch error, navigation timeout, etc.). The caller (readPage in
+    // page-reader.ts) already has a fallback to direct fetch + Readability.
+    // Abort errors are surfaced distinctly so the research pipeline can
+    // honor user-initiated cancellation.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "page-reader-js", err: err instanceof Error ? err.message : String(err) },
+      "readPageWithJS: Playwright failed — caller will fall back to direct fetch"
+    );
+    // Handle abort specially.
     if (signal?.aborted || (err instanceof Error && err.name === "AbortError")) {
       return {
         text: "",
@@ -143,10 +153,15 @@ export async function readPageWithJS(url: string, signal?: AbortSignal): Promise
       try {
         await browser.close();
       } catch (err) {
-  Sentry.captureException(err);
-// ignore close errors
-      
-}
+        // Non-critical: browser.close() failed (process already exited,
+        // IPC broken). The browser process will be reaped by the OS —
+        // no leak risk because we're discarding the `browser` reference.
+        Sentry.captureException(err);
+        logger.debug(
+          { module: "page-reader-js", err: err instanceof Error ? err.message : String(err) },
+          "readPageWithJS: browser.close() failed — process will be reaped by OS"
+        );
+      }
     }
   }
 }

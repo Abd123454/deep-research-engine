@@ -1,6 +1,10 @@
 // Research result cache — avoids re-running identical deep research queries.
 //
-// Cache key: SHA-256 of the normalized query (lowercased + trimmed).
+// Cache key: SHA-256 of the normalized query (lowercased + trimmed) + ":" + userId.
+// The userId MUST be part of the key so one user's cached research results are
+// never served to another user — research outputs may reflect private context
+// (memory, prior conversations, plan-limited quotas) that is per-user.
+//
 // Default TTL: 24 hours. Entries are stored in-memory (Map) — sufficient
 // for single-instance deployments; multi-instance deployments should use
 // Redis (see src/lib/redis.ts).
@@ -47,20 +51,26 @@ function getCache(): Map<string, CacheEntry> {
   return g.__researchResultCache;
 }
 
-function hashQuery(query: string): string {
+function hashQuery(query: string, userId: string): string {
+  // A-3: include userId in the cache key so one user's cached results are
+  // never served to another user (research output may reflect private
+  // per-user context — memory, prior conversations, plan-limited quotas).
   return crypto
     .createHash("sha256")
-    .update(query.toLowerCase().trim())
+    .update(query.toLowerCase().trim() + ":" + userId)
     .digest("hex");
 }
 
 /**
- * Look up a cached research result by query.
+ * Look up a cached research result by query + userId.
  * Returns null on miss or expired entry.
  */
-export function getCachedResearch(query: string): CachedResearchResult | null {
+export function getCachedResearch(
+  query: string,
+  userId: string
+): CachedResearchResult | null {
   if (!query || query.trim().length === 0) return null;
-  const key = hashQuery(query);
+  const key = hashQuery(query, userId);
   const cache = getCache();
   const entry = cache.get(key);
   if (!entry) return null;
@@ -73,16 +83,17 @@ export function getCachedResearch(query: string): CachedResearchResult | null {
 }
 
 /**
- * Store a research result in the cache.
+ * Store a research result in the cache (keyed by query + userId).
  * Evicts the oldest entry if the cache exceeds MAX_CACHE_SIZE.
  */
 export function setCachedResearch(
   query: string,
+  userId: string,
   result: Omit<CachedResearchResult, "query" | "cachedAt">,
   ttl = DEFAULT_TTL
 ): void {
   if (!query || query.trim().length === 0) return;
-  const key = hashQuery(query);
+  const key = hashQuery(query, userId);
   const cache = getCache();
 
   const entry: CacheEntry = {

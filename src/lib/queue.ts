@@ -39,7 +39,17 @@ function getResearchQueue(): Queue | null {
   if (!researchQueue) {
     const conn = getConnection();
     if (!conn) return null;
-    researchQueue = new Queue("research", { connection: conn });
+    // A-5: defaultJobOptions caps Redis growth — completed jobs are GC'd
+    // after 100, failed jobs after 50. Per-job options in enqueueResearch()
+    // match these defaults; the queue-level setting is defense-in-depth so
+    // future enqueue helpers can't accidentally leave jobs hanging forever.
+    researchQueue = new Queue("research", {
+      connection: conn,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
+    });
   }
   return researchQueue;
 }
@@ -48,7 +58,13 @@ function getEmailQueue(): Queue | null {
   if (!emailQueue) {
     const conn = getConnection();
     if (!conn) return null;
-    emailQueue = new Queue("email", { connection: conn });
+    emailQueue = new Queue("email", {
+      connection: conn,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
+    });
   }
   return emailQueue;
 }
@@ -57,7 +73,13 @@ function getMemoryQueue(): Queue | null {
   if (!memoryQueue) {
     const conn = getConnection();
     if (!conn) return null;
-    memoryQueue = new Queue("memory", { connection: conn });
+    memoryQueue = new Queue("memory", {
+      connection: conn,
+      defaultJobOptions: {
+        removeOnComplete: 100,
+        removeOnFail: 50,
+      },
+    });
   }
   return memoryQueue;
 }
@@ -120,13 +142,28 @@ export function createResearchWorker(
 ): Worker | null {
   const conn = getConnection();
   if (!conn) return null;
+  // A-4: cap concurrency so a single worker process can't fan out unbounded
+  // parallel LLM calls (which would burn through NVIDIA's per-key rate limit
+  // and trigger 429s across all in-flight jobs). RESEARCH_CONCURRENCY lets
+  // operators tune per deployment; default 3 matches the page-read concurrency.
+  //
+  // The limiter (5 jobs / 60s) is the NVIDIA rate-limit safety net — even if
+  // concurrency is raised, the limiter keeps us under the provider's per-minute
+  // request ceiling.
   return new Worker(
     "research",
     async (job) => {
       logger.info({ jobId: job.data.jobId, attempt: job.attemptsMade + 1 }, "Processing research job");
       await processor(job.data);
     },
-    { connection: conn }
+    {
+      connection: conn,
+      concurrency: parseInt(process.env.RESEARCH_CONCURRENCY || "3", 10),
+      limiter: {
+        max: 5,
+        duration: 60_000, // 5 jobs per minute (NVIDIA rate limit)
+      },
+    }
   );
 }
 

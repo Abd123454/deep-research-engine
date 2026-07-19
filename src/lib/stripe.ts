@@ -72,9 +72,16 @@ export async function getUserPlan(userId: string): Promise<Plan> {
         if (sub && PLANS[sub.plan as Plan]) return sub.plan as Plan;
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres subscription lookup failed (DB unreachable,
+      // schema mismatch). Fall through to SQLite — plan defaults to "free"
+      // if neither store has an active sub, which is fail-safe (Free limits
+      // are the most restrictive).
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "stripe", userId, err: err instanceof Error ? err.message : String(err) },
+        "getUserPlan: Postgres lookup failed — falling back to SQLite"
+      );
+    }
   }
   // SQLite fallback
   try {
@@ -82,9 +89,14 @@ export async function getUserPlan(userId: string): Promise<Plan> {
     const row = db.prepare("SELECT plan FROM subscriptions WHERE user_id = ? AND status = 'active' ORDER BY created_at DESC LIMIT 1").get(userId) as { plan: string } | undefined;
     if (row && PLANS[row.plan as Plan]) return row.plan as Plan;
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: SQLite subscription lookup failed (DB locked, table
+    // missing). Default to "free" plan — fail-safe (most restrictive).
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "stripe", userId, err: err instanceof Error ? err.message : String(err) },
+      "getUserPlan: SQLite lookup failed — defaulting to free"
+    );
+  }
   return "free";
 }
 

@@ -1,43 +1,56 @@
 // Tests for sanitizeInput — XSS + command injection stripping.
-// SQL keywords are NOT stripped (the LLM is not a SQL layer).
+// H-7 (CVSS 5.4): SQL keywords are NOT stripped. Stripping them
+// corrupted legitimate queries like "How do I DELETE a file in Linux?".
+// SQL injection is prevented at the DB layer (parameterized queries).
 
 import { describe, it, expect } from "vitest";
 import { sanitizeInput, sanitizeQuery } from "../prompt-security";
 
-describe("sanitizeInput: SQL keywords preserved", () => {
+describe("sanitizeInput: SQL keywords preserved (H-7)", () => {
   it("keeps SELECT in legitimate SQL questions", () => {
     const result = sanitizeInput("How do I write a SELECT in SQL?");
     expect(result).toContain("SELECT");
     expect(result).toBe("How do I write a SELECT in SQL?");
   });
 
-  it("strips INSERT (destructive SQL keyword)", () => {
+  it("keeps INSERT (H-7: no longer stripped)", () => {
     const result = sanitizeInput("INSERT INTO users VALUES");
-    expect(result).not.toContain("INSERT");
+    expect(result).toContain("INSERT");
   });
 
-  it("strips DROP (destructive SQL keyword)", () => {
+  it("keeps DROP (H-7: no longer stripped)", () => {
     const result = sanitizeInput("What does DROP TABLE do?");
-    expect(result).not.toContain("DROP");
+    expect(result).toContain("DROP");
   });
 
-  it("strips UPDATE (destructive SQL keyword)", () => {
+  it("keeps UPDATE (H-7: no longer stripped)", () => {
     const result = sanitizeInput("How to use UPDATE statement");
-    expect(result).not.toContain("UPDATE");
+    expect(result).toContain("UPDATE");
   });
 
-  it("strips DELETE (destructive SQL keyword)", () => {
+  it("keeps DELETE (H-7: no longer stripped)", () => {
     const result = sanitizeInput("DELETE vs TRUNCATE difference");
-    expect(result).not.toContain("DELETE");
+    expect(result).toContain("DELETE");
+  });
+
+  it("keeps SQL comment marker -- (H-7: no longer stripped)", () => {
+    // The `--` marker is harmless in user input — parameterized queries
+    // don't interpret it. Stripping it corrupted sentences like
+    // "C++ -- the good parts" or "macOS Big Sur -- review".
+    const result = sanitizeInput("C++ -- the good parts");
+    expect(result).toContain("--");
   });
 });
 
-describe("sanitizeInput: shell separators + SQL injection stripped", () => {
-  it("strips semicolons, DROP, and -- from SQL injection", () => {
+describe("sanitizeInput: shell separators stripped (SQL injection still defended at DB layer)", () => {
+  it("strips semicolons from SQL injection attempt", () => {
+    // Semicolons ARE stripped (shell separator) — but DROP and -- are
+    // preserved. SQL injection is prevented by parameterized queries,
+    // not by mangling user input.
     const result = sanitizeInput("'; DROP TABLE users; --");
     expect(result).not.toContain(";");
-    expect(result).not.toContain("DROP");
-    expect(result).not.toContain("--");
+    expect(result).toContain("DROP");
+    expect(result).toContain("--");
     expect(result).toContain("TABLE");
   });
 

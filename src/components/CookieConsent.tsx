@@ -65,6 +65,7 @@ export function CookieConsent() {
     setVisible(false);
     try {
       window.localStorage.setItem(STORAGE_KEY, new Date().toISOString());
+    // eslint-disable-next-line no-empty
     } catch {
       // Same as above — best-effort persistence.
     }

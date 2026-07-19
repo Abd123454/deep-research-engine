@@ -196,9 +196,11 @@ export async function POST(req: NextRequest) {
       // throws if the column already exists — wrap in try/catch.
       try {
         db.exec(`ALTER TABLE users ADD COLUMN date_of_birth TEXT`);
+      // eslint-disable-next-line no-empty
       } catch { /* column already exists */ }
       try {
         db.exec(`ALTER TABLE users ADD COLUMN age_confirmed_at TEXT`);
+      // eslint-disable-next-line no-empty
       } catch { /* column already exists */ }
 
       const existing = db.prepare("SELECT id FROM users WHERE email = ?").get(email);

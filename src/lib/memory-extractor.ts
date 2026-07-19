@@ -281,7 +281,15 @@ export async function getMemories(
       createdAt: r.created_at,
       accessCount: r.access_count || 0,
     }));
-  } catch {
+  } catch (err) {
+    // Non-critical: SQLite memory fetch failed (DB locked, table missing).
+    // Returning an empty list is safe — recall just won't surface any
+    // memories for this turn.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "getMemories: SQLite fetch failed — returning []"
+    );
     return [];
   }
 }
@@ -297,15 +305,28 @@ export async function deleteMemory(id: string): Promise<boolean> {
         return true;
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres memory delete failed. Fall through to the
+      // SQLite path so the memory is still removed from at least one store.
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "memory-extractor", id, err: err instanceof Error ? err.message : String(err) },
+        "deleteMemory: Postgres delete failed — falling back to SQLite"
+      );
+    }
   }
   try {
     const db = getDb();
     const result = db.prepare("DELETE FROM long_term_memories WHERE id = ?").run(id);
     return result.changes > 0;
-  } catch {
+  } catch (err) {
+    // Non-critical: SQLite delete failed (DB locked, table missing). The
+    // caller treats this as "not deleted" — the memory may resurface in
+    // recall, but the user-facing flow is not blocked.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "memory-extractor", id, err: err instanceof Error ? err.message : String(err) },
+      "deleteMemory: SQLite delete failed"
+    );
     return false;
   }
 }
@@ -407,8 +428,15 @@ function ensureConsentColumn(): void {
     // exists when wrapped in try/catch (the duplicate-column error is
     // caught).
     db.exec(`ALTER TABLE user_preferences ADD COLUMN ${LEGACY_CONSENT_COLUMN} INTEGER DEFAULT 0`);
-  } catch {
-    // Column already exists — expected on subsequent calls.
+  } catch (err) {
+    // Non-critical: column already exists (expected on subsequent calls).
+    // ALTER TABLE ADD COLUMN is idempotent at the application layer but
+    // not at the SQL layer — SQLite raises a duplicate-column error.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "memory-extractor", err: err instanceof Error ? err.message : String(err) },
+      "ensureLegacyConsentColumn: column already exists (expected)"
+    );
   }
 }
 

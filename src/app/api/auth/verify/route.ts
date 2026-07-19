@@ -86,6 +86,7 @@ async function findUserByEmail(email: string): Promise<FoundUser | null> {
     // Lazy column add — SQLite ALTER TABLE throws if the column exists.
     try {
       db.exec(`ALTER TABLE users ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0`);
+    // eslint-disable-next-line no-empty
     } catch {
       /* column already exists */
     }

@@ -21,6 +21,7 @@ import { getDb } from "@/lib/db";
 import { getUserId, requireAuth, requireAdminAccess } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
 import { logger } from "@/lib/logger";
+import { getClientIP } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -101,10 +102,8 @@ export async function POST(req: NextRequest) {
   try {
     const db = getDb();
     const id = crypto.randomUUID();
-    const ip =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      null;
+    // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+    const ip = getClientIP(req);
     const userAgent = req.headers.get("user-agent") || null;
     db.prepare(
       `INSERT INTO ${FEEDBACK_TABLE} (id, user_id, rating, comment, context, ip, user_agent, created_at)

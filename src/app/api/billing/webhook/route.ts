@@ -36,15 +36,23 @@ export async function POST(req: NextRequest) {
         const session = event.data.object;
         // SECURITY: the userId here comes from the checkout session that
         // *we* created (see /api/billing/checkout). It is populated from
-        // our auth-resolved userId at checkout time. The fallback to
-        // "default" only triggers if a checkout was created without our
-        // client_reference_id/metadata — log a warning so that's visible.
-        const userId = session.client_reference_id || session.metadata?.userId || "default";
-        if (userId === "default") {
+        // our auth-resolved userId at checkout time.
+        //
+        // H-5 (CVSS 6.5): previously fell back to "default" when no
+        // userId was present in the checkout session. That allowed
+        // subscription rows to be created for an unknown user — an
+        // attacker could trigger a checkout without our metadata and
+        // pollute the `default` tenant's subscription state. We now
+        // skip the DB insert entirely when no userId is present (after
+        // logging a warning so ops can investigate the misconfigured
+        // checkout flow).
+        const userId = session.client_reference_id || session.metadata?.userId;
+        if (!userId) {
           logger.warn(
             { module: "billing-webhook", sessionId: session.id },
-            "Stripe checkout.session.completed has no userId — falling back to 'default'"
+            "No userId in checkout session — skipping DB insert"
           );
+          break;
         }
         const customerId = session.customer as string;
         const subscriptionId = session.subscription as string;
@@ -149,9 +157,15 @@ export async function POST(req: NextRequest) {
           }
           logger.info({ subscriptionId: sub.id, status: sub.status, plan }, "Subscription updated");
         } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+          // Non-critical: subscription update DB write failed (DB locked,
+          // schema mismatch). Stripe will re-send the webhook on the next
+          // retry — the subscription state converges eventually.
+          Sentry.captureException(err);
+          logger.warn(
+            { module: "billing-webhook", subscriptionId: sub.id, err: err instanceof Error ? err.message : String(err) },
+            "customer.subscription.updated: DB write failed — Stripe will retry"
+          );
+        }
         break;
       }
 
@@ -170,9 +184,15 @@ export async function POST(req: NextRequest) {
             .run(sub.id);
           logger.info({ subscriptionId: sub.id }, "Subscription canceled");
         } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+          // Non-critical: subscription cancel DB write failed (DB locked,
+          // schema mismatch). Stripe will re-send the webhook — the
+          // subscription will be marked canceled on the next retry.
+          Sentry.captureException(err);
+          logger.warn(
+            { module: "billing-webhook", subscriptionId: sub.id, err: err instanceof Error ? err.message : String(err) },
+            "customer.subscription.deleted: DB write failed — Stripe will retry"
+          );
+        }
         // SENSITIVE ACTION: subscription canceled (by user via portal,
         // or by Stripe for non-payment).
         logSensitiveAction("billing.cancel", canceledUserId, req, {

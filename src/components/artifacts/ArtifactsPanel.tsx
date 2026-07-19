@@ -574,10 +574,19 @@ function MermaidRenderer({ content }: { content: string }) {
         mermaid.initialize({ startOnLoad: false, theme: "default" });
         const { svg: rendered } = await mermaid.render("mermaid-" + Date.now(), content);
         if (cancelled) return;
-        // Sanitize the mermaid-rendered SVG. SSR-safe: this effect only
-        // runs in the browser (useEffect never fires during SSR).
+        // H-2 (CVSS 7.1): Sanitize the mermaid-rendered SVG before
+        // storing it in state. SSR-safe: this effect only runs in the
+        // browser (useEffect never fires during SSR), so DOMPurify has a
+        // DOM available.
+        //
+        // `USE_PROFILES: { svg: true, svgFilters: true }` whitelists the
+        // SVG + SVG-filter element sets (feGaussianBlur, feMerge, etc.)
+        // while still stripping <script>, event handlers, and other
+        // XSS vectors. The previous config (`html: true` instead of
+        // `svgFilters: true`) was too permissive — it allowed arbitrary
+        // HTML elements inside the SVG root.
         const clean = DOMPurify.sanitize(rendered, {
-          USE_PROFILES: { svg: true, html: true },
+          USE_PROFILES: { svg: true, svgFilters: true },
           FORBID_TAGS: ["script", "object", "embed", "iframe", "link", "style"],
           FORBID_ATTR: [
             "onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur",
@@ -601,7 +610,25 @@ function MermaidRenderer({ content }: { content: string }) {
     );
   }
 
+  // H-2: defense in depth — even though `svg` is already sanitized
+  // before being stored in state (see the useEffect above), wrap the
+  // innerHTML payload in another DOMPurify pass here. If a future
+  // refactor moves the state assignment without re-sanitizing, this
+  // last-mile sanitization still prevents XSS from reaching the DOM.
+  // SSR-safe: skip the DOMPurify pass on the server (where DOMPurify
+  // has no DOM) — the `svg` state is `""` during SSR anyway, so we're
+  // just sanitizing the static "<p>Loading diagram...</p>" string.
+  const innerHtml =
+    typeof window === "undefined"
+      ? svg || "<p>Loading diagram...</p>"
+      : DOMPurify.sanitize(svg || "<p>Loading diagram...</p>", {
+          USE_PROFILES: { svg: true, svgFilters: true },
+        });
+
   return (
-    <div className="p-4 flex items-center justify-center" dangerouslySetInnerHTML={{ __html: svg || "<p>Loading diagram...</p>" }} />
+    <div
+      className="p-4 flex items-center justify-center"
+      dangerouslySetInnerHTML={{ __html: innerHtml }}
+    />
   );
 }

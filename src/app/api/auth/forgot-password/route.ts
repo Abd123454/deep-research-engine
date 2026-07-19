@@ -19,7 +19,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
-import { createRequestLogger, generateRequestId } from "@/lib/logger";
+import { createRequestLogger, generateRequestId, logger } from "@/lib/logger";
 import { createVerificationToken } from "@/lib/verification-tokens";
 import type { UserRow } from "@/lib/sqlite-types";
 
@@ -64,10 +64,16 @@ async function findUserByEmail(email: string): Promise<FoundUser | null> {
       return { id: row.id, email: row.email, name: row.name };
     }
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */
-  
-}
+    // Non-critical: SQLite user lookup failed (DB locked, table missing).
+    // Returning null causes the caller to treat the email as "not found"
+    // and return the same generic "if this email exists…" response —
+    // user-enumeration safe.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "forgot-password", email, err: err instanceof Error ? err.message : String(err) },
+      "findUserByEmail: SQLite lookup failed — returning null (user-enumeration safe)"
+    );
+  }
   return null;
 }
 

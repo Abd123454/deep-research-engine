@@ -222,17 +222,51 @@ async function nvidiaCompleteSingle(
   }
 
   const url = `${baseUrl.replace(/\/$/, "")}/chat/completions`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      Accept: opts.stream ? "text/event-stream" : "application/json",
-    },
-    body: JSON.stringify(body),
-  });
+
+  // ---------- A-2: 30-second fetch timeout (AbortController) ----------
+  //
+  // NVIDIA NIM can hang indefinitely on a stuck connection (we've seen
+  // socket-level stalls that never return a response). AbortController
+  // forces a hard 30s ceiling on the request. For streaming, the timeout
+  // applies to receiving the response headers; once the stream starts we
+  // clear the timer so a legitimately long stream isn't killed.
+  const controller = new AbortController();
+  const timeoutMs = 30_000;
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        Accept: opts.stream ? "text/event-stream" : "application/json",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    // Headers arrived — for streaming, let the stream run as long as it
+    // keeps producing chunks. For non-streaming the body read below is
+    // typically fast (single JSON blob) and covered by the timer; we
+    // clear it explicitly after `res.json()`.
+    if (opts.stream) {
+      clearTimeout(timeout);
+    }
+  } catch (err) {
+    clearTimeout(timeout);
+    // AbortError -> surface as a retryable timeout so the model-fallback
+    // chain can try the next model.
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new Error(
+        `NVIDIA NIM request timed out after ${timeoutMs}ms (model: ${model})`
+      );
+    }
+    throw err;
+  }
 
   if (!res.ok) {
+    if (!opts.stream) clearTimeout(timeout);
     const text = await res.text().catch(() => "");
     throw new Error(
       `NVIDIA NIM request failed (${res.status} ${res.statusText}): ${text.slice(
@@ -293,6 +327,7 @@ async function nvidiaCompleteSingle(
 
   // --- Non-streaming path ---
   const data = (await res.json()) as NvidiaResponse;
+  clearTimeout(timeout);
   const msg = data.choices?.[0]?.message;
 
   // Some reasoning models return content=null and put the output in

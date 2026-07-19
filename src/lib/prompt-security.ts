@@ -273,11 +273,17 @@ export function getInjectionDefensePrompt(): string {
 // ---------- Input sanitization (XSS + command injection) ----------
 // Strips dangerous patterns from user input before it's stored or processed.
 //
-// IMPORTANT: SQL keywords (SELECT/INSERT/UPDATE/DROP/DELETE) are NOT stripped.
-// The research query goes to the LLM (not a SQL layer), and stripping SQL
-// keywords from legitimate questions like "How do I write a SELECT in SQL?"
-// is a false-positive that harms UX. SQL injection is prevented at the
-// database layer (better-sqlite3 uses parameterized queries in session-store).
+// H-7 (CVSS 5.4): SQL keywords (DROP, DELETE, INSERT, UPDATE, and the
+// `--` comment marker) were previously stripped here. That was wrong —
+// it corrupted legitimate user queries like "How do I DELETE a file in
+// Linux?" or "UPDATE vs PATCH semantics". SQL injection is already
+// prevented at the database layer: every SQL statement in the codebase
+// uses parameterized queries (better-sqlite3 `.prepare(...).run(...)`
+// with `?` placeholders, or Prisma's parameter-binding). Stripping
+// keywords at the input layer is defense-in-depth in the WRONG layer —
+// it harms UX without raising security (the DB layer is already
+// airtight). SELECT was already preserved (for legit SQL questions);
+// we now preserve DROP/DELETE/INSERT/UPDATE too.
 //
 // What we DO strip:
 // - XSS: <script> tags, event handlers, javascript: URLs, <iframe>, <embed>
@@ -301,14 +307,6 @@ const CMD_PATTERNS = [
   /\$\([^)]*\)/g, // command substitution $(...)
   /`[^`]*`/g, // backtick command substitution
   /\b(nmap|curl|wget|bash|sh|rm|mv|cp|chmod|sudo|exec)\s/gi, // command + space
-  // SQL destructive keywords — stripped because they're dangerous in SQL
-  // context and rarely appear in legit research queries. SELECT is kept
-  // (users may ask "How do I write a SELECT in SQL?").
-  /\bDROP\b/gi,
-  /\bDELETE\b/gi,
-  /\bINSERT\b/gi,
-  /\bUPDATE\b/gi,
-  /--/g, // SQL comment marker
 ];
 
 export function sanitizeInput(input: string): string {

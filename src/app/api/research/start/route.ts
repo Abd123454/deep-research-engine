@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       reportMaxTokens: body.reportMaxTokens,
     });
 
-    const job = createJob(cleanedQuery, config, clientIP);
+    const job = createJob(cleanedQuery, config, clientIP, userId);
     trackEvent("default", "research_started", { jobId: job.id, queryLength: cleanedQuery.length });
 
     // If a pre-approved plan was provided (Plan Preview step), attach it
@@ -164,7 +164,7 @@ export async function POST(req: NextRequest) {
     // hydrate the in-memory job as "completed" and return immediately.
     // This avoids re-running the 5-15 min pipeline for repeat queries.
     if (!body.plan) {
-      const cached = getCachedResearch(cleanedQuery);
+      const cached = getCachedResearch(cleanedQuery, userId);
       if (cached) {
         job.status = "completed";
         job.report = cached.report;

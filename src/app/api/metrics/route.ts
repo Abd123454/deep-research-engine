@@ -152,6 +152,7 @@ export async function GET(req: NextRequest) {
     const stats = getCacheStats();
     cacheSize = stats.size;
     cacheHitRate = stats.hitRate;
+  // eslint-disable-next-line no-empty
   } catch {
     // Cache module not initialized — leave at 0.
   }

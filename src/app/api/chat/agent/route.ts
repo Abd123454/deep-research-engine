@@ -6,7 +6,7 @@ import { getSkillWithMarkdown } from "@/lib/skills";
 import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agent-tools";
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
-import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 import { requireAuth, getUserId } from "@/lib/auth";
 import {
   getOrCreateConversation,
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: "No LLM provider configured." }, { status: 503 });
   }
 
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  const ip = getClientIP(req);
   const rl = await checkStartRateLimit(ip);
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 

@@ -12,6 +12,7 @@
 // to prevent CSRF bypass via curl/forged requests.
 
 import { NextRequest, NextResponse } from "next/server";
+import { validateCsrf } from "./lib/csrf";
 
 const SAFE_METHODS = ["GET", "HEAD", "OPTIONS"];
 
@@ -56,6 +57,40 @@ export function proxy(req: NextRequest) {
       return res;
     }
     return new NextResponse(null, { status: 403 });
+  }
+
+  // H-4: CSRF validation for state-changing requests. The CORS check
+  // above already rejects cross-origin POST/PUT/PATCH/DELETE from
+  // unallowed origins, but a cookie-authenticated session is still
+  // vulnerable to CSRF if a same-origin XSS escapes the CORS net or
+  // if ALLOWED_ORIGINS is misconfigured. `validateCsrf` is a no-op for
+  // Basic-Auth / Bearer-token requests (those aren't vulnerable to
+  // CSRF because browsers don't auto-attach them cross-origin) and
+  // enforces a double-submit cookie for cookie-authenticated sessions.
+  //
+  // Skip CSRF for paths that have their own signature-based integrity
+  // check:
+  //   - /api/auth/*        — NextAuth issues + validates its own CSRF
+  //                          token (double-submit cookie, signed).
+  //   - /api/billing/webhook — Stripe signs the request body with
+  //                          STRIPE_WEBHOOK_SECRET; signature verify
+  //                          replaces CSRF for server-to-server calls.
+  //
+  // Also skip when AUTH_DEV_BYPASS=1 — matches the auth.ts dev bypass
+  // so local dev (no Basic Auth configured) isn't blocked by the CSRF
+  // gate before reaching `requireAuth` (which itself bypasses in dev).
+  if (
+    ["POST", "PUT", "PATCH", "DELETE"].includes(req.method) &&
+    process.env.AUTH_DEV_BYPASS !== "1"
+  ) {
+    const path = req.nextUrl.pathname;
+    if (
+      !path.startsWith("/api/auth/") &&
+      !path.startsWith("/api/billing/webhook")
+    ) {
+      const csrfError = validateCsrf(req);
+      if (csrfError) return csrfError;
+    }
   }
 
   const origin = req.headers.get("origin");

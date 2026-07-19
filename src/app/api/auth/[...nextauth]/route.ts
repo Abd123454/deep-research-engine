@@ -14,6 +14,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserRow } from "@/lib/sqlite-types";
+import { logger } from "@/lib/logger";
 
 // C-1 (CVSS 9.8): Fail-closed in production if NEXTAUTH_SECRET is missing.
 // A missing secret means NextAuth falls back to a known constant, which
@@ -43,9 +44,15 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
         return null;
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres user lookup failed (DB unreachable, schema
+      // mismatch). Fall through to SQLite — if that also fails, return null
+      // (NextAuth treats null as "invalid credentials").
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "nextauth", email, err: err instanceof Error ? err.message : String(err) },
+        "findUserByEmail: Postgres lookup failed — falling back to SQLite"
+      );
+    }
   }
 
   // SQLite fallback.
@@ -56,9 +63,15 @@ async function findUserByEmail(email: string): Promise<{ id: string; email: stri
       return { id: row.id, email: row.email, name: row.name, passwordHash: row.password_hash };
     }
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: SQLite user lookup failed (DB locked, table missing).
+    // Returning null causes NextAuth to treat the credentials as invalid
+    // — safer than throwing (which would leak DB state to the client).
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "nextauth", email, err: err instanceof Error ? err.message : String(err) },
+      "findUserByEmail: SQLite lookup failed — returning null (invalid-credentials)"
+    );
+  }
   return null;
 }
 

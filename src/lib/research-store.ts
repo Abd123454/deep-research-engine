@@ -106,14 +106,16 @@ export function persistJob(job: ResearchJob): void {
       updatedAt: new Date(job.updatedAt).toISOString(),
     });
   } catch (err) {
-  Sentry.captureException(err);
-// DB write failed — don't break the research. Just log.
+    // Non-critical: persistJob failed (DB locked, schema mismatch, disk
+    // full). Don't break the research — the in-memory Map still has the
+    // full runtime state, and the job will be re-persisted on the next
+    // milestone. Logged so a persistent failure is visible in Sentry/logs.
+    Sentry.captureException(err);
     logger.warn(
       { module: "research-store", err: err instanceof Error ? err.message : String(err) },
-      "persistJob failed"
+      "persistJob: DB write failed — job continues in-memory only"
     );
-  
-}
+  }
 }
 
 /**
@@ -126,17 +128,27 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
   try {
     if (row.plan) plan = JSON.parse(String(row.plan));
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: plan JSON was corrupted in the DB. Treat as no plan —
+    // the engine will regenerate one on the next run.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+      "recordToJob: plan JSON parse failed — using null"
+    );
+  }
 
   let sources: ResearchJob["sources"] = [];
   try {
     if (row.sources) sources = JSON.parse(String(row.sources));
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: sources JSON was corrupted. Empty sources is safe —
+    // the report still renders, just without citation hover-cards.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+      "recordToJob: sources JSON parse failed — using []"
+    );
+  }
 
   let stats: ResearchJob["stats"] = {
     totalPagesFound: 0,
@@ -154,9 +166,14 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
   try {
     if (row.stats) stats = { ...stats, ...JSON.parse(String(row.stats)) };
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: stats JSON was corrupted. Use the zero-defaults object
+    // — the dashboard shows 0s rather than crashing on a single bad row.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "research-store", err: err instanceof Error ? err.message : String(err) },
+      "recordToJob: stats JSON parse failed — using zero defaults"
+    );
+  }
 
   const createdAt = row.created_at ? new Date(String(row.created_at)).getTime() : now;
   const updatedAt = row.updated_at ? new Date(String(row.updated_at)).getTime() : now;
@@ -169,6 +186,10 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
     createdAt,
     updatedAt,
     finishedAt: (status === "completed" || status === "failed") ? updatedAt : undefined,
+    // A-3: jobs persisted before the userId column was added are treated as
+    // "default" — matches the legacy behavior and avoids serving cross-user
+    // cached results.
+    userId: row.user_id ? String(row.user_id) : "default",
     config: { query: String(row.query || ""), depth: "standard", numSubQueries: 5, maxLinksPerQuery: 5, pageReadConcurrency: 3, reportMaxTokens: 4000, retriever: "duckduckgo", llmProvider: "nvidia", enableMultiRound: true, numGapQueries: 3 } as ResearchConfig,
     plan,
     gapAnalysis: null,
@@ -192,7 +213,8 @@ function recordToJob(row: Record<string, unknown>): ResearchJob {
 export function createJob(
   query: string,
   config: ResearchConfig,
-  clientIP?: string
+  clientIP?: string,
+  userId?: string
 ): ResearchJob {
   const jobs = getStore();
 
@@ -226,6 +248,9 @@ export function createJob(
     status: "queued",
     createdAt: now,
     updatedAt: now,
+    // A-3: per-user cache key (defaults to "default" for legacy/basic-auth
+    // deployments where getUserId returns "default").
+    userId: userId || "default",
     config,
     plan: null,
     gapAnalysis: null,
@@ -343,10 +368,15 @@ export function deleteJob(id: string): boolean {
       try {
         db.prepare("DELETE FROM research_jobs WHERE id = ?").run(id);
       } catch (err) {
-  Sentry.captureException(err);
-/* ignore */
-      
-}
+        // Non-critical: DB delete failed (DB locked, table missing). The
+        // in-memory copy was already removed, so the user sees the job as
+        // gone. The orphaned DB row will be reaped by the next TTL sweep.
+        Sentry.captureException(err);
+        logger.warn(
+          { module: "research-store", jobId: id, err: err instanceof Error ? err.message : String(err) },
+          "deleteJob: DB delete failed — in-memory copy was removed"
+        );
+      }
     }
   }
 

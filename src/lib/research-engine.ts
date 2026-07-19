@@ -228,20 +228,30 @@ function extractQuestionsJson(text: string): string[] {
     if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
     if (Array.isArray(parsed)) return parsed.map(String);
   } catch (err) {
-  Sentry.captureException(err);
-/* fall through */
-  
-}
+    // Non-critical: LLM returned malformed JSON. Try progressively looser
+    // extraction strategies below (substring match, array match, fenced
+    // code block). Debug-level because parsing failures are an expected
+    // part of the strategy cascade.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+      "extractQuestionsJson: direct JSON.parse failed — trying looser strategies"
+    );
+  }
   const jsonMatch = text.match(/\{[\s\S]*"questions"[\s\S]*\}/);
   if (jsonMatch) {
     try {
       const parsed = JSON.parse(jsonMatch[0]);
       if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */
-    
-}
+      // Non-critical: extracted JSON-like substring was still malformed.
+      // Continue to the next strategy (array match, fenced block, line split).
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "extractQuestionsJson: JSON-object substring parse failed"
+      );
+    }
   }
   const arrayMatch = text.match(/\[[\s\S]*\]/);
   if (arrayMatch) {
@@ -249,10 +259,14 @@ function extractQuestionsJson(text: string): string[] {
       const parsed = JSON.parse(arrayMatch[0]);
       if (Array.isArray(parsed)) return parsed.map(String);
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */
-    
-}
+      // Non-critical: extracted array-like substring was malformed.
+      // Continue to the fenced-block and line-split strategies.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "extractQuestionsJson: JSON-array substring parse failed"
+      );
+    }
   }
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) {
@@ -261,10 +275,14 @@ function extractQuestionsJson(text: string): string[] {
       if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
       if (Array.isArray(parsed)) return parsed.map(String);
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */
-    
-}
+      // Non-critical: fenced code block wasn't valid JSON. Fall through to
+      // the line-by-line heuristic (last-resort extraction).
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "extractQuestionsJson: fenced-block parse failed — falling back to line split"
+      );
+    }
   }
   const lines = text
     .split(/\n+/)
@@ -403,10 +421,15 @@ function tryParsePlan(text: string): ResearchPlan | null {
   try {
     candidates.push(text);
   } catch (err) {
-  Sentry.captureException(err);
-/* noop */
-  
-}
+    // Non-critical: array push threw (extremely unlikely — only on OOM).
+    // Skip the raw-text candidate; the fenced-block and object-match
+    // candidates below are still tried.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+      "tryParsePlan: raw-text candidate push failed (OOM?)"
+    );
+  }
   const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
   if (fenceMatch) candidates.push(fenceMatch[1]);
   const objMatch = text.match(/\{[\s\S]*\}/);
@@ -431,10 +454,14 @@ function tryParsePlan(text: string): ResearchPlan | null {
         };
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* try next */
-    
-}
+      // Non-critical: this candidate wasn't valid JSON (or didn't have the
+      // required shape). Try the next candidate.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "tryParsePlan: candidate parse failed — trying next"
+      );
+    }
   }
   return null;
 }
@@ -850,11 +877,17 @@ Return your response as JSON with this exact shape (no markdown, no preamble):
           .filter((q: string) => q.length > 0);
       }
     } catch (err) {
-  Sentry.captureException(err);
-// Fallback: use the raw text as the gap analysis.
+      // Non-critical: gap-analysis JSON parse failed (LLM returned prose
+      // instead of JSON). Fall back to using the raw text as the gap
+      // analysis — the report still synthesizes correctly, just without
+      // the structured follow_ups list.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "analyzeGaps: JSON parse failed — using raw text as gapAnalysis"
+      );
       gapAnalysis = result.content.slice(0, 1000);
-    
-}
+    }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     log(job, "warn", "analyzing_gaps", `Gap analysis failed: ${msg}`);
@@ -1135,13 +1168,25 @@ Write a comprehensive long-form Deep Research report answering the original quer
         job.followUpQuestions = parsed.map(String).slice(0, 3);
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* ignore parse errors */ 
-}
+      // Non-critical: follow-up questions JSON parse failed (LLM returned
+      // prose or malformed JSON). The report is already complete — follow-
+      // ups are a nice-to-have, not a hard requirement.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+        "generateFollowUps: JSON parse failed — leaving followUpQuestions empty"
+      );
+    }
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore — follow-ups are nice-to-have */ 
-}
+    // Non-critical: the entire follow-up-question LLM call failed (rate
+    // limit, network, provider outage). The report itself is unaffected —
+    // follow-ups are surfaced in the UI as a separate optional section.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
+      "generateFollowUps: LLM call failed — skipping follow-up questions"
+    );
+  }
 
   // P0-6: Constitutional Self-Critique Pass — a SECOND LLM call annotates
   // the report with inline [verified] / [unverified] / [contradicted]
@@ -1312,9 +1357,16 @@ export async function runResearch(jobId: string): Promise<void> {
         try {
           await processSubQuery(job, sq, job.config, jobSeenUrls);
         } catch (err) {
-  Sentry.captureException(err);
-/* ignore retry failures */ 
-}
+          // Non-critical: adaptive retry of a single failed sub-query didn't
+          // recover. The sub-query is left in "failed" status — the report
+          // synthesizes with whatever round-1 findings we have. The retry
+          // loop continues to the next failed sub-query.
+          Sentry.captureException(err);
+          logger.warn(
+            { module: "research-engine", subQuery: sq.id, err: err instanceof Error ? err.message : String(err) },
+            "processSubQuery retry failed — leaving sub-query in failed state"
+          );
+        }
       }
       log(job, "info", "searching", `Adaptive retry complete. ${failedRound1.filter(sq => sq.status === "done").length}/${failedRound1.length} recovered.`);
     }
@@ -1378,13 +1430,18 @@ export async function runResearch(jobId: string): Promise<void> {
           log(job, "info", "analyzing_gaps", "No follow-up questions generated; skipping round 2.");
         }
       } catch (err) {
-  Sentry.captureException(err);
-// Don't swallow cancellation errors.
+        // Non-critical: the multi-round gap-analysis phase failed (LLM
+        // outage, network). The report still synthesizes from round-1
+        // findings — round 2 is a quality enhancement, not a hard dep.
+        //
+        // IMPORTANT: cancellation errors MUST be re-thrown so the
+        // orchestrator's try/finally can clean up. Swallowing them would
+        // make Stop-button cancellation silently fail.
+        Sentry.captureException(err);
         if (err instanceof Error && err.message === "Cancelled by user") throw err;
         const msg = err instanceof Error ? err.message : String(err);
         log(job, "warn", "analyzing_gaps", `Multi-round phase skipped due to error: ${msg}`);
-      
-}
+      }
     }
 
     // Stage 6: Synthesize final report.
@@ -1447,9 +1504,12 @@ export async function runResearch(jobId: string): Promise<void> {
     // Cache the completed research result so an identical query within 24h
     // is served from cache (see research-start/route.ts). Skipped if the
     // report is empty (e.g. a guard tripped before synthesis).
+    //
+    // A-3: the cache key includes job.userId so one user's cached results
+    // are never served to another user.
     if (job.report) {
       try {
-        setCachedResearch(job.config.query, {
+        setCachedResearch(job.config.query, job.userId || "default", {
           report: job.report,
           sources: job.sources,
           stats: job.stats,

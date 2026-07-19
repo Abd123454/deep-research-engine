@@ -9,15 +9,27 @@ const __dirname = dirname(__filename);
 const eslintConfig = [...nextCoreWebVitals, ...nextTypescript, {
   rules: {
     // TypeScript rules
-    // no-explicit-any: turned off because LLM responses are inherently dynamic.
-    // TypeScript strict mode (enabled in tsconfig) catches real type errors;
-    // `any` is used intentionally for untyped LLM/tool responses.
-    "@typescript-eslint/no-explicit-any": "off",
+    // A-7: re-enabled as WARNINGS (not errors) so they surface in `bun run
+    // lint` output without breaking the build. The codebase has ~125 empty
+    // catch blocks and a long tail of `any`/`!` usages; converting all of
+    // them in one pass is too risky. Warnings make the debt visible while
+    // we incrementally pay it down.
+    //
+    // no-explicit-any: LLM responses are inherently dynamic; `any` is
+    // intentional in those hot paths. Now warned so new uses are conscious.
+    "@typescript-eslint/no-explicit-any": "warn",
     "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }],
-    "@typescript-eslint/no-non-null-assertion": "off",
+    // no-non-null-assertion: `!` is convenient but skips null-checks. Warned
+    // so reviewers see them in PRs.
+    "@typescript-eslint/no-non-null-assertion": "warn",
     "@typescript-eslint/ban-ts-comment": "warn",
     "@typescript-eslint/prefer-as-const": "off",
     "@typescript-eslint/no-unused-disable-directive": "off",
+    // A-7: the base `no-empty` rule (re-enabled as "warn" below) already
+    // catches empty catch blocks for both TS and JS code. The
+    // @typescript-eslint plugin does NOT ship a separate `no-empty` rule
+    // (the audit's suggested name was incorrect). We rely on `no-empty`
+    // + `@typescript-eslint/no-empty-function` for full coverage.
 
     // React rules — exhaustive-deps is critical (prevents stale closures / infinite loops)
     "react-hooks/exhaustive-deps": "warn",

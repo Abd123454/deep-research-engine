@@ -129,6 +129,7 @@ export async function executeComputerUse(
       ...(action.text ? { textLength: action.text.length } : {}),
       ...(action.key ? { key: action.key } : {}),
     });
+  // eslint-disable-next-line no-empty
   } catch {
     // Audit log failed — never block the action.
   }

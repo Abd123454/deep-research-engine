@@ -20,6 +20,7 @@ import * as crypto from "crypto";
 import { env } from "./env";
 import { logger } from "./logger";
 import { getDb } from "./db";
+import { getClientIP } from "./rate-limit";
 
 const REALM = "Quaesitor";
 const FALLBACK_USER_ID = "default";
@@ -138,7 +139,7 @@ export function requireAuth(req: NextRequest): NextResponse | null {
 
   // MFA enforcement: when MFA_REQUIRED=true (enterprise deployments), the
   // request must also carry a valid X-MFA-Token header. The token is verified
-  // against the MFA secret stored for the authenticated user.
+  // against the user's per-user MFA secret stored in the `user_mfa` table.
   // In dev/basic deployments (MFA_REQUIRED not set), MFA is optional and
   // routes work with just Basic Auth.
   if (process.env.MFA_REQUIRED === "true") {
@@ -149,18 +150,22 @@ export function requireAuth(req: NextRequest): NextResponse | null {
         { status: 401 }
       );
     }
-    // Verify the token against the user's MFA secret (stored in env or DB).
-    // For single-user Basic Auth, the secret comes from MFA_SECRET env var.
-    const mfaSecret = process.env.MFA_SECRET;
+    // H-8 (CVSS 5.0): previously read a single shared `process.env.MFA_SECRET`
+    // for ALL users — meaning every user shared the same TOTP seed.
+    // `getUserMfaSecret(userId)` resolves the per-user secret from the
+    // `user_mfa` table, with a backward-compat fallback to the env var
+    // for single-user deployments that haven't migrated yet.
+    const userId = getUserId(req);
+    // Lazy-load to avoid pulling crypto into client bundle.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { getUserMfaSecret, verifyTotp } = require("./mfa");
+    const mfaSecret = getUserMfaSecret(userId);
     if (!mfaSecret) {
       return NextResponse.json(
-        { ok: false, error: "MFA is required but MFA_SECRET is not configured." },
+        { ok: false, error: "MFA is required but no MFA secret is configured for this user. Set up MFA via /api/auth/mfa/setup or set MFA_SECRET." },
         { status: 503 }
       );
     }
-    // Lazy-load to avoid pulling crypto into client bundle
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { verifyTotp } = require("./mfa");
     if (!verifyTotp(mfaToken, mfaSecret)) {
       return NextResponse.json(
         { ok: false, error: "Invalid or expired MFA token." },
@@ -189,9 +194,10 @@ const ADMIN_ROUTES = ["/api/mcp", "/api/audit-logs"];
  *
  * If `ADMIN_IP_ALLOWLIST` is set (comma-separated IPs/CIDRs — CIDR matching
  * is intentionally NOT implemented; only exact IP string match is supported
- * to keep the surface minimal), the client IP (from `x-forwarded-for` first
- * hop, falling back to `x-real-ip`) must appear in the allowlist. Otherwise
- * a 403 is returned.
+ * to keep the surface minimal), the client IP (resolved via the shared
+ * `getClientIP()` helper, which respects TRUSTED_PROXY_HOPS so an attacker
+ * can't spoof the X-Forwarded-For header to bypass the allowlist) must
+ * appear in the allowlist. Otherwise a 403 is returned.
  *
  * Call this BEFORE `requireAuth` in admin route handlers so the allowlist
  * check fires even when no credentials are sent (defense in depth):
@@ -213,10 +219,10 @@ export function requireAdminAccess(req: NextRequest): NextResponse | null {
   const allowlist = process.env.ADMIN_IP_ALLOWLIST;
   if (!allowlist) return null;
 
-  const clientIp =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  // The admin IP allowlist is a security decision — spoofable XFF would
+  // let an attacker bypass the allowlist by sending a fake XFF header.
+  const clientIp = getClientIP(req);
 
   const allowed = allowlist
     .split(",")

@@ -41,7 +41,7 @@ import { NextRequest } from "next/server";
 import { requireAuth, getUserId } from "@/lib/auth";
 import { getLLM, getProviderDisplayInfo, type LLMMessage } from "@/lib/llm-provider";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
-import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
 import { sanitizeError } from "@/lib/sanitize-error";
 import {
@@ -129,7 +129,8 @@ export async function POST(req: NextRequest) {
   // Rate-limit + plan-limit (shares the `chat` action so the unified
   // monthly cap applies — artifact generation is just a special case of
   // chat completion).
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  const ip = getClientIP(req);
   const rl = await checkStartRateLimit(ip);
   if (!rl.ok) {
     return Response.json({ ok: false, error: rl.reason }, { status: 429 });

@@ -9,6 +9,7 @@ import * as Sentry from "@sentry/nextjs";
 
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { MessageRow } from "@/lib/sqlite-types";
+import { logger } from "@/lib/logger";
 
 const MAX_HISTORY = 20;
 
@@ -49,9 +50,14 @@ export async function getOrCreateConversation(
         return conv.id;
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres conversation create failed. Fall through to
+      // the SQLite fallback so chat history is still persisted locally.
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+        "getOrCreateConversation: Postgres create failed — falling back to SQLite"
+      );
+    }
   }
 
   // SQLite fallback.
@@ -59,9 +65,15 @@ export async function getOrCreateConversation(
     const db = getDb();
     db.prepare("INSERT OR IGNORE INTO conversations (id, user_id, title) VALUES (?, ?, ?)").run(id, userId, title);
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: SQLite conversation insert failed (DB locked, disk full,
+    // schema mismatch). The chat still works in-memory — the next saveMessage
+    // will retry the insert.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+      "getOrCreateConversation: SQLite insert failed"
+    );
+  }
   return id;
 }
 
@@ -87,9 +99,14 @@ export async function saveMessage(
         return;
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres message insert failed. Fall through to SQLite
+      // so the message is still persisted (chat history continuity matters).
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+        "saveMessage: Postgres insert failed — falling back to SQLite"
+      );
+    }
   }
   try {
     const db = getDb();
@@ -97,9 +114,14 @@ export async function saveMessage(
       id, conversationId, role, content, tokensUsed || 0, modelUsed || null
     );
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: SQLite message insert failed. The chat response is still
+    // returned to the user — only the persistence layer is degraded.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+      "saveMessage: SQLite insert failed"
+    );
+  }
 }
 
 /**
@@ -122,9 +144,14 @@ export async function getHistory(conversationId: string): Promise<ChatMessage[]>
         }));
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres history fetch failed. Fall through to SQLite
+      // so the agent still gets recent context for the next turn.
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+        "getHistory: Postgres fetch failed — falling back to SQLite"
+      );
+    }
   }
   try {
     const db = getDb();
@@ -132,7 +159,17 @@ export async function getHistory(conversationId: string): Promise<ChatMessage[]>
     return rows.map((r) => ({
       id: r.id, role: r.role, content: r.content, createdAt: r.created_at,
     }));
-  } catch { return []; }
+  } catch (err) {
+    // Non-critical: SQLite history fetch failed (DB locked, table missing).
+    // Returning an empty history is safer than throwing — the agent will
+    // start a fresh context for this turn.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "chat-store", err: err instanceof Error ? err.message : String(err) },
+      "getHistory: SQLite fetch failed — returning empty history"
+    );
+    return [];
+  }
 }
 
 export const CHAT_MAX_HISTORY = MAX_HISTORY;

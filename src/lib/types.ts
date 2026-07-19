@@ -156,6 +156,11 @@ export interface ResearchJob {
   updatedAt: number;
   startedAt?: number;
   finishedAt?: number;
+  // A-3: userId is part of the research-cache key — keeps one user's cached
+  // results from being served to another user. Defaults to "default" for
+  // unauthenticated deployments and for jobs reconstructed from the DB
+  // (which predates this column).
+  userId?: string;
   config: ResearchConfig;
   plan: ResearchPlan | null;
   gapAnalysis: string | null;

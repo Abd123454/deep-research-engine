@@ -30,9 +30,14 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ ok: true, preferences: prefs || DEFAULT_PREFS });
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+      // Non-critical: Postgres preference lookup failed. Fall through to
+      // SQLite — if that also fails, the user gets DEFAULT_PREFS (safe).
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "preferences", err: err instanceof Error ? err.message : String(err) },
+        "GET: Postgres preference lookup failed — falling back to SQLite"
+      );
+    }
   }
 
   // SQLite fallback.
@@ -52,9 +57,15 @@ export async function GET(req: NextRequest) {
       });
     }
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: SQLite preference lookup failed (DB locked, table
+    // missing). Default preferences are a safe fallback — the UI still
+    // works, the user just doesn't see their saved prefs this turn.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "preferences", err: err instanceof Error ? err.message : String(err) },
+      "GET: SQLite preference lookup failed — returning defaults"
+    );
+  }
 
   return NextResponse.json({ ok: true, preferences: DEFAULT_PREFS });
 }
@@ -86,9 +97,14 @@ export async function PUT(req: NextRequest) {
           return NextResponse.json({ ok: true, preferences: prefs });
         }
       } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+        // Non-critical: Postgres preference upsert failed. Fall through to
+        // SQLite — if that also fails, the caller below logs and returns.
+        Sentry.captureException(err);
+        logger.warn(
+          { module: "preferences", err: err instanceof Error ? err.message : String(err) },
+          "PUT: Postgres preference upsert failed — falling back to SQLite"
+        );
+      }
     }
 
     // SQLite fallback.

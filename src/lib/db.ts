@@ -51,10 +51,18 @@ function getSqlitePath(): string {
   }
   const dir = path.dirname(dbPath);
   if (!fs.existsSync(dir)) {
-    try { fs.mkdirSync(dir, { recursive: true }); } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    try {
+      fs.mkdirSync(dir, { recursive: true });
+    } catch (err) {
+      // Non-critical: directory creation failed (read-only FS, permission
+      // denied). The subsequent sqlite3 open will surface a clearer error
+      // — better to let it throw with the actual DB path than to mask it.
+      Sentry.captureException(err);
+      logger.warn(
+        { module: "db", dir, err: err instanceof Error ? err.message : String(err) },
+        "getDbPath: mkdir failed — sqlite open will surface the real error"
+      );
+    }
   }
   return dbPath;
 }

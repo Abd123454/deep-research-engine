@@ -232,6 +232,51 @@ export function isMfaEnabled(userId: string): boolean {
 }
 
 /**
+ * H-8 (CVSS 5.0): resolve the MFA secret for a given user.
+ *
+ * Previously `requireAuth` in `auth.ts` read a single shared
+ * `process.env.MFA_SECRET` for ALL users — meaning every user shared
+ * the same TOTP seed, so compromising one user's MFA secret compromised
+ * everyone's. This helper replaces that pattern:
+ *
+ *   1. Look up the user's per-user secret in the `user_mfa` table.
+ *      Only ENABLED records are considered (a pending setup shouldn't
+ *      grant MFA access).
+ *   2. If the user has no per-user MFA configured, fall back to the
+ *      `MFA_SECRET` env var. This preserves backward compatibility for
+ *      single-user Basic-Auth deployments that haven't migrated to
+ *      per-user MFA — but it's logged at warn level so operators know
+ *      they're running in the legacy mode and should migrate.
+ *   3. If neither is configured, return null (the caller — typically
+ *      `requireAuth` — returns a 503 "MFA required but not configured").
+ *
+ * @returns The base32-encoded TOTP secret, or null if none is available.
+ */
+export function getUserMfaSecret(userId: string): string | null {
+  const rec = getMfaRecord(userId);
+  if (rec && rec.enabled && rec.secret) {
+    return rec.secret;
+  }
+
+  // H-8 backward-compat: fall back to the shared env-var secret. This is
+  // intentionally NOT the primary path — it's here so existing single-
+  // user deployments keep working while operators migrate to per-user
+  // MFA (set up via /api/auth/mfa/setup). The warn log surfaces the
+  // legacy usage so it doesn't slip through ops review unnoticed.
+  const envSecret = process.env.MFA_SECRET;
+  if (envSecret) {
+    logger.warn(
+      { module: "mfa", userId },
+      "No per-user MFA secret found — falling back to shared MFA_SECRET env var. " +
+        "Migrate to per-user MFA via /api/auth/mfa/setup to avoid sharing one TOTP seed across all users."
+    );
+    return envSecret;
+  }
+
+  return null;
+}
+
+/**
  * Stage a new MFA setup: store the secret + backup code hashes as
  * `enabled=0` (pending). The user then proves possession by submitting
  * a valid TOTP via `enableMfa()`. If a pending setup already exists for

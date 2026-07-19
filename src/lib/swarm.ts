@@ -278,7 +278,13 @@ export async function planSwarm(
       return [{ id: "s1", description: task, role: "generalist" }];
     }
     return subs;
-  } catch {
+  } catch (err) {
+    // Non-critical: LLM returned malformed subtask JSON. Fall back to a
+    // single generalist agent so the swarm still produces output.
+    logger.warn(
+      { module: "swarm", err: err instanceof Error ? err.message : String(err) },
+      "decomposeTask: JSON parse failed — using single-generalist fallback"
+    );
     return [{ id: "s1", description: task, role: "generalist" }];
   }
 }
@@ -361,8 +367,14 @@ function detectToolCalls(response: string): ToolCall[] {
       if (parsed.tool) {
         calls.push({ tool: parsed.tool, params: parsed.params || {} });
       }
-    } catch {
-      // Skip unparseable blocks — same behavior as detectToolCall.
+    } catch (err) {
+      // Non-critical: this fenced ```tool block wasn't valid JSON (common
+      // with smaller models that forget closing braces). Skip it and try
+      // the next match — same behavior as agent-tools.detectToolCall.
+      logger.debug(
+        { module: "swarm", err: err instanceof Error ? err.message : String(err) },
+        "detectToolCalls: fenced-block JSON parse failed — skipping"
+      );
     }
   }
   return calls;

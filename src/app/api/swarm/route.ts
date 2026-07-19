@@ -16,7 +16,7 @@ import { trackEvent } from "@/lib/analytics";
 import { NextRequest } from "next/server";
 import { runSwarm, serializeSSE, type SwarmEvent } from "@/lib/swarm";
 import { sanitizeInput } from "@/lib/prompt-security";
-import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 import { requireAuth, getUserId } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
 import { checkLimit as checkPlanLimit } from "@/lib/plan-limits";
@@ -82,7 +82,8 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limit.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  const ip = getClientIP(req);
   const limit = await checkStartRateLimit(ip);
   if (!limit.ok) {
     return Response.json(

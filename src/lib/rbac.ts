@@ -28,6 +28,8 @@
 // grant non-owners access at a chosen role.
 
 import { getDb } from "./db";
+import * as Sentry from "@sentry/nextjs";
+import { logger } from "./logger";
 
 export type Role = "owner" | "admin" | "editor" | "viewer";
 export type Resource =
@@ -203,7 +205,15 @@ export function ensureWorkspaceMembersTable(): void {
     db.exec(
       "CREATE INDEX IF NOT EXISTS idx_wm_project ON workspace_members(project_id)"
     );
-  } catch {
-    // Intentionally empty — see fail-soft note above.
+  } catch (err) {
+    // Non-critical: workspace_members table/index creation failed (DB
+    // locked, read-only FS, etc.). The fail-soft note above explains why
+    // we don't throw — downstream getUserRole will also fail-soft and the
+    // route returns 404/403 rather than crashing.
+    Sentry.captureException(err);
+    logger.warn(
+      { module: "rbac", err: err instanceof Error ? err.message : String(err) },
+      "ensureWorkspaceMembersTable: CREATE TABLE/INDEX failed — RBAC will fail-soft"
+    );
   }
 }

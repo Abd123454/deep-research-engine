@@ -1,6 +1,21 @@
-/* content.js — Quaesitor content script.
+/* content.js — Quaesitor content script (injected on demand).
  *
- * Runs on every page (<all_urls>). Responsibilities:
+ * H-6 (CVSS 6.0): previously this script was auto-injected into EVERY
+ * page via the manifest's `content_scripts: [{ matches: ["<all_urls>"] }]`
+ * declaration. That required `host_permissions: ["<all_urls>"]`, which
+ * is the broadest possible permission grant — a compromised extension
+ * build could read every page the user visits. We removed both the
+ * `content_scripts` declaration and `<all_urls>` from host_permissions.
+ *
+ * The script is now injected on demand by background.js via
+ * `chrome.scripting.executeScript({ files: ["content.js"] })` when the
+ * user explicitly enables the optional floating "Research with AI"
+ * button (the only feature that needs a persistent content-script
+ * presence on the page). All other features (page extraction for
+ * research/quick/swarm) use a one-shot `executeScript` call from
+ * background.js — no persistent injection needed.
+ *
+ * Responsibilities (only active when injected):
  *   1. expose extractPageContent() to the background/popup
  *   2. listen for messages from the extension requesting page content
  *   3. optionally render a floating "Research with AI" button (off by default)

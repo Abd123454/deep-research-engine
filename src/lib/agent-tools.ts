@@ -9,6 +9,7 @@
 // The ReAct loop in /api/chat reads the LLM's response, detects tool calls,
 // executes them, and feeds results back to the LLM.
 import * as Sentry from "@sentry/nextjs";
+import { logger } from "./logger";
 
 
 import { runCode, type CodeResult } from "./code-sandbox";
@@ -244,9 +245,15 @@ export function detectToolCall(response: string): ToolCall | null {
         return { tool: parsed.tool, params: parsed.params || {} };
       }
     } catch (err) {
-  Sentry.captureException(err);
-/* not valid JSON */ 
-}
+      // Non-critical: LLM emitted a tool-call block whose body wasn't valid
+      // JSON (common with smaller models that forget closing braces). Try
+      // the inline [TOOL: ...] pattern below before giving up.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "agent-tools", err: err instanceof Error ? err.message : String(err) },
+        "detectToolCall: fenced-block JSON parse failed — trying inline pattern"
+      );
+    }
   }
 
   // Pattern 2: [TOOL: name] params: {...}
@@ -256,9 +263,14 @@ export function detectToolCall(response: string): ToolCall | null {
       const params = JSON.parse(inlineMatch[2]);
       return { tool: inlineMatch[1], params };
     } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+      // Non-critical: inline params weren't valid JSON. Return null — the
+      // ReAct loop will treat the response as plain text.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "agent-tools", err: err instanceof Error ? err.message : String(err) },
+        "detectToolCall: inline-params JSON parse failed — treating response as text"
+      );
+    }
   }
 
   return null;

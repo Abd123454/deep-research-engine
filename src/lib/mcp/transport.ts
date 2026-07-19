@@ -124,6 +124,7 @@ export class StdioTransport implements MCPTransport {
       try {
         this.process.kill("SIGTERM");
         this.process.stdin.end();
+      // eslint-disable-next-line no-empty
       } catch {
         // Process may have already exited — ignore.
       }
@@ -202,6 +203,7 @@ export class SSETransport implements MCPTransport {
     if (this.eventSource) {
       try {
         this.eventSource.close();
+      // eslint-disable-next-line no-empty
       } catch {
         // Already closed — ignore.
       }

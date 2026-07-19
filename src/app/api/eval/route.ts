@@ -13,6 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { runEvalSuite } from "@/lib/eval/runner";
 import { EVAL_DATASET } from "@/lib/eval/dataset";
 import { requireAuth } from "@/lib/auth";
+import { getClientIP } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,7 +28,8 @@ export async function POST(req: NextRequest) {
   if (authFail) return authFail;
 
   // Rate limit check.
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  const ip = getClientIP(req);
   const lastRun = evalRateLimit.get(ip) || 0;
   const elapsed = Date.now() - lastRun;
   if (elapsed < EVAL_COOLDOWN_MS) {

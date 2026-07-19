@@ -16,6 +16,19 @@
  *   the fetch + ReadableStream. Background just sets up the action.
  *
  * Chrome/Firefox compatibility: we prefer `chrome.` and fall back to `browser.`.
+ *
+ * H-6 (CVSS 6.0): previously the manifest declared
+ *   "host_permissions": ["<all_urls>"]
+ *   "content_scripts": [{ "matches": ["<all_urls>"], "js": ["content.js"] }]
+ * which auto-injected content.js into EVERY page the user visited — a
+ * broad privilege grant that any compromised extension version (or a
+ * malicious update) could abuse to read every page. We now rely on the
+ * `activeTab` permission, which grants tab access ONLY when the user
+ * invokes the extension (clicks the toolbar icon, opens the side panel,
+ * or uses the context menu). Page content is extracted on demand via
+ * `chrome.scripting.executeScript`. The optional floating-button
+ * feature is now injected on demand per-tab when the user enables it,
+ * rather than running on every page load.
  */
 
 (() => {
@@ -352,14 +365,43 @@
             await new Promise((resolve) => {
               api.storage.sync.set({ ...msg.settings }, resolve);
             });
-            // Propagate floating-button toggle to all tabs.
+            // H-6: Propagate floating-button toggle to all tabs. Without
+            // <all_urls> in host_permissions, content.js is no longer
+            // auto-injected — we must inject it on demand via
+            // chrome.scripting.executeScript (allowed because we have the
+            // `scripting` permission + `activeTab` covers user-initiated
+            // invocations). When the user toggles the floating button OFF,
+            // we send the TOGGLE message to any tab where content.js is
+            // already loaded; on failure we silently skip (the tab either
+            // hasn't had content.js injected yet, or the user navigated
+            // away). When toggled ON, we inject content.js (idempotent if
+            // already injected) then send the TOGGLE message.
             if (msg.settings && typeof msg.settings.showFloatingButton !== "undefined") {
+              const enabled = !!msg.settings.showFloatingButton;
               const tabs = await new Promise((r) => api.tabs.query({}, r));
               for (const t of tabs) {
                 if (!t.id) continue;
+                // Skip chrome://, edge://, about: pages — scripting
+                // is not allowed on browser-internal URLs.
+                const url = t.url || "";
+                if (/^(chrome|edge|about|moz-extension|chrome-extension):/i.test(url)) {
+                  continue;
+                }
+                if (enabled && api.scripting && api.scripting.executeScript) {
+                  try {
+                    await api.scripting.executeScript({
+                      target: { tabId: t.id },
+                      files: ["content.js"],
+                    });
+                  } catch {
+                    // Tab may have navigated away or refused injection
+                    // (e.g. web store pages). Silently skip — the user
+                    // can re-toggle from a normal page.
+                  }
+                }
                 api.tabs.sendMessage(
                   t.id,
-                  { type: "TOGGLE_FLOATING_BUTTON", enabled: msg.settings.showFloatingButton },
+                  { type: "TOGGLE_FLOATING_BUTTON", enabled },
                   () => void api.runtime.lastError
                 );
               }

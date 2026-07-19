@@ -93,9 +93,14 @@ function wikipediaTitleFromUrl(url: string): string {
     const m = u.pathname.match(/^\/wiki\/(.+)$/);
     if (m) return decodeURIComponent(m[1]).replace(/_/g, " ");
   } catch (err) {
-  Sentry.captureException(err);
-/* ignore */ 
-}
+    // Non-critical: URL parse failed (malformed input). Return empty —
+    // the caller falls back to direct fetch.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "page-reader", url, err: err instanceof Error ? err.message : String(err) },
+      "wikipediaTitleFromUrl: URL parse failed — returning empty"
+    );
+  }
   return "";
 }
 
@@ -176,9 +181,15 @@ async function readPageDirect(url: string, userSignal?: AbortSignal): Promise<Pa
       if (article.title) title = article.title;
     }
   } catch (err) {
-  Sentry.captureException(err);
-/* fall through */ 
-}
+    // Non-critical: Readability/JSDOM parse failed (malformed HTML, OOM on
+    // huge DOM, etc.). Fall through to the htmlToText() fallback below —
+    // it's lower-quality but always succeeds.
+    Sentry.captureException(err);
+    logger.debug(
+      { module: "page-reader", url, err: err instanceof Error ? err.message : String(err) },
+      "readPageDirect: Readability parse failed — falling back to htmlToText"
+    );
+  }
 
   if (text.length < 100) {
     text = htmlToText(html).slice(0, MAX_TEXT_CHARS);
@@ -235,10 +246,16 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
       }
       return result;
     } catch (err) {
-  Sentry.captureException(err);
-// Fall through to direct fetch as a last resort.
-    
-}
+      // Non-critical: Wikipedia API fetch failed (network, 403, timeout).
+      // Fall through to direct fetch as a last resort — direct fetch often
+      // 403s on Wikipedia article HTML, but it's worth trying before
+      // giving up entirely.
+      Sentry.captureException(err);
+      logger.debug(
+        { module: "page-reader", url, err: err instanceof Error ? err.message : String(err) },
+        "readPage: Wikipedia API fetch failed — falling back to direct fetch"
+      );
+    }
   }
   try {
     const result = await readPageDirect(url, signal);
@@ -271,10 +288,16 @@ export async function readPage(url: string, signal?: AbortSignal): Promise<PageR
           };
         }
       } catch (err) {
-  Sentry.captureException(err);
-// Playwright not installed or failed — return the original result.
-      
-}
+        // Non-critical: Playwright not installed, failed to launch, or
+        // timed out. Return the original direct-fetch result — the
+        // research pipeline degrades gracefully to whatever Readability
+        // managed to extract.
+        Sentry.captureException(err);
+        logger.debug(
+          { module: "page-reader", url, err: err instanceof Error ? err.message : String(err) },
+          "readPage: Playwright JS-render fallback failed — returning direct-fetch result"
+        );
+      }
     }
 
     return result;

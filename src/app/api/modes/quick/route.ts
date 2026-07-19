@@ -4,7 +4,7 @@
 // Returns: SSE stream of tokens from NVIDIA LLM.
 
 import { getLLM, type LLMMessage } from "@/lib/llm-provider";
-import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
+import { checkStartRateLimit, releaseConcurrency, getClientIP } from "@/lib/rate-limit";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { QUAESITOR_CHARACTER } from "@/lib/prompts/claude-character";
 import { requireAuth } from "@/lib/auth";
@@ -17,10 +17,8 @@ export async function POST(req: NextRequest) {
   if (authFail) return authFail;
 
   // Rate limit — same limiter as research, to prevent abuse.
-  const ip =
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    "unknown";
+  // H-3: use getClientIP() instead of reading X-Forwarded-For directly.
+  const ip = getClientIP(req);
   const rl = await checkStartRateLimit(ip);
   if (!rl.ok) {
     return Response.json(
