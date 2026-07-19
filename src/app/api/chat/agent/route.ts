@@ -7,7 +7,7 @@ import { detectToolCall, executeToolCall, getToolsDescription } from "@/lib/agen
 import { recallRelevantMemories, injectMemoriesIntoPrompt } from "@/lib/memory-recall";
 import { extractAndStoreMemories, detectMemoryCommand, isMemoryExtractionEnabled, storeExplicitMemory } from "@/lib/memory-extractor";
 import { checkStartRateLimit, releaseConcurrency } from "@/lib/rate-limit";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getUserId } from "@/lib/auth";
 import {
   getOrCreateConversation,
   saveMessage,
@@ -22,7 +22,6 @@ import { MAX_TOOL_ITERATIONS } from "@/lib/swarm-constants";
 import { sanitizeError } from "@/lib/sanitize-error";
 
 const MAX_HISTORY = 20;
-const DEFAULT_USER_ID = "default";
 
 export async function POST(req: NextRequest) {
   const authFail = requireAuth(req);
@@ -49,7 +48,11 @@ export async function POST(req: NextRequest) {
   if (!rl.ok) return Response.json({ error: rl.reason }, { status: 429 });
 
   const skill = getSkillWithMarkdown(body.skill || "default");
-  const userId = DEFAULT_USER_ID;
+  // C-3 (CVSS 8.6): previously this hardcoded `const userId = "default"`,
+  // which meant every caller — authenticated or not — shared the same
+  // conversation history and memory store. Cross-tenant data leakage.
+  // Use the multi-tenant-safe `getUserId(req)` resolver instead.
+  const userId = getUserId(req);
   const conversationId = await getOrCreateConversation(body.conversationId || null, userId, message);
 
   await saveMessage(conversationId, "user", message);

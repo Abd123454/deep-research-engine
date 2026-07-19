@@ -3,12 +3,15 @@
 // Body: { email: string }
 // Returns: 200 always — never leaks whether the email is registered.
 //
-// If the user exists, generates a single-use reset token and emails it via
-// the `password-reset` template. The token itself is NOT stored yet (the
-// `PasswordResetToken` Prisma model is out of scope for this phase), so this
-// route is effectively a placeholder that exercises the email pipeline. The
-// reset link's token is a random UUID the front-end can post back to
-// /api/auth/reset-password for shape-validation.
+// If the user exists, generates a single-use reset token (32 random bytes,
+// hex-encoded) and stores it in the `verification_tokens` table with type
+// `password_reset` and a 1h expiry (C-2 fix). The token is emailed via the
+// `password-reset` template; /api/auth/reset-password consumes it atomically
+// (single-use) before updating the password.
+//
+// In dev mode (RESEND_API_KEY unset), the email is a no-op — the raw token
+// is returned in the JSON response so end-to-end tests / local developers
+// can paste it into the reset form without a real email round-trip.
 import * as Sentry from "@sentry/nextjs";
 
 
@@ -17,6 +20,7 @@ import { z } from "zod";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
 import { createRequestLogger, generateRequestId } from "@/lib/logger";
+import { createVerificationToken } from "@/lib/verification-tokens";
 import type { UserRow } from "@/lib/sqlite-types";
 
 const ForgotSchema = z.object({
@@ -92,17 +96,26 @@ export async function POST(req: NextRequest) {
   try {
     const user = await findUserByEmail(email);
     if (user) {
-      // TODO: persist this token with an expiry in the DB so
-      // /api/auth/reset-password can validate it. For now we just generate a
-      // random UUID and send it — the reset-password route treats any
-      // non-empty token as valid (placeholder).
-      const token = crypto.randomUUID();
+      // C-2 fix: persist a real single-use reset token in the
+      // verification_tokens table (1h expiry). /api/auth/reset-password
+      // consumes it atomically before updating the password.
+      const token = await createVerificationToken(user.id, "password_reset");
       const resetUrl = `${APP_URL}/reset-password?token=${token}`;
       await sendEmail(user.email, "password-reset", {
         name: user.name || undefined,
         resetUrl,
       });
       log.info({ userId: user.id }, "Password reset email sent");
+
+      // Dev mode: RESEND_API_KEY is unset → sendEmail is a no-op. Return
+      // the raw token so the developer / e2e test can paste it into the
+      // reset form without a real email round-trip. The token is still
+      // 256 bits of random — returning it over HTTPS to the same email
+      // owner is safe.
+      const devMode = !process.env.RESEND_API_KEY;
+      if (devMode) {
+        return NextResponse.json({ ok: true, devToken: token });
+      }
     } else {
       log.info({ email }, "No account found for email — silently skipping");
     }

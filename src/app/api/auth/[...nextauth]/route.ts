@@ -15,6 +15,21 @@ import bcrypt from "bcryptjs";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { UserRow } from "@/lib/sqlite-types";
 
+// C-1 (CVSS 9.8): Fail-closed in production if NEXTAUTH_SECRET is missing.
+// A missing secret means NextAuth falls back to a known constant, which
+// allows anyone to mint JWTs with arbitrary `userId` claims (e.g. "admin").
+// We throw at MODULE LOAD TIME so the app crashes on startup rather than
+// silently serving forged sessions.
+//
+// In dev (NODE_ENV !== "production") we keep a hardcoded fallback so a
+// fresh checkout runs without forcing the developer to generate a secret.
+const __NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET;
+if (!__NEXTAUTH_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error(
+    "NEXTAUTH_SECRET must be set in production. Generate one with: openssl rand -base64 32"
+  );
+}
+
 async function findUserByEmail(email: string): Promise<{ id: string; email: string; name: string | null; passwordHash: string } | null> {
   // Postgres.
   if (isPostgresAvailable()) {
@@ -84,7 +99,7 @@ export const authOptions: NextAuthOptions = {
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+  secret: __NEXTAUTH_SECRET || "dev-only-not-for-production",
 };
 
 const handler = NextAuth(authOptions);

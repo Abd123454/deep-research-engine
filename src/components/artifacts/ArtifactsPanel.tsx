@@ -164,6 +164,52 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
     });
   }, [displayContent, artifact.type]);
 
+  // C-5 (CVSS 8.1): sanitize HTML artifacts before passing to iframe
+  // `srcDoc`. The iframe is sandboxed with `allow-scripts` only (no
+  // allow-same-origin) so the JS runs in a null origin — but defense in
+  // depth: strip <script> tags, dangerous event handlers, and `javascript:`
+  // URLs so a future change to the sandbox attribute can't escalate into
+  // a real XSS. Visual HTML (divs, spans, styles, etc.) is preserved.
+  const sanitizedHtml = React.useMemo(() => {
+    if (artifact.type !== "html") return displayContent;
+    if (typeof window === "undefined") return displayContent; // SSR safety
+    return DOMPurify.sanitize(displayContent, {
+      USE_PROFILES: { html: true },
+      FORBID_TAGS: ["script", "object", "embed", "iframe", "link"],
+      FORBID_ATTR: [
+        "onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur",
+        "onchange", "onsubmit", "onmouseenter", "onmouseleave", "oninput",
+        "onkeydown", "onkeyup",
+      ],
+      // Block `javascript:` URIs in href/src attributes. DOMPurify's
+      // default policy already strips these in modern versions; this
+      // explicit allow-list is defense in depth.
+      ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|tel|data:image\/|\/|#))/i,
+    });
+  }, [displayContent, artifact.type]);
+
+  // C-5 (CVSS 8.1): wrapReact previously inlined the LLM-generated JSX
+  // directly into a <script type="text/babel"> tag. A malicious artifact
+  // containing `</script><script>alert('XSS')</script>` would break out
+  // of the script tag and inject arbitrary JS. The fix:
+  //   1. Strip any standalone <script>...</script> blocks from the JSX.
+  //   2. Escape `</script>` sequences (case-insensitive) so the JSX can
+  //      still mention `</script>` as a string without breaking out.
+  //   3. Wrap the inline render call in try/catch so a Babel compile
+  //      error surfaces a friendly message instead of crashing the page.
+  const sanitizedReactSrc = React.useMemo(() => {
+    if (artifact.type !== "react") return displayContent;
+    return displayContent
+      // Strip <script>...</script> blocks (the JSX should never contain
+      // these — React uses className and event handlers, not script tags).
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      // Escape the closing-script-tag sequence so even if the JSX
+      // contains a literal `</script>` string, it can't terminate the
+      // wrapping <script type="text/babel"> tag. `<\/script>` is a
+      // valid JS string escape that doesn't affect Babel parsing.
+      .replace(/<\/script>/gi, "<\\/script>");
+  }, [displayContent, artifact.type]);
+
   function copyContent() {
     navigator.clipboard.writeText(displayContent);
     setCopied(true);
@@ -330,7 +376,11 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
             {(artifact.type === "html" || artifact.type === "react") && (
               <iframe
                 sandbox="allow-scripts"
-                srcDoc={artifact.type === "react" ? wrapReact(displayContent) : displayContent}
+                srcDoc={
+                  artifact.type === "react"
+                    ? wrapReact(sanitizedReactSrc)
+                    : sanitizedHtml
+                }
                 className="w-full h-full border-0 min-h-[400px]"
                 title={artifact.title || "Preview"}
               />
@@ -459,6 +509,16 @@ export const ArtifactsPanel = React.memo(function ArtifactsPanel({ artifact, onC
 });
 
 // Wrap JSX code in a minimal HTML document with React + Babel for in-browser rendering.
+//
+// C-5 (CVSS 8.1) hardening:
+//   - The `jsx` argument MUST be pre-sanitized by the caller (see
+//     `sanitizedReactSrc` above) — `<script>` blocks are stripped and
+//     `</script>` sequences are escaped so the JSX can't break out of
+//     the wrapping <script type="text/babel"> tag.
+//   - The render call is wrapped in try/catch so a Babel compile error
+//     or a runtime error surfaces a friendly message in the iframe
+//     instead of crashing silently. A global error handler is also
+//     installed so uncaught errors during render are visible.
 function wrapReact(jsx: string): string {
   return `<!DOCTYPE html>
 <html>
@@ -467,18 +527,41 @@ function wrapReact(jsx: string): string {
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>body{margin:0;font-family:system-ui,sans-serif;padding:16px}</style>
+  <style>
+    .__quaesitor-error{padding:16px;border:1px solid #d33;border-radius:6px;background:#fee;color:#400;font-family:monospace;font-size:13px;white-space:pre-wrap;word-break:break-word}
+  </style>
 </head>
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    ${jsx}
-    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App || (() => null)));
+    window.addEventListener('error', function(e){
+      var el=document.createElement('div');
+      el.className='__quaesitor-error';
+      el.textContent='Runtime error: ' + (e && e.message ? e.message : String(e));
+      document.body.appendChild(el);
+    });
+    try {
+      ${jsx}
+      var __App = typeof App !== 'undefined' ? App : (function(){ return null; });
+      ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(__App));
+    } catch (err) {
+      var el=document.createElement('div');
+      el.className='__quaesitor-error';
+      el.textContent='Render error: ' + (err && err.message ? err.message : String(err));
+      document.body.appendChild(el);
+    }
   </script>
 </body>
 </html>`;
 }
 
 // Mermaid diagram renderer — dynamically imports mermaid.js and renders the diagram.
+//
+// C-5 (CVSS 8.1): the rendered SVG is sanitized with DOMPurify before
+// being injected via dangerouslySetInnerHTML. Mermaid's output is
+// machine-generated from the source, but defense in depth — if a future
+// mermaid version has an XSS in its SVG serializer, the DOMPurify pass
+// here stops it from reaching the parent page.
 function MermaidRenderer({ content }: { content: string }) {
   const [svg, setSvg] = React.useState<string>("");
   const [error, setError] = React.useState<string>("");
@@ -490,7 +573,18 @@ function MermaidRenderer({ content }: { content: string }) {
         const mermaid = (await import("mermaid")).default;
         mermaid.initialize({ startOnLoad: false, theme: "default" });
         const { svg: rendered } = await mermaid.render("mermaid-" + Date.now(), content);
-        if (!cancelled) setSvg(rendered);
+        if (cancelled) return;
+        // Sanitize the mermaid-rendered SVG. SSR-safe: this effect only
+        // runs in the browser (useEffect never fires during SSR).
+        const clean = DOMPurify.sanitize(rendered, {
+          USE_PROFILES: { svg: true, html: true },
+          FORBID_TAGS: ["script", "object", "embed", "iframe", "link", "style"],
+          FORBID_ATTR: [
+            "onload", "onerror", "onclick", "onmouseover", "onfocus", "onblur",
+            "onchange", "onsubmit",
+          ],
+        });
+        setSvg(clean);
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : "Mermaid render failed");
       }

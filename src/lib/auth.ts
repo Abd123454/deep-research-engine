@@ -7,11 +7,13 @@
 // Set in .env:
 //   AUTH_USERNAME=admin
 //   AUTH_PASSWORD=changeme
+//   AUTH_DEV_BYPASS=1   # optional — only for local dev (C-4 fix)
 //
-// SECURITY: Auth is fail-closed in production. If NODE_ENV=production and
-// AUTH_USERNAME/AUTH_PASSWORD are not set, all protected routes return 503.
-// In development (NODE_ENV !== production), auth is optional (fail-open for
-// local convenience), but a server-start warning is logged.
+// SECURITY: Auth is fail-closed in production. If AUTH_USERNAME/AUTH_PASSWORD
+// are not set, all protected routes return 503. The ONLY way to bypass auth
+// is to set AUTH_DEV_BYPASS=1 explicitly — this works in ANY environment
+// (including preview deploys) so it must be used with care and never set on
+// shared/public deployments.
 
 import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
@@ -27,9 +29,17 @@ export function isAuthEnabled(): boolean {
   return !!env("AUTH_USERNAME") && !!env("AUTH_PASSWORD");
 }
 
-/** Returns true if auth is optional (dev mode only). */
+/**
+ * Returns true if auth is optional.
+ *
+ * C-4 (CVSS 8.2): previously this returned `true` whenever
+ * `NODE_ENV !== "production"`, which meant every preview deploy
+ * (Vercel preview, staging, QA) was completely open. Now auth is
+ * only bypassed with an EXPLICIT flag — never auto-bypassed based
+ * on NODE_ENV. Set `AUTH_DEV_BYPASS=1` to opt in (local dev only).
+ */
 export function isAuthOptional(): boolean {
-  return process.env.NODE_ENV !== "production";
+  return process.env.AUTH_DEV_BYPASS === "1";
 }
 
 /** Validates a Basic auth header against env credentials. */
@@ -103,7 +113,9 @@ export function requireAuth(req: NextRequest): NextResponse | null {
   // Fail-closed in production if auth not configured
   if (!isAuthEnabled()) {
     if (isAuthOptional()) {
-      // Dev mode: allow open access for convenience
+      // Explicit opt-in bypass (AUTH_DEV_BYPASS=1). Local dev only —
+      // C-4 fix: previously this was an implicit NODE_ENV check that left
+      // every preview deploy completely open.
       return null;
     }
     // Production + no creds = REFUSE all access (fail-closed)

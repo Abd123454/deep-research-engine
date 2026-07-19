@@ -1,14 +1,39 @@
 # Quaesitor
 
+> 🚀 **Public Launch — v4.0.0** — the first stable public release.
+> See [`RELEASE_NOTES.md`](RELEASE_NOTES.md) for the full announcement,
+> [`docs/LAUNCH_CHECKLIST.md`](docs/LAUNCH_CHECKLIST.md) for the pre-launch
+> checklist, and [`mobile/docs/MOBILE.md`](mobile/docs/MOBILE.md) for the
+> mobile app scaffold.
+
 > Self-hosted AI workstation — deep research, agent swarm, code execution, vision, and voice. Runs on free-tier APIs ($0/month).
 
-**Version:** 1.2.1 (semver). Tags v6.x–v7.x were internal development rounds before the v1.0 stable release.
+**Version:** 4.0.0 (semver, public launch). Tags v6.x–v7.x were internal development rounds before the v1.0 stable release.
 
 **Quaesitor** (from Latin *quaerere* — "to seek/investigate") is a complete AI platform that evolved through 12 development rounds from a single research script into a 16-feature workstation. It's not just a chat wrapper — it's a multi-agent system with real research capabilities, code execution, and persistent memory.
 
 ---
 
-## Quick Start
+## Quick Start (3 commands)
+
+```bash
+git clone https://github.com/Abd123454/deep-research-engine.git && cd deep-research-engine
+bun install && cp .env.example .env   # then edit .env: set NVIDIA_API_KEY (free at https://build.nvidia.com/)
+bun run dev                            # open the Preview Panel, or http://localhost:3000
+```
+
+📖 **[Full release notes →](RELEASE_NOTES.md)** — what's new in v4.0.0,
+what makes Quaesitor different, known limitations (honestly).
+📱 **[Mobile app →](mobile/docs/MOBILE.md)** — Expo scaffold, biometric
+auth, push notifications.
+🔒 **[SOC 2 Type II audit docs →](legal/SOC2_TYPE_II_AUDIT.md)** — full
+TSC mapping + evidence inventory + gap analysis.
+📋 **[Launch checklist →](docs/LAUNCH_CHECKLIST.md)** — pre-launch
+verification.
+
+---
+
+## Quick Start (Detailed)
 
 ```bash
 # 1. Clone
