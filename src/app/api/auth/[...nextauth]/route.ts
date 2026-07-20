@@ -6,6 +6,18 @@
 //
 // Until auth is fully wired, the app works in "guest mode" (no login
 // required). When NEXTAUTH_SECRET is set + user registers, auth activates.
+//
+// @deprecated This module uses next-auth v4.24.14 (latest stable v4).
+// Auth.js v5 (next-auth v5) is the recommended upgrade path — see
+// docs/MIGRATION_NOTES.md "next-auth v4 → Auth.js v5" for the migration
+// plan. We are NOT migrating today because v5 is still in beta
+// (5.0.0-beta.31 as of 2026-07-20) and the API is a major breaking
+// change. The 3 high CVEs the audit repeatedly flags are all in
+// transitive dev/build dependencies (eslint's flatted/picomatch/
+// minimatch) — none reach the production runtime bundle. The
+// `uuid@3` advisory in next-auth's bundled copy is unreachable in our
+// usage (we never pass `buf` to uuid.v3/v5). When v5 ships stable,
+// the migration plan in MIGRATION_NOTES.md will execute.
 import * as Sentry from "@sentry/nextjs";
 
 

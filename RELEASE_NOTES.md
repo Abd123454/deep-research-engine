@@ -303,13 +303,18 @@ reviewed first.
   Node `vm` sandbox if Docker isn't available (less isolation).
 - **Playwright adds ~150MB.** Optional — for JS-rendered page reading
   + E2E tests. The app works without it.
-- **Real-time collaboration is a stub.** The session registry is live
-  (create / join / leave / inspect), but actual Yjs document sync
-  (CRDT updates over WebSocket) requires the y-websocket mini-service
-  (Q3 2026 milestone). Cursor positions are stored but not broadcast.
-- **Video understanding is a stub.** The interface + API route exist,
-  but the ffmpeg + Whisper wiring is gated behind
-  `VIDEO_UNDERSTANDING_ENABLED=true`. Install both to enable.
+- **Real-time collaboration is not wired up.** The session registry
+  (`src/lib/collab/collab-server.ts`) is live (create / join / leave
+  / inspect), but actual Yjs document sync (CRDT updates over
+  WebSocket) requires the y-websocket mini-service (Q3 2026
+  milestone). The high-level cursor/presence interface stub was
+  removed in v4.1.0 (dead code — never imported). See
+  `docs/MIGRATION_NOTES.md` for the implementation plan.
+- **Video understanding is not implemented.** The API route exists
+  and returns 503 ("Video understanding is not available on this
+  server"). The lib stub throws "Not implemented" if called directly.
+  Requires ffmpeg + Whisper on the host. See `docs/MIGRATION_NOTES.md`
+  for the implementation plan.
 - **Dev-dependency vulnerabilities** in `vite`, `minimatch` (via
   eslint / vitest / prisma dev tools) — HIGH advisories, dev-only,
   not in production runtime. Upgrading requires major version bumps

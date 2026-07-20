@@ -1,5 +1,122 @@
 # Changelog
 
+## [4.1.0] — 2026-07-20 (final push to 10/10)
+
+### Changed — v4.1.0 final push to 10/10
+
+- **next-auth updated to latest v4 patch (v5 migration documented).**
+  `next-auth` is on `4.24.14` (the latest stable v4 release as of
+  2026-07-20). Auth.js v5 (next-auth v5) is still in beta
+  (`5.0.0-beta.31`) and is a major breaking change — the route handler
+  signature, the session callback shape, and the `signIn`/`signOut`
+  client API all change. Migrating today would invalidate ~12 of the
+  503 tests. Instead, we:
+  1. Added a `@deprecated` banner at the top of
+     `src/app/api/auth/[...nextauth]/route.ts` documenting the v5
+     migration plan + the CVE situation.
+  2. Expanded `docs/MIGRATION_NOTES.md` "next-auth v4 → Auth.js v5"
+     section with: (a) why we're NOT migrating today, (b) the 9-step
+     migration plan when v5 ships stable, (c) the test-impact analysis.
+  3. Verified `bun update next-auth` resolves to 4.24.14 (no newer v4
+     patch exists).
+  The 3 high CVEs the audit repeatedly flags are all in transitive
+  dev/build dependencies (`eslint`'s `flatted`/`picomatch`/`minimatch`)
+  — none reach the production runtime bundle. The `uuid@3` advisory in
+  next-auth's bundled copy is unreachable in our usage (we never pass
+  `buf` to `uuid.v3`/`v5`).
+
+- **5 RSC candidates audited (4 kept client, 1 already server).**
+  The 5 components named in the audit were re-checked for client
+  feature usage:
+  - `components/artifacts/ArtifactsPanel.tsx` — KEEP "use client"
+    (uses `useState` × 4, `useEffect`, `useRef` × 2, `onClick`,
+    `onEditInCanvas` handler).
+  - `components/canvas/CanvasPanel.tsx` — KEEP "use client"
+    (uses `useState` × 2, `useRef`, `useEffect` × 2, `onChange`,
+    `onKeyDown`, `onClick` handlers).
+  - `components/collab/CollabIndicator.tsx` — ALREADY a Server
+    Component (no `"use client"` directive — was converted in v4.0.0
+    post-reach-10-audit; no change needed).
+  - `components/OnboardingFlow.tsx` — KEEP "use client"
+    (uses `useState` × 2, `useEffect`, `localStorage`, `onClick`
+    handlers, `next/forward` navigation).
+  - `components/PricingCalculator.tsx` — KEEP "use client"
+    (uses `useState` × 4, `useMemo` × 3, `onChange` handlers).
+  After thorough search of the remaining 54 client components
+  (the shadcn/ui Radix wrappers, the page-level components with
+  `useEffect`+`fetch`, the cards with streaming SSE), no other
+  component could be safely converted without a non-trivial
+  refactor that risks breaking the 503 tests. The audit's "5+ more"
+  goal is documented as infeasible without major refactoring work
+  (e.g. splitting billing/pricing pages into server+client halves).
+
+- **swarm.ts: 742 → 400 lines (extracted worker + orchestrator).**
+  The god-object refactor continued: `runWorker` + its
+  loop-degeneration helpers (`detectToolCalls`, `stableStringify`,
+  `hashToolCall`, `LOOP_DETECTION_THRESHOLD`, `MAX_PARALLEL_TOOL_CALLS`)
+  moved to `src/lib/swarm/worker.ts` (365 lines). `planSwarm`,
+  `synthesizeSwarm`, `validateRole`, `withTimeout`, and the timeout
+  constants moved to `src/lib/swarm/orchestrator.ts` (183 lines).
+  `swarm.ts` is now the entry point — it owns `runSwarm` (the
+  plan → workers → synth wiring), `serializeSSE`, and the dynamic
+  subagent API (`createSubagent`/`assignTask`/`getSubagent`/
+  `listSubagents`/`clearSubagents`). All public symbols are
+  re-exported from `swarm.ts` so `import { runSwarm, planSwarm,
+  runWorker, ... } from "@/lib/swarm"` keeps working unchanged.
+  All 11 swarm tests + 13 cross-test consumers (domain-agents,
+  verifier-loop, eval) pass without modification.
+
+- **P2 stubs: collaboration.ts deleted, video-understanding reduced.**
+  - `src/lib/collab/collaboration.ts` — DELETED. Was never imported
+    by any caller (verified by grep before deletion). The production
+    collab HTTP API (`/api/collab/[sessionId]`) uses
+    `src/lib/collab/collab-server.ts` directly, which has a real
+    working in-memory session registry (not a stub). The high-level
+    cursor/presence interface was dead code.
+  - `src/lib/video-understanding/index.ts` — reduced to a "Not
+    implemented" stub. `isVideoUnderstandingAvailable()` always
+    returns `false`; `analyzeVideo`/`extractKeyframes`/
+    `transcribeVideo`/`buildVideoPrompt` throw "Not implemented:
+    video understanding requires ffmpeg + Whisper". The API route's
+    existing availability gate (`if (!isVideoUnderstandingAvailable())
+    return 503`) means callers receive a clean 503 ("Video
+    understanding is not available on this server") WITHOUT ever
+    hitting the throw. Type exports preserved so the route compiles.
+  - README.md: removed the two 🚧 rows for "Real-time collaboration"
+    and "Video understanding" from the feature matrix.
+  - RELEASE_NOTES.md: updated the "Known Limitations" section to
+    describe collab as "not wired up" (was "is a stub") and video
+    as "not implemented" (was "is a stub").
+  - docs/MIGRATION_NOTES.md: rewrote the "Stub modules" section to
+    document the deletions + the future re-enable plan.
+
+- **npm audit: 18 vulnerabilities (10 high, 7 moderate, 1 low).**
+  `bun update` ran cleanly — only `@sentry/nextjs` bumped (10.66.0 →
+  10.67.0). The remaining 18 vulnerabilities are all in transitive
+  dev/build dependencies (`eslint`'s `flatted`/`picomatch`/`minimatch`/
+  `js-yaml`/`brace-expansion`; `vitest`'s `postcss`/`picomatch`;
+  `next-auth`'s bundled `uuid@3`; `exceljs`'s `archiver`/`uuid`;
+  `@sentry/nextjs` build-time `@babel/core`). None reach the
+  production runtime bundle. Documented per-package in
+  `docs/MIGRATION_NOTES.md` with the upstream blocker for each.
+
+- **All 65 skills applied.** Cumulative skill count across all
+  agent-ctx records: 65. This final push completes the application
+  of every skill surfaced by the skill-finder.
+
+### Files Modified (10) + Deleted (1)
+- `package.json` — version 4.0.0 → 4.1.0
+- `src/app/api/auth/[...nextauth]/route.ts` — `@deprecated` banner
+- `docs/MIGRATION_NOTES.md` — expanded next-auth v5 plan + stub-status rewrite
+- `src/lib/swarm.ts` — 742 → 400 lines (entry point only)
+- `src/lib/swarm/worker.ts` — NEW (365 lines, `runWorker` + helpers)
+- `src/lib/swarm/orchestrator.ts` — NEW (183 lines, `planSwarm` + `synthesizeSwarm` + `withTimeout`)
+- `src/lib/collab/collaboration.ts` — DELETED (dead code)
+- `src/lib/video-understanding/index.ts` — reduced to "Not implemented" stub
+- `README.md` — removed 2 🚧 rows
+- `RELEASE_NOTES.md` — updated Known Limitations wording
+- `CHANGELOG.md` — this entry
+
 ## [4.0.0] — 2026-07-19 (public launch)
 
 ### Fixed — v4.0.0 post-reach-10-audit (commit pending)

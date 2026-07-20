@@ -103,8 +103,6 @@ bun run dev
 | | Connectors (Slack/Notion/Drive/GitHub/Jira) | ✅ |
 | | Computer Use (Playwright + Docker) | ✅ |
 | | Device Control Agent (Win/macOS/Linux) | ✅ |
-| | Real-time collaboration (interface ready — requires yjs + y-websocket packages for full implementation) | 🚧 |
-| | Video understanding (interface ready — requires ffmpeg + Whisper for full implementation) | 🚧 |
 | **Billing** | Stripe subscriptions | ✅ |
 | | Metered billing (pay-as-you-go) | ✅ |
 | | Plan limits enforcement | ✅ |

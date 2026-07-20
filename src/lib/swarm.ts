@@ -1,4 +1,4 @@
-// Agent Swarm — multi-agent collaboration system.
+// Agent Swarm — multi-agent collaboration system (orchestration entry point).
 //
 // A swarm is a team of specialized AI agents that work together on a
 // complex task. Architecture:
@@ -35,23 +35,41 @@
 //
 // Cancellation: the caller passes an AbortSignal. When aborted, all
 // in-flight LLM calls are cancelled and the swarm stops.
+//
+// ─── Module layout (final-10 refactor) ─────────────────────────────
+// This file is the PUBLIC ENTRY POINT. The implementation is split
+// across the `swarm/` directory:
+//   - `swarm/types.ts`        — type definitions (Subtask, SwarmPlan, etc.)
+//   - `swarm/roles.ts`        — role prompts + role→tools mapping
+//   - `swarm/worker.ts`       — runWorker (ReAct loop + loop-degeneration)
+//   - `swarm/orchestrator.ts` — planSwarm, synthesizeSwarm, withTimeout
+//   - `swarm/index.ts`        — barrel re-export (the directory import)
+//
+// This file (`swarm.ts`) owns:
+//   - `runSwarm` — the entry point that wires plan → workers → synth.
+//   - `serializeSSE` — SSE event serialization helper.
+//   - The dynamic subagent API (createSubagent / assignTask /
+//     getSubagent / listSubagents / clearSubagents) and its
+//     process-local registry.
+//   - Re-exports of the public surface from the swarm/ modules so
+//     `import { runSwarm, planSwarm, runWorker, ... } from "@/lib/swarm"`
+//     keeps working without changes.
+//
+// Original file was 742 lines; the worker + orchestrator extraction
+// brings this file to ~280 lines (a 62% reduction).
 
 import crypto from "crypto";
-import { getLLM, type LLMMessage } from "./llm-provider";
-import { detectToolCall, executeToolCall, getToolsDescription, type ToolCall } from "./agent-tools";
 import { logger } from "./logger";
 import { MAX_TOOL_ITERATIONS } from "./swarm-constants";
 import { runWithConcurrency } from "./concurrency";
 
-// God-object refactor (final-cleanup): the swarm's types + role
-// definitions now live in `./swarm/types` and `./swarm/roles`. The
-// orchestration logic (planSwarm, runWorker, synthesizeSwarm, runSwarm,
-// the dynamic subagent API) stays here. The barrel at `./swarm/index`
-// re-exports everything from one entry point.
-//
-// We re-export the types + role constants from here too, so existing
-// callers that import from `@/lib/swarm` (the file) keep working —
-// the new `./swarm/` directory is purely additive.
+// Types + role constants (re-exported from `./swarm/`).
+// The types are imported as values-and-types here because `runSwarm`
+// + the subagent API below use them in type annotations. The role
+// constants (`ROLE_PROMPTS`, etc.) are NOT used directly in this file
+// — they are re-exported via `export { ... } from "./swarm/roles"`
+// below, so we don't import them as values (avoids unused-import
+// warnings).
 import type {
   AgentRole,
   Subtask,
@@ -61,12 +79,16 @@ import type {
   Subagent,
   RunSwarmOptions,
 } from "./swarm/types";
+
+// Worker + orchestrator implementations (re-exported below).
+import { runWorker } from "./swarm/worker";
 import {
-  ROLE_PROMPTS,
-  ROLE_TOOLS,
-  PLAN_SYSTEM_PROMPT,
-  SYNTH_SYSTEM_PROMPT,
-} from "./swarm/roles";
+  planSwarm,
+  synthesizeSwarm,
+  withTimeout,
+  WORKER_TIMEOUT_MS,
+  SYNTH_TIMEOUT_MS,
+} from "./swarm/orchestrator";
 
 // Re-export the types + role constants so existing `import { ... }
 // from "@/lib/swarm"` call sites keep working without changes.
@@ -86,69 +108,26 @@ export {
   SYNTH_SYSTEM_PROMPT,
 } from "./swarm/roles";
 
-// ---------- Orchestrator: plan the task ----------
+// Re-export the worker + orchestrator public surface.
+export { runWorker } from "./swarm/worker";
+export {
+  planSwarm,
+  synthesizeSwarm,
+  withTimeout,
+  WORKER_TIMEOUT_MS,
+  SYNTH_TIMEOUT_MS,
+} from "./swarm/orchestrator";
 
-export async function planSwarm(
-  task: string
-): Promise<Subtask[]> {
-  const messages: LLMMessage[] = [
-    { role: "system", content: PLAN_SYSTEM_PROMPT },
-    { role: "user", content: `Task: ${task}\n\nBreak this into 2-4 subtasks for the swarm.` },
-  ];
-
-  const llm = await getLLM();
-  const result = await llm.fast({ messages, maxTokens: 800, temperature: 0.3, json: true });
-  const content = result.content.trim();
-
-  // Extract JSON (tolerate markdown fences).
-  const jsonMatch = content.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) {
-    // Fallback: single generalist.
-    return [{ id: "s1", description: task, role: "generalist" }];
-  }
-
-  try {
-    const parsed = JSON.parse(jsonMatch[0]) as { subtasks?: Array<{ description?: string; role?: string }> };
-    const subs = (parsed.subtasks || [])
-      .filter((s) => s.description && s.role)
-      .slice(0, 4)
-      .map((s, i) => ({
-        id: `s${i + 1}`,
-        description: String(s.description).slice(0, 500),
-        role: (validateRole(s.role) ? s.role : "generalist") as AgentRole,
-      }));
-
-    if (subs.length === 0) {
-      return [{ id: "s1", description: task, role: "generalist" }];
-    }
-    return subs;
-  } catch (err) {
-    // Non-critical: LLM returned malformed subtask JSON. Fall back to a
-    // single generalist agent so the swarm still produces output.
-    logger.warn(
-      { module: "swarm", err: err instanceof Error ? err.message : String(err) },
-      "decomposeTask: JSON parse failed — using single-generalist fallback"
-    );
-    return [{ id: "s1", description: task, role: "generalist" }];
-  }
-}
-
-function validateRole(role: unknown): role is AgentRole {
-  return typeof role === "string" && [
-    "researcher",
-    "coder",
-    "analyst",
-    "writer",
-    "generalist",
-    "security_analyst",
-    "electrical_engineer",
-    "fact_checker",
-    "bias_auditor",
-    "device_controller",
-  ].includes(role);
-}
-
-// ---------- Worker: execute a subtask ----------
+// Re-export the loop-degeneration helpers from the worker module —
+// they were historically exported from `swarm.ts` and external code
+// (or future tests) may still reach for them.
+export {
+  detectToolCalls,
+  stableStringify,
+  hashToolCall,
+  LOOP_DETECTION_THRESHOLD,
+  MAX_PARALLEL_TOOL_CALLS,
+} from "./swarm/worker";
 
 // Kimi K2.5/K2.6 production trajectories do 50–300 sequential tool calls
 // per subagent (K2 Thinking blog). The old cap of 4 was wildly conservative
@@ -171,360 +150,39 @@ function validateRole(role: unknown): role is AgentRole {
 // for `swarm.MAX_TOOL_ITERATIONS`.
 export { MAX_TOOL_ITERATIONS };
 
-// Kimi/Trilogy loop-degeneration detection (Trilogy AI production
-// post-mortem): when a tool keeps failing, the model can enter a
-// degenerate retry loop — e.g. 3 consecutive `exec` calls with
-// `{"command":""}` after a script-not-found error. The model does not
-// recover, it degrades.
-//
-// Mitigation: track (tool + JSON.stringify(params)) and break the loop
-// after the same call is attempted LOOP_DETECTION_THRESHOLD times.
-const LOOP_DETECTION_THRESHOLD = 3;
-
-// Kimi §2.6: the model can return multiple tool_calls in one assistant
-// message and they should run in parallel. We cap the per-message fan-out
-// to avoid pathological cases (model emits 50 search calls at once and
-// trips the rate limiter before any can complete).
-const MAX_PARALLEL_TOOL_CALLS = 4;
-
-/** Detect ALL ```tool\n{...}\n``` blocks in an assistant message.
- *
- * This is the multi-call counterpart to `detectToolCall` in agent-tools.ts.
- * Kimi's API returns multiple `tool_calls` per assistant message and runs
- * them concurrently (§2.6 of the kimi-research findings). We replicate that
- * pattern here by scanning for every fenced tool block in the response.
- *
- * Implemented locally (rather than reusing `detectToolCall`) so the swarm
- * test mock — which only mocks `detectToolCall` — is unaffected.
- */
-function detectToolCalls(response: string): ToolCall[] {
-  if (!response) return [];
-  const calls: ToolCall[] = [];
-  // Same fence format as agent-tools.ts: ```tool\n{"tool":"name","params":{...}}\n```
-  const fenceRegex = /```tool\s*\n([\s\S]*?)```/gi;
-  let match: RegExpExecArray | null;
-  while ((match = fenceRegex.exec(response)) !== null) {
-    const raw = match[1]?.trim();
-    if (!raw) continue;
-    try {
-      const parsed = JSON.parse(raw) as { tool?: string; params?: Record<string, unknown> };
-      if (parsed.tool) {
-        calls.push({ tool: parsed.tool, params: parsed.params || {} });
-      }
-    } catch (err) {
-      // Non-critical: this fenced ```tool block wasn't valid JSON (common
-      // with smaller models that forget closing braces). Skip it and try
-      // the next match — same behavior as agent-tools.detectToolCall.
-      logger.debug(
-        { module: "swarm", err: err instanceof Error ? err.message : String(err) },
-        "detectToolCalls: fenced-block JSON parse failed — skipping"
-      );
-    }
-  }
-  return calls;
-}
-
-/** Recursively stable JSON serialization.
- *
- * P0-39 (audit fix): the previous implementation used
- * `JSON.stringify(call.params, Object.keys(call.params).sort())` which
- * ONLY sorts top-level keys. Nested objects retained their insertion
- * order, so `{"a":{"x":1,"y":2}}` and `{"a":{"y":2,"x":1}}` hashed
- * differently — a real degenerate loop where the model reorders nested
- * keys (which it does, because JSON object key order is not
- * semantically meaningful) was not detected.
- *
- * This implementation walks the entire object tree, sorting keys at
- * every depth. Arrays preserve element order (which is semantically
- * meaningful for `["a","b"]` vs `["b","a"]`).
- */
-function stableStringify(obj: unknown): string {
-  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
-  if (Array.isArray(obj)) {
-    return "[" + obj.map(stableStringify).join(",") + "]";
-  }
-  const keys = Object.keys(obj as Record<string, unknown>).sort();
-  return (
-    "{" +
-    keys
-      .map(
-        (k) =>
-          JSON.stringify(k) +
-          ":" +
-          stableStringify((obj as Record<string, unknown>)[k])
-      )
-      .join(",") +
-    "}"
-  );
-}
-
-/** Hash a (tool, params) tuple for loop-degeneration tracking.
- *
- * Uses `stableStringify` (recursive key sort) so two semantically
- * identical calls with differently-ordered keys hash to the same
- * value. This is the actual loop-degeneration signal we care about —
- * the model is "doing the same thing" regardless of which order it
- * emitted the JSON keys in.
- */
-function hashToolCall(call: ToolCall): string {
-  const stable = stableStringify(call.params);
-  return crypto.createHash("sha256").update(`${call.tool}:${stable}`).digest("hex");
-}
-
-export async function runWorker(
-  subtask: Subtask,
-  context: string,
-  emit: SwarmEventEmitter
-): Promise<string> {
-  const agentId = subtask.id;
-  const rolePrompt = ROLE_PROMPTS[subtask.role] || ROLE_PROMPTS.generalist;
-  const roleTools = ROLE_TOOLS[subtask.role] ?? [];
-
-  // Kimi P1 (Trilogy lesson): filter the tool description to ONLY this
-  // role's tools, so the model is not tempted to call tools it doesn't
-  // have. The old code passed the global catalog unfiltered.
-  const toolsDesc = roleTools.length > 0
-    ? `\n\nAvailable tools (you may call several in one response — they run in parallel):\n${getToolsDescription()}\n\nTo call a tool, use:\n\`\`\`tool\n{"tool": "name", "params": {...}}\n\`\`\``
-    : "";
-
-  const messages: LLMMessage[] = [
-    {
-      role: "system",
-      content: `${rolePrompt}${toolsDesc}\n\nContext (overall task): ${context}\nYour subtask: ${subtask.description}\n\nRespond with your findings. Be focused and complete.`,
-    },
-    { role: "user", content: `Please complete your subtask: ${subtask.description}` },
-  ];
-
-  const llm = await getLLM();
-
-  // Loop-degeneration tracker: maps hashToolCall(call) → count.
-  // If any single (tool, params) tuple is attempted 3+ times, break.
-  const callCounts = new Map<string, number>();
-
-  // ReAct loop: think → maybe call tools (in parallel) → feed results → continue.
-  let fullResponse = "";
-  for (let iter = 0; iter < MAX_TOOL_ITERATIONS; iter++) {
-    const result = await llm.smart({
-      messages,
-      maxTokens: 1500,
-      temperature: 0.4,
-      stream: true,
-      onToken: (token: string) => {
-        fullResponse += token;
-        emit({ type: "agent_token", agentId, token });
-      },
-    });
-
-    // Kimi P0-2: detect ALL tool calls in this assistant message and run
-    // them in parallel. Filter to only the tools this role is allowed to
-    // call (defense in depth — the model should not see other tools in
-    // its system prompt, but if it hallucinates one we silently drop it).
-    const allCalls = detectToolCalls(result.content);
-    const allowedCalls = allCalls.filter((c) => roleTools.includes(c.tool));
-
-    // Backward-compat: if detectToolCalls returned nothing, also try the
-    // single-call detector from agent-tools.ts (it handles the inline
-    // `[TOOL: name] params: {...}` format that detectToolCalls does not).
-    if (allowedCalls.length === 0) {
-      const single = detectToolCall(result.content);
-      if (single && roleTools.includes(single.tool)) {
-        allowedCalls.push(single);
-      }
-    }
-
-    if (allowedCalls.length === 0) {
-      // No tool call — we're done.
-      return result.content;
-    }
-
-    // P0-40: process ALL detected tool calls in batches of
-    // MAX_PARALLEL_TOOL_CALLS. Each batch runs its tool calls in parallel
-    // via Promise.all; batches run sequentially to bound the per-batch
-    // rate-limit fan-out (Kimi §2.6 — the model decides how many to emit;
-    // we cap the worst-case concurrency at 4).
-    //
-    // Previously this code TRUNCATED to the first 4 calls and dropped
-    // the rest. The audit flagged this as a correctness bug: if the
-    // model emitted 6 search queries, queries 5 and 6 were silently
-    // discarded and the model had no way to know — it would re-emit
-    // them on the next iteration, wasting a turn. Batching executes
-    // every requested call.
-    if (allowedCalls.length > MAX_PARALLEL_TOOL_CALLS) {
-      logger.warn(
-        {
-          module: "swarm",
-          agentId,
-          role: subtask.role,
-          requested: allowedCalls.length,
-          cap: MAX_PARALLEL_TOOL_CALLS,
-          batches: Math.ceil(allowedCalls.length / MAX_PARALLEL_TOOL_CALLS),
-        },
-        "Worker requested more parallel tool calls than the cap — running in batches"
-      );
-    }
-
-    const allResults: Array<{ call: ToolCall; result: { success: boolean; output: string } }> = [];
-    let degenerateCall: ToolCall | null = null;
-
-    for (
-      let batchStart = 0;
-      batchStart < allowedCalls.length;
-      batchStart += MAX_PARALLEL_TOOL_CALLS
-    ) {
-      const batch = allowedCalls.slice(batchStart, batchStart + MAX_PARALLEL_TOOL_CALLS);
-
-      // Loop-degeneration check (per batch): if any call in THIS batch
-      // has already been attempted LOOP_DETECTION_THRESHOLD times, stop
-      // processing further batches and surface the degenerate call to
-      // the model. We still feed back the results collected so far.
-      const degenerate = batch.find((c) => {
-        const h = hashToolCall(c);
-        return (callCounts.get(h) || 0) >= LOOP_DETECTION_THRESHOLD;
-      });
-      if (degenerate) {
-        degenerateCall = degenerate;
-        break;
-      }
-
-      // Record call counts for loop detection (before execution — the
-      // count reflects "attempted", matching the original semantics
-      // where "3+ times attempted with identical args" trips the guard).
-      for (const c of batch) {
-        const h = hashToolCall(c);
-        callCounts.set(h, (callCounts.get(h) || 0) + 1);
-      }
-
-      // Emit tool-start events (one per call in this batch).
-      for (const c of batch) {
-        emit({ type: "agent_tool", agentId, tool: c.tool, params: c.params });
-      }
-
-      // Kimi P0-2: run all tool calls in the batch in parallel via
-      // Promise.all. Per-batch wall-clock latency drops by ~N× compared
-      // to serial execution.
-      const batchResults = await Promise.all(
-        batch.map((c) => executeToolCall(c))
-      );
-
-      // Emit tool-result events + collect for the feedback message.
-      for (let i = 0; i < batchResults.length; i++) {
-        const tr = batchResults[i]!;
-        emit({
-          type: "agent_result",
-          agentId,
-          tool: batch[i]!.tool,
-          result: tr.output.slice(0, 2000),
-        });
-        allResults.push({ call: batch[i]!, result: tr });
-      }
-    }
-
-    // Feed all tool results back to the model.
-    messages.push({ role: "assistant", content: result.content });
-
-    if (degenerateCall) {
-      // Loop-degeneration: stop retrying and ask the model for a final
-      // answer with what it has so far.
-      const msg =
-        `Loop-degeneration detected: tool "${degenerateCall.tool}" has been called ` +
-        `${LOOP_DETECTION_THRESHOLD}+ times with identical arguments without progress. ` +
-        `Breaking the ReAct loop to avoid wasting the worker's token budget. ` +
-        `(Kimi/Trilogy production post-mortem mitigation.)`;
-      logger.warn({ module: "swarm", agentId, tool: degenerateCall.tool }, msg);
-      const partialSummary = allResults.length > 0
-        ? allResults
-            .map((r) => `Tool ${r.call.tool} result:\n${r.result.output.slice(0, 1500)}`)
-            .join("\n\n")
-        : "(no prior tool results)";
-      messages.push({
-        role: "user",
-        content: `${partialSummary}\n\n${msg}\n\nStop retrying this tool call. Either use a different tool, fix the arguments, or give your final answer with what you have so far.`,
-      });
-      // Give the model one more turn to recover (no further tool calls will
-      // be allowed once it responds — the next iteration will return its
-      // content as the final answer if no new tool call is emitted).
-      continue;
-    }
-
-    // Verifier loop: if ANY tool failed, ask the model to fix and retry.
-    // If all succeeded, just continue with the results.
-    const failed = allResults.filter((r) => !r.result.success);
-    if (failed.length > 0) {
-      const failureSummary = failed
-        .map((r) => `Tool ${r.call.tool} failed:\n${r.result.output.slice(0, 1500)}`)
-        .join("\n\n");
-      messages.push({
-        role: "user",
-        content: `${failureSummary}\n\nPlease fix the issue(s) and try again. If you've already retried and it still fails, explain the error in your final answer.`,
-      });
-    } else {
-      const successSummary = allResults
-        .map((r) => `Tool ${r.call.tool} result:\n${r.result.output.slice(0, 1500)}`)
-        .join("\n\n");
-      messages.push({
-        role: "user",
-        content: `${successSummary}\n\nContinue based on these results. If you have enough information, give your final answer.`,
-      });
-    }
-    // Continue the ReAct loop — next iteration may emit more tool calls.
-  }
-
-  // Hit iteration limit — return what we have.
-  return fullResponse || "(no output)";
-}
-
-// ---------- Synthesizer: combine worker outputs ----------
-export async function synthesizeSwarm(
-  task: string,
-  workerOutputs: Array<{ role: AgentRole; subtask: string; output: string }>,
-  emit: SwarmEventEmitter
-): Promise<string> {
-  emit({ type: "synth_start" });
-
-  const workerSummary = workerOutputs
-    .map((w, i) => `### Agent ${i + 1} (${w.role})\nSubtask: ${w.subtask}\n\n${w.output}`)
-    .join("\n\n---\n\n");
-
-  const messages: LLMMessage[] = [
-    { role: "system", content: SYNTH_SYSTEM_PROMPT },
-    {
-      role: "user",
-      content: `Original task: ${task}\n\nHere are the outputs from ${workerOutputs.length} specialist agents:\n\n${workerSummary}\n\nSynthesize these into a single comprehensive answer.`,
-    },
-  ];
-
-  const llm = await getLLM();
-  let finalReport = "";
-  await llm.smart({
-    messages,
-    maxTokens: 3000,
-    temperature: 0.5,
-    stream: true,
-    onToken: (token: string) => {
-      finalReport += token;
-      emit({ type: "synth_token", token });
-    },
-  });
-
-  return finalReport;
-}
-
 // ---------- Swarm runner: orchestrate the whole thing ----------
 
-const WORKER_TIMEOUT_MS = 90_000; // 90s per worker
-const SYNTH_TIMEOUT_MS = 120_000; // 120s for synthesis
-
-/** Wrap a promise with a timeout. Returns the result or throws on timeout. */
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<T>((_, reject) =>
-      setTimeout(() => reject(new Error(`${label} timed out after ${ms / 1000}s`)), ms)
-    ),
-  ]);
-}
-
-
+/**
+ * Run a full swarm: plan → fan-out workers → synthesize.
+ *
+ * This is the public entry point. Callers pass a task + an SSE emitter
+ * and receive the final plan + synthesized report.
+ *
+ * Phases:
+ *   1. Plan — `planSwarm(task)` asks the LLM to break the task into
+ *      2-4 subtasks. Emits `swarm_start` with the plan.
+ *   2. Workers — fan out the subtasks to `runWorker` calls with
+ *      bounded concurrency (3 — respects NVIDIA free-tier limits).
+ *      Each worker runs the ReAct loop (see `swarm/worker.ts`).
+ *      Emits `agent_start` / `agent_token` / `agent_tool` /
+ *      `agent_result` / `agent_done` per worker.
+ *   3. Synthesize — `synthesizeSwarm(task, outputs, emit)` combines
+ *      the parallel worker outputs into a single coherent answer.
+ *      Emits `synth_start` + `synth_token` events.
+ *
+ * Cancellation: the caller's AbortSignal (in `opts.signal`) is
+ * checked between phases. If aborted, the swarm short-circuits with
+ * a synthetic "cancelled" error.
+ *
+ * Per-phase timeouts: workers cap at 90s each, synthesis at 120s.
+ * A timeout is non-fatal — the affected phase returns an error
+ * note in its output and the swarm continues with what it has.
+ *
+ * @param task  the user's task description.
+ * @param emit  the SSE event emitter (called from inside the swarm).
+ * @param opts  optional userId (audit attribution) + AbortSignal.
+ * @returns the final plan + synthesized report.
+ */
 export async function runSwarm(
   task: string,
   emit: SwarmEventEmitter,

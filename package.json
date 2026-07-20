@@ -1,6 +1,6 @@
 {
   "name": "quaesitor",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "private": true,
   "author": "Abd",
   "license": "AGPL-3.0",
@@ -43,7 +43,7 @@
     "@radix-ui/react-toggle-group": "^1.1.16",
     "@radix-ui/react-tooltip": "^1.2.13",
     "@react-email/components": "^1.0.12",
-    "@sentry/nextjs": "^10.66.0",
+    "@sentry/nextjs": "^10.67.0",
     "@stripe/stripe-js": "^9.10.0",
     "bcryptjs": "^3.0.3",
     "better-sqlite3": "^12.11.1",
