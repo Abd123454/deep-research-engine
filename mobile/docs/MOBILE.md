@@ -10,7 +10,8 @@ npx expo start
 
 ## Features
 
-- **Chat** — streaming SSE from Quaesitor backend
+- **Chat** — streaming SSE from Quaesitor backend. Text input + send
+  button + scrollable message list, wired to `mobile/lib/api-client.ts`.
 - **Research** — start + monitor research jobs
 - **Settings** — API keys, instance URL, theme, language
 - **Biometric auth** — FaceID/TouchID via expo-local-authentication
@@ -35,6 +36,26 @@ npx expo run:ios
 # EAS Build (for App Store / Play Store)
 eas build --platform all
 ```
+
+## Desktop alternative (Tauri)
+
+If you want a native **desktop** experience instead of (or alongside)
+the mobile app, Quaesitor also ships a lightweight Tauri wrapper at
+[`../desktop-tauri/`](../../desktop-tauri/). Bundle size: ~10MB (vs
+150MB for the Electron wrapper in [`../desktop/`](../../desktop/)).
+
+The Tauri app loads the same Next.js web app the mobile app talks to,
+so they share the same backend, auth, and feature set — pick the form
+factor that fits your workflow.
+
+```bash
+cd desktop-tauri
+npm install
+npm run tauri dev    # or: npm run tauri build (MSI/NSIS/DEB/AppImage)
+```
+
+See [`../desktop-tauri/README.md`](../../desktop-tauri/README.md) for
+prerequisites (Rust + Tauri CLI) and build instructions.
 
 ## Design
 

@@ -1,0 +1,16 @@
+{
+  "name": "quaesitor-desktop",
+  "version": "4.0.0",
+  "description": "Quaesitor Desktop App (Tauri)",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "tauri": "tauri"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.0.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

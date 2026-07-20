@@ -34,6 +34,11 @@ import {
 // [unverified] / [contradicted] markers added by a second LLM call.
 import { SELF_CRITIQUE_PROMPT } from "./prompts/self-critique";
 import { randomUUID } from "crypto";
+// God-object refactor (final-cleanup): the shared research types now
+// live in `./research/types` (re-exported from `./types` + the local
+// `DetectedLanguage` type), and the standalone prompt-template
+// constants live in `./research/prompts`. The pipeline logic itself
+// is unchanged.
 import type {
   ResearchConfig,
   ResearchJob,
@@ -46,7 +51,9 @@ import type {
   PageReadResult,
   SubQueryRound,
   Source,
-} from "./types";
+  DetectedLanguage,
+} from "./research/types";
+import { BIAS_DISCLAIMER } from "./research/prompts";
 
 export function resolveConfig(
   query: string,
@@ -172,8 +179,9 @@ function trackLLMTokens(job: ResearchJob, result: { tokensUsed?: number }): void
 // Detects the dominant script of the query so the LLM can respond in the
 // same language. Uses Unicode ranges: Arabic (0600-06FF), CJK (4E00-9FFF),
 // Hebrew (0590-05FF), Cyrillic (0400-04FF).
-export type DetectedLanguage = "ar" | "zh" | "he" | "ru" | "en" | "unknown";
-
+//
+// `DetectedLanguage` is imported from `./research/types` (god-object
+// refactor — final-cleanup task).
 export function detectLanguage(text: string): DetectedLanguage {
   const sample = text.slice(0, 500);
   const counts: Record<string, number> = { ar: 0, zh: 0, he: 0, ru: 0, latin: 0 };
@@ -1233,26 +1241,15 @@ Write a comprehensive long-form Deep Research report answering the original quer
 
 // ---------- Bias disclaimer (Ethical #6) ----------
 //
-// Appended to EVERY research report regardless of source quality or
-// bias_auditor outcome. The disclaimer reminds readers that web-sourced
-// research inherits cultural, geographic, and linguistic biases from its
-// sources, and that Quaesitor's bias_auditor agent is a mitigation, not
-// a guarantee. Readers are urged to seek additional perspectives —
-// especially from underrepresented regions — before relying on the
-// report for consequential decisions.
+// `BIAS_DISCLAIMER` is now defined in `./research/prompts.ts` (god-object
+// refactor — final-cleanup task). The narrative docstring for the
+// disclaimer lives next to the constant; `appendBiasDisclaimer()` here
+// is just the small mutator that splices it onto the end of the report.
 //
 // The disclaimer is added AFTER the self-critique pass so the LLM doesn't
 // "review" it (it would just delete it as redundant). It's appended to
 // `finalReport` only — the streamed tokens (job.reportStream) are the
 // LLM's raw output and don't include the disclaimer.
-const BIAS_DISCLAIMER = [
-  "",
-  "---",
-  "",
-  "⚠️ **Bias notice**: This report was generated from web sources that may reflect cultural, geographic, and linguistic biases. Quaesitor's `bias_auditor` agent has reviewed the output, but readers should critically evaluate sources and seek additional perspectives, especially from underrepresented regions.",
-  "",
-].join("\n");
-
 function appendBiasDisclaimer(report: string): string {
   if (!report) return report;
   // Don't double-append if a future code path calls this twice.
