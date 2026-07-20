@@ -55,7 +55,8 @@ export async function GET(req: NextRequest) {
       id: r.id, title: r.title, messageCount: r.msg_count,
       createdAt: r.created_at, updatedAt: r.updated_at,
     })) });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: true, conversations: [] });
   }
 }
@@ -88,7 +89,8 @@ export async function POST(req: NextRequest) {
     const db = getDb();
     db.prepare("INSERT INTO conversations (id, user_id, title) VALUES (?, ?, ?)").run(id, userId, title);
     return NextResponse.json({ ok: true, conversation: { id, title } });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: false, error: "Failed to create conversation." }, { status: 500 });
   }
 }

@@ -13,6 +13,7 @@
 // Auth: Basic auth (dashboard UI). The /api/v1/* namespace has its
 // own usage endpoint (TODO — not in scope for this P1 batch).
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getUserPlan, checkUsageLimit, PLANS } from "@/lib/stripe";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { getDb } from "@/lib/db";
@@ -129,9 +130,11 @@ function readCurrentPeriodUsage(userId: string): {
       research: researchRow?.count || 0,
       swarm: swarmRow?.count || 0,
     };
-  } catch {
+  } catch (err) {
     // Fail-safe — return zeros so the dashboard renders even if the
-    // usage table doesn't exist yet (fresh in-memory DB, etc.).
+    // usage table doesn't exist yet (fresh in-memory DB, etc.). Capture
+    // to Sentry so schema drift surfaces in observability.
+    Sentry.captureException(err);
     return { chat: 0, research: 0, swarm: 0 };
   }
 }

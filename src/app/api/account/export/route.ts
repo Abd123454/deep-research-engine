@@ -189,7 +189,10 @@ export async function GET(req: NextRequest) {
     const all = <T>(sql: string, ...params: unknown[]): T[] => {
       try {
         return db.prepare(sql).all(...params) as T[];
-      } catch {
+      } catch (err) {
+        // Per-table resilience: a missing/drifted table shouldn't abort
+        // the export. Capture for observability so schema drift surfaces.
+        Sentry.captureException(err);
         return [];
       }
     };

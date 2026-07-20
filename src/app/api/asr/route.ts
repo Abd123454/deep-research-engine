@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { transcribeAudio } from "@/lib/asr";
 import { requireAuth } from "@/lib/auth";
 
@@ -14,7 +15,8 @@ export async function POST(req: NextRequest) {
     }
     const result = await transcribeAudio(audio, format || "webm", language);
     return NextResponse.json({ ok: true, ...result });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: false, error: "ASR failed." }, { status: 500 });
   }
 }

@@ -4,6 +4,7 @@
 // Returns: binary file with appropriate Content-Type and Content-Disposition.
 
 import { NextRequest } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { exportReport, isSupportedFormat } from "@/lib/export";
 import { requireAuth } from "@/lib/auth";
 
@@ -52,7 +53,8 @@ export async function POST(req: NextRequest) {
         "Content-Length": String(result.buffer.length),
       },
     });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return Response.json(
       { error: "Export failed." },
       { status: 500 }

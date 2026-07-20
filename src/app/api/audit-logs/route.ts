@@ -19,5 +19,5 @@ export async function GET(req: NextRequest) {
   // auditable. (Resource: admin.)
   logSensitiveAction("admin.access", userId, req, { route: "audit-logs" });
   const logs = getAuditLogs(userId, 100);
-  return NextResponse.json({ logs, total: logs.length });
+  return NextResponse.json({ ok: true, data: { logs, total: logs.length } });
 }

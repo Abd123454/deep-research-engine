@@ -40,15 +40,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Parse body (optional).
+  // Parse body (optional). Malformed JSON is a client error — leave
+  // `body` as the empty default and let the eval suite run with all
+  // queries. (Silent by design — NOT a Sentry-worthy event, since every
+  // malformed request would otherwise create noise.)
   let body: { queries?: string[] } = {};
   try {
     body = await req.json();
-  } catch (err) {
-  Sentry.captureException(err);
-// Empty body is fine — run all queries.
-  
-}
+  } catch {
+    // Empty body is fine — run all queries.
+  }
 
   // Validate query IDs if provided.
   if (body.queries && body.queries.length > 0) {
@@ -67,7 +68,8 @@ export async function POST(req: NextRequest) {
   try {
     const result = await runEvalSuite({ queries: body.queries });
     return NextResponse.json(result);
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json(
       { error: "Eval failed" },
       { status: 500 }

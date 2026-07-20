@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { trackEvent } from "@/lib/analytics";
 import { generateFile, type FileType } from "@/lib/file-generator";
 import { requireAuth } from "@/lib/auth";
@@ -33,7 +34,8 @@ export async function POST(req: NextRequest) {
       mimeType: result.mimeType,
       key: result.key,
     });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: false, error: "File generation failed." }, { status: 500 });
   }
 }

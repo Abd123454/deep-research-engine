@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { trackEvent } from "@/lib/analytics";
 import { synthesizeSpeech } from "@/lib/tts";
 import { requireAuth } from "@/lib/auth";
@@ -19,7 +20,8 @@ export async function POST(req: NextRequest) {
   trackEvent("default", "feature_used", { feature: "tts" });
     const result = await synthesizeSpeech({ text, voice, speed });
     return NextResponse.json({ ok: true, ...result });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: false, error: "TTS failed." }, { status: 500 });
   }
 }

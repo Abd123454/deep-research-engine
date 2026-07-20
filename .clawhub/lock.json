@@ -25,6 +25,66 @@
       "version": "1.0.0",
       "installedAt": 1784505943513,
       "ownerHandle": "itsjustdri"
+    },
+    "system-architect": {
+      "version": "1.0.0",
+      "installedAt": 1784508984688,
+      "ownerHandle": "1999azzar"
+    },
+    "api-design-principles": {
+      "version": "1.0.0",
+      "installedAt": 1784508993660,
+      "ownerHandle": "wpank"
+    },
+    "api-error-handling": {
+      "version": "1.0.0",
+      "installedAt": 1784508998400,
+      "ownerHandle": "wpank"
+    },
+    "accessibility-review": {
+      "version": "1.0.1",
+      "installedAt": 1784509003054,
+      "ownerHandle": "rolandpg"
+    },
+    "technical-doc-generator": {
+      "version": "1.0.0",
+      "installedAt": 1784509009107,
+      "ownerHandle": "seanwyngaard"
+    },
+    "design-system-creation": {
+      "version": "1.0.0",
+      "installedAt": 1784509016993,
+      "ownerHandle": "wpank"
+    },
+    "frontend-architecture-pro": {
+      "version": "1.0.4",
+      "installedAt": 1784509023554,
+      "ownerHandle": "tyronecoh"
+    },
+    "performance-profiler": {
+      "version": "1.0.0",
+      "installedAt": 1784509028909,
+      "ownerHandle": "honestqiao"
+    },
+    "sentry-observability": {
+      "version": "1.1.0",
+      "installedAt": 1784509083225,
+      "ownerHandle": "sergical"
+    },
+    "frontend-performance": {
+      "version": "1.0.1",
+      "installedAt": 1784509089228,
+      "ownerHandle": "wangzhiming1999"
+    },
+    "sql-query-optimizer": {
+      "version": "1.0.0",
+      "installedAt": 1784509093911,
+      "ownerHandle": "honestqiao"
+    },
+    "web-accessibility": {
+      "version": "0.1.1",
+      "installedAt": 1784509098458,
+      "ownerHandle": "raunakkathuria"
     }
   }
 }

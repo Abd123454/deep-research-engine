@@ -24,6 +24,7 @@
 // Auth: requireAuth + getUserId (Basic auth, NOT API-key auth).
 
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getDb } from "@/lib/db";
 import { getUserId, requireAuth } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
@@ -65,7 +66,11 @@ function getProjectOwner(projectId: string): string | null {
       .prepare("SELECT user_id FROM projects WHERE id = ?")
       .get(projectId) as ProjectOwnerRow | undefined;
     return row?.user_id ?? null;
-  } catch {
+  } catch (err) {
+    // Log to Sentry so transient DB issues surface; return null so the
+    // caller treats the project as missing (safer than crashing the request).
+    Sentry.captureException(err);
+    logger.warn({ err: sanitizeError(err), projectId }, "getProjectOwner: DB lookup failed");
     return null;
   }
 }

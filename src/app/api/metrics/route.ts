@@ -14,12 +14,14 @@
 // Returns 401/403/503 on auth failure (matching the audit-logs route).
 
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getDb } from "@/lib/db";
 import { getUserId, requireAuth, requireAdminAccess } from "@/lib/auth";
 import { logSensitiveAction } from "@/lib/audit";
 import { PLAN_LIMITS, type Plan } from "@/lib/plan-limits";
 import { estimateResearchCarbon, inferModelSize } from "@/lib/carbon-footprint";
 import { getCacheStats } from "@/lib/research-cache";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,7 +45,10 @@ function safeCount(db: ReturnType<typeof getDb>, sql: string, ...params: unknown
   try {
     const row = db.prepare(sql).get(...params) as CountRow | undefined;
     return row?.count ?? 0;
-  } catch {
+  } catch (err) {
+    // Admin dashboard — surface DB/schema errors to Sentry without
+    // crashing the metrics response (degraded counts > no metrics).
+    Sentry.captureException(err);
     return 0;
   }
 }
@@ -51,7 +56,8 @@ function safeCount(db: ReturnType<typeof getDb>, sql: string, ...params: unknown
 function safeQuery<T>(db: ReturnType<typeof getDb>, sql: string, ...params: unknown[]): T[] {
   try {
     return db.prepare(sql).all(...params) as T[];
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return [];
   }
 }
@@ -129,7 +135,8 @@ export async function GET(req: NextRequest) {
       )
       .get() as DurationRow | undefined;
     avgDurationMs = durationRow?.avg_ms ? Math.round(durationRow.avg_ms) : 0;
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     avgDurationMs = 0;
   }
 
@@ -152,9 +159,10 @@ export async function GET(req: NextRequest) {
     const stats = getCacheStats();
     cacheSize = stats.size;
     cacheHitRate = stats.hitRate;
-  // eslint-disable-next-line no-empty
-  } catch {
-    // Cache module not initialized — leave at 0.
+  } catch (err) {
+    // Cache module not initialized — capture for observability, leave
+    // metrics at 0 so the admin dashboard still renders.
+    Sentry.captureException(err);
   }
 
   // ---------- Carbon (this month) ----------

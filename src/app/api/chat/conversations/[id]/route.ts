@@ -58,7 +58,10 @@ async function verifyConversationOwnership(
       );
     }
     return null;
-  } catch {
+  } catch (err) {
+    // DB error during ownership check — log to Sentry for observability
+    // but return 404 to avoid leaking conversation existence to callers.
+    Sentry.captureException(err);
     return NextResponse.json(
       { ok: false, error: "Conversation not found." },
       { status: 404 }
@@ -110,8 +113,9 @@ export async function GET(
         })),
       },
     });
-  } catch {
-    return NextResponse.json({ error: "Failed." }, { status: 500 });
+  } catch (err) {
+    Sentry.captureException(err);
+    return NextResponse.json({ ok: false, error: "Failed to load conversation." }, { status: 500 });
   }
 }
 
@@ -149,7 +153,8 @@ export async function DELETE(
     db.prepare("DELETE FROM messages WHERE conversation_id = ?").run(id);
     db.prepare("DELETE FROM conversations WHERE id = ?").run(id);
     return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json({ error: "Failed." }, { status: 500 });
+  } catch (err) {
+    Sentry.captureException(err);
+    return NextResponse.json({ ok: false, error: "Failed to delete conversation." }, { status: 500 });
   }
 }

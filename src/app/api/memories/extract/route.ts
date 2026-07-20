@@ -9,6 +9,7 @@
 // conversation; the consent gate simply makes it a no-op.
 
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { extractAndStoreMemories, isMemoryExtractionEnabledAsync } from "@/lib/memory-extractor";
 import { sanitizeQuery, sanitizeInput } from "@/lib/prompt-security";
 import { getUserId, requireAuth } from "@/lib/auth";
@@ -59,7 +60,8 @@ export async function POST(req: NextRequest) {
 
     const stored = await extractAndStoreMemories(userId, text);
     return NextResponse.json({ ok: true, stored });
-  } catch {
+  } catch (err) {
+    Sentry.captureException(err);
     return NextResponse.json({ ok: false, error: "Extraction failed." }, { status: 500 });
   }
 }

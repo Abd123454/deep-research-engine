@@ -170,11 +170,17 @@ export async function DELETE(req: NextRequest) {
     const db = getDb();
 
     // Delete in dependency-safe order. Each delete is wrapped in try/catch
-    // so a missing table doesn't abort the whole operation.
+    // so a missing table doesn't abort the whole operation; failures are
+    // sent to Sentry so schema drift surfaces without blocking the user.
     const run = (sql: string, ...params: unknown[]): number => {
       try {
         return db.prepare(sql).run(...params).changes;
-      } catch {
+      } catch (err) {
+        Sentry.captureException(err);
+        logger.warn(
+          { module: "account-delete", sql: sql.slice(0, 80), err: err instanceof Error ? err.message : String(err) },
+          "per-table delete failed (continuing)"
+        );
         return 0;
       }
     };
@@ -208,7 +214,8 @@ export async function DELETE(req: NextRequest) {
     if (userId === "default") {
       try {
         sessions = db.prepare("DELETE FROM sessions").run().changes;
-      } catch {
+      } catch (err) {
+        Sentry.captureException(err);
         sessions = 0;
       }
     } else {
