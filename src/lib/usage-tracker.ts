@@ -202,9 +202,11 @@ export function startUsageFlusher(): void {
   if (typeof setInterval === "undefined") return;
 
   flushTimer = setInterval(() => {
-    flushUsage().catch(() => {
+    flushUsage().catch((err: unknown) => {
       // Already logged inside flushUsage — swallow the unhandled
-      // rejection so it doesn't crash the process.
+      // rejection so it doesn't crash the process. Logged here for
+      // visibility on unhandled-rejection paths.
+      logger.warn({ err }, "Non-critical error in flushUsage (interval)");
     });
   }, FLUSH_INTERVAL_MS);
 

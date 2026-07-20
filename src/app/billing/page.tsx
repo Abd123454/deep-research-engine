@@ -105,7 +105,9 @@ function UsageWidget() {
     fetch("/api/billing/usage")
       .then((r) => r.json())
       .then((data) => setUsage(data.usage))
-      .catch(() => {});
+      .catch(() => {
+        // Non-critical: usage widget defaults to "Loading..." state.
+      });
   }, []);
 
   if (!usage) return <p className="text-sm text-muted-foreground">Loading usage...</p>;

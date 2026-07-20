@@ -61,7 +61,9 @@ export default function PricingPage() {
     fetch("/api/billing/subscription")
       .then((r) => r.json())
       .then((data) => setCurrentPlan(data.plan || "free"))
-      .catch(() => {});
+      .catch(() => {
+        // Non-critical: default to "free" plan on fetch failure.
+      });
   }, []);
 
   return (

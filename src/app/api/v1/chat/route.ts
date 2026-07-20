@@ -200,11 +200,31 @@ export async function POST(req: NextRequest) {
     return Response.json({ ok: false, error: msg }, { status: 500 });
   }
 
+  // ---------- Streaming backpressure ----------
+  // See /api/chat/route.ts for the full rationale. Short version:
+  // `controller.desiredSize` reflects how much room is left in the
+  // stream's internal queue. When the client is slow to drain, it drops
+  // to 0 (or below). We yield 10ms before enqueuing larger payloads so
+  // the queue doesn't grow unbounded. The per-token path stays sync
+  // (onToken can't await) — its small chunks are absorbed by the
+  // queue's high-water mark.
+  const BACKPRESSURE_YIELD_MS = 10;
+  async function enqueueWithBackpressure(
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    chunk: Uint8Array
+  ): Promise<void> {
+    if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+      await new Promise((resolve) => setTimeout(resolve, BACKPRESSURE_YIELD_MS));
+    }
+    controller.enqueue(chunk);
+  }
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       // Provider transparency meta event (same shape as /api/chat so
       // SDKs that already parse that stream work unchanged).
-      controller.enqueue(
+      await enqueueWithBackpressure(
+        controller,
         encoder.encode(
           `data: ${JSON.stringify({
             type: "meta",
@@ -223,6 +243,10 @@ export async function POST(req: NextRequest) {
           temperature: 0.4,
           stream: true,
           onToken: (token: string) => {
+            // Sync onToken: cannot await. Direct enqueue — the small
+            // per-token chunk is absorbed by the stream's high-water
+            // mark; backpressure for larger payloads is handled by the
+            // awaited enqueueWithBackpressure calls above and below.
             controller.enqueue(
               encoder.encode(`data: ${JSON.stringify({ token })}\n\n`)
             );
@@ -239,7 +263,8 @@ export async function POST(req: NextRequest) {
 
         const actualDisplay = getProviderDisplayInfo(result.provider);
 
-        controller.enqueue(
+        await enqueueWithBackpressure(
+          controller,
           encoder.encode(
             `data: ${JSON.stringify({
               done: true,
@@ -256,7 +281,8 @@ export async function POST(req: NextRequest) {
       } catch (err) {
         // P0-10: sanitize the error before sending to the client.
         const msg = sanitizeError(err);
-        controller.enqueue(
+        await enqueueWithBackpressure(
+          controller,
           encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
         );
         controller.close();

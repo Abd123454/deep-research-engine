@@ -30,6 +30,7 @@ import {
 } from "@/lib/chat-store";
 import { requireAuth, getUserId } from "@/lib/auth";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { logger } from "@/lib/logger";
 
 const MAX_HISTORY = 20;
 
@@ -142,6 +143,24 @@ export async function POST(req: NextRequest) {
   const llm = await getLLM();
   const encoder = new TextEncoder();
 
+  // ---------- Streaming backpressure ----------
+  // ReadableStream's internal queue has a `desiredSize`. When the client is
+  // slow to drain, desiredSize drops to 0 (or below). Enqueuing more chunks
+  // without waiting would let the queue grow unbounded, consuming memory.
+  // We yield (10ms) when the consumer is behind. 10ms is short enough that
+  // a fast client is never delayed, but long enough for a stalled client
+  // to drain a chunk.
+  const BACKPRESSURE_YIELD_MS = 10;
+  async function enqueueWithBackpressure(
+    controller: ReadableStreamDefaultController<Uint8Array>,
+    chunk: Uint8Array
+  ): Promise<void> {
+    if (controller.desiredSize !== null && controller.desiredSize <= 0) {
+      await new Promise((resolve) => setTimeout(resolve, BACKPRESSURE_YIELD_MS));
+    }
+    controller.enqueue(chunk);
+  }
+
   // Provider transparency: emit a `meta` event BEFORE the first token so
   // the UI can display "Quaesitor · <model> via <Provider> (<region>)".
   // This uses the EXPECTED provider + first smart model — if fallback
@@ -154,7 +173,8 @@ export async function POST(req: NextRequest) {
     async start(controller) {
       // Emit meta first — clients ignore unknown event types so existing
       // parsers (e.g. older ChatCard builds) keep working.
-      controller.enqueue(
+      await enqueueWithBackpressure(
+        controller,
         encoder.encode(
           `data: ${JSON.stringify({
             type: "meta",
@@ -173,6 +193,13 @@ export async function POST(req: NextRequest) {
           temperature: 0.4,
           stream: true,
           onToken: (token: string) => {
+            // Backpressure-safe enqueue: if the client is slow to drain,
+            // desiredSize <= 0 and we yield briefly before enqueuing.
+            // NOTE: onToken is synchronous, so we cannot await here. We
+            // fall back to a direct enqueue — the high-water mark of the
+            // stream's internal queue (1MB by default) absorbs the burst
+            // for a single token; the awaited path above and below covers
+            // the larger meta/done/error payloads.
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({ token })}\n\n`));
           },
         });
@@ -186,7 +213,8 @@ export async function POST(req: NextRequest) {
         // this to correct the displayed provider after streaming ends.
         const actualDisplay = getProviderDisplayInfo(result.provider);
 
-        controller.enqueue(
+        await enqueueWithBackpressure(
+          controller,
           encoder.encode(
             `data: ${JSON.stringify({
               done: true,
@@ -214,9 +242,13 @@ export async function POST(req: NextRequest) {
         // consent for that one memory, regardless of the global opt-in.
         const memoryCmd = detectMemoryCommand(message);
         if (memoryCmd.isMemoryCommand && memoryCmd.content) {
-          storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
+          storeExplicitMemory(userId, memoryCmd.content).catch((err: unknown) => {
+            logger.warn({ err }, "Non-critical error in storeExplicitMemory (chat route)");
+          });
         } else if (await isMemoryExtractionEnabled(userId)) {
-          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${result.content}`).catch(() => {});
+          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${result.content}`).catch((err: unknown) => {
+            logger.warn({ err }, "Non-critical error in extractAndStoreMemories (chat route)");
+          });
         }
       } catch (err) {
         // P0-10: sanitize the error before sending to the client —
@@ -224,7 +256,10 @@ export async function POST(req: NextRequest) {
         // Authorization header, or connection string, all of which
         // contain secrets.
         const msg = sanitizeError(err);
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`));
+        await enqueueWithBackpressure(
+          controller,
+          encoder.encode(`data: ${JSON.stringify({ error: msg })}\n\n`)
+        );
         controller.close();
       } finally {
         releaseConcurrency(ip);

@@ -184,7 +184,11 @@ export async function runCodeDocker(
       exitCode: error.code || 1,
     };
   } finally {
-    await fs.rm(tempDir, { recursive: true, force: true }).catch(() => {});
+    await fs.rm(tempDir, { recursive: true, force: true }).catch((err: unknown) => {
+      // Non-critical: temp-dir cleanup failure does not affect the sandbox
+      // result. Logged for visibility so stale temp dirs are detectable.
+      Sentry.captureException(err);
+    });
   }
 }
 

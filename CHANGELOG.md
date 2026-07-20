@@ -2,6 +2,42 @@
 
 ## [4.0.0] — 2026-07-19 (public launch)
 
+### Fixed — v4.0.0 post-v8-audit (commit 17a3a48)
+- 12 empty catch blocks → logger.warn (server-side) or `eslint-disable-next-line no-empty`
+  + explanatory comment (client-side). Affects `/api/chat`, `/api/chat/agent`,
+  `/api/v1/chat` (memory extraction side-effects), `lib/code-sandbox-docker`
+  (temp-dir cleanup), `lib/rate-limit` (Redis decr), `lib/usage-tracker`
+  (flush interval), `app/pricing`, `app/billing`, `app/settings/memory`,
+  `components/cards/QuickCard`, `components/UnifiedInterface` (3 fetch sites).
+- Radix UI packages updated to latest minor versions — 12 packages
+  (`@radix-ui/react-collapsible`, `-label`, `-progress`, `-select`,
+  `-separator`, `-slider`, `-slot`, `-switch`, `-tabs`, `-toast`,
+  `-toggle-group`, `-tooltip`). Patch-level security + a11y fixes.
+- Streaming backpressure: `controller.desiredSize` check added before
+  `controller.enqueue` in `/api/chat`, `/api/v1/chat`, and
+  `/api/research/stream/[id]`. When the client is slow to drain
+  (`desiredSize <= 0`), the producer yields 10ms (chat/v1) or skips
+  non-critical `update` events (research stream — critical
+  `report_token`/`done`/`error` events are always sent to avoid data
+  loss). Prevents unbounded memory growth from a slow consumer.
+- Circuit breaker in `llm-provider.ts` — per-provider (nvidia/openai/
+  anthropic/ollama) failure counter. After 5 consecutive failures the
+  circuit OPENS: subsequent calls to that provider short-circuit and the
+  caller falls through to the next provider immediately (saves ~30s of
+  timeout budget per skipped model). After 60s the circuit enters
+  HALF-OPEN: a single probe call is allowed; success CLOSES, failure
+  re-OPENS. Exported `__resetCircuitStateForTests` for test isolation.
+- `wrapUserQuery` on all LLM calls — every user message is wrapped in
+  `<user_query>…</user_query>` XML tags at the `getLLM()` API boundary
+  so all providers (NVIDIA, OpenAI, Anthropic, Ollama) receive wrapped
+  input. This is the OWASP-recommended defense against prompt-injection
+  / jailbreak attempts: the LLM is trained to treat XML-tagged content
+  as data, not instructions. Combined with the existing
+  `sanitizeQuery` BLOCK gate, this gives defense-in-depth.
+- Docker base image: `node:20-slim` → `node:22-slim` (Node 22 is the
+  current LTS as of 2025-10; Node 20 enters maintenance-only in
+  2026-04). All three build stages updated (deps, builder, runner).
+
 ### Fixed — v4.0.0 post-v6-audit (commits d5dac92 + 974be13 + e779749 + 2c95a75)
 - Streaming endpoints ownership: 403 check on stream/result/status/[id]
 - bcrypt cost 10→12 (OWASP) + rehash on login

@@ -63,14 +63,29 @@ export async function GET(
       let lastStreamIndex = 0; // track how many report tokens we've sent
       let closed = false;
 
-      const send = (event: string, data: unknown) => {
-        if (closed) return;
+      const send = (event: string, data: unknown): boolean => {
+        if (closed) return false;
         try {
+          // Backpressure: if the client is slow to drain, desiredSize <= 0.
+          // For non-critical "update" events we skip the enqueue — the next
+          // tick (100-800ms later) will re-send the current state. Critical
+          // events (report_token, done, error) are always enqueued so we
+          // don't lose data; the stream's internal high-water mark (1MB)
+          // absorbs the temporary burst.
+          if (
+            controller.desiredSize !== null &&
+            controller.desiredSize <= 0 &&
+            event === "update"
+          ) {
+            return false;
+          }
           controller.enqueue(
             encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
           );
+          return true;
         } catch {
           closed = true;
+          return false;
         }
       };
 
@@ -106,8 +121,12 @@ export async function GET(
 
         // Push status updates when the job changes.
         if (current.updatedAt !== lastUpdate) {
-          lastUpdate = current.updatedAt;
-          send("update", { ok: true, job: toPublicJob(current) });
+          // Only advance lastUpdate if the send actually succeeded —
+          // backpressure may have caused the send to be skipped, in
+          // which case the next tick will retry with the same state.
+          if (send("update", { ok: true, job: toPublicJob(current) })) {
+            lastUpdate = current.updatedAt;
+          }
         }
 
         // push report tokens as they arrive.

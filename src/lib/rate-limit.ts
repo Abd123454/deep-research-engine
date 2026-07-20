@@ -208,7 +208,9 @@ export async function checkStartRateLimit(ip: string): Promise<RateLimitResult> 
 export function releaseConcurrency(ip: string): void {
   const redis = getRedis();
   if (redis) {
-    redis.decr(`ratelimit:${ip}:concurrent`).catch(() => {});
+    redis.decr(`ratelimit:${ip}:concurrent`).catch((err: unknown) => {
+      logger.warn({ err, ip }, "Non-critical error in releaseConcurrency (redis decr)");
+    });
     return;
   }
   const bucket = memoryBuckets.get(ip);

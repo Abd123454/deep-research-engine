@@ -20,6 +20,7 @@ import {
 // entrypoint.
 import { MAX_TOOL_ITERATIONS } from "@/lib/swarm-constants";
 import { sanitizeError } from "@/lib/sanitize-error";
+import { logger } from "@/lib/logger";
 
 const MAX_HISTORY = 20;
 
@@ -126,9 +127,13 @@ export async function POST(req: NextRequest) {
         // ledger (GDPR Art. 7) and is async — `await` it.
         const memoryCmd = detectMemoryCommand(message);
         if (memoryCmd.isMemoryCommand && memoryCmd.content) {
-          storeExplicitMemory(userId, memoryCmd.content).catch(() => {});
+          storeExplicitMemory(userId, memoryCmd.content).catch((err: unknown) => {
+            logger.warn({ err }, "Non-critical error in storeExplicitMemory (agent route)");
+          });
         } else if (await isMemoryExtractionEnabled(userId)) {
-          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${fullResponse}`).catch(() => {});
+          extractAndStoreMemories(userId, `user: ${message}\nassistant: ${fullResponse}`).catch((err: unknown) => {
+            logger.warn({ err }, "Non-critical error in extractAndStoreMemories (agent route)");
+          });
         }
       } catch (err) {
         // P0-10: sanitize the error before sending to the client —

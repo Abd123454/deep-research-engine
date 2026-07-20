@@ -28,6 +28,93 @@ import { OpenAIProvider } from "./llm-providers/openai";
 import { AnthropicProvider } from "./llm-providers/anthropic";
 import { OllamaProvider } from "./llm-providers/ollama";
 import { getCachedPrompt, setCachedPrompt } from "./prompt-cache";
+import { wrapUserQuery } from "./prompt-security";
+
+// ---------- Circuit breaker (per-provider) ----------
+//
+// Simple failure-rate circuit breaker. After CIRCUIT_THRESHOLD consecutive
+// failures against a single provider, the circuit OPENS — subsequent calls
+// to that provider short-circuit and the caller falls through to the next
+// provider in the chain. After CIRCUIT_RESET_MS, the circuit enters
+// HALF-OPEN: a single probe call is allowed; if it succeeds the circuit
+// CLOSES, if it fails the circuit re-OPENS for another reset window.
+//
+// This protects against the "revoked key" / "provider down" failure mode
+// where every model in the NVIDIA fallback chain would return 401/503 and
+// burn ~30s of timeout budget before cross-provider fallback kicks in.
+// With the breaker, the first 5 failures open the circuit; the 6th call
+// skips NVIDIA entirely and goes straight to OpenAI/Anthropic/Ollama.
+
+const circuitState: Record<string, { failures: number; lastFailure: number; isOpen: boolean }> = {
+  nvidia: { failures: 0, lastFailure: 0, isOpen: false },
+  openai: { failures: 0, lastFailure: 0, isOpen: false },
+  anthropic: { failures: 0, lastFailure: 0, isOpen: false },
+  ollama: { failures: 0, lastFailure: 0, isOpen: false },
+};
+
+const CIRCUIT_THRESHOLD = 5; // open after 5 consecutive failures
+const CIRCUIT_RESET_MS = 60_000; // half-open probe after 60s
+
+function checkCircuit(provider: string): boolean {
+  const state = circuitState[provider];
+  if (!state) return true;
+  if (state.isOpen) {
+    if (Date.now() - state.lastFailure > CIRCUIT_RESET_MS) {
+      // Half-open: allow a probe call. If it succeeds, recordSuccess()
+      // will close the circuit; if it fails, recordFailure() will re-open.
+      state.isOpen = false;
+      state.failures = 0;
+      logger.warn(
+        { module: "llm-provider", provider },
+        `Circuit breaker for "${provider}" entering half-open state — probe call allowed`
+      );
+      return true;
+    }
+    return false; // circuit still open
+  }
+  return true;
+}
+
+function recordFailure(provider: string): void {
+  const state = circuitState[provider];
+  if (!state) return;
+  state.failures++;
+  state.lastFailure = Date.now();
+  if (state.failures >= CIRCUIT_THRESHOLD && !state.isOpen) {
+    state.isOpen = true;
+    logger.warn(
+      { module: "llm-provider", provider, failures: state.failures },
+      `Circuit breaker for "${provider}" OPENED after ${state.failures} consecutive failures — ` +
+        `subsequent calls will skip this provider for ${CIRCUIT_RESET_MS}ms`
+    );
+  }
+}
+
+function recordSuccess(provider: string): void {
+  const state = circuitState[provider];
+  if (!state) return;
+  if (state.failures > 0 || state.isOpen) {
+    logger.info(
+      { module: "llm-provider", provider, priorFailures: state.failures },
+      `Circuit breaker for "${provider}" CLOSED — call succeeded`
+    );
+  }
+  state.failures = 0;
+  state.isOpen = false;
+}
+
+/**
+ * Test-only helper: resets the circuit breaker state for all providers.
+ * Exported so test files can isolate circuit-breaker behavior between
+ * test cases. NOT for production use.
+ */
+export function __resetCircuitStateForTests(): void {
+  for (const key of Object.keys(circuitState)) {
+    circuitState[key]!.failures = 0;
+    circuitState[key]!.lastFailure = 0;
+    circuitState[key]!.isOpen = false;
+  }
+}
 
 export interface LLMMessage {
   role: "system" | "user" | "assistant" | "tool";
@@ -314,6 +401,7 @@ async function nvidiaCompleteSingle(
       }
     }
 
+    recordSuccess("nvidia");
     return {
       content: fullContent,
       // NVIDIA streaming doesn't return a usage object. Estimate tokens
@@ -349,6 +437,7 @@ async function nvidiaCompleteSingle(
     setCachedPrompt(cachePrompt, content, cacheContext);
   }
 
+  recordSuccess("nvidia");
   return {
     content,
     tokensUsed: data.usage?.total_tokens,
@@ -369,6 +458,28 @@ async function nvidiaCompleteWithFallback(
   let lastErr: unknown;
   const tried: string[] = [];
   let tokensEmitted = false;
+
+  // Circuit breaker: if NVIDIA has failed CIRCUIT_THRESHOLD times in a row
+  // (across separate nvidiaCompleteWithFallback calls, NOT per-model),
+  // skip the entire NVIDIA model loop and fall through to cross-provider
+  // fallback immediately. This prevents burning ~30s of timeout budget on
+  // a provider that's clearly down.
+  //
+  // The failure counter is per-PROVIDER (NVIDIA as a whole), not per-model.
+  // A single nvidiaCompleteWithFallback call that tries 6 models and all
+  // fail counts as ONE failure, not 6.
+  if (!checkCircuit("nvidia")) {
+    lastErr = new Error(
+      "NVIDIA circuit breaker is open — too many recent consecutive " +
+        `provider-level failures. Skipping NVIDIA; falling through to ` +
+        `cross-provider fallback. Retry in ${Math.ceil(CIRCUIT_RESET_MS / 1000)}s.`
+    );
+    logger.warn(
+      { module: "llm-provider", provider: "nvidia" },
+      "NVIDIA circuit breaker is OPEN — skipping model loop, going to cross-provider fallback"
+    );
+    return await crossProviderFallback(opts, lastErr);
+  }
 
   const originalOnToken = opts.onToken;
   const wrappedOpts: LLMCompletionOptions = {
@@ -397,6 +508,9 @@ async function nvidiaCompleteWithFallback(
         `nvidia:${model}`,
         1
       );
+      // Success: record it for the circuit breaker. This resets the
+      // consecutive-failure counter to 0.
+      recordSuccess("nvidia");
       if (i > 0) {
         logger.info(
           { module: "llm-provider", model, failedCount: i },
@@ -432,7 +546,9 @@ async function nvidiaCompleteWithFallback(
     }
   }
 
-  // All NVIDIA models failed — try cross-provider fallback before giving up.
+  // All NVIDIA models failed — record ONE provider-level failure for the
+  // circuit breaker (not per-model). Then try cross-provider fallback.
+  recordFailure("nvidia");
   const triedStr = tried.join(", ");
   logger.warn(
     { module: "llm-provider", modelCount: models.length, tried: triedStr },
@@ -462,46 +578,61 @@ async function crossProviderFallback(
 
   // 1. OpenAI
   if (env("OPENAI_API_KEY")) {
-    try {
-      
-      const provider = new OpenAIProvider();
-      const result = await provider.smart(opts);
-      logger.info({ module: "llm-provider", provider: "openai" }, "Cross-provider fallback succeeded via OpenAI");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "openai", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
-      triedProviders.push("openai");
+    if (!checkCircuit("openai")) {
+      logger.warn({ module: "llm-provider", provider: "openai" }, "OpenAI circuit open — skipping");
+    } else {
+      try {
+        const provider = new OpenAIProvider();
+        const result = await provider.smart(opts);
+        recordSuccess("openai");
+        logger.info({ module: "llm-provider", provider: "openai" }, "Cross-provider fallback succeeded via OpenAI");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("openai");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "openai", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
+        triedProviders.push("openai");
+      }
     }
   }
 
   // 2. Anthropic
   if (env("ANTHROPIC_API_KEY")) {
-    try {
-      
-      const provider = new AnthropicProvider();
-      const result = await provider.smart(opts);
-      logger.info({ module: "llm-provider", provider: "anthropic" }, "Cross-provider fallback succeeded via Anthropic");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "anthropic", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
-      triedProviders.push("anthropic");
+    if (!checkCircuit("anthropic")) {
+      logger.warn({ module: "llm-provider", provider: "anthropic" }, "Anthropic circuit open — skipping");
+    } else {
+      try {
+        const provider = new AnthropicProvider();
+        const result = await provider.smart(opts);
+        recordSuccess("anthropic");
+        logger.info({ module: "llm-provider", provider: "anthropic" }, "Cross-provider fallback succeeded via Anthropic");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("anthropic");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "anthropic", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
+        triedProviders.push("anthropic");
+      }
     }
   }
 
   // 3. Ollama (local — always worth trying if URL is set)
   if (env("OLLAMA_URL")) {
-    try {
-      
-      const provider = new OllamaProvider();
-      const result = await provider.smart(opts);
-      logger.info({ module: "llm-provider", provider: "ollama" }, "Cross-provider fallback succeeded via Ollama");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "ollama", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
-      triedProviders.push("ollama");
+    if (!checkCircuit("ollama")) {
+      logger.warn({ module: "llm-provider", provider: "ollama" }, "Ollama circuit open — skipping");
+    } else {
+      try {
+        const provider = new OllamaProvider();
+        const result = await provider.smart(opts);
+        recordSuccess("ollama");
+        logger.info({ module: "llm-provider", provider: "ollama" }, "Cross-provider fallback succeeded via Ollama");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("ollama");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "ollama", err: msg.slice(0, 120) }, "Cross-provider fallback failed");
+        triedProviders.push("ollama");
+      }
     }
   }
 
@@ -517,13 +648,26 @@ async function crossProviderFallback(
 async function nvidiaFast(
   opts: LLMCompletionOptions
 ): Promise<LLMCompletionResult> {
+  // Circuit breaker: skip NVIDIA entirely if the circuit is open.
+  if (!checkCircuit("nvidia")) {
+    const circuitErr = new Error(
+      "NVIDIA circuit breaker is open (fast path) — falling through to cross-provider fallback."
+    );
+    if (env("OPENAI_API_KEY") || env("ANTHROPIC_API_KEY") || env("OLLAMA_URL")) {
+      return await crossProviderFastFallback(opts, circuitErr);
+    }
+    throw circuitErr;
+  }
   try {
-    return await withRetry(
+    const result = await withRetry(
       () => nvidiaCompleteSingle(opts, getFastModel()),
       `nvidia-fast:${getFastModel()}`,
       3
     );
+    recordSuccess("nvidia");
+    return result;
   } catch (err) {
+    recordFailure("nvidia");
     const msg = err instanceof Error ? err.message : String(err);
     // If NVIDIA fast fails with auth error and we have other providers, try them.
     if (env("OPENAI_API_KEY") || env("ANTHROPIC_API_KEY") || env("OLLAMA_URL")) {
@@ -547,44 +691,59 @@ async function crossProviderFastFallback(
   const triedProviders: string[] = ["nvidia"];
 
   if (env("OPENAI_API_KEY")) {
-    try {
-      
-      const provider = new OpenAIProvider();
-      const result = await provider.fast(opts);
-      logger.info({ module: "llm-provider", provider: "openai", path: "fast" }, "Cross-provider fast fallback succeeded via OpenAI");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "openai", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
-      triedProviders.push("openai");
+    if (!checkCircuit("openai")) {
+      logger.warn({ module: "llm-provider", provider: "openai", path: "fast" }, "OpenAI circuit open — skipping");
+    } else {
+      try {
+        const provider = new OpenAIProvider();
+        const result = await provider.fast(opts);
+        recordSuccess("openai");
+        logger.info({ module: "llm-provider", provider: "openai", path: "fast" }, "Cross-provider fast fallback succeeded via OpenAI");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("openai");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "openai", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
+        triedProviders.push("openai");
+      }
     }
   }
 
   if (env("ANTHROPIC_API_KEY")) {
-    try {
-      
-      const provider = new AnthropicProvider();
-      const result = await provider.fast(opts);
-      logger.info({ module: "llm-provider", provider: "anthropic", path: "fast" }, "Cross-provider fast fallback succeeded via Anthropic");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "anthropic", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
-      triedProviders.push("anthropic");
+    if (!checkCircuit("anthropic")) {
+      logger.warn({ module: "llm-provider", provider: "anthropic", path: "fast" }, "Anthropic circuit open — skipping");
+    } else {
+      try {
+        const provider = new AnthropicProvider();
+        const result = await provider.fast(opts);
+        recordSuccess("anthropic");
+        logger.info({ module: "llm-provider", provider: "anthropic", path: "fast" }, "Cross-provider fast fallback succeeded via Anthropic");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("anthropic");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "anthropic", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
+        triedProviders.push("anthropic");
+      }
     }
   }
 
   if (env("OLLAMA_URL")) {
-    try {
-      
-      const provider = new OllamaProvider();
-      const result = await provider.fast(opts);
-      logger.info({ module: "llm-provider", provider: "ollama", path: "fast" }, "Cross-provider fast fallback succeeded via Ollama");
-      return { ...result, provider: result.provider as unknown as LLMProvider };
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      logger.warn({ module: "llm-provider", provider: "ollama", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
-      triedProviders.push("ollama");
+    if (!checkCircuit("ollama")) {
+      logger.warn({ module: "llm-provider", provider: "ollama", path: "fast" }, "Ollama circuit open — skipping");
+    } else {
+      try {
+        const provider = new OllamaProvider();
+        const result = await provider.fast(opts);
+        recordSuccess("ollama");
+        logger.info({ module: "llm-provider", provider: "ollama", path: "fast" }, "Cross-provider fast fallback succeeded via Ollama");
+        return { ...result, provider: result.provider as unknown as LLMProvider };
+      } catch (err) {
+        recordFailure("ollama");
+        const msg = err instanceof Error ? err.message : String(err);
+        logger.warn({ module: "llm-provider", provider: "ollama", path: "fast", err: msg.slice(0, 120) }, "Cross-provider fast fallback failed");
+        triedProviders.push("ollama");
+      }
     }
   }
 
@@ -605,11 +764,34 @@ export interface LLMProviderApi {
 
 export async function getLLM(): Promise<LLMProviderApi> {
   const smartModels = getSmartModels();
+  // ---------- wrapUserQuery (jailbreak resistance) ----------
+  //
+  // Every user message is wrapped in <user_query> XML tags before being
+  // sent to ANY provider. This is the OWASP-recommended defense against
+  // prompt injection: the LLM is trained to treat content inside XML
+  // tags as data, not instructions. Combined with the injection-detection
+  // gate in /api/chat (which BLOCKS critical patterns outright), this
+  // gives defense-in-depth:
+  //   1. BLOCK known injection patterns (sanitizeQuery)
+  //   2. WRAP surviving legit queries so the LLM sees them as data
+  //
+  // Wrapping happens here (at the public API boundary) so all providers
+  // benefit — NVIDIA, OpenAI, Anthropic, and Ollama all receive wrapped
+  // user messages. System/assistant/tool messages are passed through
+  // unchanged (they're already trusted).
+  const wrapMessages = (opts: LLMCompletionOptions): LLMCompletionOptions => ({
+    ...opts,
+    messages: opts.messages.map((m) =>
+      m.role === "user"
+        ? { ...m, content: wrapUserQuery(m.content) }
+        : m
+    ),
+  });
   return {
     provider: "nvidia",
     smartModels,
-    fast: nvidiaFast,
-    smart: (opts) => nvidiaCompleteWithFallback(opts, smartModels),
+    fast: (opts) => nvidiaFast(wrapMessages(opts)),
+    smart: (opts) => nvidiaCompleteWithFallback(wrapMessages(opts), smartModels),
   };
 }
 

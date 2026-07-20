@@ -7,7 +7,7 @@
 # self-contained server.js that doesn't need node_modules at runtime.
 
 # ---------- Stage 1: deps ----------
-FROM node:20-slim AS deps
+FROM node:22-slim AS deps
 WORKDIR /app
 
 # Install bun for faster installs (matches the dev workflow).
@@ -18,7 +18,7 @@ COPY package.json bun.lock* ./
 RUN bun install --frozen-lockfile
 
 # ---------- Stage 2: build ----------
-FROM node:20-slim AS builder
+FROM node:22-slim AS builder
 WORKDIR /app
 RUN npm install -g bun
 
@@ -32,7 +32,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN bun run build
 
 # ---------- Stage 3: runner ----------
-FROM node:20-slim AS runner
+FROM node:22-slim AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production

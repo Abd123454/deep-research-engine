@@ -92,7 +92,9 @@ export const QuickCard = React.memo(function QuickCard({ question }: QuickCardPr
                 { role: "assistant", content: response },
               ],
             }),
-          }).catch(() => {});
+          }).catch(() => {
+            // Non-critical: memory extraction is best-effort.
+          });
         }
       }
     })();
