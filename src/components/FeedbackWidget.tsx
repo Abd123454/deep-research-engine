@@ -11,8 +11,8 @@
 //   - After submission, shows a brief "Thank you" then auto-collapses.
 //
 // Design: warm Quaesitor palette — `bg-[#faf8f3]` card, `border-[#d9d4c7]`,
-// `text-[#8b4513]` accent. No box-shadow, no backdrop-blur, no gradient
-// (per DESIGN.md anti-patterns). Framer Motion for the expand animation.
+// `text-[#8b4513]` accent. Visual elevation uses borders + surface tone
+// only (per DESIGN.md). Framer Motion for the expand animation.
 //
 // SSR-safe: the button is hidden on the server (no window/navigator) and
 // mounts only on the client to avoid hydration mismatches.

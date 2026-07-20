@@ -2,6 +2,14 @@
 
 First off — **thank you** for taking the time to contribute. Quaesitor is built in the open, and every issue, PR, doc tweak, and skill package makes the project better for everyone.
 
+> **v4.0.0 launch** — Quaesitor v4.0.0 (public release, 2026-07-19) is the
+> current target branch. See `RELEASE_NOTES.md` for the launch announcement
+> and `docs/LAUNCH_CHECKLIST.md` for the open items. New contributions
+> should target the `main` branch (the v4.0.0 release line). The
+> `docs/MIGRATION_NOTES.md` file tracks the planned v4.1+ migrations
+> (next-auth v5, native bcrypt, yjs+y-websocket for real-time collab,
+> ffmpeg+whisper for video understanding).
+
 This document explains how to get involved. If anything is unclear, please open an issue with the `question` label and we'll help you out.
 
 ---

@@ -17,7 +17,7 @@
 //
 // Design: warm Quaesitor palette. `font-ui` (DM Sans) for the chrome
 // (tabs, buttons, header); `font-body` (Newsreader) for prose content.
-// No box-shadow, no backdrop-blur — borders + surface tone only.
+// Visual elevation uses borders + surface tone only.
 
 import * as React from "react";
 import { motion } from "framer-motion";

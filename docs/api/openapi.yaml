@@ -63,8 +63,56 @@ tags:
     description: User feedback (thumbs up/down + free text)
   - name: Docs
     description: This OpenAPI spec
+  - name: Artifacts
+    description: Artifact storage + live stream (canvas/code/markdown artifacts)
+  - name: SSO
+    description: SAML / OIDC single sign-on providers (enterprise)
+  - name: Collab
+    description: Real-time collaboration sessions (presence + cursor sync)
+  - name: Connectors
+    description: External data connectors (Google Drive, Notion, Slack, etc.)
+  - name: Dashboard
+    description: User dashboard statistics (recent activity + usage)
+  - name: Documents
+    description: User-uploaded documents (PDF/DOCX/etc.) with Q&A
+  - name: Export
+    description: Bulk data export (conversations + memories + research)
+  - name: Generate
+    description: Media generation (image / video / music / voice)
+  - name: Memory
+    description: 5-layer memory system (episodic / semantic / preferences)
+  - name: Preferences
+    description: User preferences (UI, privacy, memory settings)
+  - name: Projects
+    description: User projects (grouped conversations + research)
+  - name: Audit
+    description: Audit log access (admin-only, compliance)
 
 paths:
+  /api:
+    get:
+      tags: [Health]
+      summary: API root
+      description: |
+        Returns a tiny liveness payload for the API root. Useful as a
+        smoke-test target (separate from `/api/health` which does a
+        deeper subsystem check).
+      operationId: getApiRoot
+      security: []
+      responses:
+        "200":
+          description: OK.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      message: { type: string }
+
   /api/health:
     get:
       tags: [Health]
@@ -2996,6 +3044,783 @@ paths:
           $ref: "#/components/responses/RateLimited"
         "500":
           $ref: "#/components/responses/InternalError"
+
+  # ─── ARTIFACTS ──────────────────────────────────────────────────
+  /api/artifacts/storage:
+    get:
+      tags: [Artifacts]
+      summary: List stored artifacts
+      description: |
+        Returns the user's saved artifacts (markdown, code, canvas, etc.)
+        from persistent storage. Paginated.
+      operationId: listArtifacts
+      responses:
+        "200":
+          description: Artifact list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  artifacts:
+                    type: array
+                    items: { type: object }
+                  nextCursor: { type: string, nullable: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/artifacts/stream:
+    get:
+      tags: [Artifacts]
+      summary: Stream artifact updates (SSE)
+      description: |
+        Server-Sent Events endpoint that streams live artifact mutations
+        (create / edit / delete) to all collaborators viewing the same
+        artifact. Used by the ArtifactsPanel for real-time sync.
+      operationId: streamArtifacts
+      responses:
+        "200":
+          description: SSE stream of artifact events.
+          content:
+            text/event-stream: {}
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+
+  # ─── SSO (SAML / OIDC) ──────────────────────────────────────────
+  /api/auth/sso/status:
+    get:
+      tags: [SSO]
+      summary: SSO provider status
+      description: |
+        Returns which SSO providers (SAML / OIDC) are configured and
+        available on this instance. Used by the login page to render
+        "Sign in with SSO" buttons only when at least one provider is
+        configured.
+      operationId: getSsoStatus
+      security: []
+      responses:
+        "200":
+          description: SSO provider availability.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  saml: { type: boolean }
+                  oidc: { type: boolean }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/auth/sso/oidc/login:
+    get:
+      tags: [SSO]
+      summary: Initiate OIDC SSO login
+      description: |
+        Redirects the user to the configured OIDC IdP (e.g. Okta, Auth0,
+        Google Workspace) for authentication. The IdP calls back to
+        `/api/auth/callback/oidc` after the user signs in.
+      operationId: oidcLogin
+      security: []
+      responses:
+        "302":
+          description: Redirect to OIDC IdP.
+          headers:
+            Location: { schema: { type: string } }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/auth/sso/saml/login:
+    get:
+      tags: [SSO]
+      summary: Initiate SAML SSO login
+      description: |
+        Redirects the user to the configured SAML IdP with a signed
+        `SAMLRequest` XML payload. The IdP posts the assertion back to
+        `/api/auth/saml/callback` after authentication.
+      operationId: samlLogin
+      security: []
+      responses:
+        "302":
+          description: Redirect to SAML IdP.
+          headers:
+            Location: { schema: { type: string } }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/auth/{nextauth}:
+    get:
+      tags: [Auth]
+      summary: NextAuth.js catch-all handler
+      description: |
+        NextAuth.js dynamic route handler. Serves all NextAuth endpoints
+        (sign-in, sign-out, session, csrf, providers, callbacks) under
+        `/api/auth/*`. The exact behavior depends on the `nextauth`
+        path segment.
+      operationId: nextAuthCatchall
+      security: []
+      responses:
+        "200":
+          description: NextAuth response (varies by sub-path).
+          content:
+            application/json: {}
+            text/html: {}
+        "302":
+          description: Redirect (sign-in / callback flow).
+          headers:
+            Location: { schema: { type: string } }
+        "400": { description: Malformed NextAuth request. }
+    post:
+      tags: [Auth]
+      summary: NextAuth.js catch-all handler (POST)
+      description: |
+        NextAuth.js dynamic route handler for POST requests (sign-in
+        form submission, callback POST, etc.).
+      operationId: nextAuthCatchallPost
+      security: []
+      responses:
+        "200":
+          description: NextAuth response.
+          content:
+            application/json: {}
+            text/html: {}
+        "302":
+          description: Redirect (sign-in / callback flow).
+          headers:
+            Location: { schema: { type: string } }
+
+  # ─── CHAT CONVERSATIONS (single) ────────────────────────────────
+  /api/chat/conversations/{id}:
+    get:
+      tags: [Chat]
+      summary: Get one conversation
+      description: |
+        Returns the full message history for a single conversation.
+        Used when the user clicks a conversation in the history drawer.
+      operationId: getConversation
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Conversation.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  title: { type: string }
+                  messages:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Conversation not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    patch:
+      tags: [Chat]
+      summary: Rename / update a conversation
+      description: Updates the conversation's title or other metadata.
+      operationId: updateConversation
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200": { description: Conversation updated. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Conversation not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Chat]
+      summary: Delete a conversation
+      description: Soft-deletes the conversation (sets `deletedAt`).
+      operationId: deleteConversation
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "204": { description: Conversation deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Conversation not found. }
+
+  # ─── COLLAB ─────────────────────────────────────────────────────
+  /api/collab/{sessionId}:
+    get:
+      tags: [Collab]
+      summary: Get collaboration session state
+      description: |
+        Returns the current state of a real-time collaboration session:
+        active participants, cursors, and the shared artifact. Used by
+        late joiners to hydrate before subscribing to the SSE stream.
+      operationId: getCollabSession
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Session state.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId: { type: string }
+                  participants:
+                    type: array
+                    items: { type: string }
+                  artifact: { type: object, nullable: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Session not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── CONNECTORS ─────────────────────────────────────────────────
+  /api/connectors:
+    get:
+      tags: [Connectors]
+      summary: List configured connectors
+      description: |
+        Returns the user's configured external data connectors (Google
+        Drive, Notion, Slack, GitHub, etc.) with their connection status.
+      operationId: listConnectors
+      responses:
+        "200":
+          description: Connector list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  connectors:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Connectors]
+      summary: Add a connector
+      description: |
+        Configures a new external data connector. The request body
+        includes the connector type and OAuth credentials / API key.
+      operationId: createConnector
+      responses:
+        "201": { description: Connector created. }
+        "400": { description: Invalid connector configuration. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/connectors/list:
+    get:
+      tags: [Connectors]
+      summary: List available connector types
+      description: |
+        Returns the catalog of connector types this instance supports
+        (Google Drive, Notion, Slack, GitHub, etc.) — distinct from
+        `/api/connectors` which returns the user's CONFIGURED
+        connectors. Used by the "Add connector" UI to populate the
+        picker.
+      operationId: listConnectorTypes
+      responses:
+        "200":
+          description: Connector type catalog.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  types:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id: { type: string }
+                        label: { type: string }
+                        icon: { type: string, nullable: true }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── DASHBOARD ──────────────────────────────────────────────────
+  /api/dashboard/stats:
+    get:
+      tags: [Dashboard]
+      summary: Dashboard statistics
+      description: |
+        Returns aggregated user statistics for the dashboard: recent
+        conversations, research count, memory count, token usage, and
+        plan info. Used by the /dashboard page.
+      operationId: getDashboardStats
+      responses:
+        "200":
+          description: Dashboard stats.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  conversationsCount: { type: integer }
+                  researchCount: { type: integer }
+                  memoriesCount: { type: integer }
+                  tokensUsedThisMonth: { type: integer }
+                  plan: { type: string }
+                  recentActivity:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── DOCUMENTS (single + Q&A) ───────────────────────────────────
+  /api/documents/{id}:
+    get:
+      tags: [Documents]
+      summary: Get a document
+      description: |
+        Returns metadata + (optionally) extracted text for a single
+        uploaded document. The `text` field is omitted unless the
+        `?includeText=true` query param is set.
+      operationId: getDocument
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+        - name: includeText
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        "200":
+          description: Document.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Document"
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Document not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Documents]
+      summary: Delete a document
+      description: Soft-deletes the document + removes the stored file.
+      operationId: deleteDocument
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "204": { description: Document deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Document not found. }
+
+  /api/documents/{id}/qa:
+    post:
+      tags: [Documents]
+      summary: Ask a question about a document
+      description: |
+        Runs RAG-style Q&A against a single uploaded document. The
+        document's extracted text is chunked + embedded (cached), then
+        the LLM answers the user's question with inline citations to
+        the document. Streaming (SSE) — the answer is delivered
+        token-by-token.
+      operationId: documentQa
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: SSE stream of answer tokens + final citation list.
+          content:
+            text/event-stream: {}
+        "400": { description: Question is empty. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Document not found. }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── EXPORT ─────────────────────────────────────────────────────
+  /api/export:
+    get:
+      tags: [Export]
+      summary: Bulk data export
+      description: |
+        Exports the user's full data (conversations, research reports,
+        memories, preferences) as a ZIP archive (JSON inside). GDPR
+        Art. 20 portability endpoint — same as `/api/account/export`
+        but bundles all data types in one download.
+      operationId: exportUserData
+      responses:
+        "200":
+          description: ZIP archive.
+          content:
+            application/zip: {}
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── GENERATE (image / video / music / voice) ───────────────────
+  /api/generate/image:
+    post:
+      tags: [Generate]
+      summary: Generate an image
+      description: |
+        Generates an image from a text prompt using the configured
+        image-generation provider (default: ZAI image-gen). Returns the
+        image as base64 (no data-URI prefix) or a hosted URL depending
+        on the provider.
+      operationId: generateImage
+      responses:
+        "200":
+          description: Generated image.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, nullable: true }
+                  base64: { type: string, nullable: true }
+                  revisedPrompt: { type: string, nullable: true }
+        "400": { description: Empty prompt. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { description: Image generation quota exceeded. }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/generate/video:
+    post:
+      tags: [Generate]
+      summary: Generate a video
+      description: |
+        Generates a short video clip from a text prompt. Async —
+        returns a job ID immediately; poll `/api/generate/video?jobId=`
+        for status + the final URL.
+      operationId: generateVideo
+      responses:
+        "202":
+          description: Generation job accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+        "400": { description: Empty prompt. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { description: Quota exceeded. }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/generate/music:
+    post:
+      tags: [Generate]
+      summary: Generate a music clip
+      description: |
+        Generates a short music clip from a text prompt. Async — same
+        job-based flow as `/api/generate/video`.
+      operationId: generateMusic
+      responses:
+        "202":
+          description: Generation job accepted.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobId: { type: string }
+        "400": { description: Empty prompt. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "402": { description: Quota exceeded. }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/generate/voice:
+    post:
+      tags: [Generate]
+      summary: Generate a voice clip (TTS variant)
+      description: |
+        Generates a voice clip from text. Distinct from `/api/tts` in
+        that this endpoint supports long-form narration (books, articles)
+        and returns a hosted audio URL instead of streaming bytes.
+      operationId: generateVoice
+      responses:
+        "200":
+          description: Generated audio.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string }
+                  durationSec: { type: number }
+        "400": { description: Empty text. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── MCP (list installed servers) ───────────────────────────────
+  /api/mcp:
+    get:
+      tags: [MCP]
+      summary: List installed MCP servers
+      description: |
+        Returns the user's installed MCP (Model Context Protocol)
+        servers with their connection status. Distinct from
+        `/api/mcp/marketplace` which lists AVAILABLE servers.
+      operationId: listMcpServers
+      responses:
+        "200":
+          description: Installed MCP servers.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  servers:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── MEMORIES (extract + graph) ─────────────────────────────────
+  /api/memories/extract:
+    post:
+      tags: [Memory]
+      summary: Extract memories from text
+      description: |
+        Runs the memory-extraction LLM pass over the provided text
+        (typically a chat message or document) and stores the extracted
+        memories. Returns the count + the extracted memory objects.
+        Honors the `isMemoryExtractionEnabled()` preference.
+      operationId: extractMemories
+      responses:
+        "200":
+          description: Extraction result.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  extracted:
+                    type: array
+                    items: { type: object }
+                  count: { type: integer }
+        "400": { description: Empty text. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "403": { description: Memory extraction disabled in preferences. }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/memories/graph:
+    get:
+      tags: [Memory]
+      summary: Memory knowledge graph
+      description: |
+        Returns the user's memory graph as nodes (memories) + edges
+        (semantic relationships). Used by the memory panel's graph
+        visualization.
+      operationId: getMemoryGraph
+      responses:
+        "200":
+          description: Memory graph.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  nodes:
+                    type: array
+                    items: { type: object }
+                  edges:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── MEMORY EXPORT ──────────────────────────────────────────────
+  /api/memory/export:
+    get:
+      tags: [Memory]
+      summary: Export memories
+      description: |
+        Exports the user's memories as JSON (one object per memory).
+        Distinct from `/api/export` (which bundles ALL data types).
+      operationId: exportMemories
+      responses:
+        "200":
+          description: Memory array.
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── PREFERENCES (memory sub-tree) ──────────────────────────────
+  /api/preferences/memory:
+    get:
+      tags: [Preferences]
+      summary: Get memory preferences
+      description: |
+        Returns the user's memory-related preferences: extraction
+        enabled/disabled, retention period, auto-classification toggle.
+      operationId: getMemoryPreferences
+      responses:
+        "200":
+          description: Memory preferences.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  extractionEnabled: { type: boolean }
+                  retentionDays: { type: integer }
+                  autoClassification: { type: boolean }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    patch:
+      tags: [Preferences]
+      summary: Update memory preferences
+      description: Partial update of memory-related preferences.
+      operationId: updateMemoryPreferences
+      responses:
+        "200": { description: Preferences updated. }
+        "400": { description: Invalid preference value. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  # ─── PROJECTS ───────────────────────────────────────────────────
+  /api/projects:
+    get:
+      tags: [Projects]
+      summary: List projects
+      description: Returns the user's projects (grouped conversations + research).
+      operationId: listProjects
+      responses:
+        "200":
+          description: Project list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+    post:
+      tags: [Projects]
+      summary: Create a project
+      operationId: createProject
+      responses:
+        "201": { description: Project created. }
+        "400": { description: Invalid project. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "500": { $ref: "#/components/responses/InternalError" }
+
+  /api/projects/{id}:
+    get:
+      tags: [Projects]
+      summary: Get one project
+      operationId: getProject
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Project.
+          content:
+            application/json:
+              schema: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Project not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    patch:
+      tags: [Projects]
+      summary: Update a project
+      operationId: updateProject
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200": { description: Project updated. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Project not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Projects]
+      summary: Delete a project
+      operationId: deleteProject
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "204": { description: Project deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Project not found. }
+
+  # ─── RESEARCH (plan preview + live stream) ──────────────────────
+  /api/research/plan:
+    post:
+      tags: [Research]
+      summary: Preview a research plan (without starting)
+      description: |
+        Generates a research plan for the given query WITHOUT starting
+        the full pipeline. The user reviews / edits the plan, then calls
+        `/api/research/start` with the (possibly edited) plan. Returns
+        503 if the LLM fails to produce a parseable plan.
+      operationId: previewResearchPlan
+      responses:
+        "200":
+          description: Research plan.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  title: { type: string }
+                  summary: { type: string }
+                  sections:
+                    type: array
+                    items: { type: object }
+        "400": { description: Empty query. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+        "500": { $ref: "#/components/responses/InternalError" }
+        "503": { description: LLM failed to produce a parseable plan. }
+
+  /api/research/stream/{id}:
+    get:
+      tags: [Research]
+      summary: Stream research updates (SSE)
+      description: |
+        Server-Sent Events endpoint that streams live research pipeline
+        updates (status changes, sub-query progress, log entries, report
+        tokens) to the client. The client subscribes immediately after
+        calling `/api/research/start` and renders updates incrementally.
+      operationId: streamResearch
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: SSE stream of research events.
+          content:
+            text/event-stream: {}
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Job not found. }
+
+  # ─── SESSIONS (single) ──────────────────────────────────────────
+  /api/sessions/{id}:
+    get:
+      tags: [Sessions]
+      summary: Get one session
+      description: Returns the full session record (messages + metadata).
+      operationId: getSession
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "200":
+          description: Session.
+          content:
+            application/json:
+              schema: { type: object }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Session not found. }
+        "500": { $ref: "#/components/responses/InternalError" }
+    delete:
+      tags: [Sessions]
+      summary: Delete a session
+      description: Soft-deletes the session (sets `deletedAt`).
+      operationId: deleteSession
+      parameters:
+        - $ref: "#/components/parameters/JobIdPath"
+      responses:
+        "204": { description: Session deleted. }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "404": { description: Session not found. }
 
 components:
   parameters:

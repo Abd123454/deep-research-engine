@@ -111,3 +111,49 @@ bun audit          # list current vulns
 bun update         # bump compatible-range deps (non-breaking)
 bun update --latest # major bumps — review CHANGELOGs first
 ```
+
+## Stub modules — interface-only, not production-ready
+
+The following modules ship as **interface-only stubs**. Their types and
+function signatures are stable and exercised by tests, but the
+implementations are intentionally minimal. Banners at the top of each
+file declare the missing dependencies + the path to enable them.
+
+### `src/lib/collab/collaboration.ts` — real-time collaboration
+
+- **What's stubbed:** `updateCursor()` mutates the in-memory session
+  registry but does NOT broadcast `CollabUpdate` events to other
+  participants (no WebSocket fan-out).
+- **What's required:** `yjs` + `y-websocket` packages + a y-websocket
+  mini-service (see `mini-services/` pattern).
+- **To enable:**
+  1. `bun add yjs y-websocket`
+  2. Create `mini-services/collab-service/` running y-websocket on a
+     dedicated port (e.g. 3003).
+  3. Replace the stub `updateCursor` / `joinSession` / `leaveSession`
+     with Yjs document mutations that the y-websocket server syncs to
+     all connected clients.
+  4. Update the `CollabIndicator` component to subscribe to the
+     y-websocket room for the active session.
+- **Priority:** P2 (post-launch, when Canvas Mode collaboration moves
+  out of beta).
+
+### `src/lib/video-understanding/index.ts` — video keyframes + transcript
+
+- **What's stubbed:** `analyzeVideo()` returns an empty `VideoAnalysis`
+  (no keyframes, no transcript, no metadata). The `VIDEO_UNDERSTANDING_ENABLED`
+  env flag gates the stub; when unset, the `/api/video/analyze` route
+  returns 501.
+- **What's required:** `ffmpeg` + `ffprobe` binaries on the host, plus
+  `openai-whisper` (or a hosted Whisper-compatible API) for transcription.
+- **To enable:**
+  1. Install ffmpeg + openai-whisper on the host (`apt install ffmpeg`
+     + `pip install openai-whisper`).
+  2. Set `VIDEO_UNDERSTANDING_ENABLED=true`.
+  3. Replace the stub `analyzeVideo` with the four-step pipeline
+     documented in the file's banner (ffprobe → keyframe extraction →
+     audio extraction → whisper transcription).
+  4. Wire the keyframe JPEGs into the configured vision provider
+     (same fallback chain as `/api/vision`).
+- **Priority:** P3 (post-launch; vision-only feature, not in MVP scope).
+

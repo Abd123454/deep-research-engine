@@ -16,8 +16,8 @@
 // opt-in consent).
 //
 // Design: warm Quaesitor palette — `bg-card` / `border` / `text-foreground`
-// / `text-primary`. Subtle framer-motion slide-up on mount. No box-shadow
-// (per DESIGN.md anti-patterns), no backdrop-blur.
+// / `text-primary`. Subtle framer-motion slide-up on mount. Visual
+// elevation uses borders + surface tone only (per DESIGN.md).
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";

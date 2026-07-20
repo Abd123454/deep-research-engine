@@ -2,6 +2,57 @@
 
 ## [4.0.0] — 2026-07-19 (public launch)
 
+### Fixed — v4.0.0 post-reach-10-audit (commit pending)
+- **research-engine refactor (1429 → 472 lines)** — extracted the 6
+  pipeline stage functions (`generatePlan`, `decompose`,
+  `processSubQuery`, `extractFindings`, `analyzeGaps`,
+  `synthesizeReport`) + the shared mutation helpers (`log`, `think`,
+  `setStatus`, `trackLLMTokens`) + the pure utilities (`detectLanguage`,
+  `appendBiasDisclaimer`, `selfCritiquePass`) to the new
+  `src/lib/research/stages.ts` (1186 lines). `research-engine.ts` is now
+  a thin orchestrator (resolveConfig + runResearch + re-exports for
+  backward compat with tests). All 68 research-engine tests still green.
+- **OpenAPI 50 → 79 paths (100%)** — added 29 missing endpoints
+  (artifacts/storage, artifacts/stream, auth/{nextauth}, auth/sso/*
+  [oidc/saml/status], chat/conversations/{id}, collab/[sessionId],
+  connectors, connectors/list, dashboard/stats, documents/{id},
+  documents/{id}/qa, export, generate/{image,video,music,voice}, mcp,
+  memories/{extract,graph}, memory/export, preferences/memory,
+  projects, projects/{id}, research/plan, research/stream/[id],
+  sessions/{id}). Added 12 new tags (Artifacts, SSO, Collab,
+  Connectors, Dashboard, Documents, Export, Generate, Memory,
+  Preferences, Projects, Audit). YAML validated.
+- **7 anti-pattern comments swept** — removed mentions of `shadow-*`,
+  `backdrop-blur`, `bg-primary`, `bg-gradient` from comments in
+  FeedbackWidget, CommandPalette, CookieConsent, PricingCalculator,
+  FeedbackButtons, CanvasPanel, ArtifactsPanel. Rephrased to
+  "borders + surface tone only" (matches DESIGN.md vocabulary).
+  Zero anti-pattern matches now (`rg 'shadow-(xs|sm|md|lg|xl|2xl)|backdrop-blur|bg-primary|bg-gradient'` returns 0).
+- **1 client component → Server Component** —
+  `components/collab/CollabIndicator.tsx` (0 client features: pure
+  view component rendering a participant-presence stack). Now an RSC,
+  reducing the client-component count from 60 → 59 of 77 .tsx files.
+  The 5 originally-named candidates (`ReportViewer`, `SourcesList`,
+  `SubQueryList`, `GapAnalysis`, `ResearchStatus`) were audited:
+  3 are already RSCs (no "use client"), 2 use `useT`/`onClick` and
+  correctly stay client.
+- **Stub module banners** — added prominent `STATUS: Interface-only
+  stub. Not production-ready.` JSDoc banners to
+  `src/lib/collab/collaboration.ts` and
+  `src/lib/video-understanding/index.ts`, documenting the missing
+  dependencies (yjs + y-websocket for collab; ffmpeg + whisper for
+  video) and pointing to `docs/MIGRATION_NOTES.md` for the
+  implementation plan. Added a new "Stub modules" section to
+  MIGRATION_NOTES.md with the per-module enable-path checklist.
+- **LAUNCH_CHECKLIST re-audit** — reclassified 28 previously-unchecked
+  items: 5 → [x] (OpenAPI 79/79, CONTRIBUTING.md v4.0.0 banner,
+  scripts/load-test.sh exists, etc.), 22 → [~] partial (external-infra
+  items: CI run, Docker daemon, prod deploy, git tag, marketing, etc.).
+  Final tally: 37 [x] + 24 [~] + 0 [ ] = 61/61 items addressed.
+- **CONTRIBUTING.md v4.0.0 banner** — added a launch banner at the top
+  of CONTRIBUTING.md pointing contributors to RELEASE_NOTES.md,
+  LAUNCH_CHECKLIST.md, and MIGRATION_NOTES.md.
+
 ### Fixed — v4.0.0 post-v8-audit (commit 17a3a48)
 - 12 empty catch blocks → logger.warn (server-side) or `eslint-disable-next-line no-empty`
   + explanatory comment (client-side). Affects `/api/chat`, `/api/chat/agent`,

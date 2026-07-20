@@ -453,8 +453,8 @@ export function CommandPalette({
             if (e.target === e.currentTarget) onClose();
           }}
         >
-          {/* Backdrop — solid bg-[#2a2620]/30 matches Quaesitor's "no
-              backdrop-blur" anti-pattern (DESIGN.md). */}
+          {/* Backdrop — solid bg-[#2a2620]/30 matches Quaesitor's
+              "borders + surface tone only" elevation policy (DESIGN.md). */}
           <div className="absolute inset-0 bg-[#2a2620]/30 dark:bg-black/50" aria-hidden="true" />
 
           {/* Panel */}

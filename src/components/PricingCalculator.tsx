@@ -9,8 +9,8 @@
 //
 // Design: warm Quaesitor palette, DM Sans (`font-ui`) for the calculator
 // chrome (labels, sliders, buttons), Newsreader (`font-body`) for the
-// headline. No box-shadow, no gradient, no backdrop-blur — per DESIGN.md
-// anti-patterns. The "Estimated cost" card uses border-only elevation.
+// headline. Visual elevation uses borders + surface tone only
+// (per DESIGN.md). The "Estimated cost" card uses border-only depth.
 
 import * as React from "react";
 import { Calculator, Sparkles, Cpu, LifeBuoy } from "lucide-react";

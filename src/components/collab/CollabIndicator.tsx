@@ -1,5 +1,3 @@
-"use client";
-
 // CollabIndicator — small participant-presence indicator for real-time
 // collaboration sessions.
 //

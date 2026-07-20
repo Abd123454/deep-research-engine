@@ -24,8 +24,8 @@
 // Design: Quaesitor sepia palette. Thumbs-up selected → saddle
 // brown (#8b4513); thumbs-down selected → destructive red
 // (#a33a3a). Both use 10% bg tint of their accent. Idle state
-// is muted (#6b6358) with a subtle 5% hover bg. No box-shadow,
-// no backdrop-blur, no gradient (per DESIGN.md anti-patterns).
+// is muted (#6b6358) with a subtle 5% hover bg. Visual elevation
+// uses borders + surface tone only (per DESIGN.md).
 
 import * as React from "react";
 import { ThumbsUp, ThumbsDown } from "lucide-react";

@@ -1,31 +1,39 @@
-// STUB: Full implementation requires ffmpeg + whisper. See docs/MIGRATION_NOTES.md
-//
-// Video Understanding — extract keyframes + audio transcript for vision models.
-//
-// P2-final-wave / Feature 3: interface + stubs for video analysis. Real
-// implementation requires ffmpeg (for keyframe extraction + ffprobe for
-// metadata) and Whisper (for audio transcription). This module provides
-// the type contracts + a stub implementation that returns empty results
-// so callers can be written against the interface today; the actual
-// ffmpeg + Whisper wiring is a future infrastructure milestone.
-//
-// When `VIDEO_UNDERSTANDING_ENABLED=true` is set AND ffmpeg + Whisper
-// are installed on the host, the real implementation (TODO: wire up
-// child_process.execFile calls) would:
-//   1. Run `ffprobe -v quiet -print_format json -show_format -show_streams`
-//      to get duration, resolution, fps, codec.
-//   2. Run `ffmpeg -i input.mp4 -vf fps=1/N frame_%04d.jpg` to extract
-//      one keyframe every N seconds (default 5s, capped at maxKeyframes).
-//   3. Run `ffmpeg -i input.mp4 -vn -acodec pcm_s16le audio.wav` to
-//      extract the audio track, then `whisper audio.wav --model small`
-//      to transcribe (returns segments with start/end/text).
-//   4. Return a VideoAnalysis with all of the above, ready to feed into
-//      `buildVideoPrompt()` for a vision model query.
-//
-// SECURITY: the `videoPath` is server-controlled (the caller validates it
-// against an allow-list of upload directories before invoking). We never
-// shell-escape user input — we pass it as an argv element to execFile,
-// which avoids shell-injection entirely.
+/**
+ * STATUS: Interface-only stub. Not production-ready.
+ * Full implementation requires: ffmpeg + whisper binaries on the host.
+ * See: docs/MIGRATION_NOTES.md for implementation plan.
+ *
+ * To enable: install ffmpeg + openai-whisper on the host, then set
+ * VIDEO_UNDERSTANDING_ENABLED=true. Replace the stub `analyzeVideo`
+ * function with the real ffmpeg + Whisper wiring (see TODO below).
+ *
+ * Video Understanding — extract keyframes + audio transcript for vision models.
+ *
+ * P2-final-wave / Feature 3: interface + stubs for video analysis. Real
+ * implementation requires ffmpeg (for keyframe extraction + ffprobe for
+ * metadata) and Whisper (for audio transcription). This module provides
+ * the type contracts + a stub implementation that returns empty results
+ * so callers can be written against the interface today; the actual
+ * ffmpeg + Whisper wiring is a future infrastructure milestone.
+ *
+ * When `VIDEO_UNDERSTANDING_ENABLED=true` is set AND ffmpeg + Whisper
+ * are installed on the host, the real implementation (TODO: wire up
+ * child_process.execFile calls) would:
+ *   1. Run `ffprobe -v quiet -print_format json -show_format -show_streams`
+ *      to get duration, resolution, fps, codec.
+ *   2. Run `ffmpeg -i input.mp4 -vf fps=1/N frame_%04d.jpg` to extract
+ *      one keyframe every N seconds (default 5s, capped at maxKeyframes).
+ *   3. Run `ffmpeg -i input.mp4 -vn -acodec pcm_s16le audio.wav` to
+ *      extract the audio track, then `whisper audio.wav --model small`
+ *      to transcribe (returns segments with start/end/text).
+ *   4. Return a VideoAnalysis with all of the above, ready to feed into
+ *      `buildVideoPrompt()` for a vision model query.
+ *
+ * SECURITY: the `videoPath` is server-controlled (the caller validates it
+ * against an allow-list of upload directories before invoking). We never
+ * shell-escape user input — we pass it as an argv element to execFile,
+ * which avoids shell-injection entirely.
+ */
 
 export interface VideoKeyframe {
   /** Timestamp of the frame in the source video, in seconds. */

@@ -1,26 +1,33 @@
-// STUB: Full implementation requires yjs + y-websocket. Install: bun add yjs y-websocket
-//
-// Real-time collaboration — high-level session + cursor/presence interface.
-//
-// p2-soc2-launch / Feature 2: This module is a companion to
-// `collab-server.ts`. The existing `collab-server.ts` provides the
-// session REGISTRY used by the HTTP API (`/api/collab/[sessionId]`) —
-// create / join / leave / inspect. This module adds the higher-level
-// primitives a Canvas Mode client would need:
-//
-//   - `CollabSession` with `cursorPositions` (live cursor sharing)
-//   - `CollabUpdate` discriminated union (cursor / edit / presence / comment)
-//   - `updateCursor()` for live cursor sharing
-//   - `getActiveSessions()` for "who's online" admin views
-//
-// STUB: The functions exist, the types are correct, and `updateCursor`
-// mutates the in-memory session so the interface is exercised, but the
-// cursor positions are NOT broadcast to other participants (no
-// WebSocket fan-out). The full implementation requires the `yjs` +
-// `y-websocket` packages (not yet in package.json) plus a y-websocket
-// mini-service (see `mini-services/` pattern). The next milestone wires
-// up the mini-service that will broadcast `CollabUpdate` events to all
-// participants in real time.
+/**
+ * STATUS: Interface-only stub. Not production-ready.
+ * Full implementation requires: yjs + y-websocket packages.
+ * See: docs/MIGRATION_NOTES.md for implementation plan.
+ *
+ * To enable: bun add yjs y-websocket
+ * Then replace the stub methods with real implementations.
+ *
+ * Real-time collaboration — high-level session + cursor/presence interface.
+ *
+ * p2-soc2-launch / Feature 2: This module is a companion to
+ * `collab-server.ts`. The existing `collab-server.ts` provides the
+ * session REGISTRY used by the HTTP API (`/api/collab/[sessionId]`) —
+ * create / join / leave / inspect. This module adds the higher-level
+ * primitives a Canvas Mode client would need:
+ *
+ *   - `CollabSession` with `cursorPositions` (live cursor sharing)
+ *   - `CollabUpdate` discriminated union (cursor / edit / presence / comment)
+ *   - `updateCursor()` for live cursor sharing
+ *   - `getActiveSessions()` for "who's online" admin views
+ *
+ * STUB: The functions exist, the types are correct, and `updateCursor`
+ * mutates the in-memory session so the interface is exercised, but the
+ * cursor positions are NOT broadcast to other participants (no
+ * WebSocket fan-out). The full implementation requires the `yjs` +
+ * `y-websocket` packages (not yet in package.json) plus a y-websocket
+ * mini-service (see `mini-services/` pattern). The next milestone wires
+ * up the mini-service that will broadcast `CollabUpdate` events to all
+ * participants in real time.
+ */
 
 /**
  * A collaboration session with live cursor + presence state.

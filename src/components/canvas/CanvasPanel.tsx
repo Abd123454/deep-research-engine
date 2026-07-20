@@ -13,8 +13,8 @@
 // content back up so the parent can update the artifact.
 //
 // Design: warm Quaesitor palette. `font-ui` (DM Sans) for the chrome,
-// `font-mono` (JetBrains Mono) for the editor surface. No box-shadow,
-// no backdrop-blur — borders + surface tone only (per DESIGN.md).
+// `font-mono` (JetBrains Mono) for the editor surface. Visual
+// elevation uses borders + surface tone only (per DESIGN.md).
 import * as React from "react";
 import { motion } from "framer-motion";
 import { X, Save, RotateCcw } from "lucide-react";
