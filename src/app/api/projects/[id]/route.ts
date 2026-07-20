@@ -1,19 +1,91 @@
 // GET    /api/projects/[id] — get project details with items.
 // PATCH  /api/projects/[id] — update project (name, description).
 // DELETE /api/projects/[id] — delete project.
+//
+// SECURITY (skills-audit): all three handlers now enforce:
+//   1. requireAuth(req) — rejects anonymous callers when auth is configured.
+//   2. Per-user ownership check — a 404 (NOT 403) is returned when the
+//      requested project belongs to a different user. A 404 leaks no
+//      information about the existence of other users' project IDs.
+//   3. Connector credentials are returned MASKED, never in plaintext —
+//      mirrors the pattern in /api/connectors/route.ts (uses
+//      `maskCredentials(decryptCredentials(...) ?? {})`). Previously
+//      the GET handler returned `decryptCredentials(...)` verbatim,
+//      leaking plaintext third-party tokens to ANY caller (including
+//      unauthenticated ones, since auth was missing too).
 import * as Sentry from "@sentry/nextjs";
 
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { ProjectRow } from "@/lib/sqlite-types";
-import { decryptCredentials } from "@/lib/credentials";
+import { decryptCredentials, maskCredentials } from "@/lib/credentials";
+import { getUserId, requireAuth } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
+
+/**
+ * Verify the caller owns the project. Returns `null` on success,
+ * or a 404 NextResponse when the project is missing or belongs to
+ * another user (404 — not 403 — so we don't leak the existence of
+ * other users' project IDs).
+ */
+async function verifyProjectOwnership(
+  id: string,
+  userId: string
+): Promise<NextResponse | null> {
+  if (isPostgresAvailable()) {
+    try {
+      const prisma = await getPrismaDb();
+      if (prisma) {
+        const project = await prisma.project.findUnique({
+          where: { id },
+          select: { userId: true },
+        });
+        if (!project || project.userId !== userId) {
+          return NextResponse.json(
+            { ok: false, error: "Project not found." },
+            { status: 404 }
+          );
+        }
+        return null;
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      // Fall through to SQLite check.
+    }
+  }
+  try {
+    const db = getDb();
+    const project = db
+      .prepare("SELECT user_id FROM projects WHERE id = ?")
+      .get(id) as { user_id?: string } | undefined;
+    if (!project || project.user_id !== userId) {
+      return NextResponse.json(
+        { ok: false, error: "Project not found." },
+        { status: 404 }
+      );
+    }
+    return null;
+  } catch {
+    // Fail-closed when we can't even verify ownership.
+    return NextResponse.json(
+      { ok: false, error: "Project not found." },
+      { status: 404 }
+    );
+  }
+}
 
 export async function GET(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+  const userId = getUserId(req);
+
   const { id } = await params;
+  const ownershipFail = await verifyProjectOwnership(id, userId);
+  if (ownershipFail) return ownershipFail;
 
   if (isPostgresAvailable()) {
     try {
@@ -29,20 +101,31 @@ export async function GET(
           },
         });
         if (!project) return NextResponse.json({ error: "Not found." }, { status: 404 });
-        // Decrypt connector credentials before returning (they're stored
-        // encrypted at rest — see src/lib/credentials.ts).
+        // SECURITY: mask connector credentials — NEVER return plaintext
+        // third-party tokens over the API. See /api/connectors/route.ts
+        // for the same pattern. Plaintext never crosses the wire.
         const projectWithSafeConnectors = {
           ...project,
-          connectors: project.connectors.map((c) => ({
-            ...c,
-            credentials: decryptCredentials(c.credentials),
-          })),
+          connectors: project.connectors.map((c) => {
+            const decrypted = decryptCredentials<Record<string, string> | null>(
+              c.credentials
+            );
+            const hasCredentials =
+              !!decrypted && Object.keys(decrypted).length > 0;
+            return {
+              ...c,
+              credentials: hasCredentials
+                ? maskCredentials(decrypted as Record<string, string>)
+                : {},
+              hasCredentials,
+            };
+          }),
         };
         return NextResponse.json({ ok: true, project: projectWithSafeConnectors });
       }
     } catch (err) {
   Sentry.captureException(err);
-/* fall through */ 
+/* fall through */
 }
   }
   // SQLite fallback.
@@ -60,8 +143,16 @@ export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+  const userId = getUserId(req);
+
   const { id } = await params;
+  const ownershipFail = await verifyProjectOwnership(id, userId);
+  if (ownershipFail) return ownershipFail;
+
   const body = await req.json().catch(() => ({}));
+  logSensitiveAction("project.update", userId, req, { projectId: id });
 
   if (isPostgresAvailable()) {
     try {
@@ -75,7 +166,7 @@ export async function PATCH(
       }
     } catch (err) {
   Sentry.captureException(err);
-/* fall through */ 
+/* fall through */
 }
   }
   try {
@@ -89,10 +180,18 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
+  const userId = getUserId(req);
+
   const { id } = await params;
+  const ownershipFail = await verifyProjectOwnership(id, userId);
+  if (ownershipFail) return ownershipFail;
+
+  logSensitiveAction("project.delete", userId, req, { projectId: id });
 
   if (isPostgresAvailable()) {
     try {
@@ -103,7 +202,7 @@ export async function DELETE(
       }
     } catch (err) {
   Sentry.captureException(err);
-/* fall through */ 
+/* fall through */
 }
   }
   try {

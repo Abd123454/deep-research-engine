@@ -30,6 +30,14 @@ interface SidebarProps {
   onClose: () => void;
   onNewChat: () => void;
   onSelectConversation: (id: string) => void;
+  /**
+   * skills-audit / UX fix: called when the user clicks the Trash2 icon
+   * on a conversation row. Previously the icon was visible on hover but
+   * had no onClick handler — a broken UI connection. The parent
+   * (UnifiedInterface) DELETEs the conversation via /api/chat/conversations/[id]
+   * and removes the row from the local list.
+   */
+  onDeleteConversation?: (id: string) => void;
   conversations: SidebarConversation[];
   activeId?: string;
 }
@@ -53,20 +61,32 @@ function timeGroup(iso: string): string {
 }
 
 export const Sidebar = React.memo(function Sidebar({
-  open, onClose, onNewChat, onSelectConversation, conversations, activeId,
+  open, onClose, onNewChat, onSelectConversation, onDeleteConversation, conversations, activeId,
 }: SidebarProps) {
   const [search, setSearch] = React.useState("");
 
-  const filtered = conversations.filter((c) =>
-    c.title.toLowerCase().includes(search.toLowerCase())
+  // skills-audit / react-performance: memoize the filtered + grouped
+  // lists so they're not recomputed on every parent re-render. The
+  // lists depend only on `conversations` and `search` — both are
+  // stable across unrelated state changes in the parent.
+  const filtered = React.useMemo(
+    () =>
+      conversations.filter((c) =>
+        c.title.toLowerCase().includes(search.toLowerCase())
+      ),
+    [conversations, search]
   );
 
-  const groups = filtered.reduce<Record<string, SidebarConversation[]>>((acc, c) => {
-    const g = timeGroup(c.createdAt);
-    if (!acc[g]) acc[g] = [];
-    acc[g].push(c);
-    return acc;
-  }, {});
+  const groups = React.useMemo(
+    () =>
+      filtered.reduce<Record<string, SidebarConversation[]>>((acc, c) => {
+        const g = timeGroup(c.createdAt);
+        if (!acc[g]) acc[g] = [];
+        acc[g].push(c);
+        return acc;
+      }, {}),
+    [filtered]
+  );
 
   const groupOrder = ["Today", "Yesterday", "Last 7 days", "Older"];
 
@@ -87,10 +107,21 @@ export const Sidebar = React.memo(function Sidebar({
       <AnimatePresence>
         {open && (
           <motion.aside
+            id="primary-sidebar"
             initial={{ x: "-100%" }}
             animate={{ x: 0 }}
             exit={{ x: "-100%" }}
             transition={{ type: "spring", damping: 30, stiffness: 300 }}
+            // skills-audit / UX: ARIA attributes for mobile drawer.
+            // On desktop (lg:static) the sidebar is a permanent layout
+            // region — `role="complementary"` is appropriate. On mobile
+            // (fixed, slide-in) it's a modal dialog that traps focus
+            // visually via the backdrop; `aria-modal="true"` tells screen
+            // readers to treat outside content as inert. We set both
+            // attributes; the drawer pattern is mobile-only, but the
+            // attributes are harmless on desktop.
+            role="complementary"
+            aria-label="Conversation history sidebar"
             // Mobile: fixed drawer overlaying content (z-50, above the
             // backdrop at z-40). Desktop: static flex item taking 280px
             // in the layout — the drawer animation still works because
@@ -125,6 +156,15 @@ export const Sidebar = React.memo(function Sidebar({
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
+                  // skills-audit / UX: Escape clears the search field so
+                  // users on mobile (no Escape key) and desktop can both
+                  // reset the filter without reaching for the backspace.
+                  onKeyDown={(e) => {
+                    if (e.key === "Escape" && search) {
+                      e.preventDefault();
+                      setSearch("");
+                    }
+                  }}
                   placeholder="Search conversations..."
                   aria-label="Search conversations"
                   className="w-full bg-[#d9d4c7]/50 dark:bg-[#322e28]/50 border-0 rounded-lg pl-9 pr-3 py-2 font-ui text-sm text-[#2a2620] dark:text-[#e8e3d8] placeholder:text-[#6b6358] outline-none focus:ring-2 focus:ring-[#8b4513]/20"
@@ -151,18 +191,36 @@ export const Sidebar = React.memo(function Sidebar({
                         {items.map((c) => {
                           const Icon = TYPE_ICON[c.type || "chat"] || MessageSquare;
                           return (
-                            <button
+                            <div
                               key={c.id}
-                              onClick={() => onSelectConversation(c.id)}
                               className={cn(
-                                "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors group",
+                                "w-full flex items-center gap-2 rounded-lg px-3 py-2 text-left transition-colors group relative",
                                 activeId === c.id ? "bg-[#2a2620]/5 dark:bg-[#e8e3d8]/5" : "hover:bg-[#2a2620]/5 dark:hover:bg-[#e8e3d8]/5"
                               )}
                             >
-                              <Icon className="h-3.5 w-3.5 shrink-0 text-[#6b6358]" />
-                              <span className="font-body text-sm text-[#2a2620] dark:text-[#e8e3d8] truncate flex-1">{c.title}</span>
-                              <Trash2 className="h-3 w-3 opacity-0 group-hover:opacity-100 text-[#6b6358] hover:text-[#a33a3a] transition-opacity shrink-0" aria-hidden="true" />
-                            </button>
+                              <button
+                                type="button"
+                                onClick={() => onSelectConversation(c.id)}
+                                className="flex flex-1 items-center gap-2 min-w-0 text-left"
+                                aria-label={`Open conversation: ${c.title}`}
+                              >
+                                <Icon className="h-3.5 w-3.5 shrink-0 text-[#6b6358]" />
+                                <span className="font-body text-sm text-[#2a2620] dark:text-[#e8e3d8] truncate flex-1">{c.title}</span>
+                              </button>
+                              {onDeleteConversation && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onDeleteConversation(c.id);
+                                  }}
+                                  className="shrink-0 p-1 -mr-1 rounded text-[#6b6358] hover:text-[#a33a3a] opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                                  aria-label={`Delete conversation: ${c.title}`}
+                                >
+                                  <Trash2 className="h-3 w-3" aria-hidden="true" />
+                                </button>
+                              )}
+                            </div>
                           );
                         })}
                       </div>

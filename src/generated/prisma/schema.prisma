@@ -249,3 +249,141 @@ model UsageRecord {
   @@index([userId, period])
   @@map("usage_records")
 }
+
+// ============ RBAC / Workspace membership ============
+// (v5 audit fix #6 — schema drift: these 7 tables existed only as raw
+//  SQLite DDL / ad-hoc Postgres ALTER statements and were missing from
+//  the canonical Prisma schema. Adding them brings the schema in sync
+//  with the runtime so `prisma db push` and `prisma migrate` produce a
+//  database that matches what the application code expects.)
+
+/// Workspace (project) membership. Many-to-many between User and
+/// Project with a per-membership role (owner / admin / editor /
+/// viewer). The @@unique constraint enforces one membership row per
+/// (user, project) pair — `role` is mutated, never duplicated.
+model WorkspaceMember {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  projectId String   @map("project_id")
+  role      String   @default("viewer")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, projectId])
+  @@index([userId])
+  @@index([projectId])
+  @@map("workspace_members")
+}
+
+/// Developer-platform API keys. The `keyHash` is SHA-256 of the raw
+/// `qaesitor_...` token; the raw token is shown to the caller exactly
+/// once at creation time. `keyPrefix` is the first ~10 chars (for
+/// display in the dashboard so the user can identify which key is
+/// which). `expiresAt` is optional — null means "no expiry".
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  keyHash    String    @unique @map("key_hash")
+  keyPrefix  String    @map("key_prefix")
+  name       String
+  lastUsedAt DateTime? @map("last_used_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  expiresAt  DateTime? @map("expires_at")
+
+  @@index([userId])
+  @@map("api_keys")
+}
+
+/// GDPR Art. 7 — demonstrable consent ledger. Each row records a
+/// single grant/revoke of a consent key (termsOfService,
+/// privacyPolicy, memoryExtraction, marketing, ageConfirmation).
+/// `grantedAt` and `revokedAt` together form the consent timeline;
+/// the latest non-null timestamp wins. The @@unique constraint
+/// enforces one row per (user, consentKey) — updates mutate, never
+/// duplicate.
+model ConsentLedger {
+  id         String    @id @default(cuid())
+  userId     String    @map("user_id")
+  consentKey String    @map("consent_key")
+  granted    Boolean
+  grantedAt  DateTime  @default(now()) @map("granted_at")
+  revokedAt  DateTime? @map("revoked_at")
+
+  @@unique([userId, consentKey])
+  @@map("consent_ledger")
+}
+
+/// Per-user MFA secret (TOTP). One row per user — the primary key IS
+/// the userId. `backupCodes` is a JSON-encoded array of bcrypt hashes
+/// (the plaintext backup codes are shown to the user once at setup
+/// time, never stored). `enabled` distinguishes "secret provisioned
+/// but not yet confirmed" (false) from "actively enforcing MFA"
+/// (true) — only `enabled=true` rows grant access.
+model UserMfa {
+  userId      String  @id @map("user_id")
+  mfaSecret   String  @map("mfa_secret")
+  backupCodes String? @map("backup_codes")
+  enabled     Boolean @default(false)
+
+  @@map("user_mfa")
+}
+
+/// Single-use verification tokens (email verification + password
+/// reset). `type` is `email_verification` or `password_reset`.
+/// `expiresAt` is 1h after creation. `usedAt` is null until
+/// consumed — a non-null `usedAt` means the token is spent and MUST
+/// NOT be accepted again (single-use semantics).
+model VerificationToken {
+  id        String    @id @default(cuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  type      String
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("verification_tokens")
+}
+
+/// Memory-graph edges — weighted relationships between long-term
+/// memories (e.g. "fact A contradicts fact B" or "context C
+/// supports fact D"). `weight` is in [-1, 1]; positive = support,
+/// negative = contradiction. Used by the memory-recall pipeline to
+/// surface corroborating + conflicting memories alongside a recall
+/// hit, so the model can flag contradictions in its synthesis.
+model MemoryEdge {
+  id             String   @id @default(cuid())
+  sourceMemoryId String   @map("source_memory_id")
+  targetMemoryId String   @map("target_memory_id")
+  relationType   String   @map("relation_type")
+  weight         Float
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@index([sourceMemoryId])
+  @@index([targetMemoryId])
+  @@map("memory_edges")
+}
+
+/// Security audit log — distinct from the operational `audit_logs`
+/// table. This table records security-significant events (failed
+/// logins, MFA challenges, CSRF rejections, rate-limit hits,
+/// admin-access denials) for compliance reporting (SOC 2, GDPR
+/// Art. 30 ROPA). `severity` is `info` / `warn` / `critical`.
+/// `metadata` is a JSON blob with event-specific context (the
+/// failed password hash, the rate-limit bucket state, etc.) —
+/// sensitive fields (raw passwords, raw tokens) are NEVER stored.
+model SecurityAuditLog {
+  id        String   @id @default(cuid())
+  userId    String?  @map("user_id")
+  event     String
+  severity  String   @default("info")
+  ip        String?
+  userAgent String?  @map("user_agent")
+  metadata  Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
+  @@map("security_audit_log")
+}

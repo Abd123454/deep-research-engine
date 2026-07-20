@@ -236,6 +236,71 @@ exports.Prisma.UsageRecordScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
+exports.Prisma.WorkspaceMemberScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  projectId: 'projectId',
+  role: 'role',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.ApiKeyScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  keyHash: 'keyHash',
+  keyPrefix: 'keyPrefix',
+  name: 'name',
+  lastUsedAt: 'lastUsedAt',
+  createdAt: 'createdAt',
+  expiresAt: 'expiresAt'
+};
+
+exports.Prisma.ConsentLedgerScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  consentKey: 'consentKey',
+  granted: 'granted',
+  grantedAt: 'grantedAt',
+  revokedAt: 'revokedAt'
+};
+
+exports.Prisma.UserMfaScalarFieldEnum = {
+  userId: 'userId',
+  mfaSecret: 'mfaSecret',
+  backupCodes: 'backupCodes',
+  enabled: 'enabled'
+};
+
+exports.Prisma.VerificationTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  token: 'token',
+  type: 'type',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.MemoryEdgeScalarFieldEnum = {
+  id: 'id',
+  sourceMemoryId: 'sourceMemoryId',
+  targetMemoryId: 'targetMemoryId',
+  relationType: 'relationType',
+  weight: 'weight',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.SecurityAuditLogScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  event: 'event',
+  severity: 'severity',
+  ip: 'ip',
+  userAgent: 'userAgent',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -274,7 +339,14 @@ exports.Prisma.ModelName = {
   DocumentRecord: 'DocumentRecord',
   UserPreference: 'UserPreference',
   Subscription: 'Subscription',
-  UsageRecord: 'UsageRecord'
+  UsageRecord: 'UsageRecord',
+  WorkspaceMember: 'WorkspaceMember',
+  ApiKey: 'ApiKey',
+  ConsentLedger: 'ConsentLedger',
+  UserMfa: 'UserMfa',
+  VerificationToken: 'VerificationToken',
+  MemoryEdge: 'MemoryEdge',
+  SecurityAuditLog: 'SecurityAuditLog'
 };
 
 /**

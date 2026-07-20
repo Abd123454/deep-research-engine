@@ -68,6 +68,75 @@ export type Subscription = $Result.DefaultSelection<Prisma.$SubscriptionPayload>
  * 
  */
 export type UsageRecord = $Result.DefaultSelection<Prisma.$UsageRecordPayload>
+/**
+ * Model WorkspaceMember
+ * Workspace (project) membership. Many-to-many between User and
+ * Project with a per-membership role (owner / admin / editor /
+ * viewer). The @@unique constraint enforces one membership row per
+ * (user, project) pair — `role` is mutated, never duplicated.
+ */
+export type WorkspaceMember = $Result.DefaultSelection<Prisma.$WorkspaceMemberPayload>
+/**
+ * Model ApiKey
+ * Developer-platform API keys. The `keyHash` is SHA-256 of the raw
+ * `qaesitor_...` token; the raw token is shown to the caller exactly
+ * once at creation time. `keyPrefix` is the first ~10 chars (for
+ * display in the dashboard so the user can identify which key is
+ * which). `expiresAt` is optional — null means "no expiry".
+ */
+export type ApiKey = $Result.DefaultSelection<Prisma.$ApiKeyPayload>
+/**
+ * Model ConsentLedger
+ * GDPR Art. 7 — demonstrable consent ledger. Each row records a
+ * single grant/revoke of a consent key (termsOfService,
+ * privacyPolicy, memoryExtraction, marketing, ageConfirmation).
+ * `grantedAt` and `revokedAt` together form the consent timeline;
+ * the latest non-null timestamp wins. The @@unique constraint
+ * enforces one row per (user, consentKey) — updates mutate, never
+ * duplicate.
+ */
+export type ConsentLedger = $Result.DefaultSelection<Prisma.$ConsentLedgerPayload>
+/**
+ * Model UserMfa
+ * Per-user MFA secret (TOTP). One row per user — the primary key IS
+ * the userId. `backupCodes` is a JSON-encoded array of bcrypt hashes
+ * (the plaintext backup codes are shown to the user once at setup
+ * time, never stored). `enabled` distinguishes "secret provisioned
+ * but not yet confirmed" (false) from "actively enforcing MFA"
+ * (true) — only `enabled=true` rows grant access.
+ */
+export type UserMfa = $Result.DefaultSelection<Prisma.$UserMfaPayload>
+/**
+ * Model VerificationToken
+ * Single-use verification tokens (email verification + password
+ * reset). `type` is `email_verification` or `password_reset`.
+ * `expiresAt` is 1h after creation. `usedAt` is null until
+ * consumed — a non-null `usedAt` means the token is spent and MUST
+ * NOT be accepted again (single-use semantics).
+ */
+export type VerificationToken = $Result.DefaultSelection<Prisma.$VerificationTokenPayload>
+/**
+ * Model MemoryEdge
+ * Memory-graph edges — weighted relationships between long-term
+ * memories (e.g. "fact A contradicts fact B" or "context C
+ * supports fact D"). `weight` is in [-1, 1]; positive = support,
+ * negative = contradiction. Used by the memory-recall pipeline to
+ * surface corroborating + conflicting memories alongside a recall
+ * hit, so the model can flag contradictions in its synthesis.
+ */
+export type MemoryEdge = $Result.DefaultSelection<Prisma.$MemoryEdgePayload>
+/**
+ * Model SecurityAuditLog
+ * Security audit log — distinct from the operational `audit_logs`
+ * table. This table records security-significant events (failed
+ * logins, MFA challenges, CSRF rejections, rate-limit hits,
+ * admin-access denials) for compliance reporting (SOC 2, GDPR
+ * Art. 30 ROPA). `severity` is `info` / `warn` / `critical`.
+ * `metadata` is a JSON blob with event-specific context (the
+ * failed password hash, the rate-limit bucket state, etc.) —
+ * sensitive fields (raw passwords, raw tokens) are NEVER stored.
+ */
+export type SecurityAuditLog = $Result.DefaultSelection<Prisma.$SecurityAuditLogPayload>
 
 /**
  * ##  Prisma Client ʲˢ
@@ -299,6 +368,76 @@ export class PrismaClient<
     * ```
     */
   get usageRecord(): Prisma.UsageRecordDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.workspaceMember`: Exposes CRUD operations for the **WorkspaceMember** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more WorkspaceMembers
+    * const workspaceMembers = await prisma.workspaceMember.findMany()
+    * ```
+    */
+  get workspaceMember(): Prisma.WorkspaceMemberDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.apiKey`: Exposes CRUD operations for the **ApiKey** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ApiKeys
+    * const apiKeys = await prisma.apiKey.findMany()
+    * ```
+    */
+  get apiKey(): Prisma.ApiKeyDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.consentLedger`: Exposes CRUD operations for the **ConsentLedger** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more ConsentLedgers
+    * const consentLedgers = await prisma.consentLedger.findMany()
+    * ```
+    */
+  get consentLedger(): Prisma.ConsentLedgerDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.userMfa`: Exposes CRUD operations for the **UserMfa** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more UserMfas
+    * const userMfas = await prisma.userMfa.findMany()
+    * ```
+    */
+  get userMfa(): Prisma.UserMfaDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.verificationToken`: Exposes CRUD operations for the **VerificationToken** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more VerificationTokens
+    * const verificationTokens = await prisma.verificationToken.findMany()
+    * ```
+    */
+  get verificationToken(): Prisma.VerificationTokenDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.memoryEdge`: Exposes CRUD operations for the **MemoryEdge** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more MemoryEdges
+    * const memoryEdges = await prisma.memoryEdge.findMany()
+    * ```
+    */
+  get memoryEdge(): Prisma.MemoryEdgeDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.securityAuditLog`: Exposes CRUD operations for the **SecurityAuditLog** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SecurityAuditLogs
+    * const securityAuditLogs = await prisma.securityAuditLog.findMany()
+    * ```
+    */
+  get securityAuditLog(): Prisma.SecurityAuditLogDelegate<ExtArgs, ClientOptions>;
 }
 
 export namespace Prisma {
@@ -743,7 +882,14 @@ export namespace Prisma {
     DocumentRecord: 'DocumentRecord',
     UserPreference: 'UserPreference',
     Subscription: 'Subscription',
-    UsageRecord: 'UsageRecord'
+    UsageRecord: 'UsageRecord',
+    WorkspaceMember: 'WorkspaceMember',
+    ApiKey: 'ApiKey',
+    ConsentLedger: 'ConsentLedger',
+    UserMfa: 'UserMfa',
+    VerificationToken: 'VerificationToken',
+    MemoryEdge: 'MemoryEdge',
+    SecurityAuditLog: 'SecurityAuditLog'
   };
 
   export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -759,7 +905,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "user" | "project" | "connector" | "conversation" | "message" | "longTermMemory" | "researchJobRecord" | "documentRecord" | "userPreference" | "subscription" | "usageRecord"
+      modelProps: "user" | "project" | "connector" | "conversation" | "message" | "longTermMemory" | "researchJobRecord" | "documentRecord" | "userPreference" | "subscription" | "usageRecord" | "workspaceMember" | "apiKey" | "consentLedger" | "userMfa" | "verificationToken" | "memoryEdge" | "securityAuditLog"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1577,6 +1723,524 @@ export namespace Prisma {
           }
         }
       }
+      WorkspaceMember: {
+        payload: Prisma.$WorkspaceMemberPayload<ExtArgs>
+        fields: Prisma.WorkspaceMemberFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.WorkspaceMemberFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.WorkspaceMemberFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          findFirst: {
+            args: Prisma.WorkspaceMemberFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.WorkspaceMemberFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          findMany: {
+            args: Prisma.WorkspaceMemberFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>[]
+          }
+          create: {
+            args: Prisma.WorkspaceMemberCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          createMany: {
+            args: Prisma.WorkspaceMemberCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.WorkspaceMemberCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>[]
+          }
+          delete: {
+            args: Prisma.WorkspaceMemberDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          update: {
+            args: Prisma.WorkspaceMemberUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          deleteMany: {
+            args: Prisma.WorkspaceMemberDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.WorkspaceMemberUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.WorkspaceMemberUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>[]
+          }
+          upsert: {
+            args: Prisma.WorkspaceMemberUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$WorkspaceMemberPayload>
+          }
+          aggregate: {
+            args: Prisma.WorkspaceMemberAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateWorkspaceMember>
+          }
+          groupBy: {
+            args: Prisma.WorkspaceMemberGroupByArgs<ExtArgs>
+            result: $Utils.Optional<WorkspaceMemberGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.WorkspaceMemberCountArgs<ExtArgs>
+            result: $Utils.Optional<WorkspaceMemberCountAggregateOutputType> | number
+          }
+        }
+      }
+      ApiKey: {
+        payload: Prisma.$ApiKeyPayload<ExtArgs>
+        fields: Prisma.ApiKeyFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ApiKeyFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ApiKeyFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          findFirst: {
+            args: Prisma.ApiKeyFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ApiKeyFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          findMany: {
+            args: Prisma.ApiKeyFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>[]
+          }
+          create: {
+            args: Prisma.ApiKeyCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          createMany: {
+            args: Prisma.ApiKeyCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ApiKeyCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>[]
+          }
+          delete: {
+            args: Prisma.ApiKeyDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          update: {
+            args: Prisma.ApiKeyUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          deleteMany: {
+            args: Prisma.ApiKeyDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ApiKeyUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ApiKeyUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>[]
+          }
+          upsert: {
+            args: Prisma.ApiKeyUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ApiKeyPayload>
+          }
+          aggregate: {
+            args: Prisma.ApiKeyAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateApiKey>
+          }
+          groupBy: {
+            args: Prisma.ApiKeyGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ApiKeyGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ApiKeyCountArgs<ExtArgs>
+            result: $Utils.Optional<ApiKeyCountAggregateOutputType> | number
+          }
+        }
+      }
+      ConsentLedger: {
+        payload: Prisma.$ConsentLedgerPayload<ExtArgs>
+        fields: Prisma.ConsentLedgerFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.ConsentLedgerFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.ConsentLedgerFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          findFirst: {
+            args: Prisma.ConsentLedgerFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.ConsentLedgerFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          findMany: {
+            args: Prisma.ConsentLedgerFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>[]
+          }
+          create: {
+            args: Prisma.ConsentLedgerCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          createMany: {
+            args: Prisma.ConsentLedgerCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.ConsentLedgerCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>[]
+          }
+          delete: {
+            args: Prisma.ConsentLedgerDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          update: {
+            args: Prisma.ConsentLedgerUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          deleteMany: {
+            args: Prisma.ConsentLedgerDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.ConsentLedgerUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.ConsentLedgerUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>[]
+          }
+          upsert: {
+            args: Prisma.ConsentLedgerUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$ConsentLedgerPayload>
+          }
+          aggregate: {
+            args: Prisma.ConsentLedgerAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateConsentLedger>
+          }
+          groupBy: {
+            args: Prisma.ConsentLedgerGroupByArgs<ExtArgs>
+            result: $Utils.Optional<ConsentLedgerGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.ConsentLedgerCountArgs<ExtArgs>
+            result: $Utils.Optional<ConsentLedgerCountAggregateOutputType> | number
+          }
+        }
+      }
+      UserMfa: {
+        payload: Prisma.$UserMfaPayload<ExtArgs>
+        fields: Prisma.UserMfaFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.UserMfaFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.UserMfaFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          findFirst: {
+            args: Prisma.UserMfaFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.UserMfaFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          findMany: {
+            args: Prisma.UserMfaFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>[]
+          }
+          create: {
+            args: Prisma.UserMfaCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          createMany: {
+            args: Prisma.UserMfaCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.UserMfaCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>[]
+          }
+          delete: {
+            args: Prisma.UserMfaDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          update: {
+            args: Prisma.UserMfaUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          deleteMany: {
+            args: Prisma.UserMfaDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.UserMfaUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.UserMfaUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>[]
+          }
+          upsert: {
+            args: Prisma.UserMfaUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$UserMfaPayload>
+          }
+          aggregate: {
+            args: Prisma.UserMfaAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateUserMfa>
+          }
+          groupBy: {
+            args: Prisma.UserMfaGroupByArgs<ExtArgs>
+            result: $Utils.Optional<UserMfaGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.UserMfaCountArgs<ExtArgs>
+            result: $Utils.Optional<UserMfaCountAggregateOutputType> | number
+          }
+        }
+      }
+      VerificationToken: {
+        payload: Prisma.$VerificationTokenPayload<ExtArgs>
+        fields: Prisma.VerificationTokenFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.VerificationTokenFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.VerificationTokenFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          findFirst: {
+            args: Prisma.VerificationTokenFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.VerificationTokenFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          findMany: {
+            args: Prisma.VerificationTokenFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
+          }
+          create: {
+            args: Prisma.VerificationTokenCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          createMany: {
+            args: Prisma.VerificationTokenCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.VerificationTokenCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
+          }
+          delete: {
+            args: Prisma.VerificationTokenDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          update: {
+            args: Prisma.VerificationTokenUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          deleteMany: {
+            args: Prisma.VerificationTokenDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.VerificationTokenUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.VerificationTokenUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>[]
+          }
+          upsert: {
+            args: Prisma.VerificationTokenUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$VerificationTokenPayload>
+          }
+          aggregate: {
+            args: Prisma.VerificationTokenAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateVerificationToken>
+          }
+          groupBy: {
+            args: Prisma.VerificationTokenGroupByArgs<ExtArgs>
+            result: $Utils.Optional<VerificationTokenGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.VerificationTokenCountArgs<ExtArgs>
+            result: $Utils.Optional<VerificationTokenCountAggregateOutputType> | number
+          }
+        }
+      }
+      MemoryEdge: {
+        payload: Prisma.$MemoryEdgePayload<ExtArgs>
+        fields: Prisma.MemoryEdgeFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.MemoryEdgeFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.MemoryEdgeFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          findFirst: {
+            args: Prisma.MemoryEdgeFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.MemoryEdgeFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          findMany: {
+            args: Prisma.MemoryEdgeFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>[]
+          }
+          create: {
+            args: Prisma.MemoryEdgeCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          createMany: {
+            args: Prisma.MemoryEdgeCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.MemoryEdgeCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>[]
+          }
+          delete: {
+            args: Prisma.MemoryEdgeDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          update: {
+            args: Prisma.MemoryEdgeUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          deleteMany: {
+            args: Prisma.MemoryEdgeDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.MemoryEdgeUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.MemoryEdgeUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>[]
+          }
+          upsert: {
+            args: Prisma.MemoryEdgeUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$MemoryEdgePayload>
+          }
+          aggregate: {
+            args: Prisma.MemoryEdgeAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateMemoryEdge>
+          }
+          groupBy: {
+            args: Prisma.MemoryEdgeGroupByArgs<ExtArgs>
+            result: $Utils.Optional<MemoryEdgeGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.MemoryEdgeCountArgs<ExtArgs>
+            result: $Utils.Optional<MemoryEdgeCountAggregateOutputType> | number
+          }
+        }
+      }
+      SecurityAuditLog: {
+        payload: Prisma.$SecurityAuditLogPayload<ExtArgs>
+        fields: Prisma.SecurityAuditLogFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SecurityAuditLogFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SecurityAuditLogFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          findFirst: {
+            args: Prisma.SecurityAuditLogFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SecurityAuditLogFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          findMany: {
+            args: Prisma.SecurityAuditLogFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>[]
+          }
+          create: {
+            args: Prisma.SecurityAuditLogCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          createMany: {
+            args: Prisma.SecurityAuditLogCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SecurityAuditLogCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>[]
+          }
+          delete: {
+            args: Prisma.SecurityAuditLogDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          update: {
+            args: Prisma.SecurityAuditLogUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          deleteMany: {
+            args: Prisma.SecurityAuditLogDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SecurityAuditLogUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.SecurityAuditLogUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>[]
+          }
+          upsert: {
+            args: Prisma.SecurityAuditLogUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SecurityAuditLogPayload>
+          }
+          aggregate: {
+            args: Prisma.SecurityAuditLogAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSecurityAuditLog>
+          }
+          groupBy: {
+            args: Prisma.SecurityAuditLogGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SecurityAuditLogGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SecurityAuditLogCountArgs<ExtArgs>
+            result: $Utils.Optional<SecurityAuditLogCountAggregateOutputType> | number
+          }
+        }
+      }
     }
   } & {
     other: {
@@ -1696,6 +2360,13 @@ export namespace Prisma {
     userPreference?: UserPreferenceOmit
     subscription?: SubscriptionOmit
     usageRecord?: UsageRecordOmit
+    workspaceMember?: WorkspaceMemberOmit
+    apiKey?: ApiKeyOmit
+    consentLedger?: ConsentLedgerOmit
+    userMfa?: UserMfaOmit
+    verificationToken?: VerificationTokenOmit
+    memoryEdge?: MemoryEdgeOmit
+    securityAuditLog?: SecurityAuditLogOmit
   }
 
   /* Types for Logging */
@@ -14567,6 +15238,7153 @@ export namespace Prisma {
 
 
   /**
+   * Model WorkspaceMember
+   */
+
+  export type AggregateWorkspaceMember = {
+    _count: WorkspaceMemberCountAggregateOutputType | null
+    _min: WorkspaceMemberMinAggregateOutputType | null
+    _max: WorkspaceMemberMaxAggregateOutputType | null
+  }
+
+  export type WorkspaceMemberMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    projectId: string | null
+    role: string | null
+    createdAt: Date | null
+  }
+
+  export type WorkspaceMemberMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    projectId: string | null
+    role: string | null
+    createdAt: Date | null
+  }
+
+  export type WorkspaceMemberCountAggregateOutputType = {
+    id: number
+    userId: number
+    projectId: number
+    role: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type WorkspaceMemberMinAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    role?: true
+    createdAt?: true
+  }
+
+  export type WorkspaceMemberMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    role?: true
+    createdAt?: true
+  }
+
+  export type WorkspaceMemberCountAggregateInputType = {
+    id?: true
+    userId?: true
+    projectId?: true
+    role?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type WorkspaceMemberAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WorkspaceMember to aggregate.
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkspaceMembers to fetch.
+     */
+    orderBy?: WorkspaceMemberOrderByWithRelationInput | WorkspaceMemberOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: WorkspaceMemberWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkspaceMembers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkspaceMembers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned WorkspaceMembers
+    **/
+    _count?: true | WorkspaceMemberCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: WorkspaceMemberMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: WorkspaceMemberMaxAggregateInputType
+  }
+
+  export type GetWorkspaceMemberAggregateType<T extends WorkspaceMemberAggregateArgs> = {
+        [P in keyof T & keyof AggregateWorkspaceMember]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateWorkspaceMember[P]>
+      : GetScalarType<T[P], AggregateWorkspaceMember[P]>
+  }
+
+
+
+
+  export type WorkspaceMemberGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: WorkspaceMemberWhereInput
+    orderBy?: WorkspaceMemberOrderByWithAggregationInput | WorkspaceMemberOrderByWithAggregationInput[]
+    by: WorkspaceMemberScalarFieldEnum[] | WorkspaceMemberScalarFieldEnum
+    having?: WorkspaceMemberScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: WorkspaceMemberCountAggregateInputType | true
+    _min?: WorkspaceMemberMinAggregateInputType
+    _max?: WorkspaceMemberMaxAggregateInputType
+  }
+
+  export type WorkspaceMemberGroupByOutputType = {
+    id: string
+    userId: string
+    projectId: string
+    role: string
+    createdAt: Date
+    _count: WorkspaceMemberCountAggregateOutputType | null
+    _min: WorkspaceMemberMinAggregateOutputType | null
+    _max: WorkspaceMemberMaxAggregateOutputType | null
+  }
+
+  type GetWorkspaceMemberGroupByPayload<T extends WorkspaceMemberGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<WorkspaceMemberGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof WorkspaceMemberGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], WorkspaceMemberGroupByOutputType[P]>
+            : GetScalarType<T[P], WorkspaceMemberGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type WorkspaceMemberSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    role?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["workspaceMember"]>
+
+  export type WorkspaceMemberSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    role?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["workspaceMember"]>
+
+  export type WorkspaceMemberSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    role?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["workspaceMember"]>
+
+  export type WorkspaceMemberSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    projectId?: boolean
+    role?: boolean
+    createdAt?: boolean
+  }
+
+  export type WorkspaceMemberOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "projectId" | "role" | "createdAt", ExtArgs["result"]["workspaceMember"]>
+
+  export type $WorkspaceMemberPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "WorkspaceMember"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      projectId: string
+      role: string
+      createdAt: Date
+    }, ExtArgs["result"]["workspaceMember"]>
+    composites: {}
+  }
+
+  type WorkspaceMemberGetPayload<S extends boolean | null | undefined | WorkspaceMemberDefaultArgs> = $Result.GetResult<Prisma.$WorkspaceMemberPayload, S>
+
+  type WorkspaceMemberCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<WorkspaceMemberFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: WorkspaceMemberCountAggregateInputType | true
+    }
+
+  export interface WorkspaceMemberDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['WorkspaceMember'], meta: { name: 'WorkspaceMember' } }
+    /**
+     * Find zero or one WorkspaceMember that matches the filter.
+     * @param {WorkspaceMemberFindUniqueArgs} args - Arguments to find a WorkspaceMember
+     * @example
+     * // Get one WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends WorkspaceMemberFindUniqueArgs>(args: SelectSubset<T, WorkspaceMemberFindUniqueArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one WorkspaceMember that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {WorkspaceMemberFindUniqueOrThrowArgs} args - Arguments to find a WorkspaceMember
+     * @example
+     * // Get one WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends WorkspaceMemberFindUniqueOrThrowArgs>(args: SelectSubset<T, WorkspaceMemberFindUniqueOrThrowArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WorkspaceMember that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberFindFirstArgs} args - Arguments to find a WorkspaceMember
+     * @example
+     * // Get one WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends WorkspaceMemberFindFirstArgs>(args?: SelectSubset<T, WorkspaceMemberFindFirstArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first WorkspaceMember that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberFindFirstOrThrowArgs} args - Arguments to find a WorkspaceMember
+     * @example
+     * // Get one WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends WorkspaceMemberFindFirstOrThrowArgs>(args?: SelectSubset<T, WorkspaceMemberFindFirstOrThrowArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more WorkspaceMembers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all WorkspaceMembers
+     * const workspaceMembers = await prisma.workspaceMember.findMany()
+     * 
+     * // Get first 10 WorkspaceMembers
+     * const workspaceMembers = await prisma.workspaceMember.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const workspaceMemberWithIdOnly = await prisma.workspaceMember.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends WorkspaceMemberFindManyArgs>(args?: SelectSubset<T, WorkspaceMemberFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a WorkspaceMember.
+     * @param {WorkspaceMemberCreateArgs} args - Arguments to create a WorkspaceMember.
+     * @example
+     * // Create one WorkspaceMember
+     * const WorkspaceMember = await prisma.workspaceMember.create({
+     *   data: {
+     *     // ... data to create a WorkspaceMember
+     *   }
+     * })
+     * 
+     */
+    create<T extends WorkspaceMemberCreateArgs>(args: SelectSubset<T, WorkspaceMemberCreateArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many WorkspaceMembers.
+     * @param {WorkspaceMemberCreateManyArgs} args - Arguments to create many WorkspaceMembers.
+     * @example
+     * // Create many WorkspaceMembers
+     * const workspaceMember = await prisma.workspaceMember.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends WorkspaceMemberCreateManyArgs>(args?: SelectSubset<T, WorkspaceMemberCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many WorkspaceMembers and returns the data saved in the database.
+     * @param {WorkspaceMemberCreateManyAndReturnArgs} args - Arguments to create many WorkspaceMembers.
+     * @example
+     * // Create many WorkspaceMembers
+     * const workspaceMember = await prisma.workspaceMember.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many WorkspaceMembers and only return the `id`
+     * const workspaceMemberWithIdOnly = await prisma.workspaceMember.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends WorkspaceMemberCreateManyAndReturnArgs>(args?: SelectSubset<T, WorkspaceMemberCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a WorkspaceMember.
+     * @param {WorkspaceMemberDeleteArgs} args - Arguments to delete one WorkspaceMember.
+     * @example
+     * // Delete one WorkspaceMember
+     * const WorkspaceMember = await prisma.workspaceMember.delete({
+     *   where: {
+     *     // ... filter to delete one WorkspaceMember
+     *   }
+     * })
+     * 
+     */
+    delete<T extends WorkspaceMemberDeleteArgs>(args: SelectSubset<T, WorkspaceMemberDeleteArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one WorkspaceMember.
+     * @param {WorkspaceMemberUpdateArgs} args - Arguments to update one WorkspaceMember.
+     * @example
+     * // Update one WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends WorkspaceMemberUpdateArgs>(args: SelectSubset<T, WorkspaceMemberUpdateArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more WorkspaceMembers.
+     * @param {WorkspaceMemberDeleteManyArgs} args - Arguments to filter WorkspaceMembers to delete.
+     * @example
+     * // Delete a few WorkspaceMembers
+     * const { count } = await prisma.workspaceMember.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends WorkspaceMemberDeleteManyArgs>(args?: SelectSubset<T, WorkspaceMemberDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WorkspaceMembers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many WorkspaceMembers
+     * const workspaceMember = await prisma.workspaceMember.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends WorkspaceMemberUpdateManyArgs>(args: SelectSubset<T, WorkspaceMemberUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more WorkspaceMembers and returns the data updated in the database.
+     * @param {WorkspaceMemberUpdateManyAndReturnArgs} args - Arguments to update many WorkspaceMembers.
+     * @example
+     * // Update many WorkspaceMembers
+     * const workspaceMember = await prisma.workspaceMember.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more WorkspaceMembers and only return the `id`
+     * const workspaceMemberWithIdOnly = await prisma.workspaceMember.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends WorkspaceMemberUpdateManyAndReturnArgs>(args: SelectSubset<T, WorkspaceMemberUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one WorkspaceMember.
+     * @param {WorkspaceMemberUpsertArgs} args - Arguments to update or create a WorkspaceMember.
+     * @example
+     * // Update or create a WorkspaceMember
+     * const workspaceMember = await prisma.workspaceMember.upsert({
+     *   create: {
+     *     // ... data to create a WorkspaceMember
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the WorkspaceMember we want to update
+     *   }
+     * })
+     */
+    upsert<T extends WorkspaceMemberUpsertArgs>(args: SelectSubset<T, WorkspaceMemberUpsertArgs<ExtArgs>>): Prisma__WorkspaceMemberClient<$Result.GetResult<Prisma.$WorkspaceMemberPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of WorkspaceMembers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberCountArgs} args - Arguments to filter WorkspaceMembers to count.
+     * @example
+     * // Count the number of WorkspaceMembers
+     * const count = await prisma.workspaceMember.count({
+     *   where: {
+     *     // ... the filter for the WorkspaceMembers we want to count
+     *   }
+     * })
+    **/
+    count<T extends WorkspaceMemberCountArgs>(
+      args?: Subset<T, WorkspaceMemberCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], WorkspaceMemberCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a WorkspaceMember.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends WorkspaceMemberAggregateArgs>(args: Subset<T, WorkspaceMemberAggregateArgs>): Prisma.PrismaPromise<GetWorkspaceMemberAggregateType<T>>
+
+    /**
+     * Group by WorkspaceMember.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {WorkspaceMemberGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends WorkspaceMemberGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: WorkspaceMemberGroupByArgs['orderBy'] }
+        : { orderBy?: WorkspaceMemberGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, WorkspaceMemberGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetWorkspaceMemberGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the WorkspaceMember model
+   */
+  readonly fields: WorkspaceMemberFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for WorkspaceMember.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__WorkspaceMemberClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the WorkspaceMember model
+   */
+  interface WorkspaceMemberFieldRefs {
+    readonly id: FieldRef<"WorkspaceMember", 'String'>
+    readonly userId: FieldRef<"WorkspaceMember", 'String'>
+    readonly projectId: FieldRef<"WorkspaceMember", 'String'>
+    readonly role: FieldRef<"WorkspaceMember", 'String'>
+    readonly createdAt: FieldRef<"WorkspaceMember", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * WorkspaceMember findUnique
+   */
+  export type WorkspaceMemberFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter, which WorkspaceMember to fetch.
+     */
+    where: WorkspaceMemberWhereUniqueInput
+  }
+
+  /**
+   * WorkspaceMember findUniqueOrThrow
+   */
+  export type WorkspaceMemberFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter, which WorkspaceMember to fetch.
+     */
+    where: WorkspaceMemberWhereUniqueInput
+  }
+
+  /**
+   * WorkspaceMember findFirst
+   */
+  export type WorkspaceMemberFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter, which WorkspaceMember to fetch.
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkspaceMembers to fetch.
+     */
+    orderBy?: WorkspaceMemberOrderByWithRelationInput | WorkspaceMemberOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WorkspaceMembers.
+     */
+    cursor?: WorkspaceMemberWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkspaceMembers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkspaceMembers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WorkspaceMembers.
+     */
+    distinct?: WorkspaceMemberScalarFieldEnum | WorkspaceMemberScalarFieldEnum[]
+  }
+
+  /**
+   * WorkspaceMember findFirstOrThrow
+   */
+  export type WorkspaceMemberFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter, which WorkspaceMember to fetch.
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkspaceMembers to fetch.
+     */
+    orderBy?: WorkspaceMemberOrderByWithRelationInput | WorkspaceMemberOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for WorkspaceMembers.
+     */
+    cursor?: WorkspaceMemberWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkspaceMembers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkspaceMembers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WorkspaceMembers.
+     */
+    distinct?: WorkspaceMemberScalarFieldEnum | WorkspaceMemberScalarFieldEnum[]
+  }
+
+  /**
+   * WorkspaceMember findMany
+   */
+  export type WorkspaceMemberFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter, which WorkspaceMembers to fetch.
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of WorkspaceMembers to fetch.
+     */
+    orderBy?: WorkspaceMemberOrderByWithRelationInput | WorkspaceMemberOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing WorkspaceMembers.
+     */
+    cursor?: WorkspaceMemberWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` WorkspaceMembers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` WorkspaceMembers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of WorkspaceMembers.
+     */
+    distinct?: WorkspaceMemberScalarFieldEnum | WorkspaceMemberScalarFieldEnum[]
+  }
+
+  /**
+   * WorkspaceMember create
+   */
+  export type WorkspaceMemberCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * The data needed to create a WorkspaceMember.
+     */
+    data: XOR<WorkspaceMemberCreateInput, WorkspaceMemberUncheckedCreateInput>
+  }
+
+  /**
+   * WorkspaceMember createMany
+   */
+  export type WorkspaceMemberCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many WorkspaceMembers.
+     */
+    data: WorkspaceMemberCreateManyInput | WorkspaceMemberCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * WorkspaceMember createManyAndReturn
+   */
+  export type WorkspaceMemberCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * The data used to create many WorkspaceMembers.
+     */
+    data: WorkspaceMemberCreateManyInput | WorkspaceMemberCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * WorkspaceMember update
+   */
+  export type WorkspaceMemberUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * The data needed to update a WorkspaceMember.
+     */
+    data: XOR<WorkspaceMemberUpdateInput, WorkspaceMemberUncheckedUpdateInput>
+    /**
+     * Choose, which WorkspaceMember to update.
+     */
+    where: WorkspaceMemberWhereUniqueInput
+  }
+
+  /**
+   * WorkspaceMember updateMany
+   */
+  export type WorkspaceMemberUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update WorkspaceMembers.
+     */
+    data: XOR<WorkspaceMemberUpdateManyMutationInput, WorkspaceMemberUncheckedUpdateManyInput>
+    /**
+     * Filter which WorkspaceMembers to update
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * Limit how many WorkspaceMembers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * WorkspaceMember updateManyAndReturn
+   */
+  export type WorkspaceMemberUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * The data used to update WorkspaceMembers.
+     */
+    data: XOR<WorkspaceMemberUpdateManyMutationInput, WorkspaceMemberUncheckedUpdateManyInput>
+    /**
+     * Filter which WorkspaceMembers to update
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * Limit how many WorkspaceMembers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * WorkspaceMember upsert
+   */
+  export type WorkspaceMemberUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * The filter to search for the WorkspaceMember to update in case it exists.
+     */
+    where: WorkspaceMemberWhereUniqueInput
+    /**
+     * In case the WorkspaceMember found by the `where` argument doesn't exist, create a new WorkspaceMember with this data.
+     */
+    create: XOR<WorkspaceMemberCreateInput, WorkspaceMemberUncheckedCreateInput>
+    /**
+     * In case the WorkspaceMember was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<WorkspaceMemberUpdateInput, WorkspaceMemberUncheckedUpdateInput>
+  }
+
+  /**
+   * WorkspaceMember delete
+   */
+  export type WorkspaceMemberDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+    /**
+     * Filter which WorkspaceMember to delete.
+     */
+    where: WorkspaceMemberWhereUniqueInput
+  }
+
+  /**
+   * WorkspaceMember deleteMany
+   */
+  export type WorkspaceMemberDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which WorkspaceMembers to delete
+     */
+    where?: WorkspaceMemberWhereInput
+    /**
+     * Limit how many WorkspaceMembers to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * WorkspaceMember without action
+   */
+  export type WorkspaceMemberDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the WorkspaceMember
+     */
+    select?: WorkspaceMemberSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the WorkspaceMember
+     */
+    omit?: WorkspaceMemberOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ApiKey
+   */
+
+  export type AggregateApiKey = {
+    _count: ApiKeyCountAggregateOutputType | null
+    _min: ApiKeyMinAggregateOutputType | null
+    _max: ApiKeyMaxAggregateOutputType | null
+  }
+
+  export type ApiKeyMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    keyHash: string | null
+    keyPrefix: string | null
+    name: string | null
+    lastUsedAt: Date | null
+    createdAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type ApiKeyMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    keyHash: string | null
+    keyPrefix: string | null
+    name: string | null
+    lastUsedAt: Date | null
+    createdAt: Date | null
+    expiresAt: Date | null
+  }
+
+  export type ApiKeyCountAggregateOutputType = {
+    id: number
+    userId: number
+    keyHash: number
+    keyPrefix: number
+    name: number
+    lastUsedAt: number
+    createdAt: number
+    expiresAt: number
+    _all: number
+  }
+
+
+  export type ApiKeyMinAggregateInputType = {
+    id?: true
+    userId?: true
+    keyHash?: true
+    keyPrefix?: true
+    name?: true
+    lastUsedAt?: true
+    createdAt?: true
+    expiresAt?: true
+  }
+
+  export type ApiKeyMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    keyHash?: true
+    keyPrefix?: true
+    name?: true
+    lastUsedAt?: true
+    createdAt?: true
+    expiresAt?: true
+  }
+
+  export type ApiKeyCountAggregateInputType = {
+    id?: true
+    userId?: true
+    keyHash?: true
+    keyPrefix?: true
+    name?: true
+    lastUsedAt?: true
+    createdAt?: true
+    expiresAt?: true
+    _all?: true
+  }
+
+  export type ApiKeyAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ApiKey to aggregate.
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ApiKeys to fetch.
+     */
+    orderBy?: ApiKeyOrderByWithRelationInput | ApiKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ApiKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ApiKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ApiKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ApiKeys
+    **/
+    _count?: true | ApiKeyCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ApiKeyMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ApiKeyMaxAggregateInputType
+  }
+
+  export type GetApiKeyAggregateType<T extends ApiKeyAggregateArgs> = {
+        [P in keyof T & keyof AggregateApiKey]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateApiKey[P]>
+      : GetScalarType<T[P], AggregateApiKey[P]>
+  }
+
+
+
+
+  export type ApiKeyGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ApiKeyWhereInput
+    orderBy?: ApiKeyOrderByWithAggregationInput | ApiKeyOrderByWithAggregationInput[]
+    by: ApiKeyScalarFieldEnum[] | ApiKeyScalarFieldEnum
+    having?: ApiKeyScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ApiKeyCountAggregateInputType | true
+    _min?: ApiKeyMinAggregateInputType
+    _max?: ApiKeyMaxAggregateInputType
+  }
+
+  export type ApiKeyGroupByOutputType = {
+    id: string
+    userId: string
+    keyHash: string
+    keyPrefix: string
+    name: string
+    lastUsedAt: Date | null
+    createdAt: Date
+    expiresAt: Date | null
+    _count: ApiKeyCountAggregateOutputType | null
+    _min: ApiKeyMinAggregateOutputType | null
+    _max: ApiKeyMaxAggregateOutputType | null
+  }
+
+  type GetApiKeyGroupByPayload<T extends ApiKeyGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ApiKeyGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ApiKeyGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ApiKeyGroupByOutputType[P]>
+            : GetScalarType<T[P], ApiKeyGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ApiKeySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    keyHash?: boolean
+    keyPrefix?: boolean
+    name?: boolean
+    lastUsedAt?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }, ExtArgs["result"]["apiKey"]>
+
+  export type ApiKeySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    keyHash?: boolean
+    keyPrefix?: boolean
+    name?: boolean
+    lastUsedAt?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }, ExtArgs["result"]["apiKey"]>
+
+  export type ApiKeySelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    keyHash?: boolean
+    keyPrefix?: boolean
+    name?: boolean
+    lastUsedAt?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }, ExtArgs["result"]["apiKey"]>
+
+  export type ApiKeySelectScalar = {
+    id?: boolean
+    userId?: boolean
+    keyHash?: boolean
+    keyPrefix?: boolean
+    name?: boolean
+    lastUsedAt?: boolean
+    createdAt?: boolean
+    expiresAt?: boolean
+  }
+
+  export type ApiKeyOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "keyHash" | "keyPrefix" | "name" | "lastUsedAt" | "createdAt" | "expiresAt", ExtArgs["result"]["apiKey"]>
+
+  export type $ApiKeyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ApiKey"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      keyHash: string
+      keyPrefix: string
+      name: string
+      lastUsedAt: Date | null
+      createdAt: Date
+      expiresAt: Date | null
+    }, ExtArgs["result"]["apiKey"]>
+    composites: {}
+  }
+
+  type ApiKeyGetPayload<S extends boolean | null | undefined | ApiKeyDefaultArgs> = $Result.GetResult<Prisma.$ApiKeyPayload, S>
+
+  type ApiKeyCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ApiKeyFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ApiKeyCountAggregateInputType | true
+    }
+
+  export interface ApiKeyDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ApiKey'], meta: { name: 'ApiKey' } }
+    /**
+     * Find zero or one ApiKey that matches the filter.
+     * @param {ApiKeyFindUniqueArgs} args - Arguments to find a ApiKey
+     * @example
+     * // Get one ApiKey
+     * const apiKey = await prisma.apiKey.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ApiKeyFindUniqueArgs>(args: SelectSubset<T, ApiKeyFindUniqueArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ApiKey that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ApiKeyFindUniqueOrThrowArgs} args - Arguments to find a ApiKey
+     * @example
+     * // Get one ApiKey
+     * const apiKey = await prisma.apiKey.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ApiKeyFindUniqueOrThrowArgs>(args: SelectSubset<T, ApiKeyFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ApiKey that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyFindFirstArgs} args - Arguments to find a ApiKey
+     * @example
+     * // Get one ApiKey
+     * const apiKey = await prisma.apiKey.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ApiKeyFindFirstArgs>(args?: SelectSubset<T, ApiKeyFindFirstArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ApiKey that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyFindFirstOrThrowArgs} args - Arguments to find a ApiKey
+     * @example
+     * // Get one ApiKey
+     * const apiKey = await prisma.apiKey.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ApiKeyFindFirstOrThrowArgs>(args?: SelectSubset<T, ApiKeyFindFirstOrThrowArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ApiKeys that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ApiKeys
+     * const apiKeys = await prisma.apiKey.findMany()
+     * 
+     * // Get first 10 ApiKeys
+     * const apiKeys = await prisma.apiKey.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const apiKeyWithIdOnly = await prisma.apiKey.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ApiKeyFindManyArgs>(args?: SelectSubset<T, ApiKeyFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ApiKey.
+     * @param {ApiKeyCreateArgs} args - Arguments to create a ApiKey.
+     * @example
+     * // Create one ApiKey
+     * const ApiKey = await prisma.apiKey.create({
+     *   data: {
+     *     // ... data to create a ApiKey
+     *   }
+     * })
+     * 
+     */
+    create<T extends ApiKeyCreateArgs>(args: SelectSubset<T, ApiKeyCreateArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ApiKeys.
+     * @param {ApiKeyCreateManyArgs} args - Arguments to create many ApiKeys.
+     * @example
+     * // Create many ApiKeys
+     * const apiKey = await prisma.apiKey.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ApiKeyCreateManyArgs>(args?: SelectSubset<T, ApiKeyCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ApiKeys and returns the data saved in the database.
+     * @param {ApiKeyCreateManyAndReturnArgs} args - Arguments to create many ApiKeys.
+     * @example
+     * // Create many ApiKeys
+     * const apiKey = await prisma.apiKey.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ApiKeys and only return the `id`
+     * const apiKeyWithIdOnly = await prisma.apiKey.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ApiKeyCreateManyAndReturnArgs>(args?: SelectSubset<T, ApiKeyCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ApiKey.
+     * @param {ApiKeyDeleteArgs} args - Arguments to delete one ApiKey.
+     * @example
+     * // Delete one ApiKey
+     * const ApiKey = await prisma.apiKey.delete({
+     *   where: {
+     *     // ... filter to delete one ApiKey
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ApiKeyDeleteArgs>(args: SelectSubset<T, ApiKeyDeleteArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ApiKey.
+     * @param {ApiKeyUpdateArgs} args - Arguments to update one ApiKey.
+     * @example
+     * // Update one ApiKey
+     * const apiKey = await prisma.apiKey.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ApiKeyUpdateArgs>(args: SelectSubset<T, ApiKeyUpdateArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ApiKeys.
+     * @param {ApiKeyDeleteManyArgs} args - Arguments to filter ApiKeys to delete.
+     * @example
+     * // Delete a few ApiKeys
+     * const { count } = await prisma.apiKey.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ApiKeyDeleteManyArgs>(args?: SelectSubset<T, ApiKeyDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ApiKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ApiKeys
+     * const apiKey = await prisma.apiKey.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ApiKeyUpdateManyArgs>(args: SelectSubset<T, ApiKeyUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ApiKeys and returns the data updated in the database.
+     * @param {ApiKeyUpdateManyAndReturnArgs} args - Arguments to update many ApiKeys.
+     * @example
+     * // Update many ApiKeys
+     * const apiKey = await prisma.apiKey.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ApiKeys and only return the `id`
+     * const apiKeyWithIdOnly = await prisma.apiKey.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ApiKeyUpdateManyAndReturnArgs>(args: SelectSubset<T, ApiKeyUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ApiKey.
+     * @param {ApiKeyUpsertArgs} args - Arguments to update or create a ApiKey.
+     * @example
+     * // Update or create a ApiKey
+     * const apiKey = await prisma.apiKey.upsert({
+     *   create: {
+     *     // ... data to create a ApiKey
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ApiKey we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ApiKeyUpsertArgs>(args: SelectSubset<T, ApiKeyUpsertArgs<ExtArgs>>): Prisma__ApiKeyClient<$Result.GetResult<Prisma.$ApiKeyPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ApiKeys.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyCountArgs} args - Arguments to filter ApiKeys to count.
+     * @example
+     * // Count the number of ApiKeys
+     * const count = await prisma.apiKey.count({
+     *   where: {
+     *     // ... the filter for the ApiKeys we want to count
+     *   }
+     * })
+    **/
+    count<T extends ApiKeyCountArgs>(
+      args?: Subset<T, ApiKeyCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ApiKeyCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ApiKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ApiKeyAggregateArgs>(args: Subset<T, ApiKeyAggregateArgs>): Prisma.PrismaPromise<GetApiKeyAggregateType<T>>
+
+    /**
+     * Group by ApiKey.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ApiKeyGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ApiKeyGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ApiKeyGroupByArgs['orderBy'] }
+        : { orderBy?: ApiKeyGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ApiKeyGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetApiKeyGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ApiKey model
+   */
+  readonly fields: ApiKeyFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ApiKey.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ApiKeyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ApiKey model
+   */
+  interface ApiKeyFieldRefs {
+    readonly id: FieldRef<"ApiKey", 'String'>
+    readonly userId: FieldRef<"ApiKey", 'String'>
+    readonly keyHash: FieldRef<"ApiKey", 'String'>
+    readonly keyPrefix: FieldRef<"ApiKey", 'String'>
+    readonly name: FieldRef<"ApiKey", 'String'>
+    readonly lastUsedAt: FieldRef<"ApiKey", 'DateTime'>
+    readonly createdAt: FieldRef<"ApiKey", 'DateTime'>
+    readonly expiresAt: FieldRef<"ApiKey", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ApiKey findUnique
+   */
+  export type ApiKeyFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which ApiKey to fetch.
+     */
+    where: ApiKeyWhereUniqueInput
+  }
+
+  /**
+   * ApiKey findUniqueOrThrow
+   */
+  export type ApiKeyFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which ApiKey to fetch.
+     */
+    where: ApiKeyWhereUniqueInput
+  }
+
+  /**
+   * ApiKey findFirst
+   */
+  export type ApiKeyFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which ApiKey to fetch.
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ApiKeys to fetch.
+     */
+    orderBy?: ApiKeyOrderByWithRelationInput | ApiKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ApiKeys.
+     */
+    cursor?: ApiKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ApiKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ApiKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ApiKeys.
+     */
+    distinct?: ApiKeyScalarFieldEnum | ApiKeyScalarFieldEnum[]
+  }
+
+  /**
+   * ApiKey findFirstOrThrow
+   */
+  export type ApiKeyFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which ApiKey to fetch.
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ApiKeys to fetch.
+     */
+    orderBy?: ApiKeyOrderByWithRelationInput | ApiKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ApiKeys.
+     */
+    cursor?: ApiKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ApiKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ApiKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ApiKeys.
+     */
+    distinct?: ApiKeyScalarFieldEnum | ApiKeyScalarFieldEnum[]
+  }
+
+  /**
+   * ApiKey findMany
+   */
+  export type ApiKeyFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter, which ApiKeys to fetch.
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ApiKeys to fetch.
+     */
+    orderBy?: ApiKeyOrderByWithRelationInput | ApiKeyOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ApiKeys.
+     */
+    cursor?: ApiKeyWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ApiKeys from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ApiKeys.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ApiKeys.
+     */
+    distinct?: ApiKeyScalarFieldEnum | ApiKeyScalarFieldEnum[]
+  }
+
+  /**
+   * ApiKey create
+   */
+  export type ApiKeyCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ApiKey.
+     */
+    data: XOR<ApiKeyCreateInput, ApiKeyUncheckedCreateInput>
+  }
+
+  /**
+   * ApiKey createMany
+   */
+  export type ApiKeyCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ApiKeys.
+     */
+    data: ApiKeyCreateManyInput | ApiKeyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ApiKey createManyAndReturn
+   */
+  export type ApiKeyCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * The data used to create many ApiKeys.
+     */
+    data: ApiKeyCreateManyInput | ApiKeyCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ApiKey update
+   */
+  export type ApiKeyUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ApiKey.
+     */
+    data: XOR<ApiKeyUpdateInput, ApiKeyUncheckedUpdateInput>
+    /**
+     * Choose, which ApiKey to update.
+     */
+    where: ApiKeyWhereUniqueInput
+  }
+
+  /**
+   * ApiKey updateMany
+   */
+  export type ApiKeyUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ApiKeys.
+     */
+    data: XOR<ApiKeyUpdateManyMutationInput, ApiKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which ApiKeys to update
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * Limit how many ApiKeys to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ApiKey updateManyAndReturn
+   */
+  export type ApiKeyUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * The data used to update ApiKeys.
+     */
+    data: XOR<ApiKeyUpdateManyMutationInput, ApiKeyUncheckedUpdateManyInput>
+    /**
+     * Filter which ApiKeys to update
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * Limit how many ApiKeys to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ApiKey upsert
+   */
+  export type ApiKeyUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ApiKey to update in case it exists.
+     */
+    where: ApiKeyWhereUniqueInput
+    /**
+     * In case the ApiKey found by the `where` argument doesn't exist, create a new ApiKey with this data.
+     */
+    create: XOR<ApiKeyCreateInput, ApiKeyUncheckedCreateInput>
+    /**
+     * In case the ApiKey was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ApiKeyUpdateInput, ApiKeyUncheckedUpdateInput>
+  }
+
+  /**
+   * ApiKey delete
+   */
+  export type ApiKeyDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+    /**
+     * Filter which ApiKey to delete.
+     */
+    where: ApiKeyWhereUniqueInput
+  }
+
+  /**
+   * ApiKey deleteMany
+   */
+  export type ApiKeyDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ApiKeys to delete
+     */
+    where?: ApiKeyWhereInput
+    /**
+     * Limit how many ApiKeys to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ApiKey without action
+   */
+  export type ApiKeyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ApiKey
+     */
+    select?: ApiKeySelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ApiKey
+     */
+    omit?: ApiKeyOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model ConsentLedger
+   */
+
+  export type AggregateConsentLedger = {
+    _count: ConsentLedgerCountAggregateOutputType | null
+    _min: ConsentLedgerMinAggregateOutputType | null
+    _max: ConsentLedgerMaxAggregateOutputType | null
+  }
+
+  export type ConsentLedgerMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    consentKey: string | null
+    granted: boolean | null
+    grantedAt: Date | null
+    revokedAt: Date | null
+  }
+
+  export type ConsentLedgerMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    consentKey: string | null
+    granted: boolean | null
+    grantedAt: Date | null
+    revokedAt: Date | null
+  }
+
+  export type ConsentLedgerCountAggregateOutputType = {
+    id: number
+    userId: number
+    consentKey: number
+    granted: number
+    grantedAt: number
+    revokedAt: number
+    _all: number
+  }
+
+
+  export type ConsentLedgerMinAggregateInputType = {
+    id?: true
+    userId?: true
+    consentKey?: true
+    granted?: true
+    grantedAt?: true
+    revokedAt?: true
+  }
+
+  export type ConsentLedgerMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    consentKey?: true
+    granted?: true
+    grantedAt?: true
+    revokedAt?: true
+  }
+
+  export type ConsentLedgerCountAggregateInputType = {
+    id?: true
+    userId?: true
+    consentKey?: true
+    granted?: true
+    grantedAt?: true
+    revokedAt?: true
+    _all?: true
+  }
+
+  export type ConsentLedgerAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConsentLedger to aggregate.
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConsentLedgers to fetch.
+     */
+    orderBy?: ConsentLedgerOrderByWithRelationInput | ConsentLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: ConsentLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConsentLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConsentLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned ConsentLedgers
+    **/
+    _count?: true | ConsentLedgerCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: ConsentLedgerMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: ConsentLedgerMaxAggregateInputType
+  }
+
+  export type GetConsentLedgerAggregateType<T extends ConsentLedgerAggregateArgs> = {
+        [P in keyof T & keyof AggregateConsentLedger]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateConsentLedger[P]>
+      : GetScalarType<T[P], AggregateConsentLedger[P]>
+  }
+
+
+
+
+  export type ConsentLedgerGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: ConsentLedgerWhereInput
+    orderBy?: ConsentLedgerOrderByWithAggregationInput | ConsentLedgerOrderByWithAggregationInput[]
+    by: ConsentLedgerScalarFieldEnum[] | ConsentLedgerScalarFieldEnum
+    having?: ConsentLedgerScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: ConsentLedgerCountAggregateInputType | true
+    _min?: ConsentLedgerMinAggregateInputType
+    _max?: ConsentLedgerMaxAggregateInputType
+  }
+
+  export type ConsentLedgerGroupByOutputType = {
+    id: string
+    userId: string
+    consentKey: string
+    granted: boolean
+    grantedAt: Date
+    revokedAt: Date | null
+    _count: ConsentLedgerCountAggregateOutputType | null
+    _min: ConsentLedgerMinAggregateOutputType | null
+    _max: ConsentLedgerMaxAggregateOutputType | null
+  }
+
+  type GetConsentLedgerGroupByPayload<T extends ConsentLedgerGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<ConsentLedgerGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof ConsentLedgerGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], ConsentLedgerGroupByOutputType[P]>
+            : GetScalarType<T[P], ConsentLedgerGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type ConsentLedgerSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    consentKey?: boolean
+    granted?: boolean
+    grantedAt?: boolean
+    revokedAt?: boolean
+  }, ExtArgs["result"]["consentLedger"]>
+
+  export type ConsentLedgerSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    consentKey?: boolean
+    granted?: boolean
+    grantedAt?: boolean
+    revokedAt?: boolean
+  }, ExtArgs["result"]["consentLedger"]>
+
+  export type ConsentLedgerSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    consentKey?: boolean
+    granted?: boolean
+    grantedAt?: boolean
+    revokedAt?: boolean
+  }, ExtArgs["result"]["consentLedger"]>
+
+  export type ConsentLedgerSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    consentKey?: boolean
+    granted?: boolean
+    grantedAt?: boolean
+    revokedAt?: boolean
+  }
+
+  export type ConsentLedgerOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "consentKey" | "granted" | "grantedAt" | "revokedAt", ExtArgs["result"]["consentLedger"]>
+
+  export type $ConsentLedgerPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "ConsentLedger"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      consentKey: string
+      granted: boolean
+      grantedAt: Date
+      revokedAt: Date | null
+    }, ExtArgs["result"]["consentLedger"]>
+    composites: {}
+  }
+
+  type ConsentLedgerGetPayload<S extends boolean | null | undefined | ConsentLedgerDefaultArgs> = $Result.GetResult<Prisma.$ConsentLedgerPayload, S>
+
+  type ConsentLedgerCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<ConsentLedgerFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: ConsentLedgerCountAggregateInputType | true
+    }
+
+  export interface ConsentLedgerDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['ConsentLedger'], meta: { name: 'ConsentLedger' } }
+    /**
+     * Find zero or one ConsentLedger that matches the filter.
+     * @param {ConsentLedgerFindUniqueArgs} args - Arguments to find a ConsentLedger
+     * @example
+     * // Get one ConsentLedger
+     * const consentLedger = await prisma.consentLedger.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends ConsentLedgerFindUniqueArgs>(args: SelectSubset<T, ConsentLedgerFindUniqueArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one ConsentLedger that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {ConsentLedgerFindUniqueOrThrowArgs} args - Arguments to find a ConsentLedger
+     * @example
+     * // Get one ConsentLedger
+     * const consentLedger = await prisma.consentLedger.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends ConsentLedgerFindUniqueOrThrowArgs>(args: SelectSubset<T, ConsentLedgerFindUniqueOrThrowArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ConsentLedger that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerFindFirstArgs} args - Arguments to find a ConsentLedger
+     * @example
+     * // Get one ConsentLedger
+     * const consentLedger = await prisma.consentLedger.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends ConsentLedgerFindFirstArgs>(args?: SelectSubset<T, ConsentLedgerFindFirstArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first ConsentLedger that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerFindFirstOrThrowArgs} args - Arguments to find a ConsentLedger
+     * @example
+     * // Get one ConsentLedger
+     * const consentLedger = await prisma.consentLedger.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends ConsentLedgerFindFirstOrThrowArgs>(args?: SelectSubset<T, ConsentLedgerFindFirstOrThrowArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more ConsentLedgers that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all ConsentLedgers
+     * const consentLedgers = await prisma.consentLedger.findMany()
+     * 
+     * // Get first 10 ConsentLedgers
+     * const consentLedgers = await prisma.consentLedger.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const consentLedgerWithIdOnly = await prisma.consentLedger.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends ConsentLedgerFindManyArgs>(args?: SelectSubset<T, ConsentLedgerFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a ConsentLedger.
+     * @param {ConsentLedgerCreateArgs} args - Arguments to create a ConsentLedger.
+     * @example
+     * // Create one ConsentLedger
+     * const ConsentLedger = await prisma.consentLedger.create({
+     *   data: {
+     *     // ... data to create a ConsentLedger
+     *   }
+     * })
+     * 
+     */
+    create<T extends ConsentLedgerCreateArgs>(args: SelectSubset<T, ConsentLedgerCreateArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many ConsentLedgers.
+     * @param {ConsentLedgerCreateManyArgs} args - Arguments to create many ConsentLedgers.
+     * @example
+     * // Create many ConsentLedgers
+     * const consentLedger = await prisma.consentLedger.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends ConsentLedgerCreateManyArgs>(args?: SelectSubset<T, ConsentLedgerCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many ConsentLedgers and returns the data saved in the database.
+     * @param {ConsentLedgerCreateManyAndReturnArgs} args - Arguments to create many ConsentLedgers.
+     * @example
+     * // Create many ConsentLedgers
+     * const consentLedger = await prisma.consentLedger.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many ConsentLedgers and only return the `id`
+     * const consentLedgerWithIdOnly = await prisma.consentLedger.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends ConsentLedgerCreateManyAndReturnArgs>(args?: SelectSubset<T, ConsentLedgerCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a ConsentLedger.
+     * @param {ConsentLedgerDeleteArgs} args - Arguments to delete one ConsentLedger.
+     * @example
+     * // Delete one ConsentLedger
+     * const ConsentLedger = await prisma.consentLedger.delete({
+     *   where: {
+     *     // ... filter to delete one ConsentLedger
+     *   }
+     * })
+     * 
+     */
+    delete<T extends ConsentLedgerDeleteArgs>(args: SelectSubset<T, ConsentLedgerDeleteArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one ConsentLedger.
+     * @param {ConsentLedgerUpdateArgs} args - Arguments to update one ConsentLedger.
+     * @example
+     * // Update one ConsentLedger
+     * const consentLedger = await prisma.consentLedger.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends ConsentLedgerUpdateArgs>(args: SelectSubset<T, ConsentLedgerUpdateArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more ConsentLedgers.
+     * @param {ConsentLedgerDeleteManyArgs} args - Arguments to filter ConsentLedgers to delete.
+     * @example
+     * // Delete a few ConsentLedgers
+     * const { count } = await prisma.consentLedger.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends ConsentLedgerDeleteManyArgs>(args?: SelectSubset<T, ConsentLedgerDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ConsentLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many ConsentLedgers
+     * const consentLedger = await prisma.consentLedger.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends ConsentLedgerUpdateManyArgs>(args: SelectSubset<T, ConsentLedgerUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more ConsentLedgers and returns the data updated in the database.
+     * @param {ConsentLedgerUpdateManyAndReturnArgs} args - Arguments to update many ConsentLedgers.
+     * @example
+     * // Update many ConsentLedgers
+     * const consentLedger = await prisma.consentLedger.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more ConsentLedgers and only return the `id`
+     * const consentLedgerWithIdOnly = await prisma.consentLedger.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends ConsentLedgerUpdateManyAndReturnArgs>(args: SelectSubset<T, ConsentLedgerUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one ConsentLedger.
+     * @param {ConsentLedgerUpsertArgs} args - Arguments to update or create a ConsentLedger.
+     * @example
+     * // Update or create a ConsentLedger
+     * const consentLedger = await prisma.consentLedger.upsert({
+     *   create: {
+     *     // ... data to create a ConsentLedger
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the ConsentLedger we want to update
+     *   }
+     * })
+     */
+    upsert<T extends ConsentLedgerUpsertArgs>(args: SelectSubset<T, ConsentLedgerUpsertArgs<ExtArgs>>): Prisma__ConsentLedgerClient<$Result.GetResult<Prisma.$ConsentLedgerPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of ConsentLedgers.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerCountArgs} args - Arguments to filter ConsentLedgers to count.
+     * @example
+     * // Count the number of ConsentLedgers
+     * const count = await prisma.consentLedger.count({
+     *   where: {
+     *     // ... the filter for the ConsentLedgers we want to count
+     *   }
+     * })
+    **/
+    count<T extends ConsentLedgerCountArgs>(
+      args?: Subset<T, ConsentLedgerCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], ConsentLedgerCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a ConsentLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends ConsentLedgerAggregateArgs>(args: Subset<T, ConsentLedgerAggregateArgs>): Prisma.PrismaPromise<GetConsentLedgerAggregateType<T>>
+
+    /**
+     * Group by ConsentLedger.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {ConsentLedgerGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends ConsentLedgerGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: ConsentLedgerGroupByArgs['orderBy'] }
+        : { orderBy?: ConsentLedgerGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, ConsentLedgerGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetConsentLedgerGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the ConsentLedger model
+   */
+  readonly fields: ConsentLedgerFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for ConsentLedger.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__ConsentLedgerClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the ConsentLedger model
+   */
+  interface ConsentLedgerFieldRefs {
+    readonly id: FieldRef<"ConsentLedger", 'String'>
+    readonly userId: FieldRef<"ConsentLedger", 'String'>
+    readonly consentKey: FieldRef<"ConsentLedger", 'String'>
+    readonly granted: FieldRef<"ConsentLedger", 'Boolean'>
+    readonly grantedAt: FieldRef<"ConsentLedger", 'DateTime'>
+    readonly revokedAt: FieldRef<"ConsentLedger", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * ConsentLedger findUnique
+   */
+  export type ConsentLedgerFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter, which ConsentLedger to fetch.
+     */
+    where: ConsentLedgerWhereUniqueInput
+  }
+
+  /**
+   * ConsentLedger findUniqueOrThrow
+   */
+  export type ConsentLedgerFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter, which ConsentLedger to fetch.
+     */
+    where: ConsentLedgerWhereUniqueInput
+  }
+
+  /**
+   * ConsentLedger findFirst
+   */
+  export type ConsentLedgerFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter, which ConsentLedger to fetch.
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConsentLedgers to fetch.
+     */
+    orderBy?: ConsentLedgerOrderByWithRelationInput | ConsentLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConsentLedgers.
+     */
+    cursor?: ConsentLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConsentLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConsentLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConsentLedgers.
+     */
+    distinct?: ConsentLedgerScalarFieldEnum | ConsentLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ConsentLedger findFirstOrThrow
+   */
+  export type ConsentLedgerFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter, which ConsentLedger to fetch.
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConsentLedgers to fetch.
+     */
+    orderBy?: ConsentLedgerOrderByWithRelationInput | ConsentLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for ConsentLedgers.
+     */
+    cursor?: ConsentLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConsentLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConsentLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConsentLedgers.
+     */
+    distinct?: ConsentLedgerScalarFieldEnum | ConsentLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ConsentLedger findMany
+   */
+  export type ConsentLedgerFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter, which ConsentLedgers to fetch.
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of ConsentLedgers to fetch.
+     */
+    orderBy?: ConsentLedgerOrderByWithRelationInput | ConsentLedgerOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing ConsentLedgers.
+     */
+    cursor?: ConsentLedgerWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` ConsentLedgers from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` ConsentLedgers.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of ConsentLedgers.
+     */
+    distinct?: ConsentLedgerScalarFieldEnum | ConsentLedgerScalarFieldEnum[]
+  }
+
+  /**
+   * ConsentLedger create
+   */
+  export type ConsentLedgerCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * The data needed to create a ConsentLedger.
+     */
+    data: XOR<ConsentLedgerCreateInput, ConsentLedgerUncheckedCreateInput>
+  }
+
+  /**
+   * ConsentLedger createMany
+   */
+  export type ConsentLedgerCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many ConsentLedgers.
+     */
+    data: ConsentLedgerCreateManyInput | ConsentLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ConsentLedger createManyAndReturn
+   */
+  export type ConsentLedgerCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * The data used to create many ConsentLedgers.
+     */
+    data: ConsentLedgerCreateManyInput | ConsentLedgerCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * ConsentLedger update
+   */
+  export type ConsentLedgerUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * The data needed to update a ConsentLedger.
+     */
+    data: XOR<ConsentLedgerUpdateInput, ConsentLedgerUncheckedUpdateInput>
+    /**
+     * Choose, which ConsentLedger to update.
+     */
+    where: ConsentLedgerWhereUniqueInput
+  }
+
+  /**
+   * ConsentLedger updateMany
+   */
+  export type ConsentLedgerUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update ConsentLedgers.
+     */
+    data: XOR<ConsentLedgerUpdateManyMutationInput, ConsentLedgerUncheckedUpdateManyInput>
+    /**
+     * Filter which ConsentLedgers to update
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * Limit how many ConsentLedgers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ConsentLedger updateManyAndReturn
+   */
+  export type ConsentLedgerUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * The data used to update ConsentLedgers.
+     */
+    data: XOR<ConsentLedgerUpdateManyMutationInput, ConsentLedgerUncheckedUpdateManyInput>
+    /**
+     * Filter which ConsentLedgers to update
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * Limit how many ConsentLedgers to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * ConsentLedger upsert
+   */
+  export type ConsentLedgerUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * The filter to search for the ConsentLedger to update in case it exists.
+     */
+    where: ConsentLedgerWhereUniqueInput
+    /**
+     * In case the ConsentLedger found by the `where` argument doesn't exist, create a new ConsentLedger with this data.
+     */
+    create: XOR<ConsentLedgerCreateInput, ConsentLedgerUncheckedCreateInput>
+    /**
+     * In case the ConsentLedger was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<ConsentLedgerUpdateInput, ConsentLedgerUncheckedUpdateInput>
+  }
+
+  /**
+   * ConsentLedger delete
+   */
+  export type ConsentLedgerDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+    /**
+     * Filter which ConsentLedger to delete.
+     */
+    where: ConsentLedgerWhereUniqueInput
+  }
+
+  /**
+   * ConsentLedger deleteMany
+   */
+  export type ConsentLedgerDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which ConsentLedgers to delete
+     */
+    where?: ConsentLedgerWhereInput
+    /**
+     * Limit how many ConsentLedgers to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * ConsentLedger without action
+   */
+  export type ConsentLedgerDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the ConsentLedger
+     */
+    select?: ConsentLedgerSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the ConsentLedger
+     */
+    omit?: ConsentLedgerOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model UserMfa
+   */
+
+  export type AggregateUserMfa = {
+    _count: UserMfaCountAggregateOutputType | null
+    _min: UserMfaMinAggregateOutputType | null
+    _max: UserMfaMaxAggregateOutputType | null
+  }
+
+  export type UserMfaMinAggregateOutputType = {
+    userId: string | null
+    mfaSecret: string | null
+    backupCodes: string | null
+    enabled: boolean | null
+  }
+
+  export type UserMfaMaxAggregateOutputType = {
+    userId: string | null
+    mfaSecret: string | null
+    backupCodes: string | null
+    enabled: boolean | null
+  }
+
+  export type UserMfaCountAggregateOutputType = {
+    userId: number
+    mfaSecret: number
+    backupCodes: number
+    enabled: number
+    _all: number
+  }
+
+
+  export type UserMfaMinAggregateInputType = {
+    userId?: true
+    mfaSecret?: true
+    backupCodes?: true
+    enabled?: true
+  }
+
+  export type UserMfaMaxAggregateInputType = {
+    userId?: true
+    mfaSecret?: true
+    backupCodes?: true
+    enabled?: true
+  }
+
+  export type UserMfaCountAggregateInputType = {
+    userId?: true
+    mfaSecret?: true
+    backupCodes?: true
+    enabled?: true
+    _all?: true
+  }
+
+  export type UserMfaAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserMfa to aggregate.
+     */
+    where?: UserMfaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserMfas to fetch.
+     */
+    orderBy?: UserMfaOrderByWithRelationInput | UserMfaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: UserMfaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserMfas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserMfas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned UserMfas
+    **/
+    _count?: true | UserMfaCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: UserMfaMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: UserMfaMaxAggregateInputType
+  }
+
+  export type GetUserMfaAggregateType<T extends UserMfaAggregateArgs> = {
+        [P in keyof T & keyof AggregateUserMfa]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateUserMfa[P]>
+      : GetScalarType<T[P], AggregateUserMfa[P]>
+  }
+
+
+
+
+  export type UserMfaGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: UserMfaWhereInput
+    orderBy?: UserMfaOrderByWithAggregationInput | UserMfaOrderByWithAggregationInput[]
+    by: UserMfaScalarFieldEnum[] | UserMfaScalarFieldEnum
+    having?: UserMfaScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: UserMfaCountAggregateInputType | true
+    _min?: UserMfaMinAggregateInputType
+    _max?: UserMfaMaxAggregateInputType
+  }
+
+  export type UserMfaGroupByOutputType = {
+    userId: string
+    mfaSecret: string
+    backupCodes: string | null
+    enabled: boolean
+    _count: UserMfaCountAggregateOutputType | null
+    _min: UserMfaMinAggregateOutputType | null
+    _max: UserMfaMaxAggregateOutputType | null
+  }
+
+  type GetUserMfaGroupByPayload<T extends UserMfaGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<UserMfaGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof UserMfaGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], UserMfaGroupByOutputType[P]>
+            : GetScalarType<T[P], UserMfaGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type UserMfaSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    mfaSecret?: boolean
+    backupCodes?: boolean
+    enabled?: boolean
+  }, ExtArgs["result"]["userMfa"]>
+
+  export type UserMfaSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    mfaSecret?: boolean
+    backupCodes?: boolean
+    enabled?: boolean
+  }, ExtArgs["result"]["userMfa"]>
+
+  export type UserMfaSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    mfaSecret?: boolean
+    backupCodes?: boolean
+    enabled?: boolean
+  }, ExtArgs["result"]["userMfa"]>
+
+  export type UserMfaSelectScalar = {
+    userId?: boolean
+    mfaSecret?: boolean
+    backupCodes?: boolean
+    enabled?: boolean
+  }
+
+  export type UserMfaOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"userId" | "mfaSecret" | "backupCodes" | "enabled", ExtArgs["result"]["userMfa"]>
+
+  export type $UserMfaPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "UserMfa"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      userId: string
+      mfaSecret: string
+      backupCodes: string | null
+      enabled: boolean
+    }, ExtArgs["result"]["userMfa"]>
+    composites: {}
+  }
+
+  type UserMfaGetPayload<S extends boolean | null | undefined | UserMfaDefaultArgs> = $Result.GetResult<Prisma.$UserMfaPayload, S>
+
+  type UserMfaCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<UserMfaFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: UserMfaCountAggregateInputType | true
+    }
+
+  export interface UserMfaDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UserMfa'], meta: { name: 'UserMfa' } }
+    /**
+     * Find zero or one UserMfa that matches the filter.
+     * @param {UserMfaFindUniqueArgs} args - Arguments to find a UserMfa
+     * @example
+     * // Get one UserMfa
+     * const userMfa = await prisma.userMfa.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends UserMfaFindUniqueArgs>(args: SelectSubset<T, UserMfaFindUniqueArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one UserMfa that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {UserMfaFindUniqueOrThrowArgs} args - Arguments to find a UserMfa
+     * @example
+     * // Get one UserMfa
+     * const userMfa = await prisma.userMfa.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends UserMfaFindUniqueOrThrowArgs>(args: SelectSubset<T, UserMfaFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserMfa that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaFindFirstArgs} args - Arguments to find a UserMfa
+     * @example
+     * // Get one UserMfa
+     * const userMfa = await prisma.userMfa.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends UserMfaFindFirstArgs>(args?: SelectSubset<T, UserMfaFindFirstArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first UserMfa that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaFindFirstOrThrowArgs} args - Arguments to find a UserMfa
+     * @example
+     * // Get one UserMfa
+     * const userMfa = await prisma.userMfa.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends UserMfaFindFirstOrThrowArgs>(args?: SelectSubset<T, UserMfaFindFirstOrThrowArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more UserMfas that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all UserMfas
+     * const userMfas = await prisma.userMfa.findMany()
+     * 
+     * // Get first 10 UserMfas
+     * const userMfas = await prisma.userMfa.findMany({ take: 10 })
+     * 
+     * // Only select the `userId`
+     * const userMfaWithUserIdOnly = await prisma.userMfa.findMany({ select: { userId: true } })
+     * 
+     */
+    findMany<T extends UserMfaFindManyArgs>(args?: SelectSubset<T, UserMfaFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a UserMfa.
+     * @param {UserMfaCreateArgs} args - Arguments to create a UserMfa.
+     * @example
+     * // Create one UserMfa
+     * const UserMfa = await prisma.userMfa.create({
+     *   data: {
+     *     // ... data to create a UserMfa
+     *   }
+     * })
+     * 
+     */
+    create<T extends UserMfaCreateArgs>(args: SelectSubset<T, UserMfaCreateArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many UserMfas.
+     * @param {UserMfaCreateManyArgs} args - Arguments to create many UserMfas.
+     * @example
+     * // Create many UserMfas
+     * const userMfa = await prisma.userMfa.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends UserMfaCreateManyArgs>(args?: SelectSubset<T, UserMfaCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many UserMfas and returns the data saved in the database.
+     * @param {UserMfaCreateManyAndReturnArgs} args - Arguments to create many UserMfas.
+     * @example
+     * // Create many UserMfas
+     * const userMfa = await prisma.userMfa.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many UserMfas and only return the `userId`
+     * const userMfaWithUserIdOnly = await prisma.userMfa.createManyAndReturn({
+     *   select: { userId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends UserMfaCreateManyAndReturnArgs>(args?: SelectSubset<T, UserMfaCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a UserMfa.
+     * @param {UserMfaDeleteArgs} args - Arguments to delete one UserMfa.
+     * @example
+     * // Delete one UserMfa
+     * const UserMfa = await prisma.userMfa.delete({
+     *   where: {
+     *     // ... filter to delete one UserMfa
+     *   }
+     * })
+     * 
+     */
+    delete<T extends UserMfaDeleteArgs>(args: SelectSubset<T, UserMfaDeleteArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one UserMfa.
+     * @param {UserMfaUpdateArgs} args - Arguments to update one UserMfa.
+     * @example
+     * // Update one UserMfa
+     * const userMfa = await prisma.userMfa.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends UserMfaUpdateArgs>(args: SelectSubset<T, UserMfaUpdateArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more UserMfas.
+     * @param {UserMfaDeleteManyArgs} args - Arguments to filter UserMfas to delete.
+     * @example
+     * // Delete a few UserMfas
+     * const { count } = await prisma.userMfa.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends UserMfaDeleteManyArgs>(args?: SelectSubset<T, UserMfaDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserMfas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many UserMfas
+     * const userMfa = await prisma.userMfa.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends UserMfaUpdateManyArgs>(args: SelectSubset<T, UserMfaUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more UserMfas and returns the data updated in the database.
+     * @param {UserMfaUpdateManyAndReturnArgs} args - Arguments to update many UserMfas.
+     * @example
+     * // Update many UserMfas
+     * const userMfa = await prisma.userMfa.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more UserMfas and only return the `userId`
+     * const userMfaWithUserIdOnly = await prisma.userMfa.updateManyAndReturn({
+     *   select: { userId: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends UserMfaUpdateManyAndReturnArgs>(args: SelectSubset<T, UserMfaUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one UserMfa.
+     * @param {UserMfaUpsertArgs} args - Arguments to update or create a UserMfa.
+     * @example
+     * // Update or create a UserMfa
+     * const userMfa = await prisma.userMfa.upsert({
+     *   create: {
+     *     // ... data to create a UserMfa
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the UserMfa we want to update
+     *   }
+     * })
+     */
+    upsert<T extends UserMfaUpsertArgs>(args: SelectSubset<T, UserMfaUpsertArgs<ExtArgs>>): Prisma__UserMfaClient<$Result.GetResult<Prisma.$UserMfaPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of UserMfas.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaCountArgs} args - Arguments to filter UserMfas to count.
+     * @example
+     * // Count the number of UserMfas
+     * const count = await prisma.userMfa.count({
+     *   where: {
+     *     // ... the filter for the UserMfas we want to count
+     *   }
+     * })
+    **/
+    count<T extends UserMfaCountArgs>(
+      args?: Subset<T, UserMfaCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], UserMfaCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a UserMfa.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends UserMfaAggregateArgs>(args: Subset<T, UserMfaAggregateArgs>): Prisma.PrismaPromise<GetUserMfaAggregateType<T>>
+
+    /**
+     * Group by UserMfa.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {UserMfaGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends UserMfaGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: UserMfaGroupByArgs['orderBy'] }
+        : { orderBy?: UserMfaGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, UserMfaGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUserMfaGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the UserMfa model
+   */
+  readonly fields: UserMfaFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for UserMfa.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__UserMfaClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the UserMfa model
+   */
+  interface UserMfaFieldRefs {
+    readonly userId: FieldRef<"UserMfa", 'String'>
+    readonly mfaSecret: FieldRef<"UserMfa", 'String'>
+    readonly backupCodes: FieldRef<"UserMfa", 'String'>
+    readonly enabled: FieldRef<"UserMfa", 'Boolean'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * UserMfa findUnique
+   */
+  export type UserMfaFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter, which UserMfa to fetch.
+     */
+    where: UserMfaWhereUniqueInput
+  }
+
+  /**
+   * UserMfa findUniqueOrThrow
+   */
+  export type UserMfaFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter, which UserMfa to fetch.
+     */
+    where: UserMfaWhereUniqueInput
+  }
+
+  /**
+   * UserMfa findFirst
+   */
+  export type UserMfaFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter, which UserMfa to fetch.
+     */
+    where?: UserMfaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserMfas to fetch.
+     */
+    orderBy?: UserMfaOrderByWithRelationInput | UserMfaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserMfas.
+     */
+    cursor?: UserMfaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserMfas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserMfas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserMfas.
+     */
+    distinct?: UserMfaScalarFieldEnum | UserMfaScalarFieldEnum[]
+  }
+
+  /**
+   * UserMfa findFirstOrThrow
+   */
+  export type UserMfaFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter, which UserMfa to fetch.
+     */
+    where?: UserMfaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserMfas to fetch.
+     */
+    orderBy?: UserMfaOrderByWithRelationInput | UserMfaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for UserMfas.
+     */
+    cursor?: UserMfaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserMfas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserMfas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserMfas.
+     */
+    distinct?: UserMfaScalarFieldEnum | UserMfaScalarFieldEnum[]
+  }
+
+  /**
+   * UserMfa findMany
+   */
+  export type UserMfaFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter, which UserMfas to fetch.
+     */
+    where?: UserMfaWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of UserMfas to fetch.
+     */
+    orderBy?: UserMfaOrderByWithRelationInput | UserMfaOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing UserMfas.
+     */
+    cursor?: UserMfaWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` UserMfas from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` UserMfas.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of UserMfas.
+     */
+    distinct?: UserMfaScalarFieldEnum | UserMfaScalarFieldEnum[]
+  }
+
+  /**
+   * UserMfa create
+   */
+  export type UserMfaCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * The data needed to create a UserMfa.
+     */
+    data: XOR<UserMfaCreateInput, UserMfaUncheckedCreateInput>
+  }
+
+  /**
+   * UserMfa createMany
+   */
+  export type UserMfaCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many UserMfas.
+     */
+    data: UserMfaCreateManyInput | UserMfaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserMfa createManyAndReturn
+   */
+  export type UserMfaCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * The data used to create many UserMfas.
+     */
+    data: UserMfaCreateManyInput | UserMfaCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * UserMfa update
+   */
+  export type UserMfaUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * The data needed to update a UserMfa.
+     */
+    data: XOR<UserMfaUpdateInput, UserMfaUncheckedUpdateInput>
+    /**
+     * Choose, which UserMfa to update.
+     */
+    where: UserMfaWhereUniqueInput
+  }
+
+  /**
+   * UserMfa updateMany
+   */
+  export type UserMfaUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update UserMfas.
+     */
+    data: XOR<UserMfaUpdateManyMutationInput, UserMfaUncheckedUpdateManyInput>
+    /**
+     * Filter which UserMfas to update
+     */
+    where?: UserMfaWhereInput
+    /**
+     * Limit how many UserMfas to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserMfa updateManyAndReturn
+   */
+  export type UserMfaUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * The data used to update UserMfas.
+     */
+    data: XOR<UserMfaUpdateManyMutationInput, UserMfaUncheckedUpdateManyInput>
+    /**
+     * Filter which UserMfas to update
+     */
+    where?: UserMfaWhereInput
+    /**
+     * Limit how many UserMfas to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserMfa upsert
+   */
+  export type UserMfaUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * The filter to search for the UserMfa to update in case it exists.
+     */
+    where: UserMfaWhereUniqueInput
+    /**
+     * In case the UserMfa found by the `where` argument doesn't exist, create a new UserMfa with this data.
+     */
+    create: XOR<UserMfaCreateInput, UserMfaUncheckedCreateInput>
+    /**
+     * In case the UserMfa was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<UserMfaUpdateInput, UserMfaUncheckedUpdateInput>
+  }
+
+  /**
+   * UserMfa delete
+   */
+  export type UserMfaDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+    /**
+     * Filter which UserMfa to delete.
+     */
+    where: UserMfaWhereUniqueInput
+  }
+
+  /**
+   * UserMfa deleteMany
+   */
+  export type UserMfaDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which UserMfas to delete
+     */
+    where?: UserMfaWhereInput
+    /**
+     * Limit how many UserMfas to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * UserMfa without action
+   */
+  export type UserMfaDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the UserMfa
+     */
+    select?: UserMfaSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the UserMfa
+     */
+    omit?: UserMfaOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model VerificationToken
+   */
+
+  export type AggregateVerificationToken = {
+    _count: VerificationTokenCountAggregateOutputType | null
+    _min: VerificationTokenMinAggregateOutputType | null
+    _max: VerificationTokenMaxAggregateOutputType | null
+  }
+
+  export type VerificationTokenMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    token: string | null
+    type: string | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type VerificationTokenMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    token: string | null
+    type: string | null
+    expiresAt: Date | null
+    usedAt: Date | null
+    createdAt: Date | null
+  }
+
+  export type VerificationTokenCountAggregateOutputType = {
+    id: number
+    userId: number
+    token: number
+    type: number
+    expiresAt: number
+    usedAt: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type VerificationTokenMinAggregateInputType = {
+    id?: true
+    userId?: true
+    token?: true
+    type?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+  }
+
+  export type VerificationTokenMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    token?: true
+    type?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+  }
+
+  export type VerificationTokenCountAggregateInputType = {
+    id?: true
+    userId?: true
+    token?: true
+    type?: true
+    expiresAt?: true
+    usedAt?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type VerificationTokenAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VerificationToken to aggregate.
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VerificationTokens to fetch.
+     */
+    orderBy?: VerificationTokenOrderByWithRelationInput | VerificationTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: VerificationTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VerificationTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VerificationTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned VerificationTokens
+    **/
+    _count?: true | VerificationTokenCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: VerificationTokenMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: VerificationTokenMaxAggregateInputType
+  }
+
+  export type GetVerificationTokenAggregateType<T extends VerificationTokenAggregateArgs> = {
+        [P in keyof T & keyof AggregateVerificationToken]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateVerificationToken[P]>
+      : GetScalarType<T[P], AggregateVerificationToken[P]>
+  }
+
+
+
+
+  export type VerificationTokenGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: VerificationTokenWhereInput
+    orderBy?: VerificationTokenOrderByWithAggregationInput | VerificationTokenOrderByWithAggregationInput[]
+    by: VerificationTokenScalarFieldEnum[] | VerificationTokenScalarFieldEnum
+    having?: VerificationTokenScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: VerificationTokenCountAggregateInputType | true
+    _min?: VerificationTokenMinAggregateInputType
+    _max?: VerificationTokenMaxAggregateInputType
+  }
+
+  export type VerificationTokenGroupByOutputType = {
+    id: string
+    userId: string
+    token: string
+    type: string
+    expiresAt: Date
+    usedAt: Date | null
+    createdAt: Date
+    _count: VerificationTokenCountAggregateOutputType | null
+    _min: VerificationTokenMinAggregateOutputType | null
+    _max: VerificationTokenMaxAggregateOutputType | null
+  }
+
+  type GetVerificationTokenGroupByPayload<T extends VerificationTokenGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<VerificationTokenGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof VerificationTokenGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], VerificationTokenGroupByOutputType[P]>
+            : GetScalarType<T[P], VerificationTokenGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type VerificationTokenSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    token?: boolean
+    type?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["verificationToken"]>
+
+  export type VerificationTokenSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    token?: boolean
+    type?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["verificationToken"]>
+
+  export type VerificationTokenSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    token?: boolean
+    type?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["verificationToken"]>
+
+  export type VerificationTokenSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    token?: boolean
+    type?: boolean
+    expiresAt?: boolean
+    usedAt?: boolean
+    createdAt?: boolean
+  }
+
+  export type VerificationTokenOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "token" | "type" | "expiresAt" | "usedAt" | "createdAt", ExtArgs["result"]["verificationToken"]>
+
+  export type $VerificationTokenPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "VerificationToken"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string
+      token: string
+      type: string
+      expiresAt: Date
+      usedAt: Date | null
+      createdAt: Date
+    }, ExtArgs["result"]["verificationToken"]>
+    composites: {}
+  }
+
+  type VerificationTokenGetPayload<S extends boolean | null | undefined | VerificationTokenDefaultArgs> = $Result.GetResult<Prisma.$VerificationTokenPayload, S>
+
+  type VerificationTokenCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<VerificationTokenFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: VerificationTokenCountAggregateInputType | true
+    }
+
+  export interface VerificationTokenDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['VerificationToken'], meta: { name: 'VerificationToken' } }
+    /**
+     * Find zero or one VerificationToken that matches the filter.
+     * @param {VerificationTokenFindUniqueArgs} args - Arguments to find a VerificationToken
+     * @example
+     * // Get one VerificationToken
+     * const verificationToken = await prisma.verificationToken.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends VerificationTokenFindUniqueArgs>(args: SelectSubset<T, VerificationTokenFindUniqueArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one VerificationToken that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {VerificationTokenFindUniqueOrThrowArgs} args - Arguments to find a VerificationToken
+     * @example
+     * // Get one VerificationToken
+     * const verificationToken = await prisma.verificationToken.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends VerificationTokenFindUniqueOrThrowArgs>(args: SelectSubset<T, VerificationTokenFindUniqueOrThrowArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VerificationToken that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenFindFirstArgs} args - Arguments to find a VerificationToken
+     * @example
+     * // Get one VerificationToken
+     * const verificationToken = await prisma.verificationToken.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends VerificationTokenFindFirstArgs>(args?: SelectSubset<T, VerificationTokenFindFirstArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first VerificationToken that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenFindFirstOrThrowArgs} args - Arguments to find a VerificationToken
+     * @example
+     * // Get one VerificationToken
+     * const verificationToken = await prisma.verificationToken.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends VerificationTokenFindFirstOrThrowArgs>(args?: SelectSubset<T, VerificationTokenFindFirstOrThrowArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more VerificationTokens that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all VerificationTokens
+     * const verificationTokens = await prisma.verificationToken.findMany()
+     * 
+     * // Get first 10 VerificationTokens
+     * const verificationTokens = await prisma.verificationToken.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const verificationTokenWithIdOnly = await prisma.verificationToken.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends VerificationTokenFindManyArgs>(args?: SelectSubset<T, VerificationTokenFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a VerificationToken.
+     * @param {VerificationTokenCreateArgs} args - Arguments to create a VerificationToken.
+     * @example
+     * // Create one VerificationToken
+     * const VerificationToken = await prisma.verificationToken.create({
+     *   data: {
+     *     // ... data to create a VerificationToken
+     *   }
+     * })
+     * 
+     */
+    create<T extends VerificationTokenCreateArgs>(args: SelectSubset<T, VerificationTokenCreateArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many VerificationTokens.
+     * @param {VerificationTokenCreateManyArgs} args - Arguments to create many VerificationTokens.
+     * @example
+     * // Create many VerificationTokens
+     * const verificationToken = await prisma.verificationToken.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends VerificationTokenCreateManyArgs>(args?: SelectSubset<T, VerificationTokenCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many VerificationTokens and returns the data saved in the database.
+     * @param {VerificationTokenCreateManyAndReturnArgs} args - Arguments to create many VerificationTokens.
+     * @example
+     * // Create many VerificationTokens
+     * const verificationToken = await prisma.verificationToken.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many VerificationTokens and only return the `id`
+     * const verificationTokenWithIdOnly = await prisma.verificationToken.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends VerificationTokenCreateManyAndReturnArgs>(args?: SelectSubset<T, VerificationTokenCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a VerificationToken.
+     * @param {VerificationTokenDeleteArgs} args - Arguments to delete one VerificationToken.
+     * @example
+     * // Delete one VerificationToken
+     * const VerificationToken = await prisma.verificationToken.delete({
+     *   where: {
+     *     // ... filter to delete one VerificationToken
+     *   }
+     * })
+     * 
+     */
+    delete<T extends VerificationTokenDeleteArgs>(args: SelectSubset<T, VerificationTokenDeleteArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one VerificationToken.
+     * @param {VerificationTokenUpdateArgs} args - Arguments to update one VerificationToken.
+     * @example
+     * // Update one VerificationToken
+     * const verificationToken = await prisma.verificationToken.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends VerificationTokenUpdateArgs>(args: SelectSubset<T, VerificationTokenUpdateArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more VerificationTokens.
+     * @param {VerificationTokenDeleteManyArgs} args - Arguments to filter VerificationTokens to delete.
+     * @example
+     * // Delete a few VerificationTokens
+     * const { count } = await prisma.verificationToken.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends VerificationTokenDeleteManyArgs>(args?: SelectSubset<T, VerificationTokenDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VerificationTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many VerificationTokens
+     * const verificationToken = await prisma.verificationToken.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends VerificationTokenUpdateManyArgs>(args: SelectSubset<T, VerificationTokenUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more VerificationTokens and returns the data updated in the database.
+     * @param {VerificationTokenUpdateManyAndReturnArgs} args - Arguments to update many VerificationTokens.
+     * @example
+     * // Update many VerificationTokens
+     * const verificationToken = await prisma.verificationToken.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more VerificationTokens and only return the `id`
+     * const verificationTokenWithIdOnly = await prisma.verificationToken.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends VerificationTokenUpdateManyAndReturnArgs>(args: SelectSubset<T, VerificationTokenUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one VerificationToken.
+     * @param {VerificationTokenUpsertArgs} args - Arguments to update or create a VerificationToken.
+     * @example
+     * // Update or create a VerificationToken
+     * const verificationToken = await prisma.verificationToken.upsert({
+     *   create: {
+     *     // ... data to create a VerificationToken
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the VerificationToken we want to update
+     *   }
+     * })
+     */
+    upsert<T extends VerificationTokenUpsertArgs>(args: SelectSubset<T, VerificationTokenUpsertArgs<ExtArgs>>): Prisma__VerificationTokenClient<$Result.GetResult<Prisma.$VerificationTokenPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of VerificationTokens.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenCountArgs} args - Arguments to filter VerificationTokens to count.
+     * @example
+     * // Count the number of VerificationTokens
+     * const count = await prisma.verificationToken.count({
+     *   where: {
+     *     // ... the filter for the VerificationTokens we want to count
+     *   }
+     * })
+    **/
+    count<T extends VerificationTokenCountArgs>(
+      args?: Subset<T, VerificationTokenCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], VerificationTokenCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a VerificationToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends VerificationTokenAggregateArgs>(args: Subset<T, VerificationTokenAggregateArgs>): Prisma.PrismaPromise<GetVerificationTokenAggregateType<T>>
+
+    /**
+     * Group by VerificationToken.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {VerificationTokenGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends VerificationTokenGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: VerificationTokenGroupByArgs['orderBy'] }
+        : { orderBy?: VerificationTokenGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, VerificationTokenGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetVerificationTokenGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the VerificationToken model
+   */
+  readonly fields: VerificationTokenFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for VerificationToken.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__VerificationTokenClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the VerificationToken model
+   */
+  interface VerificationTokenFieldRefs {
+    readonly id: FieldRef<"VerificationToken", 'String'>
+    readonly userId: FieldRef<"VerificationToken", 'String'>
+    readonly token: FieldRef<"VerificationToken", 'String'>
+    readonly type: FieldRef<"VerificationToken", 'String'>
+    readonly expiresAt: FieldRef<"VerificationToken", 'DateTime'>
+    readonly usedAt: FieldRef<"VerificationToken", 'DateTime'>
+    readonly createdAt: FieldRef<"VerificationToken", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * VerificationToken findUnique
+   */
+  export type VerificationTokenFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter, which VerificationToken to fetch.
+     */
+    where: VerificationTokenWhereUniqueInput
+  }
+
+  /**
+   * VerificationToken findUniqueOrThrow
+   */
+  export type VerificationTokenFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter, which VerificationToken to fetch.
+     */
+    where: VerificationTokenWhereUniqueInput
+  }
+
+  /**
+   * VerificationToken findFirst
+   */
+  export type VerificationTokenFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter, which VerificationToken to fetch.
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VerificationTokens to fetch.
+     */
+    orderBy?: VerificationTokenOrderByWithRelationInput | VerificationTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VerificationTokens.
+     */
+    cursor?: VerificationTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VerificationTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VerificationTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VerificationTokens.
+     */
+    distinct?: VerificationTokenScalarFieldEnum | VerificationTokenScalarFieldEnum[]
+  }
+
+  /**
+   * VerificationToken findFirstOrThrow
+   */
+  export type VerificationTokenFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter, which VerificationToken to fetch.
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VerificationTokens to fetch.
+     */
+    orderBy?: VerificationTokenOrderByWithRelationInput | VerificationTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for VerificationTokens.
+     */
+    cursor?: VerificationTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VerificationTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VerificationTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VerificationTokens.
+     */
+    distinct?: VerificationTokenScalarFieldEnum | VerificationTokenScalarFieldEnum[]
+  }
+
+  /**
+   * VerificationToken findMany
+   */
+  export type VerificationTokenFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter, which VerificationTokens to fetch.
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of VerificationTokens to fetch.
+     */
+    orderBy?: VerificationTokenOrderByWithRelationInput | VerificationTokenOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing VerificationTokens.
+     */
+    cursor?: VerificationTokenWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` VerificationTokens from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` VerificationTokens.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of VerificationTokens.
+     */
+    distinct?: VerificationTokenScalarFieldEnum | VerificationTokenScalarFieldEnum[]
+  }
+
+  /**
+   * VerificationToken create
+   */
+  export type VerificationTokenCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * The data needed to create a VerificationToken.
+     */
+    data: XOR<VerificationTokenCreateInput, VerificationTokenUncheckedCreateInput>
+  }
+
+  /**
+   * VerificationToken createMany
+   */
+  export type VerificationTokenCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many VerificationTokens.
+     */
+    data: VerificationTokenCreateManyInput | VerificationTokenCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VerificationToken createManyAndReturn
+   */
+  export type VerificationTokenCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * The data used to create many VerificationTokens.
+     */
+    data: VerificationTokenCreateManyInput | VerificationTokenCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * VerificationToken update
+   */
+  export type VerificationTokenUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * The data needed to update a VerificationToken.
+     */
+    data: XOR<VerificationTokenUpdateInput, VerificationTokenUncheckedUpdateInput>
+    /**
+     * Choose, which VerificationToken to update.
+     */
+    where: VerificationTokenWhereUniqueInput
+  }
+
+  /**
+   * VerificationToken updateMany
+   */
+  export type VerificationTokenUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update VerificationTokens.
+     */
+    data: XOR<VerificationTokenUpdateManyMutationInput, VerificationTokenUncheckedUpdateManyInput>
+    /**
+     * Filter which VerificationTokens to update
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * Limit how many VerificationTokens to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * VerificationToken updateManyAndReturn
+   */
+  export type VerificationTokenUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * The data used to update VerificationTokens.
+     */
+    data: XOR<VerificationTokenUpdateManyMutationInput, VerificationTokenUncheckedUpdateManyInput>
+    /**
+     * Filter which VerificationTokens to update
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * Limit how many VerificationTokens to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * VerificationToken upsert
+   */
+  export type VerificationTokenUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * The filter to search for the VerificationToken to update in case it exists.
+     */
+    where: VerificationTokenWhereUniqueInput
+    /**
+     * In case the VerificationToken found by the `where` argument doesn't exist, create a new VerificationToken with this data.
+     */
+    create: XOR<VerificationTokenCreateInput, VerificationTokenUncheckedCreateInput>
+    /**
+     * In case the VerificationToken was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<VerificationTokenUpdateInput, VerificationTokenUncheckedUpdateInput>
+  }
+
+  /**
+   * VerificationToken delete
+   */
+  export type VerificationTokenDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+    /**
+     * Filter which VerificationToken to delete.
+     */
+    where: VerificationTokenWhereUniqueInput
+  }
+
+  /**
+   * VerificationToken deleteMany
+   */
+  export type VerificationTokenDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which VerificationTokens to delete
+     */
+    where?: VerificationTokenWhereInput
+    /**
+     * Limit how many VerificationTokens to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * VerificationToken without action
+   */
+  export type VerificationTokenDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the VerificationToken
+     */
+    select?: VerificationTokenSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the VerificationToken
+     */
+    omit?: VerificationTokenOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model MemoryEdge
+   */
+
+  export type AggregateMemoryEdge = {
+    _count: MemoryEdgeCountAggregateOutputType | null
+    _avg: MemoryEdgeAvgAggregateOutputType | null
+    _sum: MemoryEdgeSumAggregateOutputType | null
+    _min: MemoryEdgeMinAggregateOutputType | null
+    _max: MemoryEdgeMaxAggregateOutputType | null
+  }
+
+  export type MemoryEdgeAvgAggregateOutputType = {
+    weight: number | null
+  }
+
+  export type MemoryEdgeSumAggregateOutputType = {
+    weight: number | null
+  }
+
+  export type MemoryEdgeMinAggregateOutputType = {
+    id: string | null
+    sourceMemoryId: string | null
+    targetMemoryId: string | null
+    relationType: string | null
+    weight: number | null
+    createdAt: Date | null
+  }
+
+  export type MemoryEdgeMaxAggregateOutputType = {
+    id: string | null
+    sourceMemoryId: string | null
+    targetMemoryId: string | null
+    relationType: string | null
+    weight: number | null
+    createdAt: Date | null
+  }
+
+  export type MemoryEdgeCountAggregateOutputType = {
+    id: number
+    sourceMemoryId: number
+    targetMemoryId: number
+    relationType: number
+    weight: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type MemoryEdgeAvgAggregateInputType = {
+    weight?: true
+  }
+
+  export type MemoryEdgeSumAggregateInputType = {
+    weight?: true
+  }
+
+  export type MemoryEdgeMinAggregateInputType = {
+    id?: true
+    sourceMemoryId?: true
+    targetMemoryId?: true
+    relationType?: true
+    weight?: true
+    createdAt?: true
+  }
+
+  export type MemoryEdgeMaxAggregateInputType = {
+    id?: true
+    sourceMemoryId?: true
+    targetMemoryId?: true
+    relationType?: true
+    weight?: true
+    createdAt?: true
+  }
+
+  export type MemoryEdgeCountAggregateInputType = {
+    id?: true
+    sourceMemoryId?: true
+    targetMemoryId?: true
+    relationType?: true
+    weight?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type MemoryEdgeAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MemoryEdge to aggregate.
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MemoryEdges to fetch.
+     */
+    orderBy?: MemoryEdgeOrderByWithRelationInput | MemoryEdgeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: MemoryEdgeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MemoryEdges from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MemoryEdges.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned MemoryEdges
+    **/
+    _count?: true | MemoryEdgeCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to average
+    **/
+    _avg?: MemoryEdgeAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: MemoryEdgeSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: MemoryEdgeMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: MemoryEdgeMaxAggregateInputType
+  }
+
+  export type GetMemoryEdgeAggregateType<T extends MemoryEdgeAggregateArgs> = {
+        [P in keyof T & keyof AggregateMemoryEdge]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateMemoryEdge[P]>
+      : GetScalarType<T[P], AggregateMemoryEdge[P]>
+  }
+
+
+
+
+  export type MemoryEdgeGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: MemoryEdgeWhereInput
+    orderBy?: MemoryEdgeOrderByWithAggregationInput | MemoryEdgeOrderByWithAggregationInput[]
+    by: MemoryEdgeScalarFieldEnum[] | MemoryEdgeScalarFieldEnum
+    having?: MemoryEdgeScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: MemoryEdgeCountAggregateInputType | true
+    _avg?: MemoryEdgeAvgAggregateInputType
+    _sum?: MemoryEdgeSumAggregateInputType
+    _min?: MemoryEdgeMinAggregateInputType
+    _max?: MemoryEdgeMaxAggregateInputType
+  }
+
+  export type MemoryEdgeGroupByOutputType = {
+    id: string
+    sourceMemoryId: string
+    targetMemoryId: string
+    relationType: string
+    weight: number
+    createdAt: Date
+    _count: MemoryEdgeCountAggregateOutputType | null
+    _avg: MemoryEdgeAvgAggregateOutputType | null
+    _sum: MemoryEdgeSumAggregateOutputType | null
+    _min: MemoryEdgeMinAggregateOutputType | null
+    _max: MemoryEdgeMaxAggregateOutputType | null
+  }
+
+  type GetMemoryEdgeGroupByPayload<T extends MemoryEdgeGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<MemoryEdgeGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof MemoryEdgeGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], MemoryEdgeGroupByOutputType[P]>
+            : GetScalarType<T[P], MemoryEdgeGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type MemoryEdgeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    sourceMemoryId?: boolean
+    targetMemoryId?: boolean
+    relationType?: boolean
+    weight?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["memoryEdge"]>
+
+  export type MemoryEdgeSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    sourceMemoryId?: boolean
+    targetMemoryId?: boolean
+    relationType?: boolean
+    weight?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["memoryEdge"]>
+
+  export type MemoryEdgeSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    sourceMemoryId?: boolean
+    targetMemoryId?: boolean
+    relationType?: boolean
+    weight?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["memoryEdge"]>
+
+  export type MemoryEdgeSelectScalar = {
+    id?: boolean
+    sourceMemoryId?: boolean
+    targetMemoryId?: boolean
+    relationType?: boolean
+    weight?: boolean
+    createdAt?: boolean
+  }
+
+  export type MemoryEdgeOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "sourceMemoryId" | "targetMemoryId" | "relationType" | "weight" | "createdAt", ExtArgs["result"]["memoryEdge"]>
+
+  export type $MemoryEdgePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "MemoryEdge"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      sourceMemoryId: string
+      targetMemoryId: string
+      relationType: string
+      weight: number
+      createdAt: Date
+    }, ExtArgs["result"]["memoryEdge"]>
+    composites: {}
+  }
+
+  type MemoryEdgeGetPayload<S extends boolean | null | undefined | MemoryEdgeDefaultArgs> = $Result.GetResult<Prisma.$MemoryEdgePayload, S>
+
+  type MemoryEdgeCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<MemoryEdgeFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: MemoryEdgeCountAggregateInputType | true
+    }
+
+  export interface MemoryEdgeDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MemoryEdge'], meta: { name: 'MemoryEdge' } }
+    /**
+     * Find zero or one MemoryEdge that matches the filter.
+     * @param {MemoryEdgeFindUniqueArgs} args - Arguments to find a MemoryEdge
+     * @example
+     * // Get one MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends MemoryEdgeFindUniqueArgs>(args: SelectSubset<T, MemoryEdgeFindUniqueArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one MemoryEdge that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {MemoryEdgeFindUniqueOrThrowArgs} args - Arguments to find a MemoryEdge
+     * @example
+     * // Get one MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends MemoryEdgeFindUniqueOrThrowArgs>(args: SelectSubset<T, MemoryEdgeFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first MemoryEdge that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeFindFirstArgs} args - Arguments to find a MemoryEdge
+     * @example
+     * // Get one MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends MemoryEdgeFindFirstArgs>(args?: SelectSubset<T, MemoryEdgeFindFirstArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first MemoryEdge that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeFindFirstOrThrowArgs} args - Arguments to find a MemoryEdge
+     * @example
+     * // Get one MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends MemoryEdgeFindFirstOrThrowArgs>(args?: SelectSubset<T, MemoryEdgeFindFirstOrThrowArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more MemoryEdges that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all MemoryEdges
+     * const memoryEdges = await prisma.memoryEdge.findMany()
+     * 
+     * // Get first 10 MemoryEdges
+     * const memoryEdges = await prisma.memoryEdge.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const memoryEdgeWithIdOnly = await prisma.memoryEdge.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends MemoryEdgeFindManyArgs>(args?: SelectSubset<T, MemoryEdgeFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a MemoryEdge.
+     * @param {MemoryEdgeCreateArgs} args - Arguments to create a MemoryEdge.
+     * @example
+     * // Create one MemoryEdge
+     * const MemoryEdge = await prisma.memoryEdge.create({
+     *   data: {
+     *     // ... data to create a MemoryEdge
+     *   }
+     * })
+     * 
+     */
+    create<T extends MemoryEdgeCreateArgs>(args: SelectSubset<T, MemoryEdgeCreateArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many MemoryEdges.
+     * @param {MemoryEdgeCreateManyArgs} args - Arguments to create many MemoryEdges.
+     * @example
+     * // Create many MemoryEdges
+     * const memoryEdge = await prisma.memoryEdge.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends MemoryEdgeCreateManyArgs>(args?: SelectSubset<T, MemoryEdgeCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many MemoryEdges and returns the data saved in the database.
+     * @param {MemoryEdgeCreateManyAndReturnArgs} args - Arguments to create many MemoryEdges.
+     * @example
+     * // Create many MemoryEdges
+     * const memoryEdge = await prisma.memoryEdge.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many MemoryEdges and only return the `id`
+     * const memoryEdgeWithIdOnly = await prisma.memoryEdge.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends MemoryEdgeCreateManyAndReturnArgs>(args?: SelectSubset<T, MemoryEdgeCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a MemoryEdge.
+     * @param {MemoryEdgeDeleteArgs} args - Arguments to delete one MemoryEdge.
+     * @example
+     * // Delete one MemoryEdge
+     * const MemoryEdge = await prisma.memoryEdge.delete({
+     *   where: {
+     *     // ... filter to delete one MemoryEdge
+     *   }
+     * })
+     * 
+     */
+    delete<T extends MemoryEdgeDeleteArgs>(args: SelectSubset<T, MemoryEdgeDeleteArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one MemoryEdge.
+     * @param {MemoryEdgeUpdateArgs} args - Arguments to update one MemoryEdge.
+     * @example
+     * // Update one MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends MemoryEdgeUpdateArgs>(args: SelectSubset<T, MemoryEdgeUpdateArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more MemoryEdges.
+     * @param {MemoryEdgeDeleteManyArgs} args - Arguments to filter MemoryEdges to delete.
+     * @example
+     * // Delete a few MemoryEdges
+     * const { count } = await prisma.memoryEdge.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends MemoryEdgeDeleteManyArgs>(args?: SelectSubset<T, MemoryEdgeDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MemoryEdges.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many MemoryEdges
+     * const memoryEdge = await prisma.memoryEdge.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends MemoryEdgeUpdateManyArgs>(args: SelectSubset<T, MemoryEdgeUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more MemoryEdges and returns the data updated in the database.
+     * @param {MemoryEdgeUpdateManyAndReturnArgs} args - Arguments to update many MemoryEdges.
+     * @example
+     * // Update many MemoryEdges
+     * const memoryEdge = await prisma.memoryEdge.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more MemoryEdges and only return the `id`
+     * const memoryEdgeWithIdOnly = await prisma.memoryEdge.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends MemoryEdgeUpdateManyAndReturnArgs>(args: SelectSubset<T, MemoryEdgeUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one MemoryEdge.
+     * @param {MemoryEdgeUpsertArgs} args - Arguments to update or create a MemoryEdge.
+     * @example
+     * // Update or create a MemoryEdge
+     * const memoryEdge = await prisma.memoryEdge.upsert({
+     *   create: {
+     *     // ... data to create a MemoryEdge
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the MemoryEdge we want to update
+     *   }
+     * })
+     */
+    upsert<T extends MemoryEdgeUpsertArgs>(args: SelectSubset<T, MemoryEdgeUpsertArgs<ExtArgs>>): Prisma__MemoryEdgeClient<$Result.GetResult<Prisma.$MemoryEdgePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of MemoryEdges.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeCountArgs} args - Arguments to filter MemoryEdges to count.
+     * @example
+     * // Count the number of MemoryEdges
+     * const count = await prisma.memoryEdge.count({
+     *   where: {
+     *     // ... the filter for the MemoryEdges we want to count
+     *   }
+     * })
+    **/
+    count<T extends MemoryEdgeCountArgs>(
+      args?: Subset<T, MemoryEdgeCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], MemoryEdgeCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a MemoryEdge.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends MemoryEdgeAggregateArgs>(args: Subset<T, MemoryEdgeAggregateArgs>): Prisma.PrismaPromise<GetMemoryEdgeAggregateType<T>>
+
+    /**
+     * Group by MemoryEdge.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {MemoryEdgeGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends MemoryEdgeGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: MemoryEdgeGroupByArgs['orderBy'] }
+        : { orderBy?: MemoryEdgeGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, MemoryEdgeGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMemoryEdgeGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the MemoryEdge model
+   */
+  readonly fields: MemoryEdgeFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for MemoryEdge.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__MemoryEdgeClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the MemoryEdge model
+   */
+  interface MemoryEdgeFieldRefs {
+    readonly id: FieldRef<"MemoryEdge", 'String'>
+    readonly sourceMemoryId: FieldRef<"MemoryEdge", 'String'>
+    readonly targetMemoryId: FieldRef<"MemoryEdge", 'String'>
+    readonly relationType: FieldRef<"MemoryEdge", 'String'>
+    readonly weight: FieldRef<"MemoryEdge", 'Float'>
+    readonly createdAt: FieldRef<"MemoryEdge", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * MemoryEdge findUnique
+   */
+  export type MemoryEdgeFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter, which MemoryEdge to fetch.
+     */
+    where: MemoryEdgeWhereUniqueInput
+  }
+
+  /**
+   * MemoryEdge findUniqueOrThrow
+   */
+  export type MemoryEdgeFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter, which MemoryEdge to fetch.
+     */
+    where: MemoryEdgeWhereUniqueInput
+  }
+
+  /**
+   * MemoryEdge findFirst
+   */
+  export type MemoryEdgeFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter, which MemoryEdge to fetch.
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MemoryEdges to fetch.
+     */
+    orderBy?: MemoryEdgeOrderByWithRelationInput | MemoryEdgeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MemoryEdges.
+     */
+    cursor?: MemoryEdgeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MemoryEdges from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MemoryEdges.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MemoryEdges.
+     */
+    distinct?: MemoryEdgeScalarFieldEnum | MemoryEdgeScalarFieldEnum[]
+  }
+
+  /**
+   * MemoryEdge findFirstOrThrow
+   */
+  export type MemoryEdgeFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter, which MemoryEdge to fetch.
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MemoryEdges to fetch.
+     */
+    orderBy?: MemoryEdgeOrderByWithRelationInput | MemoryEdgeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for MemoryEdges.
+     */
+    cursor?: MemoryEdgeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MemoryEdges from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MemoryEdges.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MemoryEdges.
+     */
+    distinct?: MemoryEdgeScalarFieldEnum | MemoryEdgeScalarFieldEnum[]
+  }
+
+  /**
+   * MemoryEdge findMany
+   */
+  export type MemoryEdgeFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter, which MemoryEdges to fetch.
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of MemoryEdges to fetch.
+     */
+    orderBy?: MemoryEdgeOrderByWithRelationInput | MemoryEdgeOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing MemoryEdges.
+     */
+    cursor?: MemoryEdgeWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` MemoryEdges from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` MemoryEdges.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of MemoryEdges.
+     */
+    distinct?: MemoryEdgeScalarFieldEnum | MemoryEdgeScalarFieldEnum[]
+  }
+
+  /**
+   * MemoryEdge create
+   */
+  export type MemoryEdgeCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * The data needed to create a MemoryEdge.
+     */
+    data: XOR<MemoryEdgeCreateInput, MemoryEdgeUncheckedCreateInput>
+  }
+
+  /**
+   * MemoryEdge createMany
+   */
+  export type MemoryEdgeCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many MemoryEdges.
+     */
+    data: MemoryEdgeCreateManyInput | MemoryEdgeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MemoryEdge createManyAndReturn
+   */
+  export type MemoryEdgeCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * The data used to create many MemoryEdges.
+     */
+    data: MemoryEdgeCreateManyInput | MemoryEdgeCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * MemoryEdge update
+   */
+  export type MemoryEdgeUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * The data needed to update a MemoryEdge.
+     */
+    data: XOR<MemoryEdgeUpdateInput, MemoryEdgeUncheckedUpdateInput>
+    /**
+     * Choose, which MemoryEdge to update.
+     */
+    where: MemoryEdgeWhereUniqueInput
+  }
+
+  /**
+   * MemoryEdge updateMany
+   */
+  export type MemoryEdgeUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update MemoryEdges.
+     */
+    data: XOR<MemoryEdgeUpdateManyMutationInput, MemoryEdgeUncheckedUpdateManyInput>
+    /**
+     * Filter which MemoryEdges to update
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * Limit how many MemoryEdges to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * MemoryEdge updateManyAndReturn
+   */
+  export type MemoryEdgeUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * The data used to update MemoryEdges.
+     */
+    data: XOR<MemoryEdgeUpdateManyMutationInput, MemoryEdgeUncheckedUpdateManyInput>
+    /**
+     * Filter which MemoryEdges to update
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * Limit how many MemoryEdges to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * MemoryEdge upsert
+   */
+  export type MemoryEdgeUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * The filter to search for the MemoryEdge to update in case it exists.
+     */
+    where: MemoryEdgeWhereUniqueInput
+    /**
+     * In case the MemoryEdge found by the `where` argument doesn't exist, create a new MemoryEdge with this data.
+     */
+    create: XOR<MemoryEdgeCreateInput, MemoryEdgeUncheckedCreateInput>
+    /**
+     * In case the MemoryEdge was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<MemoryEdgeUpdateInput, MemoryEdgeUncheckedUpdateInput>
+  }
+
+  /**
+   * MemoryEdge delete
+   */
+  export type MemoryEdgeDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+    /**
+     * Filter which MemoryEdge to delete.
+     */
+    where: MemoryEdgeWhereUniqueInput
+  }
+
+  /**
+   * MemoryEdge deleteMany
+   */
+  export type MemoryEdgeDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which MemoryEdges to delete
+     */
+    where?: MemoryEdgeWhereInput
+    /**
+     * Limit how many MemoryEdges to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * MemoryEdge without action
+   */
+  export type MemoryEdgeDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the MemoryEdge
+     */
+    select?: MemoryEdgeSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the MemoryEdge
+     */
+    omit?: MemoryEdgeOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SecurityAuditLog
+   */
+
+  export type AggregateSecurityAuditLog = {
+    _count: SecurityAuditLogCountAggregateOutputType | null
+    _min: SecurityAuditLogMinAggregateOutputType | null
+    _max: SecurityAuditLogMaxAggregateOutputType | null
+  }
+
+  export type SecurityAuditLogMinAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    event: string | null
+    severity: string | null
+    ip: string | null
+    userAgent: string | null
+    createdAt: Date | null
+  }
+
+  export type SecurityAuditLogMaxAggregateOutputType = {
+    id: string | null
+    userId: string | null
+    event: string | null
+    severity: string | null
+    ip: string | null
+    userAgent: string | null
+    createdAt: Date | null
+  }
+
+  export type SecurityAuditLogCountAggregateOutputType = {
+    id: number
+    userId: number
+    event: number
+    severity: number
+    ip: number
+    userAgent: number
+    metadata: number
+    createdAt: number
+    _all: number
+  }
+
+
+  export type SecurityAuditLogMinAggregateInputType = {
+    id?: true
+    userId?: true
+    event?: true
+    severity?: true
+    ip?: true
+    userAgent?: true
+    createdAt?: true
+  }
+
+  export type SecurityAuditLogMaxAggregateInputType = {
+    id?: true
+    userId?: true
+    event?: true
+    severity?: true
+    ip?: true
+    userAgent?: true
+    createdAt?: true
+  }
+
+  export type SecurityAuditLogCountAggregateInputType = {
+    id?: true
+    userId?: true
+    event?: true
+    severity?: true
+    ip?: true
+    userAgent?: true
+    metadata?: true
+    createdAt?: true
+    _all?: true
+  }
+
+  export type SecurityAuditLogAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SecurityAuditLog to aggregate.
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SecurityAuditLogs to fetch.
+     */
+    orderBy?: SecurityAuditLogOrderByWithRelationInput | SecurityAuditLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SecurityAuditLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SecurityAuditLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SecurityAuditLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SecurityAuditLogs
+    **/
+    _count?: true | SecurityAuditLogCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SecurityAuditLogMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SecurityAuditLogMaxAggregateInputType
+  }
+
+  export type GetSecurityAuditLogAggregateType<T extends SecurityAuditLogAggregateArgs> = {
+        [P in keyof T & keyof AggregateSecurityAuditLog]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSecurityAuditLog[P]>
+      : GetScalarType<T[P], AggregateSecurityAuditLog[P]>
+  }
+
+
+
+
+  export type SecurityAuditLogGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SecurityAuditLogWhereInput
+    orderBy?: SecurityAuditLogOrderByWithAggregationInput | SecurityAuditLogOrderByWithAggregationInput[]
+    by: SecurityAuditLogScalarFieldEnum[] | SecurityAuditLogScalarFieldEnum
+    having?: SecurityAuditLogScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SecurityAuditLogCountAggregateInputType | true
+    _min?: SecurityAuditLogMinAggregateInputType
+    _max?: SecurityAuditLogMaxAggregateInputType
+  }
+
+  export type SecurityAuditLogGroupByOutputType = {
+    id: string
+    userId: string | null
+    event: string
+    severity: string
+    ip: string | null
+    userAgent: string | null
+    metadata: JsonValue | null
+    createdAt: Date
+    _count: SecurityAuditLogCountAggregateOutputType | null
+    _min: SecurityAuditLogMinAggregateOutputType | null
+    _max: SecurityAuditLogMaxAggregateOutputType | null
+  }
+
+  type GetSecurityAuditLogGroupByPayload<T extends SecurityAuditLogGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SecurityAuditLogGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SecurityAuditLogGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SecurityAuditLogGroupByOutputType[P]>
+            : GetScalarType<T[P], SecurityAuditLogGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SecurityAuditLogSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    event?: boolean
+    severity?: boolean
+    ip?: boolean
+    userAgent?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["securityAuditLog"]>
+
+  export type SecurityAuditLogSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    event?: boolean
+    severity?: boolean
+    ip?: boolean
+    userAgent?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["securityAuditLog"]>
+
+  export type SecurityAuditLogSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    id?: boolean
+    userId?: boolean
+    event?: boolean
+    severity?: boolean
+    ip?: boolean
+    userAgent?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+  }, ExtArgs["result"]["securityAuditLog"]>
+
+  export type SecurityAuditLogSelectScalar = {
+    id?: boolean
+    userId?: boolean
+    event?: boolean
+    severity?: boolean
+    ip?: boolean
+    userAgent?: boolean
+    metadata?: boolean
+    createdAt?: boolean
+  }
+
+  export type SecurityAuditLogOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "userId" | "event" | "severity" | "ip" | "userAgent" | "metadata" | "createdAt", ExtArgs["result"]["securityAuditLog"]>
+
+  export type $SecurityAuditLogPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SecurityAuditLog"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      id: string
+      userId: string | null
+      event: string
+      severity: string
+      ip: string | null
+      userAgent: string | null
+      metadata: Prisma.JsonValue | null
+      createdAt: Date
+    }, ExtArgs["result"]["securityAuditLog"]>
+    composites: {}
+  }
+
+  type SecurityAuditLogGetPayload<S extends boolean | null | undefined | SecurityAuditLogDefaultArgs> = $Result.GetResult<Prisma.$SecurityAuditLogPayload, S>
+
+  type SecurityAuditLogCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SecurityAuditLogFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SecurityAuditLogCountAggregateInputType | true
+    }
+
+  export interface SecurityAuditLogDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SecurityAuditLog'], meta: { name: 'SecurityAuditLog' } }
+    /**
+     * Find zero or one SecurityAuditLog that matches the filter.
+     * @param {SecurityAuditLogFindUniqueArgs} args - Arguments to find a SecurityAuditLog
+     * @example
+     * // Get one SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SecurityAuditLogFindUniqueArgs>(args: SelectSubset<T, SecurityAuditLogFindUniqueArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SecurityAuditLog that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SecurityAuditLogFindUniqueOrThrowArgs} args - Arguments to find a SecurityAuditLog
+     * @example
+     * // Get one SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SecurityAuditLogFindUniqueOrThrowArgs>(args: SelectSubset<T, SecurityAuditLogFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SecurityAuditLog that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogFindFirstArgs} args - Arguments to find a SecurityAuditLog
+     * @example
+     * // Get one SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SecurityAuditLogFindFirstArgs>(args?: SelectSubset<T, SecurityAuditLogFindFirstArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SecurityAuditLog that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogFindFirstOrThrowArgs} args - Arguments to find a SecurityAuditLog
+     * @example
+     * // Get one SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SecurityAuditLogFindFirstOrThrowArgs>(args?: SelectSubset<T, SecurityAuditLogFindFirstOrThrowArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SecurityAuditLogs that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SecurityAuditLogs
+     * const securityAuditLogs = await prisma.securityAuditLog.findMany()
+     * 
+     * // Get first 10 SecurityAuditLogs
+     * const securityAuditLogs = await prisma.securityAuditLog.findMany({ take: 10 })
+     * 
+     * // Only select the `id`
+     * const securityAuditLogWithIdOnly = await prisma.securityAuditLog.findMany({ select: { id: true } })
+     * 
+     */
+    findMany<T extends SecurityAuditLogFindManyArgs>(args?: SelectSubset<T, SecurityAuditLogFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SecurityAuditLog.
+     * @param {SecurityAuditLogCreateArgs} args - Arguments to create a SecurityAuditLog.
+     * @example
+     * // Create one SecurityAuditLog
+     * const SecurityAuditLog = await prisma.securityAuditLog.create({
+     *   data: {
+     *     // ... data to create a SecurityAuditLog
+     *   }
+     * })
+     * 
+     */
+    create<T extends SecurityAuditLogCreateArgs>(args: SelectSubset<T, SecurityAuditLogCreateArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SecurityAuditLogs.
+     * @param {SecurityAuditLogCreateManyArgs} args - Arguments to create many SecurityAuditLogs.
+     * @example
+     * // Create many SecurityAuditLogs
+     * const securityAuditLog = await prisma.securityAuditLog.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SecurityAuditLogCreateManyArgs>(args?: SelectSubset<T, SecurityAuditLogCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many SecurityAuditLogs and returns the data saved in the database.
+     * @param {SecurityAuditLogCreateManyAndReturnArgs} args - Arguments to create many SecurityAuditLogs.
+     * @example
+     * // Create many SecurityAuditLogs
+     * const securityAuditLog = await prisma.securityAuditLog.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many SecurityAuditLogs and only return the `id`
+     * const securityAuditLogWithIdOnly = await prisma.securityAuditLog.createManyAndReturn({
+     *   select: { id: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SecurityAuditLogCreateManyAndReturnArgs>(args?: SelectSubset<T, SecurityAuditLogCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a SecurityAuditLog.
+     * @param {SecurityAuditLogDeleteArgs} args - Arguments to delete one SecurityAuditLog.
+     * @example
+     * // Delete one SecurityAuditLog
+     * const SecurityAuditLog = await prisma.securityAuditLog.delete({
+     *   where: {
+     *     // ... filter to delete one SecurityAuditLog
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SecurityAuditLogDeleteArgs>(args: SelectSubset<T, SecurityAuditLogDeleteArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SecurityAuditLog.
+     * @param {SecurityAuditLogUpdateArgs} args - Arguments to update one SecurityAuditLog.
+     * @example
+     * // Update one SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SecurityAuditLogUpdateArgs>(args: SelectSubset<T, SecurityAuditLogUpdateArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SecurityAuditLogs.
+     * @param {SecurityAuditLogDeleteManyArgs} args - Arguments to filter SecurityAuditLogs to delete.
+     * @example
+     * // Delete a few SecurityAuditLogs
+     * const { count } = await prisma.securityAuditLog.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SecurityAuditLogDeleteManyArgs>(args?: SelectSubset<T, SecurityAuditLogDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SecurityAuditLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SecurityAuditLogs
+     * const securityAuditLog = await prisma.securityAuditLog.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SecurityAuditLogUpdateManyArgs>(args: SelectSubset<T, SecurityAuditLogUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SecurityAuditLogs and returns the data updated in the database.
+     * @param {SecurityAuditLogUpdateManyAndReturnArgs} args - Arguments to update many SecurityAuditLogs.
+     * @example
+     * // Update many SecurityAuditLogs
+     * const securityAuditLog = await prisma.securityAuditLog.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more SecurityAuditLogs and only return the `id`
+     * const securityAuditLogWithIdOnly = await prisma.securityAuditLog.updateManyAndReturn({
+     *   select: { id: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends SecurityAuditLogUpdateManyAndReturnArgs>(args: SelectSubset<T, SecurityAuditLogUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one SecurityAuditLog.
+     * @param {SecurityAuditLogUpsertArgs} args - Arguments to update or create a SecurityAuditLog.
+     * @example
+     * // Update or create a SecurityAuditLog
+     * const securityAuditLog = await prisma.securityAuditLog.upsert({
+     *   create: {
+     *     // ... data to create a SecurityAuditLog
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SecurityAuditLog we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SecurityAuditLogUpsertArgs>(args: SelectSubset<T, SecurityAuditLogUpsertArgs<ExtArgs>>): Prisma__SecurityAuditLogClient<$Result.GetResult<Prisma.$SecurityAuditLogPayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SecurityAuditLogs.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogCountArgs} args - Arguments to filter SecurityAuditLogs to count.
+     * @example
+     * // Count the number of SecurityAuditLogs
+     * const count = await prisma.securityAuditLog.count({
+     *   where: {
+     *     // ... the filter for the SecurityAuditLogs we want to count
+     *   }
+     * })
+    **/
+    count<T extends SecurityAuditLogCountArgs>(
+      args?: Subset<T, SecurityAuditLogCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SecurityAuditLogCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SecurityAuditLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SecurityAuditLogAggregateArgs>(args: Subset<T, SecurityAuditLogAggregateArgs>): Prisma.PrismaPromise<GetSecurityAuditLogAggregateType<T>>
+
+    /**
+     * Group by SecurityAuditLog.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SecurityAuditLogGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SecurityAuditLogGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SecurityAuditLogGroupByArgs['orderBy'] }
+        : { orderBy?: SecurityAuditLogGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SecurityAuditLogGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSecurityAuditLogGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SecurityAuditLog model
+   */
+  readonly fields: SecurityAuditLogFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SecurityAuditLog.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SecurityAuditLogClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SecurityAuditLog model
+   */
+  interface SecurityAuditLogFieldRefs {
+    readonly id: FieldRef<"SecurityAuditLog", 'String'>
+    readonly userId: FieldRef<"SecurityAuditLog", 'String'>
+    readonly event: FieldRef<"SecurityAuditLog", 'String'>
+    readonly severity: FieldRef<"SecurityAuditLog", 'String'>
+    readonly ip: FieldRef<"SecurityAuditLog", 'String'>
+    readonly userAgent: FieldRef<"SecurityAuditLog", 'String'>
+    readonly metadata: FieldRef<"SecurityAuditLog", 'Json'>
+    readonly createdAt: FieldRef<"SecurityAuditLog", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SecurityAuditLog findUnique
+   */
+  export type SecurityAuditLogFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter, which SecurityAuditLog to fetch.
+     */
+    where: SecurityAuditLogWhereUniqueInput
+  }
+
+  /**
+   * SecurityAuditLog findUniqueOrThrow
+   */
+  export type SecurityAuditLogFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter, which SecurityAuditLog to fetch.
+     */
+    where: SecurityAuditLogWhereUniqueInput
+  }
+
+  /**
+   * SecurityAuditLog findFirst
+   */
+  export type SecurityAuditLogFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter, which SecurityAuditLog to fetch.
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SecurityAuditLogs to fetch.
+     */
+    orderBy?: SecurityAuditLogOrderByWithRelationInput | SecurityAuditLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SecurityAuditLogs.
+     */
+    cursor?: SecurityAuditLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SecurityAuditLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SecurityAuditLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SecurityAuditLogs.
+     */
+    distinct?: SecurityAuditLogScalarFieldEnum | SecurityAuditLogScalarFieldEnum[]
+  }
+
+  /**
+   * SecurityAuditLog findFirstOrThrow
+   */
+  export type SecurityAuditLogFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter, which SecurityAuditLog to fetch.
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SecurityAuditLogs to fetch.
+     */
+    orderBy?: SecurityAuditLogOrderByWithRelationInput | SecurityAuditLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SecurityAuditLogs.
+     */
+    cursor?: SecurityAuditLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SecurityAuditLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SecurityAuditLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SecurityAuditLogs.
+     */
+    distinct?: SecurityAuditLogScalarFieldEnum | SecurityAuditLogScalarFieldEnum[]
+  }
+
+  /**
+   * SecurityAuditLog findMany
+   */
+  export type SecurityAuditLogFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter, which SecurityAuditLogs to fetch.
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SecurityAuditLogs to fetch.
+     */
+    orderBy?: SecurityAuditLogOrderByWithRelationInput | SecurityAuditLogOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SecurityAuditLogs.
+     */
+    cursor?: SecurityAuditLogWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SecurityAuditLogs from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SecurityAuditLogs.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SecurityAuditLogs.
+     */
+    distinct?: SecurityAuditLogScalarFieldEnum | SecurityAuditLogScalarFieldEnum[]
+  }
+
+  /**
+   * SecurityAuditLog create
+   */
+  export type SecurityAuditLogCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SecurityAuditLog.
+     */
+    data: XOR<SecurityAuditLogCreateInput, SecurityAuditLogUncheckedCreateInput>
+  }
+
+  /**
+   * SecurityAuditLog createMany
+   */
+  export type SecurityAuditLogCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SecurityAuditLogs.
+     */
+    data: SecurityAuditLogCreateManyInput | SecurityAuditLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SecurityAuditLog createManyAndReturn
+   */
+  export type SecurityAuditLogCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * The data used to create many SecurityAuditLogs.
+     */
+    data: SecurityAuditLogCreateManyInput | SecurityAuditLogCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SecurityAuditLog update
+   */
+  export type SecurityAuditLogUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SecurityAuditLog.
+     */
+    data: XOR<SecurityAuditLogUpdateInput, SecurityAuditLogUncheckedUpdateInput>
+    /**
+     * Choose, which SecurityAuditLog to update.
+     */
+    where: SecurityAuditLogWhereUniqueInput
+  }
+
+  /**
+   * SecurityAuditLog updateMany
+   */
+  export type SecurityAuditLogUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SecurityAuditLogs.
+     */
+    data: XOR<SecurityAuditLogUpdateManyMutationInput, SecurityAuditLogUncheckedUpdateManyInput>
+    /**
+     * Filter which SecurityAuditLogs to update
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * Limit how many SecurityAuditLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SecurityAuditLog updateManyAndReturn
+   */
+  export type SecurityAuditLogUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * The data used to update SecurityAuditLogs.
+     */
+    data: XOR<SecurityAuditLogUpdateManyMutationInput, SecurityAuditLogUncheckedUpdateManyInput>
+    /**
+     * Filter which SecurityAuditLogs to update
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * Limit how many SecurityAuditLogs to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SecurityAuditLog upsert
+   */
+  export type SecurityAuditLogUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SecurityAuditLog to update in case it exists.
+     */
+    where: SecurityAuditLogWhereUniqueInput
+    /**
+     * In case the SecurityAuditLog found by the `where` argument doesn't exist, create a new SecurityAuditLog with this data.
+     */
+    create: XOR<SecurityAuditLogCreateInput, SecurityAuditLogUncheckedCreateInput>
+    /**
+     * In case the SecurityAuditLog was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SecurityAuditLogUpdateInput, SecurityAuditLogUncheckedUpdateInput>
+  }
+
+  /**
+   * SecurityAuditLog delete
+   */
+  export type SecurityAuditLogDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+    /**
+     * Filter which SecurityAuditLog to delete.
+     */
+    where: SecurityAuditLogWhereUniqueInput
+  }
+
+  /**
+   * SecurityAuditLog deleteMany
+   */
+  export type SecurityAuditLogDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SecurityAuditLogs to delete
+     */
+    where?: SecurityAuditLogWhereInput
+    /**
+     * Limit how many SecurityAuditLogs to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SecurityAuditLog without action
+   */
+  export type SecurityAuditLogDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SecurityAuditLog
+     */
+    select?: SecurityAuditLogSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SecurityAuditLog
+     */
+    omit?: SecurityAuditLogOmit<ExtArgs> | null
+  }
+
+
+  /**
    * Enums
    */
 
@@ -14727,6 +22545,92 @@ export namespace Prisma {
   };
 
   export type UsageRecordScalarFieldEnum = (typeof UsageRecordScalarFieldEnum)[keyof typeof UsageRecordScalarFieldEnum]
+
+
+  export const WorkspaceMemberScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    projectId: 'projectId',
+    role: 'role',
+    createdAt: 'createdAt'
+  };
+
+  export type WorkspaceMemberScalarFieldEnum = (typeof WorkspaceMemberScalarFieldEnum)[keyof typeof WorkspaceMemberScalarFieldEnum]
+
+
+  export const ApiKeyScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    keyHash: 'keyHash',
+    keyPrefix: 'keyPrefix',
+    name: 'name',
+    lastUsedAt: 'lastUsedAt',
+    createdAt: 'createdAt',
+    expiresAt: 'expiresAt'
+  };
+
+  export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum]
+
+
+  export const ConsentLedgerScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    consentKey: 'consentKey',
+    granted: 'granted',
+    grantedAt: 'grantedAt',
+    revokedAt: 'revokedAt'
+  };
+
+  export type ConsentLedgerScalarFieldEnum = (typeof ConsentLedgerScalarFieldEnum)[keyof typeof ConsentLedgerScalarFieldEnum]
+
+
+  export const UserMfaScalarFieldEnum: {
+    userId: 'userId',
+    mfaSecret: 'mfaSecret',
+    backupCodes: 'backupCodes',
+    enabled: 'enabled'
+  };
+
+  export type UserMfaScalarFieldEnum = (typeof UserMfaScalarFieldEnum)[keyof typeof UserMfaScalarFieldEnum]
+
+
+  export const VerificationTokenScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    token: 'token',
+    type: 'type',
+    expiresAt: 'expiresAt',
+    usedAt: 'usedAt',
+    createdAt: 'createdAt'
+  };
+
+  export type VerificationTokenScalarFieldEnum = (typeof VerificationTokenScalarFieldEnum)[keyof typeof VerificationTokenScalarFieldEnum]
+
+
+  export const MemoryEdgeScalarFieldEnum: {
+    id: 'id',
+    sourceMemoryId: 'sourceMemoryId',
+    targetMemoryId: 'targetMemoryId',
+    relationType: 'relationType',
+    weight: 'weight',
+    createdAt: 'createdAt'
+  };
+
+  export type MemoryEdgeScalarFieldEnum = (typeof MemoryEdgeScalarFieldEnum)[keyof typeof MemoryEdgeScalarFieldEnum]
+
+
+  export const SecurityAuditLogScalarFieldEnum: {
+    id: 'id',
+    userId: 'userId',
+    event: 'event',
+    severity: 'severity',
+    ip: 'ip',
+    userAgent: 'userAgent',
+    metadata: 'metadata',
+    createdAt: 'createdAt'
+  };
+
+  export type SecurityAuditLogScalarFieldEnum = (typeof SecurityAuditLogScalarFieldEnum)[keyof typeof SecurityAuditLogScalarFieldEnum]
 
 
   export const SortOrder: {
@@ -15654,6 +23558,419 @@ export namespace Prisma {
     createdAt?: DateTimeWithAggregatesFilter<"UsageRecord"> | Date | string
   }
 
+  export type WorkspaceMemberWhereInput = {
+    AND?: WorkspaceMemberWhereInput | WorkspaceMemberWhereInput[]
+    OR?: WorkspaceMemberWhereInput[]
+    NOT?: WorkspaceMemberWhereInput | WorkspaceMemberWhereInput[]
+    id?: StringFilter<"WorkspaceMember"> | string
+    userId?: StringFilter<"WorkspaceMember"> | string
+    projectId?: StringFilter<"WorkspaceMember"> | string
+    role?: StringFilter<"WorkspaceMember"> | string
+    createdAt?: DateTimeFilter<"WorkspaceMember"> | Date | string
+  }
+
+  export type WorkspaceMemberOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    role?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type WorkspaceMemberWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_projectId?: WorkspaceMemberUserIdProjectIdCompoundUniqueInput
+    AND?: WorkspaceMemberWhereInput | WorkspaceMemberWhereInput[]
+    OR?: WorkspaceMemberWhereInput[]
+    NOT?: WorkspaceMemberWhereInput | WorkspaceMemberWhereInput[]
+    userId?: StringFilter<"WorkspaceMember"> | string
+    projectId?: StringFilter<"WorkspaceMember"> | string
+    role?: StringFilter<"WorkspaceMember"> | string
+    createdAt?: DateTimeFilter<"WorkspaceMember"> | Date | string
+  }, "id" | "userId_projectId">
+
+  export type WorkspaceMemberOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    role?: SortOrder
+    createdAt?: SortOrder
+    _count?: WorkspaceMemberCountOrderByAggregateInput
+    _max?: WorkspaceMemberMaxOrderByAggregateInput
+    _min?: WorkspaceMemberMinOrderByAggregateInput
+  }
+
+  export type WorkspaceMemberScalarWhereWithAggregatesInput = {
+    AND?: WorkspaceMemberScalarWhereWithAggregatesInput | WorkspaceMemberScalarWhereWithAggregatesInput[]
+    OR?: WorkspaceMemberScalarWhereWithAggregatesInput[]
+    NOT?: WorkspaceMemberScalarWhereWithAggregatesInput | WorkspaceMemberScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"WorkspaceMember"> | string
+    userId?: StringWithAggregatesFilter<"WorkspaceMember"> | string
+    projectId?: StringWithAggregatesFilter<"WorkspaceMember"> | string
+    role?: StringWithAggregatesFilter<"WorkspaceMember"> | string
+    createdAt?: DateTimeWithAggregatesFilter<"WorkspaceMember"> | Date | string
+  }
+
+  export type ApiKeyWhereInput = {
+    AND?: ApiKeyWhereInput | ApiKeyWhereInput[]
+    OR?: ApiKeyWhereInput[]
+    NOT?: ApiKeyWhereInput | ApiKeyWhereInput[]
+    id?: StringFilter<"ApiKey"> | string
+    userId?: StringFilter<"ApiKey"> | string
+    keyHash?: StringFilter<"ApiKey"> | string
+    keyPrefix?: StringFilter<"ApiKey"> | string
+    name?: StringFilter<"ApiKey"> | string
+    lastUsedAt?: DateTimeNullableFilter<"ApiKey"> | Date | string | null
+    createdAt?: DateTimeFilter<"ApiKey"> | Date | string
+    expiresAt?: DateTimeNullableFilter<"ApiKey"> | Date | string | null
+  }
+
+  export type ApiKeyOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    keyHash?: SortOrder
+    keyPrefix?: SortOrder
+    name?: SortOrder
+    lastUsedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+  }
+
+  export type ApiKeyWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    keyHash?: string
+    AND?: ApiKeyWhereInput | ApiKeyWhereInput[]
+    OR?: ApiKeyWhereInput[]
+    NOT?: ApiKeyWhereInput | ApiKeyWhereInput[]
+    userId?: StringFilter<"ApiKey"> | string
+    keyPrefix?: StringFilter<"ApiKey"> | string
+    name?: StringFilter<"ApiKey"> | string
+    lastUsedAt?: DateTimeNullableFilter<"ApiKey"> | Date | string | null
+    createdAt?: DateTimeFilter<"ApiKey"> | Date | string
+    expiresAt?: DateTimeNullableFilter<"ApiKey"> | Date | string | null
+  }, "id" | "keyHash">
+
+  export type ApiKeyOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    keyHash?: SortOrder
+    keyPrefix?: SortOrder
+    name?: SortOrder
+    lastUsedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrderInput | SortOrder
+    _count?: ApiKeyCountOrderByAggregateInput
+    _max?: ApiKeyMaxOrderByAggregateInput
+    _min?: ApiKeyMinOrderByAggregateInput
+  }
+
+  export type ApiKeyScalarWhereWithAggregatesInput = {
+    AND?: ApiKeyScalarWhereWithAggregatesInput | ApiKeyScalarWhereWithAggregatesInput[]
+    OR?: ApiKeyScalarWhereWithAggregatesInput[]
+    NOT?: ApiKeyScalarWhereWithAggregatesInput | ApiKeyScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ApiKey"> | string
+    userId?: StringWithAggregatesFilter<"ApiKey"> | string
+    keyHash?: StringWithAggregatesFilter<"ApiKey"> | string
+    keyPrefix?: StringWithAggregatesFilter<"ApiKey"> | string
+    name?: StringWithAggregatesFilter<"ApiKey"> | string
+    lastUsedAt?: DateTimeNullableWithAggregatesFilter<"ApiKey"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"ApiKey"> | Date | string
+    expiresAt?: DateTimeNullableWithAggregatesFilter<"ApiKey"> | Date | string | null
+  }
+
+  export type ConsentLedgerWhereInput = {
+    AND?: ConsentLedgerWhereInput | ConsentLedgerWhereInput[]
+    OR?: ConsentLedgerWhereInput[]
+    NOT?: ConsentLedgerWhereInput | ConsentLedgerWhereInput[]
+    id?: StringFilter<"ConsentLedger"> | string
+    userId?: StringFilter<"ConsentLedger"> | string
+    consentKey?: StringFilter<"ConsentLedger"> | string
+    granted?: BoolFilter<"ConsentLedger"> | boolean
+    grantedAt?: DateTimeFilter<"ConsentLedger"> | Date | string
+    revokedAt?: DateTimeNullableFilter<"ConsentLedger"> | Date | string | null
+  }
+
+  export type ConsentLedgerOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    consentKey?: SortOrder
+    granted?: SortOrder
+    grantedAt?: SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+  }
+
+  export type ConsentLedgerWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    userId_consentKey?: ConsentLedgerUserIdConsentKeyCompoundUniqueInput
+    AND?: ConsentLedgerWhereInput | ConsentLedgerWhereInput[]
+    OR?: ConsentLedgerWhereInput[]
+    NOT?: ConsentLedgerWhereInput | ConsentLedgerWhereInput[]
+    userId?: StringFilter<"ConsentLedger"> | string
+    consentKey?: StringFilter<"ConsentLedger"> | string
+    granted?: BoolFilter<"ConsentLedger"> | boolean
+    grantedAt?: DateTimeFilter<"ConsentLedger"> | Date | string
+    revokedAt?: DateTimeNullableFilter<"ConsentLedger"> | Date | string | null
+  }, "id" | "userId_consentKey">
+
+  export type ConsentLedgerOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    consentKey?: SortOrder
+    granted?: SortOrder
+    grantedAt?: SortOrder
+    revokedAt?: SortOrderInput | SortOrder
+    _count?: ConsentLedgerCountOrderByAggregateInput
+    _max?: ConsentLedgerMaxOrderByAggregateInput
+    _min?: ConsentLedgerMinOrderByAggregateInput
+  }
+
+  export type ConsentLedgerScalarWhereWithAggregatesInput = {
+    AND?: ConsentLedgerScalarWhereWithAggregatesInput | ConsentLedgerScalarWhereWithAggregatesInput[]
+    OR?: ConsentLedgerScalarWhereWithAggregatesInput[]
+    NOT?: ConsentLedgerScalarWhereWithAggregatesInput | ConsentLedgerScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"ConsentLedger"> | string
+    userId?: StringWithAggregatesFilter<"ConsentLedger"> | string
+    consentKey?: StringWithAggregatesFilter<"ConsentLedger"> | string
+    granted?: BoolWithAggregatesFilter<"ConsentLedger"> | boolean
+    grantedAt?: DateTimeWithAggregatesFilter<"ConsentLedger"> | Date | string
+    revokedAt?: DateTimeNullableWithAggregatesFilter<"ConsentLedger"> | Date | string | null
+  }
+
+  export type UserMfaWhereInput = {
+    AND?: UserMfaWhereInput | UserMfaWhereInput[]
+    OR?: UserMfaWhereInput[]
+    NOT?: UserMfaWhereInput | UserMfaWhereInput[]
+    userId?: StringFilter<"UserMfa"> | string
+    mfaSecret?: StringFilter<"UserMfa"> | string
+    backupCodes?: StringNullableFilter<"UserMfa"> | string | null
+    enabled?: BoolFilter<"UserMfa"> | boolean
+  }
+
+  export type UserMfaOrderByWithRelationInput = {
+    userId?: SortOrder
+    mfaSecret?: SortOrder
+    backupCodes?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+  }
+
+  export type UserMfaWhereUniqueInput = Prisma.AtLeast<{
+    userId?: string
+    AND?: UserMfaWhereInput | UserMfaWhereInput[]
+    OR?: UserMfaWhereInput[]
+    NOT?: UserMfaWhereInput | UserMfaWhereInput[]
+    mfaSecret?: StringFilter<"UserMfa"> | string
+    backupCodes?: StringNullableFilter<"UserMfa"> | string | null
+    enabled?: BoolFilter<"UserMfa"> | boolean
+  }, "userId">
+
+  export type UserMfaOrderByWithAggregationInput = {
+    userId?: SortOrder
+    mfaSecret?: SortOrder
+    backupCodes?: SortOrderInput | SortOrder
+    enabled?: SortOrder
+    _count?: UserMfaCountOrderByAggregateInput
+    _max?: UserMfaMaxOrderByAggregateInput
+    _min?: UserMfaMinOrderByAggregateInput
+  }
+
+  export type UserMfaScalarWhereWithAggregatesInput = {
+    AND?: UserMfaScalarWhereWithAggregatesInput | UserMfaScalarWhereWithAggregatesInput[]
+    OR?: UserMfaScalarWhereWithAggregatesInput[]
+    NOT?: UserMfaScalarWhereWithAggregatesInput | UserMfaScalarWhereWithAggregatesInput[]
+    userId?: StringWithAggregatesFilter<"UserMfa"> | string
+    mfaSecret?: StringWithAggregatesFilter<"UserMfa"> | string
+    backupCodes?: StringNullableWithAggregatesFilter<"UserMfa"> | string | null
+    enabled?: BoolWithAggregatesFilter<"UserMfa"> | boolean
+  }
+
+  export type VerificationTokenWhereInput = {
+    AND?: VerificationTokenWhereInput | VerificationTokenWhereInput[]
+    OR?: VerificationTokenWhereInput[]
+    NOT?: VerificationTokenWhereInput | VerificationTokenWhereInput[]
+    id?: StringFilter<"VerificationToken"> | string
+    userId?: StringFilter<"VerificationToken"> | string
+    token?: StringFilter<"VerificationToken"> | string
+    type?: StringFilter<"VerificationToken"> | string
+    expiresAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    usedAt?: DateTimeNullableFilter<"VerificationToken"> | Date | string | null
+    createdAt?: DateTimeFilter<"VerificationToken"> | Date | string
+  }
+
+  export type VerificationTokenOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    token?: SortOrder
+    type?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VerificationTokenWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    token?: string
+    AND?: VerificationTokenWhereInput | VerificationTokenWhereInput[]
+    OR?: VerificationTokenWhereInput[]
+    NOT?: VerificationTokenWhereInput | VerificationTokenWhereInput[]
+    userId?: StringFilter<"VerificationToken"> | string
+    type?: StringFilter<"VerificationToken"> | string
+    expiresAt?: DateTimeFilter<"VerificationToken"> | Date | string
+    usedAt?: DateTimeNullableFilter<"VerificationToken"> | Date | string | null
+    createdAt?: DateTimeFilter<"VerificationToken"> | Date | string
+  }, "id" | "token">
+
+  export type VerificationTokenOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    token?: SortOrder
+    type?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: VerificationTokenCountOrderByAggregateInput
+    _max?: VerificationTokenMaxOrderByAggregateInput
+    _min?: VerificationTokenMinOrderByAggregateInput
+  }
+
+  export type VerificationTokenScalarWhereWithAggregatesInput = {
+    AND?: VerificationTokenScalarWhereWithAggregatesInput | VerificationTokenScalarWhereWithAggregatesInput[]
+    OR?: VerificationTokenScalarWhereWithAggregatesInput[]
+    NOT?: VerificationTokenScalarWhereWithAggregatesInput | VerificationTokenScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"VerificationToken"> | string
+    userId?: StringWithAggregatesFilter<"VerificationToken"> | string
+    token?: StringWithAggregatesFilter<"VerificationToken"> | string
+    type?: StringWithAggregatesFilter<"VerificationToken"> | string
+    expiresAt?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
+    usedAt?: DateTimeNullableWithAggregatesFilter<"VerificationToken"> | Date | string | null
+    createdAt?: DateTimeWithAggregatesFilter<"VerificationToken"> | Date | string
+  }
+
+  export type MemoryEdgeWhereInput = {
+    AND?: MemoryEdgeWhereInput | MemoryEdgeWhereInput[]
+    OR?: MemoryEdgeWhereInput[]
+    NOT?: MemoryEdgeWhereInput | MemoryEdgeWhereInput[]
+    id?: StringFilter<"MemoryEdge"> | string
+    sourceMemoryId?: StringFilter<"MemoryEdge"> | string
+    targetMemoryId?: StringFilter<"MemoryEdge"> | string
+    relationType?: StringFilter<"MemoryEdge"> | string
+    weight?: FloatFilter<"MemoryEdge"> | number
+    createdAt?: DateTimeFilter<"MemoryEdge"> | Date | string
+  }
+
+  export type MemoryEdgeOrderByWithRelationInput = {
+    id?: SortOrder
+    sourceMemoryId?: SortOrder
+    targetMemoryId?: SortOrder
+    relationType?: SortOrder
+    weight?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MemoryEdgeWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: MemoryEdgeWhereInput | MemoryEdgeWhereInput[]
+    OR?: MemoryEdgeWhereInput[]
+    NOT?: MemoryEdgeWhereInput | MemoryEdgeWhereInput[]
+    sourceMemoryId?: StringFilter<"MemoryEdge"> | string
+    targetMemoryId?: StringFilter<"MemoryEdge"> | string
+    relationType?: StringFilter<"MemoryEdge"> | string
+    weight?: FloatFilter<"MemoryEdge"> | number
+    createdAt?: DateTimeFilter<"MemoryEdge"> | Date | string
+  }, "id">
+
+  export type MemoryEdgeOrderByWithAggregationInput = {
+    id?: SortOrder
+    sourceMemoryId?: SortOrder
+    targetMemoryId?: SortOrder
+    relationType?: SortOrder
+    weight?: SortOrder
+    createdAt?: SortOrder
+    _count?: MemoryEdgeCountOrderByAggregateInput
+    _avg?: MemoryEdgeAvgOrderByAggregateInput
+    _max?: MemoryEdgeMaxOrderByAggregateInput
+    _min?: MemoryEdgeMinOrderByAggregateInput
+    _sum?: MemoryEdgeSumOrderByAggregateInput
+  }
+
+  export type MemoryEdgeScalarWhereWithAggregatesInput = {
+    AND?: MemoryEdgeScalarWhereWithAggregatesInput | MemoryEdgeScalarWhereWithAggregatesInput[]
+    OR?: MemoryEdgeScalarWhereWithAggregatesInput[]
+    NOT?: MemoryEdgeScalarWhereWithAggregatesInput | MemoryEdgeScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"MemoryEdge"> | string
+    sourceMemoryId?: StringWithAggregatesFilter<"MemoryEdge"> | string
+    targetMemoryId?: StringWithAggregatesFilter<"MemoryEdge"> | string
+    relationType?: StringWithAggregatesFilter<"MemoryEdge"> | string
+    weight?: FloatWithAggregatesFilter<"MemoryEdge"> | number
+    createdAt?: DateTimeWithAggregatesFilter<"MemoryEdge"> | Date | string
+  }
+
+  export type SecurityAuditLogWhereInput = {
+    AND?: SecurityAuditLogWhereInput | SecurityAuditLogWhereInput[]
+    OR?: SecurityAuditLogWhereInput[]
+    NOT?: SecurityAuditLogWhereInput | SecurityAuditLogWhereInput[]
+    id?: StringFilter<"SecurityAuditLog"> | string
+    userId?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    event?: StringFilter<"SecurityAuditLog"> | string
+    severity?: StringFilter<"SecurityAuditLog"> | string
+    ip?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    userAgent?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    metadata?: JsonNullableFilter<"SecurityAuditLog">
+    createdAt?: DateTimeFilter<"SecurityAuditLog"> | Date | string
+  }
+
+  export type SecurityAuditLogOrderByWithRelationInput = {
+    id?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    event?: SortOrder
+    severity?: SortOrder
+    ip?: SortOrderInput | SortOrder
+    userAgent?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SecurityAuditLogWhereUniqueInput = Prisma.AtLeast<{
+    id?: string
+    AND?: SecurityAuditLogWhereInput | SecurityAuditLogWhereInput[]
+    OR?: SecurityAuditLogWhereInput[]
+    NOT?: SecurityAuditLogWhereInput | SecurityAuditLogWhereInput[]
+    userId?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    event?: StringFilter<"SecurityAuditLog"> | string
+    severity?: StringFilter<"SecurityAuditLog"> | string
+    ip?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    userAgent?: StringNullableFilter<"SecurityAuditLog"> | string | null
+    metadata?: JsonNullableFilter<"SecurityAuditLog">
+    createdAt?: DateTimeFilter<"SecurityAuditLog"> | Date | string
+  }, "id">
+
+  export type SecurityAuditLogOrderByWithAggregationInput = {
+    id?: SortOrder
+    userId?: SortOrderInput | SortOrder
+    event?: SortOrder
+    severity?: SortOrder
+    ip?: SortOrderInput | SortOrder
+    userAgent?: SortOrderInput | SortOrder
+    metadata?: SortOrderInput | SortOrder
+    createdAt?: SortOrder
+    _count?: SecurityAuditLogCountOrderByAggregateInput
+    _max?: SecurityAuditLogMaxOrderByAggregateInput
+    _min?: SecurityAuditLogMinOrderByAggregateInput
+  }
+
+  export type SecurityAuditLogScalarWhereWithAggregatesInput = {
+    AND?: SecurityAuditLogScalarWhereWithAggregatesInput | SecurityAuditLogScalarWhereWithAggregatesInput[]
+    OR?: SecurityAuditLogScalarWhereWithAggregatesInput[]
+    NOT?: SecurityAuditLogScalarWhereWithAggregatesInput | SecurityAuditLogScalarWhereWithAggregatesInput[]
+    id?: StringWithAggregatesFilter<"SecurityAuditLog"> | string
+    userId?: StringNullableWithAggregatesFilter<"SecurityAuditLog"> | string | null
+    event?: StringWithAggregatesFilter<"SecurityAuditLog"> | string
+    severity?: StringWithAggregatesFilter<"SecurityAuditLog"> | string
+    ip?: StringNullableWithAggregatesFilter<"SecurityAuditLog"> | string | null
+    userAgent?: StringNullableWithAggregatesFilter<"SecurityAuditLog"> | string | null
+    metadata?: JsonNullableWithAggregatesFilter<"SecurityAuditLog">
+    createdAt?: DateTimeWithAggregatesFilter<"SecurityAuditLog"> | Date | string
+  }
+
   export type UserCreateInput = {
     id?: string
     email?: string | null
@@ -16505,6 +24822,461 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
+  export type WorkspaceMemberCreateInput = {
+    id?: string
+    userId: string
+    projectId: string
+    role?: string
+    createdAt?: Date | string
+  }
+
+  export type WorkspaceMemberUncheckedCreateInput = {
+    id?: string
+    userId: string
+    projectId: string
+    role?: string
+    createdAt?: Date | string
+  }
+
+  export type WorkspaceMemberUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkspaceMemberUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkspaceMemberCreateManyInput = {
+    id?: string
+    userId: string
+    projectId: string
+    role?: string
+    createdAt?: Date | string
+  }
+
+  export type WorkspaceMemberUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type WorkspaceMemberUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    projectId?: StringFieldUpdateOperationsInput | string
+    role?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type ApiKeyCreateInput = {
+    id?: string
+    userId: string
+    keyHash: string
+    keyPrefix: string
+    name: string
+    lastUsedAt?: Date | string | null
+    createdAt?: Date | string
+    expiresAt?: Date | string | null
+  }
+
+  export type ApiKeyUncheckedCreateInput = {
+    id?: string
+    userId: string
+    keyHash: string
+    keyPrefix: string
+    name: string
+    lastUsedAt?: Date | string | null
+    createdAt?: Date | string
+    expiresAt?: Date | string | null
+  }
+
+  export type ApiKeyUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    keyHash?: StringFieldUpdateOperationsInput | string
+    keyPrefix?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    lastUsedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ApiKeyUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    keyHash?: StringFieldUpdateOperationsInput | string
+    keyPrefix?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    lastUsedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ApiKeyCreateManyInput = {
+    id?: string
+    userId: string
+    keyHash: string
+    keyPrefix: string
+    name: string
+    lastUsedAt?: Date | string | null
+    createdAt?: Date | string
+    expiresAt?: Date | string | null
+  }
+
+  export type ApiKeyUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    keyHash?: StringFieldUpdateOperationsInput | string
+    keyPrefix?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    lastUsedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ApiKeyUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    keyHash?: StringFieldUpdateOperationsInput | string
+    keyPrefix?: StringFieldUpdateOperationsInput | string
+    name?: StringFieldUpdateOperationsInput | string
+    lastUsedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    expiresAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ConsentLedgerCreateInput = {
+    id?: string
+    userId: string
+    consentKey: string
+    granted: boolean
+    grantedAt?: Date | string
+    revokedAt?: Date | string | null
+  }
+
+  export type ConsentLedgerUncheckedCreateInput = {
+    id?: string
+    userId: string
+    consentKey: string
+    granted: boolean
+    grantedAt?: Date | string
+    revokedAt?: Date | string | null
+  }
+
+  export type ConsentLedgerUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    consentKey?: StringFieldUpdateOperationsInput | string
+    granted?: BoolFieldUpdateOperationsInput | boolean
+    grantedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ConsentLedgerUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    consentKey?: StringFieldUpdateOperationsInput | string
+    granted?: BoolFieldUpdateOperationsInput | boolean
+    grantedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ConsentLedgerCreateManyInput = {
+    id?: string
+    userId: string
+    consentKey: string
+    granted: boolean
+    grantedAt?: Date | string
+    revokedAt?: Date | string | null
+  }
+
+  export type ConsentLedgerUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    consentKey?: StringFieldUpdateOperationsInput | string
+    granted?: BoolFieldUpdateOperationsInput | boolean
+    grantedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type ConsentLedgerUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    consentKey?: StringFieldUpdateOperationsInput | string
+    granted?: BoolFieldUpdateOperationsInput | boolean
+    grantedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    revokedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  }
+
+  export type UserMfaCreateInput = {
+    userId: string
+    mfaSecret: string
+    backupCodes?: string | null
+    enabled?: boolean
+  }
+
+  export type UserMfaUncheckedCreateInput = {
+    userId: string
+    mfaSecret: string
+    backupCodes?: string | null
+    enabled?: boolean
+  }
+
+  export type UserMfaUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    mfaSecret?: StringFieldUpdateOperationsInput | string
+    backupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type UserMfaUncheckedUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    mfaSecret?: StringFieldUpdateOperationsInput | string
+    backupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type UserMfaCreateManyInput = {
+    userId: string
+    mfaSecret: string
+    backupCodes?: string | null
+    enabled?: boolean
+  }
+
+  export type UserMfaUpdateManyMutationInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    mfaSecret?: StringFieldUpdateOperationsInput | string
+    backupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type UserMfaUncheckedUpdateManyInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    mfaSecret?: StringFieldUpdateOperationsInput | string
+    backupCodes?: NullableStringFieldUpdateOperationsInput | string | null
+    enabled?: BoolFieldUpdateOperationsInput | boolean
+  }
+
+  export type VerificationTokenCreateInput = {
+    id?: string
+    userId: string
+    token: string
+    type: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type VerificationTokenUncheckedCreateInput = {
+    id?: string
+    userId: string
+    token: string
+    type: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type VerificationTokenUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VerificationTokenUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VerificationTokenCreateManyInput = {
+    id?: string
+    userId: string
+    token: string
+    type: string
+    expiresAt: Date | string
+    usedAt?: Date | string | null
+    createdAt?: Date | string
+  }
+
+  export type VerificationTokenUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type VerificationTokenUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: StringFieldUpdateOperationsInput | string
+    token?: StringFieldUpdateOperationsInput | string
+    type?: StringFieldUpdateOperationsInput | string
+    expiresAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    usedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MemoryEdgeCreateInput = {
+    id?: string
+    sourceMemoryId: string
+    targetMemoryId: string
+    relationType: string
+    weight: number
+    createdAt?: Date | string
+  }
+
+  export type MemoryEdgeUncheckedCreateInput = {
+    id?: string
+    sourceMemoryId: string
+    targetMemoryId: string
+    relationType: string
+    weight: number
+    createdAt?: Date | string
+  }
+
+  export type MemoryEdgeUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    sourceMemoryId?: StringFieldUpdateOperationsInput | string
+    targetMemoryId?: StringFieldUpdateOperationsInput | string
+    relationType?: StringFieldUpdateOperationsInput | string
+    weight?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MemoryEdgeUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    sourceMemoryId?: StringFieldUpdateOperationsInput | string
+    targetMemoryId?: StringFieldUpdateOperationsInput | string
+    relationType?: StringFieldUpdateOperationsInput | string
+    weight?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MemoryEdgeCreateManyInput = {
+    id?: string
+    sourceMemoryId: string
+    targetMemoryId: string
+    relationType: string
+    weight: number
+    createdAt?: Date | string
+  }
+
+  export type MemoryEdgeUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    sourceMemoryId?: StringFieldUpdateOperationsInput | string
+    targetMemoryId?: StringFieldUpdateOperationsInput | string
+    relationType?: StringFieldUpdateOperationsInput | string
+    weight?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type MemoryEdgeUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    sourceMemoryId?: StringFieldUpdateOperationsInput | string
+    targetMemoryId?: StringFieldUpdateOperationsInput | string
+    relationType?: StringFieldUpdateOperationsInput | string
+    weight?: FloatFieldUpdateOperationsInput | number
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SecurityAuditLogCreateInput = {
+    id?: string
+    userId?: string | null
+    event: string
+    severity?: string
+    ip?: string | null
+    userAgent?: string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SecurityAuditLogUncheckedCreateInput = {
+    id?: string
+    userId?: string | null
+    event: string
+    severity?: string
+    ip?: string | null
+    userAgent?: string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SecurityAuditLogUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    severity?: StringFieldUpdateOperationsInput | string
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SecurityAuditLogUncheckedUpdateInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    severity?: StringFieldUpdateOperationsInput | string
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SecurityAuditLogCreateManyInput = {
+    id?: string
+    userId?: string | null
+    event: string
+    severity?: string
+    ip?: string | null
+    userAgent?: string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: Date | string
+  }
+
+  export type SecurityAuditLogUpdateManyMutationInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    severity?: StringFieldUpdateOperationsInput | string
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SecurityAuditLogUncheckedUpdateManyInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    userId?: NullableStringFieldUpdateOperationsInput | string | null
+    event?: StringFieldUpdateOperationsInput | string
+    severity?: StringFieldUpdateOperationsInput | string
+    ip?: NullableStringFieldUpdateOperationsInput | string | null
+    userAgent?: NullableStringFieldUpdateOperationsInput | string | null
+    metadata?: NullableJsonNullValueInput | InputJsonValue
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
   export type StringFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel>
     in?: string[] | ListStringFieldRefInput<$PrismaModel>
@@ -17239,6 +26011,217 @@ export namespace Prisma {
   export type UsageRecordSumOrderByAggregateInput = {
     count?: SortOrder
     tokensUsed?: SortOrder
+  }
+
+  export type WorkspaceMemberUserIdProjectIdCompoundUniqueInput = {
+    userId: string
+    projectId: string
+  }
+
+  export type WorkspaceMemberCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    role?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type WorkspaceMemberMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    role?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type WorkspaceMemberMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    projectId?: SortOrder
+    role?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type ApiKeyCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    keyHash?: SortOrder
+    keyPrefix?: SortOrder
+    name?: SortOrder
+    lastUsedAt?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type ApiKeyMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    keyHash?: SortOrder
+    keyPrefix?: SortOrder
+    name?: SortOrder
+    lastUsedAt?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type ApiKeyMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    keyHash?: SortOrder
+    keyPrefix?: SortOrder
+    name?: SortOrder
+    lastUsedAt?: SortOrder
+    createdAt?: SortOrder
+    expiresAt?: SortOrder
+  }
+
+  export type ConsentLedgerUserIdConsentKeyCompoundUniqueInput = {
+    userId: string
+    consentKey: string
+  }
+
+  export type ConsentLedgerCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    consentKey?: SortOrder
+    granted?: SortOrder
+    grantedAt?: SortOrder
+    revokedAt?: SortOrder
+  }
+
+  export type ConsentLedgerMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    consentKey?: SortOrder
+    granted?: SortOrder
+    grantedAt?: SortOrder
+    revokedAt?: SortOrder
+  }
+
+  export type ConsentLedgerMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    consentKey?: SortOrder
+    granted?: SortOrder
+    grantedAt?: SortOrder
+    revokedAt?: SortOrder
+  }
+
+  export type UserMfaCountOrderByAggregateInput = {
+    userId?: SortOrder
+    mfaSecret?: SortOrder
+    backupCodes?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type UserMfaMaxOrderByAggregateInput = {
+    userId?: SortOrder
+    mfaSecret?: SortOrder
+    backupCodes?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type UserMfaMinOrderByAggregateInput = {
+    userId?: SortOrder
+    mfaSecret?: SortOrder
+    backupCodes?: SortOrder
+    enabled?: SortOrder
+  }
+
+  export type VerificationTokenCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    token?: SortOrder
+    type?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VerificationTokenMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    token?: SortOrder
+    type?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type VerificationTokenMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    token?: SortOrder
+    type?: SortOrder
+    expiresAt?: SortOrder
+    usedAt?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MemoryEdgeCountOrderByAggregateInput = {
+    id?: SortOrder
+    sourceMemoryId?: SortOrder
+    targetMemoryId?: SortOrder
+    relationType?: SortOrder
+    weight?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MemoryEdgeAvgOrderByAggregateInput = {
+    weight?: SortOrder
+  }
+
+  export type MemoryEdgeMaxOrderByAggregateInput = {
+    id?: SortOrder
+    sourceMemoryId?: SortOrder
+    targetMemoryId?: SortOrder
+    relationType?: SortOrder
+    weight?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MemoryEdgeMinOrderByAggregateInput = {
+    id?: SortOrder
+    sourceMemoryId?: SortOrder
+    targetMemoryId?: SortOrder
+    relationType?: SortOrder
+    weight?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type MemoryEdgeSumOrderByAggregateInput = {
+    weight?: SortOrder
+  }
+
+  export type SecurityAuditLogCountOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    event?: SortOrder
+    severity?: SortOrder
+    ip?: SortOrder
+    userAgent?: SortOrder
+    metadata?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SecurityAuditLogMaxOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    event?: SortOrder
+    severity?: SortOrder
+    ip?: SortOrder
+    userAgent?: SortOrder
+    createdAt?: SortOrder
+  }
+
+  export type SecurityAuditLogMinOrderByAggregateInput = {
+    id?: SortOrder
+    userId?: SortOrder
+    event?: SortOrder
+    severity?: SortOrder
+    ip?: SortOrder
+    userAgent?: SortOrder
+    createdAt?: SortOrder
   }
 
   export type ConversationCreateNestedManyWithoutUserInput = {

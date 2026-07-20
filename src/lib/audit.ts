@@ -48,6 +48,13 @@ export const SENSITIVE_ACTIONS = {
   "research.start": "research",
   "research.stop": "research",
   "research.delete": "research",
+  // Project lifecycle — every project create / update / delete is
+  // auditable so an operator can reconstruct who modified a project
+  // (and its connectors) and when. The projectId is recorded in
+  // metadata so the audit log identifies WHICH project was touched.
+  "project.create": "project",
+  "project.update": "project",
+  "project.delete": "project",
   "swarm.start": "swarm",
   "code.execute": "code",
   "admin.access": "admin",

@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "skills": {
+    "security-auditor": {
+      "version": "1.0.0",
+      "installedAt": 1784505923132,
+      "ownerHandle": "jgarrison929"
+    },
+    "deep-code-review": {
+      "version": "1.1.1",
+      "installedAt": 1784505928474,
+      "ownerHandle": "yinghaojia"
+    },
+    "react-performance": {
+      "version": "1.0.0",
+      "installedAt": 1784505933526,
+      "ownerHandle": "wpank"
+    },
+    "e2e-testing-patterns": {
+      "version": "1.0.0",
+      "installedAt": 1784505938659,
+      "ownerHandle": "wpank"
+    },
+    "ui-ux-design": {
+      "version": "1.0.0",
+      "installedAt": 1784505943513,
+      "ownerHandle": "itsjustdri"
+    }
+  }
+}

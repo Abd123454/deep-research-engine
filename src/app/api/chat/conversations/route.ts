@@ -12,10 +12,16 @@ import * as Sentry from "@sentry/nextjs";
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
-import { getUserId } from "@/lib/auth";
+import { getUserId, requireAuth } from "@/lib/auth";
 import type { ConversationWithCountRow } from "@/lib/sqlite-types";
 
 export async function GET(req: NextRequest) {
+  // SECURITY (skills-audit): require auth so anonymous callers cannot
+  // create conversations in the "anon:default" bucket when auth is
+  // configured. /api/chat already enforces this — /api/chat/conversations
+  // was inconsistent and allowed unauthenticated listing + creation.
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
   const userId = getUserId(req);
 
   if (isPostgresAvailable()) {
@@ -55,6 +61,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  // SECURITY (skills-audit): require auth on conversation creation too
+  // (see GET above for rationale — same fix applied symmetrically).
+  const authFail = requireAuth(req);
+  if (authFail) return authFail;
   const userId = getUserId(req);
   const body = await req.json().catch(() => ({}));
   const title = body.title || "New Conversation";

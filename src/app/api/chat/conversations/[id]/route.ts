@@ -1,12 +1,70 @@
 // GET    /api/chat/conversations/[id] — get conversation with messages.
 // DELETE /api/chat/conversations/[id] — delete conversation + messages.
+//
+// SECURITY (skills-audit): ownership check added. Previously any
+// authenticated user could read or delete ANY other user's conversation
+// by guessing/enumerating the conversation ID. Now the conversation's
+// `user_id` must match the caller's `userId` — a 404 (not 403) is
+// returned for missing or non-owned conversations so we don't leak
+// the existence of other users' conversation IDs.
 import * as Sentry from "@sentry/nextjs";
 
 
 import { NextRequest, NextResponse } from "next/server";
 import { getDb, isPostgresAvailable, getPrismaDb } from "@/lib/db";
 import type { ConversationRow, MessageRow } from "@/lib/sqlite-types";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getUserId } from "@/lib/auth";
+import { logSensitiveAction } from "@/lib/audit";
+
+/**
+ * Verify the caller owns the conversation. Returns `null` on success
+ * or a 404 NextResponse when the conversation is missing or belongs
+ * to a different user (404 — not 403 — to avoid leaking existence).
+ */
+async function verifyConversationOwnership(
+  id: string,
+  userId: string
+): Promise<NextResponse | null> {
+  if (isPostgresAvailable()) {
+    try {
+      const prisma = await getPrismaDb();
+      if (prisma) {
+        const conv = await prisma.conversation.findUnique({
+          where: { id },
+          select: { userId: true },
+        });
+        if (!conv || conv.userId !== userId) {
+          return NextResponse.json(
+            { ok: false, error: "Conversation not found." },
+            { status: 404 }
+          );
+        }
+        return null;
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      // Fall through to SQLite check.
+    }
+  }
+  try {
+    const db = getDb();
+    const conv = db
+      .prepare("SELECT user_id FROM conversations WHERE id = ?")
+      .get(id) as { user_id?: string } | undefined;
+    if (!conv || conv.user_id !== userId) {
+      return NextResponse.json(
+        { ok: false, error: "Conversation not found." },
+        { status: 404 }
+      );
+    }
+    return null;
+  } catch {
+    return NextResponse.json(
+      { ok: false, error: "Conversation not found." },
+      { status: 404 }
+    );
+  }
+}
 
 export async function GET(
   req: NextRequest,
@@ -14,8 +72,11 @@ export async function GET(
 ) {
   const authFail = requireAuth(req);
   if (authFail) return authFail;
+  const userId = getUserId(req);
 
   const { id } = await params;
+  const ownershipFail = await verifyConversationOwnership(id, userId);
+  if (ownershipFail) return ownershipFail;
 
   if (isPostgresAvailable()) {
     try {
@@ -30,7 +91,7 @@ export async function GET(
       }
     } catch (err) {
   Sentry.captureException(err);
-/* fall through */ 
+/* fall through */
 }
   }
   try {
@@ -60,8 +121,16 @@ export async function DELETE(
 ) {
   const authFail = requireAuth(req);
   if (authFail) return authFail;
+  const userId = getUserId(req);
 
   const { id } = await params;
+  const ownershipFail = await verifyConversationOwnership(id, userId);
+  if (ownershipFail) return ownershipFail;
+
+  logSensitiveAction("research.delete", userId, req, {
+    resourceType: "conversation",
+    conversationId: id,
+  });
 
   if (isPostgresAvailable()) {
     try {
@@ -72,7 +141,7 @@ export async function DELETE(
       }
     } catch (err) {
   Sentry.captureException(err);
-/* fall through */ 
+/* fall through */
 }
   }
   try {

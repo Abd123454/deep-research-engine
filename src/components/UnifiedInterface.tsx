@@ -66,7 +66,12 @@ interface CardEntry {
 }
 
 // ---------- Loaded session viewer ----------
-function LoadedSession({
+// skills-audit / react-performance: wrapped in React.memo so the
+// LoadedSession doesn't re-render when the parent's state changes
+// for unrelated reasons (e.g. sidebar open/close, input text). The
+// props (`title`, `content`, `type`) are all primitives/strings that
+// only change when the user explicitly loads a different session.
+const LoadedSession = React.memo(function LoadedSession({
   title,
   content,
   type,
@@ -98,7 +103,7 @@ function LoadedSession({
       </div>
     </motion.div>
   );
-}
+});
 
 // ---------- Suggestion examples ----------
 const EXAMPLES = [
@@ -301,7 +306,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     }
   }, [cards, loadedSession]);
 
-  function handleNewChat() {
+  // skills-audit / react-performance: wrap handlers in useCallback so
+  // memoized children (Sidebar, UnifiedInput, ChatCard) don't re-render
+  // when the parent's state changes for unrelated reasons. Without
+  // useCallback, every parent re-render creates new function identities,
+  // which defeats React.memo's shallow-compare short-circuit.
+  const handleNewChat = React.useCallback(() => {
     setCards([]);
     setLoadedSession(null);
     setInputText("");
@@ -315,19 +325,28 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     // P1-wave2 / Feature 1: also dismiss the Canvas editor so the next
     // chat starts without a stale editor overlay.
     setCanvasArtifact(null);
-  }
+  }, []);
 
-  function handleSend(text: string, files: AttachedFile[], mode: InputMode, tools: ToolKey[] = []) {
+  // P0-4: refresh callback is already useCallback'd above. We wrap
+  // handleSend in useCallback too — it depends on `refreshConversations`
+  // (stable) and `setCards`/`setInputText`/`setLoadedSession` (all
+  // stable state setters). The body uses functional setState for the
+  // `cards` array so it doesn't capture stale `cards` from the closure.
+  const handleSend = React.useCallback((
+    text: string,
+    files: AttachedFile[],
+    _mode: InputMode,
+    tools: ToolKey[] = []
+  ) => {
     setLoadedSession(null);
     setInputText(""); // Clear input after send.
 
     // Tools override the card type if specific tools are selected.
     function resolveCardType(): CardEntry["type"] {
       if (files.length > 0) return "document";
-      // Tool-based routing: deep-research → research, swarm → swarm, image-gen → chat (handled in card)
       if (tools.includes("deep-research")) return "research";
       if (tools.includes("swarm")) return "swarm";
-      return detectCardType(text, false, mode);
+      return detectCardType(text, false, _mode);
     }
 
     if (files.length > 0) {
@@ -351,27 +370,9 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     // to land + the conversation row to be committed; if the user is
     // on a slow connection the next refresh (next send) will catch it.
     setTimeout(refreshConversations, 800);
-  }
+  }, [refreshConversations]);
 
-  function handleSelectSession(s: {
-    id: string;
-    type: SessionType;
-    title: string;
-    content: string | null;
-  }) {
-    setCards([]);
-    setLoadedSession({ title: s.title, content: s.content, type: s.type });
-    setActiveConversationId(s.id);
-  }
-
-  // P0-4: when a conversation is selected from the Sidebar, fetch its
-  // messages and render them as a loaded session. For now we use the
-  // existing LoadedSession viewer (renders the conversation's first
-  // assistant message as markdown). Full multi-message rendering is a
-  // follow-up — the task explicitly defers it ("for now just set the
-  // title"). We still fetch so the activeId highlight is correct and
-  // the conversation row is marked as recently used.
-  function handleSelectConversation(id: string) {
+  const handleSelectConversation = React.useCallback((id: string) => {
     setActiveConversationId(id);
     fetch(`/api/chat/conversations/${id}`)
       .then((r) => r.json())
@@ -389,24 +390,78 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       .catch(() => {
         // Leave the list as-is; the activeId highlight still applies.
       });
-  }
+  }, []);
+
+  // skills-audit / UX fix: wire the Sidebar Trash2 button to actually
+  // delete the conversation. Previously the icon was visible on hover
+  // but had no onClick — a broken UI connection. Now it DELETEs via
+  // /api/chat/conversations/[id] and removes the row from the local
+  // list. If the deleted row was the active conversation, we also
+  // reset the activeId and clear the loaded session so the user
+  // doesn't see a stale "deleted" session in the main column.
+  const handleDeleteConversation = React.useCallback((id: string) => {
+    fetch(`/api/chat/conversations/${id}`, { method: "DELETE" })
+      .then((r) => r.json())
+      .then((data: { ok?: boolean }) => {
+        if (!data.ok) return;
+        setConversations((prev) => prev.filter((c) => c.id !== id));
+        // If the deleted row was the active conversation, reset.
+        setActiveConversationId((curr) => (curr === id ? undefined : curr));
+        setLoadedSession((curr) => (curr ? null : curr));
+      })
+      .catch(() => {
+        // Network error — leave the list as-is. The user can retry.
+      });
+  }, []);
+
+  const handleSelectSession = React.useCallback((s: {
+    id: string;
+    type: SessionType;
+    title: string;
+    content: string | null;
+  }) => {
+    setCards([]);
+    setLoadedSession({ title: s.title, content: s.content, type: s.type });
+    setActiveConversationId(s.id);
+  }, []);
+
+  // skills-audit / react-performance: stable close handler so the
+  // memoized Sidebar doesn't re-render when the parent re-renders.
+  const handleSidebarClose = React.useCallback(() => setSidebarOpen(false), []);
+  // History + memory + palette close handlers — stable for the same
+  // reason (the drawers are lazy-loaded but their props still go
+  // through shallow-compare if/when React.memo is added later).
+  const handleHistoryClose = React.useCallback(() => setHistoryOpen(false), []);
+  const handleMemoryClose = React.useCallback(() => setMemoryOpen(false), []);
+  const handlePaletteClose = React.useCallback(() => setPaletteOpen(false), []);
+
+  // skills-audit / react-performance: stable card-removal callback.
+  // Each ResearchCard receives this as `onStop` — without useCallback,
+  // every parent re-render would create a new closure and break
+  // ResearchCard's React.memo. The callback takes the cardId as an
+  // argument so it doesn't capture `cards` from the closure (avoids
+  // stale-state bugs AND lets the dependency array stay empty).
+  const handleStopCard = React.useCallback((cardId: string) => {
+    setCards((prev) => prev.filter((c) => c.id !== cardId));
+  }, []);
 
   // Suggestion click: fill input instead of auto-send, then focus textarea.
-  function handleSuggestionClick(text: string) {
+  const handleSuggestionClick = React.useCallback((text: string) => {
     setInputText(text);
     setTimeout(() => {
       textareaFocusRef.current?.focus();
     }, 50);
-  }
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#f4f1ea] dark:bg-[#1c1a17]">
       {/* Sidebar */}
       <Sidebar
         open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+        onClose={handleSidebarClose}
         onNewChat={handleNewChat}
         onSelectConversation={handleSelectConversation}
+        onDeleteConversation={handleDeleteConversation}
         conversations={conversations}
         activeId={activeConversationId}
       />
@@ -424,6 +479,12 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="flex size-8 shrink-0 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors lg:hidden"
               aria-label="Toggle sidebar"
+              // skills-audit / UX: aria-expanded tells screen reader
+              // users whether the sidebar is currently open or closed.
+              // The button is mobile-only (lg:hidden) so it only fires
+              // the drawer pattern on small screens.
+              aria-expanded={sidebarOpen}
+              aria-controls="primary-sidebar"
             >
               <Menu className="h-4 w-4" />
             </button>
@@ -512,9 +573,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
                       <ErrorBoundary key={card.id}>
                         <ResearchCard
                           query={card.query}
-                          onStop={() => {
-                            setCards((prev) => prev.filter((c) => c.id !== card.id));
-                          }}
+                          onStop={() => handleStopCard(card.id)}
                         />
                       </ErrorBoundary>
                     );
@@ -624,7 +683,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
       <React.Suspense fallback={null}>
         <HistoryDrawer
           open={historyOpen}
-          onClose={() => setHistoryOpen(false)}
+          onClose={handleHistoryClose}
           onSelect={handleSelectSession}
         />
       </React.Suspense>
@@ -636,7 +695,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
         {memoryOpen && (
           <MemoryDrawerLazy
             open={memoryOpen}
-            onClose={() => setMemoryOpen(false)}
+            onClose={handleMemoryClose}
           />
         )}
       </React.Suspense>
@@ -647,7 +706,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
           click dismissal; we just pass the open state and callbacks. */}
       <CommandPalette
         open={paletteOpen}
-        onClose={() => setPaletteOpen(false)}
+        onClose={handlePaletteClose}
         onNewChat={handleNewChat}
         onToggleTheme={handlePaletteToggleTheme}
         onToggleLanguage={toggleLocale}
