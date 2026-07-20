@@ -17,7 +17,7 @@
 //   9. MFA per-user         — getUserMfaSecret reads from user_mfa table
 //  10. NEXTAUTH_SECRET      — three-mode check (build / runtime-prod / dev)
 
-import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from "vitest";
 import { NextRequest } from "next/server";
 
 // ============================================================================
@@ -168,6 +168,7 @@ import { safeFetch } from "../safe-fetch";
 import { validateCsrf } from "../csrf";
 import { sanitizeError } from "../sanitize-error";
 import { maskCredentials } from "../credentials";
+import { decryptSafe, encrypt } from "../credentials";
 import { getUserMfaSecret } from "../mfa";
 
 // ============================================================================
@@ -720,6 +721,219 @@ describe("13. CORS: localhost Origin blocked in production (NM-1)", () => {
     expect(res.headers.get("Access-Control-Allow-Origin")).toBe(
       "http://localhost:3000"
     );
+  });
+});
+
+// ============================================================================
+// Test 14 — isAuthOptional() explicit branch coverage (v7 audit fix).
+// The function is a one-liner: `process.env.AUTH_DEV_BYPASS === "1"`. Both
+// branches (=== true → return true, !== "1" → return false) are exercised
+// explicitly here so a future refactor that changes the equality check
+// (e.g. accepting "true"/"yes") surfaces a test failure rather than a
+// silent security regression. The function must remain STRICT — only the
+// literal "1" enables bypass, regardless of NODE_ENV.
+// ============================================================================
+describe("14. isAuthOptional: explicit AUTH_DEV_BYPASS=1 / unset branch coverage", () => {
+  const origBypass = process.env.AUTH_DEV_BYPASS;
+  const origNodeEnv = process.env.NODE_ENV;
+  const env = process.env as unknown as Record<string, string | undefined>;
+
+  afterEach(() => {
+    if (origBypass === undefined) delete process.env.AUTH_DEV_BYPASS;
+    else process.env.AUTH_DEV_BYPASS = origBypass;
+    if (origNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = origNodeEnv;
+  });
+
+  it("returns true when AUTH_DEV_BYPASS=1 (true branch)", () => {
+    process.env.AUTH_DEV_BYPASS = "1";
+    // NODE_ENV must NOT matter — bypass works in production too (the
+    // operator opts in explicitly). Verifying both modes here locks in
+    // that invariant.
+    env.NODE_ENV = "production";
+    expect(isAuthOptional()).toBe(true);
+    env.NODE_ENV = "development";
+    expect(isAuthOptional()).toBe(true);
+  });
+
+  it("returns false when AUTH_DEV_BYPASS is unset (false branch)", () => {
+    delete process.env.AUTH_DEV_BYPASS;
+    env.NODE_ENV = "production";
+    expect(isAuthOptional()).toBe(false);
+    env.NODE_ENV = "development";
+    expect(isAuthOptional()).toBe(false);
+    env.NODE_ENV = "test";
+    expect(isAuthOptional()).toBe(false);
+  });
+});
+
+// ============================================================================
+// Test 15 — maskCredentials edge cases (v7 audit fix). The function has
+// two branches per credential value:
+//   (a) typeof value === "string" && value.length > 8 → "••••" + last4
+//   (b) else → "••••"
+// Branch (b) has THREE entry paths:
+//   - value is a string of length <= 8 (covered by test 8's short-value case)
+//   - value is a non-string (number, boolean, null, undefined) — NOT covered
+//     by any prior test because the type signature is Record<string, string>
+//   - value is an empty string "" (length 0, falls into the <= 8 path)
+// This test exercises the non-string entry path (defensive `typeof` check)
+// + the empty-string edge case + multiple-field independence, locking in
+// the branch coverage so a future refactor that drops the typeof guard
+// (e.g. "all values are strings, simplify") surfaces a test failure.
+// ============================================================================
+describe("15. maskCredentials: edge cases (empty, non-string, multiple fields)", () => {
+  it("returns an empty object for an empty credentials record", () => {
+    const masked = maskCredentials({});
+    expect(masked).toEqual({});
+    expect(Object.keys(masked)).toHaveLength(0);
+  });
+
+  it("fully masks an empty-string value (length 0 → ••••, no tail leak)", () => {
+    const masked = maskCredentials({ empty: "" });
+    expect(masked.empty).toBe("••••");
+    // Critically, an empty value must NOT produce "••••" + undefined or
+    // "••••" + "" (which would be indistinguishable from a length-9 value
+    // whose last 4 chars happen to be empty). The else branch fires.
+    expect(masked.empty).not.toContain("undefined");
+  });
+
+  it("fully masks a one-character value (length 1 → ••••)", () => {
+    const masked = maskCredentials({ pin: "x" });
+    expect(masked.pin).toBe("••••");
+  });
+
+  it("fully masks a length-8 value (boundary: > 8 is false)", () => {
+    const masked = maskCredentials({ boundary: "12345678" });
+    expect(masked.boundary).toBe("••••");
+  });
+
+  it("masks a length-9 value with last 4 (boundary: > 8 is true)", () => {
+    const masked = maskCredentials({ boundary: "123456789" });
+    expect(masked.boundary).toBe("••••6789");
+  });
+
+  it("masks non-string values defensively (typeof check false branch)", () => {
+    // The type signature is Record<string, string>, but a misconfigured
+    // caller could pass numbers/booleans/null. The `typeof value ===
+    // "string"` guard ensures they're fully masked rather than crashing
+    // on `value.slice(-4)`.
+    const creds = {
+      num: 123456789012345 as unknown as string,
+      bool: true as unknown as string,
+      nullable: null as unknown as string,
+      undef: undefined as unknown as string,
+    };
+    const masked = maskCredentials(creds);
+    expect(masked.num).toBe("••••");
+    expect(masked.bool).toBe("••••");
+    expect(masked.nullable).toBe("••••");
+    expect(masked.undef).toBe("••••");
+    // None of them should leak the original value.
+    expect(masked.num).not.toContain("12345");
+    expect(masked.bool).not.toContain("true");
+  });
+
+  it("masks a mixed record of long, short, empty, and non-string values independently", () => {
+    const creds = {
+      github: "ghp_abcdef1234567890xyz", // long → tail
+      stripe: "sk_live_short", // length 14 → tail (14 > 8)
+      pin: "1234", // short → full mask
+      empty: "", // empty → full mask
+      weird: 42 as unknown as string, // non-string → full mask
+    };
+    const masked = maskCredentials(creds);
+    expect(masked.github).toBe("••••" + "ghp_abcdef1234567890xyz".slice(-4));
+    expect(masked.stripe).toBe("••••" + "sk_live_short".slice(-4));
+    expect(masked.pin).toBe("••••");
+    expect(masked.empty).toBe("••••");
+    expect(masked.weird).toBe("••••");
+    // Every value is masked — none leak the original.
+    for (const v of Object.values(masked)) {
+      expect(v.startsWith("••••")).toBe(true);
+    }
+  });
+});
+
+// ============================================================================
+// Test 16 — decryptSafe branch coverage (v7 audit fix). The function has
+// 5 branches: null/empty → null; production + plaintext → null (fail-closed);
+// dev + plaintext → payload (backward-compat); valid encrypted → decrypt;
+// decrypt failure → null (prod) / payload (dev). The first three branches
+// were NOT covered by any prior test — bumping branches coverage above
+// the 40% gate required exercising them. We test the dev-mode paths here
+// (production mode requires a `vi.resetModules` + NODE_ENV swap that
+// risks breaking the other credentials tests' module-cache assumptions).
+// ============================================================================
+describe("16. decryptSafe: null / empty / plaintext-dev / round-trip branches", () => {
+  const origNodeEnv = process.env.NODE_ENV;
+  const origEncKey = process.env.CREDENTIALS_ENCRYPTION_KEY;
+  const env = process.env as unknown as Record<string, string | undefined>;
+
+  beforeAll(() => {
+    // encrypt() reads the AES key from CREDENTIALS_ENCRYPTION_KEY (or
+    // AUTH_PASSWORD). In production mode, getKey() THROWS if neither is
+    // set — and our round-trip + tamper tests below call encrypt() while
+    // NODE_ENV=production. Set a stable test key so the key resolution
+    // succeeds in all modes.
+    process.env.CREDENTIALS_ENCRYPTION_KEY = "test-encryption-key-for-v7-coverage";
+  });
+
+  afterEach(() => {
+    if (origNodeEnv === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = origNodeEnv;
+  });
+
+  afterAll(() => {
+    if (origEncKey === undefined) delete process.env.CREDENTIALS_ENCRYPTION_KEY;
+    else process.env.CREDENTIALS_ENCRYPTION_KEY = origEncKey;
+  });
+
+  it("returns null for null / undefined / empty-string payloads (early-return branch)", () => {
+    expect(decryptSafe(null)).toBeNull();
+    expect(decryptSafe(undefined)).toBeNull();
+    expect(decryptSafe("")).toBeNull();
+  });
+
+  it("returns the raw payload for legacy plaintext in dev mode (backward-compat branch)", () => {
+    env.NODE_ENV = "development";
+    // A legacy plaintext credential (no iv:tag:enc format) must be
+    // returned as-is in dev so the connector keeps working until the
+    // next save encrypts it.
+    const plaintext = "ghp_legacyPlaintoken1234";
+    expect(decryptSafe(plaintext)).toBe(plaintext);
+  });
+
+  it("returns null for legacy plaintext in production mode (fail-closed branch)", () => {
+    env.NODE_ENV = "production";
+    // In production, plaintext credentials are a security incident —
+    // decryptSafe refuses to return them and surfaces null. The caller
+    // (e.g. the connector loader) sees null and treats the credential
+    // as missing, forcing re-encryption on the next write.
+    const plaintext = "ghp_legacyPlaintoken1234";
+    expect(decryptSafe(plaintext)).toBeNull();
+  });
+
+  it("round-trips an encrypted payload through encrypt → decryptSafe (decrypt branch)", () => {
+    env.NODE_ENV = "development";
+    const original = "sk_test_secret_with_digits_12345";
+    const encrypted = encrypt(original);
+    // The encrypted payload MUST round-trip cleanly.
+    expect(decryptSafe(encrypted)).toBe(original);
+  });
+
+  it("returns null for a tampered encrypted payload in production (decrypt-fail branch)", () => {
+    env.NODE_ENV = "production";
+    // Build a well-formed iv:tag:enc string but corrupt the ciphertext
+    // so the GCM auth-tag verification fails. decrypt() throws, and
+    // decryptSafe catches + returns null in production.
+    const original = "sk_test_secret_with_digits_12345";
+    const encrypted = encrypt(original);
+    const parts = encrypted.split(":");
+    // Flip the last hex char of the ciphertext to tamper it.
+    const tamperedEnc = parts[2]!.slice(0, -1) + (parts[2]!.endsWith("0") ? "1" : "0");
+    const tampered = `${parts[0]}:${parts[1]}:${tamperedEnc}`;
+    expect(decryptSafe(tampered)).toBeNull();
   });
 });
 

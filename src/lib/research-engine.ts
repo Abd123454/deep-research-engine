@@ -39,6 +39,14 @@ import { randomUUID } from "crypto";
 // `DetectedLanguage` type), and the standalone prompt-template
 // constants live in `./research/prompts`. The pipeline logic itself
 // is unchanged.
+//
+// v7 audit fix: the PURE parsing / question-truncation / language-
+// instruction helpers (`truncateQuestion`, `extractQuestionsJson`,
+// `heuristicDecompose`, `safeHost`, `snippetFromPage`,
+// `deriveFallbackSections`, `tryParsePlan`, `languageInstruction`) +
+// the `MAX_SUBQUESTION_CHARS` constant now live in
+// `./research/helpers`. Importing them here keeps the call sites
+// unchanged while shrinking `research-engine.ts` by ~190 lines.
 import type {
   ResearchConfig,
   ResearchJob,
@@ -54,6 +62,17 @@ import type {
   DetectedLanguage,
 } from "./research/types";
 import { BIAS_DISCLAIMER } from "./research/prompts";
+import {
+  MAX_SUBQUESTION_CHARS,
+  truncateQuestion,
+  extractQuestionsJson,
+  heuristicDecompose,
+  safeHost,
+  snippetFromPage,
+  deriveFallbackSections,
+  tryParsePlan,
+  languageInstruction,
+} from "./research/helpers";
 
 export function resolveConfig(
   query: string,
@@ -202,124 +221,13 @@ export function detectLanguage(text: string): DetectedLanguage {
   return "unknown";
 }
 
-function languageInstruction(lang: DetectedLanguage): string {
-  switch (lang) {
-    case "ar": return "\n\nIMPORTANT: Respond in Arabic. The user's query is in Arabic.";
-    case "zh": return "\n\nIMPORTANT: Respond in Chinese. The user's query is in Chinese.";
-    case "he": return "\n\nIMPORTANT: Respond in Hebrew. The user's query is in Hebrew.";
-    case "ru": return "\n\nIMPORTANT: Respond in Russian. The user's query is in Russian.";
-    default: return "";
-  }
-}
-
 // ---------- Question utilities ----------
-
-const MAX_SUBQUESTION_CHARS = 280;
-
-function truncateQuestion(q: string): string {
-  const trimmed = q.trim().replace(/\s+/g, " ");
-  if (trimmed.length <= MAX_SUBQUESTION_CHARS) return trimmed;
-  const slice = trimmed.slice(0, MAX_SUBQUESTION_CHARS);
-  const lastStop = Math.max(
-    slice.lastIndexOf(". "),
-    slice.lastIndexOf("? "),
-    slice.lastIndexOf("! "),
-    slice.lastIndexOf("; ")
-  );
-  if (lastStop > 80) return slice.slice(0, lastStop + 1).trim();
-  return slice.trim() + "…";
-}
-
-function extractQuestionsJson(text: string): string[] {
-  if (!text) return [];
-  try {
-    const parsed = JSON.parse(text);
-    if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
-    if (Array.isArray(parsed)) return parsed.map(String);
-  } catch (err) {
-    // Non-critical: LLM returned malformed JSON. Try progressively looser
-    // extraction strategies below (substring match, array match, fenced
-    // code block). Debug-level because parsing failures are an expected
-    // part of the strategy cascade.
-    Sentry.captureException(err);
-    logger.debug(
-      { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-      "extractQuestionsJson: direct JSON.parse failed — trying looser strategies"
-    );
-  }
-  const jsonMatch = text.match(/\{[\s\S]*"questions"[\s\S]*\}/);
-  if (jsonMatch) {
-    try {
-      const parsed = JSON.parse(jsonMatch[0]);
-      if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
-    } catch (err) {
-      // Non-critical: extracted JSON-like substring was still malformed.
-      // Continue to the next strategy (array match, fenced block, line split).
-      Sentry.captureException(err);
-      logger.debug(
-        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-        "extractQuestionsJson: JSON-object substring parse failed"
-      );
-    }
-  }
-  const arrayMatch = text.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
-    try {
-      const parsed = JSON.parse(arrayMatch[0]);
-      if (Array.isArray(parsed)) return parsed.map(String);
-    } catch (err) {
-      // Non-critical: extracted array-like substring was malformed.
-      // Continue to the fenced-block and line-split strategies.
-      Sentry.captureException(err);
-      logger.debug(
-        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-        "extractQuestionsJson: JSON-array substring parse failed"
-      );
-    }
-  }
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenceMatch) {
-    try {
-      const parsed = JSON.parse(fenceMatch[1].trim());
-      if (Array.isArray(parsed?.questions)) return parsed.questions.map(String);
-      if (Array.isArray(parsed)) return parsed.map(String);
-    } catch (err) {
-      // Non-critical: fenced code block wasn't valid JSON. Fall through to
-      // the line-by-line heuristic (last-resort extraction).
-      Sentry.captureException(err);
-      logger.debug(
-        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-        "extractQuestionsJson: fenced-block parse failed — falling back to line split"
-      );
-    }
-  }
-  const lines = text
-    .split(/\n+/)
-    .map((l) => l.replace(/^\s*(\d+[.)]|-|\*|\+)\s*/, "").trim())
-    .filter((l) => l.length > 8 && l.length < 600);
-  const questions = lines.filter((l) => l.endsWith("?"));
-  if (questions.length > 0) return questions;
-  if (lines.length >= 2) return lines;
-  return [];
-}
-
-function heuristicDecompose(query: string, numSubQueries: number): string[] {
-  const headingSplit = query.split(/\n\s*(?:\d+[.)]\s+|#{1,6}\s+)/);
-  if (headingSplit.length >= 2) {
-    return headingSplit
-      .map((s) => truncateQuestion(s.replace(/\n+/g, " ").trim()))
-      .filter((s) => s.length > 20)
-      .slice(0, numSubQueries);
-  }
-  const paraSplit = query.split(/\n\s*\n/).filter((p) => p.trim().length > 30);
-  if (paraSplit.length >= 2) {
-    return paraSplit
-      .map((p) => truncateQuestion(p.replace(/\n+/g, " ").trim()))
-      .filter((s) => s.length > 20)
-      .slice(0, numSubQueries);
-  }
-  return [truncateQuestion(query)];
-}
+//
+// `MAX_SUBQUESTION_CHARS`, `truncateQuestion`, `extractQuestionsJson`,
+// `heuristicDecompose`, and `languageInstruction` were moved to
+// `./research/helpers` (v7 audit fix). The pipeline calls them via the
+// import statement at the top of this file. See `./research/helpers.ts`
+// for the implementation + docstrings.
 
 // ---------- Stage 1: Planning ----------
 
@@ -425,75 +333,9 @@ Generate between 5 and 9 sections. Return ONLY the JSON object.`,
   return { ...plan, llmFailed, llmError };
 }
 
-function tryParsePlan(text: string): ResearchPlan | null {
-  const candidates: string[] = [];
-  try {
-    candidates.push(text);
-  } catch (err) {
-    // Non-critical: array push threw (extremely unlikely — only on OOM).
-    // Skip the raw-text candidate; the fenced-block and object-match
-    // candidates below are still tried.
-    Sentry.captureException(err);
-    logger.debug(
-      { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-      "tryParsePlan: raw-text candidate push failed (OOM?)"
-    );
-  }
-  const fenceMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  if (fenceMatch) candidates.push(fenceMatch[1]);
-  const objMatch = text.match(/\{[\s\S]*\}/);
-  if (objMatch) candidates.push(objMatch[0]);
-
-  for (const c of candidates) {
-    try {
-      const parsed = JSON.parse(c);
-      if (parsed && typeof parsed.title === "string" && Array.isArray(parsed.sections)) {
-        const sections: PlanSection[] = parsed.sections
-          .map((s: { title?: string; description?: string }, i: number) => ({
-            id: `s${i + 1}`,
-            title: String(s?.title ?? `Section ${i + 1}`).trim(),
-            description: String(s?.description ?? "").trim(),
-          }))
-          .filter((s: PlanSection) => s.title.length > 0)
-          .slice(0, 9);
-        return {
-          title: String(parsed.title).trim() || "Deep Research Report",
-          summary: String(parsed.summary ?? "").trim(),
-          sections,
-        };
-      }
-    } catch (err) {
-      // Non-critical: this candidate wasn't valid JSON (or didn't have the
-      // required shape). Try the next candidate.
-      Sentry.captureException(err);
-      logger.debug(
-        { module: "research-engine", err: err instanceof Error ? err.message : String(err) },
-        "tryParsePlan: candidate parse failed — trying next"
-      );
-    }
-  }
-  return null;
-}
-
-function deriveFallbackSections(query: string): PlanSection[] {
-  const headingSplit = query
-    .split(/\n\s*(?:\d+[.)]\s+|#{1,6}\s+)/)
-    .map((s) => s.replace(/\n+/g, " ").trim())
-    .filter((s) => s.length > 20)
-    .slice(0, 9);
-  if (headingSplit.length >= 3) {
-    return headingSplit.map((s, i) => {
-      const title = s.split(/[:.\-—]/)[0].slice(0, 80).trim() || `Section ${i + 1}`;
-      return { id: `s${i + 1}`, title, description: s.slice(0, 160) };
-    });
-  }
-  return [
-    { id: "s1", title: "Overview & Background", description: "Foundational context and definitions." },
-    { id: "s2", title: "Key Findings", description: "The core discoveries from the research." },
-    { id: "s3", title: "Analysis & Implications", description: "What the findings mean in practice." },
-    { id: "s4", title: "Conclusion", description: "Summary and outlook." },
-  ];
-}
+// `tryParsePlan` + `deriveFallbackSections` were moved to
+// `./research/helpers` (v7 audit fix). The `generatePlan` call site
+// above uses the imported versions.
 
 // ---------- Stage 2: Decomposition ----------
 
@@ -617,10 +459,10 @@ Return ONLY a JSON object with this exact shape (no markdown fences, no preamble
 }
 
 // ---------- Stages 3-5 (per sub-query): search -> read -> extract ----------
-
-function snippetFromPage(p: PageReadResult, max = 600): string {
-  return p.text.slice(0, max).trim();
-}
+//
+// `snippetFromPage` + `safeHost` were moved to `./research/helpers`
+// (v7 audit fix). The pipeline calls them via the import statement at
+// the top of this file.
 
 async function processSubQuery(
   job: ResearchJob,
@@ -738,13 +580,8 @@ async function processSubQuery(
   log(job, "success", "extracting", `Findings extracted ${roundTag}for: "${sq.question}" (${findings.length} chars)`);
 }
 
-function safeHost(url: string): string {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return "";
-  }
-}
+// `safeHost` was moved to `./research/helpers` (v7 audit fix). The
+// `processSubQuery` call site above uses the imported version.
 
 async function extractFindings(
   job: ResearchJob,

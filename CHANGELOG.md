@@ -2,6 +2,20 @@
 
 ## [4.0.0] — 2026-07-19 (public launch)
 
+### Fixed — v4.0.0 post-v6-audit (commits d5dac92 + 974be13 + e779749 + 2c95a75)
+- Streaming endpoints ownership: 403 check on stream/result/status/[id]
+- bcrypt cost 10→12 (OWASP) + rehash on login
+- ALLOWED_ORIGINS=* rejected in production
+- Account export: maskCredentials replaces decryptCredentials
+- CSRF cookie: setCsrfCookie with httpOnly + sameSite=strict + secure
+- God object: swarm.ts 936→742 lines (split into types/roles/index)
+- Tauri desktop app scaffold (~10MB vs 150MB Electron)
+- Mobile chat UI: 18→352 lines (functional SSE streaming)
+- skills.sh audit: project/conversation ownership + maskCredentials
+- 15 skills: 72 aria-labels + 12 React.memo + 37 useCallback + 166 Sentry + 229 JSDoc
+- 489 tests (was 479, +10)
+- API consistency: 270→302 ok pattern (+32)
+
 ### Fixed — v4.0.0 post-audit (commit b8b91c8)
 - Build regression: NEXTAUTH_SECRET check no longer crashes `next build`.
   Replaced the lazy `console.error` (added in fix-7-remaining to keep the
