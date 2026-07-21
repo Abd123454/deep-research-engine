@@ -21,29 +21,50 @@
 // the public entity ID / OIDC issuer URL.
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { isSAMLConfigured, getSAMLConfig } from "@/lib/sso/saml";
 import { isOIDCConfigured, getOIDCConfig } from "@/lib/sso/oidc";
+import { logger } from "@/lib/logger";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export async function GET() {
-  const samlConfigured = isSAMLConfigured();
-  const oidcConfigured = isOIDCConfigured();
+  try {
+    const samlConfigured = isSAMLConfigured();
+    const oidcConfigured = isOIDCConfigured();
 
-  // Only expose the issuer (public identifier) — never the cert,
-  // client secret, or entryPoint URL.
-  const saml = samlConfigured ? getSAMLConfig() : null;
-  const oidc = oidcConfigured ? getOIDCConfig() : null;
+    // Only expose the issuer (public identifier) — never the cert,
+    // client secret, or entryPoint URL.
+    const saml = samlConfigured ? getSAMLConfig() : null;
+    const oidc = oidcConfigured ? getOIDCConfig() : null;
 
-  return NextResponse.json({
-    ok: true,
-    providers: {
-      saml: {
-        configured: samlConfigured,
-        ...(samlConfigured && saml ? { issuer: saml.issuer } : {}),
+    return NextResponse.json({
+      ok: true,
+      providers: {
+        saml: {
+          configured: samlConfigured,
+          ...(samlConfigured && saml ? { issuer: saml.issuer } : {}),
+        },
+        oidc: {
+          configured: oidcConfigured,
+          ...(oidcConfigured && oidc ? { issuer: oidc.issuer } : {}),
+        },
       },
-      oidc: {
-        configured: oidcConfigured,
-        ...(oidcConfigured && oidc ? { issuer: oidc.issuer } : {}),
+    });
+  } catch (err) {
+    // FB-3 fix: SSO config parsing can throw if env vars are malformed.
+    // Catch and return a sanitized 500 instead of leaking the stack trace
+    // on the PUBLIC login page (which unauthenticated users hit).
+    Sentry.captureException(err);
+    const safe = sanitizeError(err);
+    logger.error({ module: "sso", err: safe }, "SSO status check failed");
+    // Return configured:false for both providers so the login page
+    // simply hides the SSO buttons rather than crashing.
+    return NextResponse.json({
+      ok: true,
+      providers: {
+        saml: { configured: false },
+        oidc: { configured: false },
       },
-    },
-  });
+    });
+  }
 }

@@ -33,26 +33,42 @@
 // (which DOES require auth + ownership verification).
 
 import { NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { AVAILABLE_CONNECTORS, getConfiguredConnectors } from "@/lib/connectors";
+import { logger } from "@/lib/logger";
+import { sanitizeError } from "@/lib/sanitize-error";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  // Compute the configured set once per request. Cheap (5 env-var
-  // lookups) but kept outside the map() for readability.
-  const configured = new Set(getConfiguredConnectors());
+  try {
+    // Compute the configured set once per request. Cheap (5 env-var
+    // lookups) but kept outside the map() for readability.
+    const configured = new Set(getConfiguredConnectors());
 
-  return NextResponse.json({
-    ok: true,
-    connectors: AVAILABLE_CONNECTORS.map((c) => ({
-      type: c.type,
-      name: c.name,
-      icon: c.icon,
-      description: c.description,
-      authRequired: c.authRequired,
-      capabilities: c.capabilities,
-      configured: configured.has(c.type),
-    })),
-  });
+    return NextResponse.json({
+      ok: true,
+      connectors: AVAILABLE_CONNECTORS.map((c) => ({
+        type: c.type,
+        name: c.name,
+        icon: c.icon,
+        description: c.description,
+        authRequired: c.authRequired,
+        capabilities: c.capabilities,
+        configured: configured.has(c.type),
+      })),
+    });
+  } catch (err) {
+    // FB-3 fix: wrap handler body in try/catch to avoid HTTP 500 stack
+    // trace leaks if getConfiguredConnectors() or AVAILABLE_CONNECTORS
+    // throws (e.g. corrupt connector registry).
+    Sentry.captureException(err);
+    const safe = sanitizeError(err);
+    logger.error({ module: "connectors", err: safe }, "connector list failed");
+    return NextResponse.json(
+      { ok: false, error: safe || "Failed to list connectors." },
+      { status: 500 }
+    );
+  }
 }

@@ -9,6 +9,9 @@ export async function generateImage(prompt: string, options: { size?: string; qu
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({ model: "dall-e-3", prompt, n: 1, size: options.size || "1024x1024", quality: options.quality || "standard" }),
+      // FB-2 fix: 30s timeout. Without this, a hung OpenAI endpoint
+      // hangs the entire /api/generate/image request indefinitely.
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`OpenAI image error: ${res.status}`);
     const data = await res.json();
@@ -19,6 +22,8 @@ export async function generateImage(prompt: string, options: { size?: string; qu
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.STABILITY_API_KEY}` },
       body: JSON.stringify({ text_prompts: [{ text: prompt }], cfg_scale: 7, height: 1024, width: 1024, steps: 30 }),
+      // FB-2 fix: 30s timeout. SDXL generation can be slow but must not hang forever.
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`Stability error: ${res.status}`);
     const data = await res.json();
@@ -35,6 +40,8 @@ export async function generateVoice(text: string, options: { voice?: string } = 
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({ model: "tts-1", voice: options.voice || "alloy", input: text }),
+      // FB-2 fix: 30s timeout. Long text inputs can take time but must not hang.
+      signal: AbortSignal.timeout(30_000),
     });
     if (!res.ok) throw new Error(`OpenAI TTS error: ${res.status}`);
     const blob = await res.blob();

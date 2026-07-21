@@ -1,5 +1,36 @@
 # Changelog
 
+## [Unreleased] — 2026-07-21 (FB-1/FB-2/FB-3 fixes post Final Fix Report)
+
+### Fixed — 3 bugs from Quaesitor Final Fix Report deep audit
+
+- **FB-1 (Critical, CVSS 8.5): `/api/documents/upload` route was missing.**
+  The frontend (`DocumentCard.tsx:52` and `DocumentsMode.tsx:82`) POSTs
+  file uploads to `/api/documents/upload`, but no such route existed —
+  the backend only had `/api/documents` (GET) and `/api/documents/[id]`.
+  Every document upload returned HTTP 404, breaking the entire document
+  Q&A feature. Created `src/app/api/documents/upload/route.ts` that
+  accepts multipart/form-data, validates MIME type + size (25MB max),
+  extracts text via `parseDocument`, stores via `addDocument`, and
+  returns `{ok, documentId, filename, textLength, preview}`. Wrapped in
+  try/catch with Sentry + sanitized errors. Verified: txt upload → HTTP 200.
+- **FB-2 (High, CVSS 7.0): missing timeout on multi-modal fetch calls.**
+  `src/lib/multi-modal/generators.ts` had 3 fetch calls (OpenAI image,
+  Stability SDXL, OpenAI TTS) with no `signal` — a hung provider hung
+  the entire request indefinitely. Added `signal: AbortSignal.timeout(30_000)`
+  to all 3, matching the pattern already used in `vision.ts`/`asr.ts`/`tts.ts`.
+  (Note: the PDF report listed vision/asr/tts as also missing timeouts,
+  but verification showed they already had `AbortSignal.timeout(30000)` —
+  only `generators.ts` was affected.)
+- **FB-3 (Medium, CVSS 5.0): missing try/catch on 6 endpoints.**
+  Unhandled errors in these routes leaked stack traces as raw HTTP 500s.
+  Added defensive try/catch with `Sentry.captureException` + `logger.error`
+  + `sanitizeError` to: `/api/audit-logs`, `/api/connectors/list`,
+  `/api/auth/sso/status` (graceful degradation — returns `configured:false`
+  so the login page hides SSO buttons instead of crashing),
+  `/api/sessions` (GET + DELETE), `/api/docs` (returns 404 if spec missing),
+  `/api/documents/[id]` (GET + DELETE).
+
 ## [Unreleased] — 2026-07-21 (runtime fixes post-v9 audit)
 
 ### Fixed — critical runtime bugs discovered in neutral verification
