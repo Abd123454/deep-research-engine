@@ -58,7 +58,7 @@
     "framer-motion": "^12.42.2",
     "ioredis": "^5.11.1",
     "jsdom": "^29.1.1",
-    "lucide-react": "^0.525.0",
+    "lucide-react": "^1.25.0",
     "mammoth": "^1.12.0",
     "mermaid": "^11.16.0",
     "next": "^16.2.10",
