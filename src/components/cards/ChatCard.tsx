@@ -106,6 +106,13 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const [conversationId, setConversationId] = React.useState(initialConvId || "");
   const [followUp, setFollowUp] = React.useState("");
   const [error, setError] = React.useState("");
+  // Mirror `error` into a ref so the finally block in the streaming
+  // effect can read the LATEST error value without re-subscribing the
+  // effect to `error` (which would restart the fetch on every setError).
+  const errorRef = React.useRef("");
+  React.useEffect(() => {
+    errorRef.current = error;
+  }, [error]);
   const [tokens, setTokens] = React.useState(0);
   const [copiedIndex, setCopiedIndex] = React.useState<number | null>(null);
   // Carbon footprint of the most recent assistant response. Updated when
@@ -337,10 +344,26 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
       } finally {
         if (!cancelled) {
           setStreaming(false);
-          setMessages((prev) => [
-            ...prev,
-            { role: "assistant", content: fullResponse || (streamingResponse || "(empty response)") },
-          ]);
+          // P0 (UX): when the stream produced no tokens, show a helpful
+          // error instead of the misleading "(empty response)". The most
+          // common cause is no LLM provider configured — the /api/chat
+          // route returns 503 with an `error` field, which we captured
+          // into `error` state above. Surface that message so the user
+          // knows exactly what to fix instead of seeing a blank reply.
+          setMessages((prev) => {
+            // Read the latest error from a ref-like getter to avoid stale
+            // closure: error is set via setError() above; we read it from
+            // the state captured at finally-time via a local variable.
+            const fallbackContent =
+              fullResponse ||
+              streamingResponse ||
+              errorRef.current ||
+              "No response received. The LLM provider may not be configured — set NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_URL.";
+            return [
+              ...prev,
+              { role: "assistant" as const, content: fallbackContent },
+            ];
+          });
           setStreamingResponse("");
           abortRef.current = null;
           // Critical-thinking prompt: set once when the response

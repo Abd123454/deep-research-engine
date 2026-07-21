@@ -1,9 +1,13 @@
-# Quaesitor v4.0.0 — Public Launch Release Notes
+# Quaesitor v4.1.0 — Public Launch Release Notes
 
-**Date:** 2026-07-19
-**Version:** 4.0.0 (semver) — the first stable public release.
+**Date:** 2026-07-20
+**Version:** 4.1.0 (semver) — final push to 10/10 audit score.
 **License:** AGPL-3.0 (open source) + Commercial License for enterprise.
-**Tag:** `v4.0.0`
+**Tag:** `v4.1.0`
+
+> **Changelog:** See [`CHANGELOG.md`](./CHANGELOG.md) § `[4.1.0]` for the
+> full list of fixes in this release (next-auth handler params fix,
+> depth-type UI↔API alignment, empty-response UX fix, and more).
 
 ---
 

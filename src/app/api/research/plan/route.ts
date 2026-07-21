@@ -24,7 +24,7 @@ const MAX_QUERY_CHARS = 100_000;
 
 const PlanBodySchema = z.object({
   query: z.string().trim().min(1, "Query is required.").max(MAX_QUERY_CHARS),
-  depth: z.enum(["standard", "deep", "advanced"]).optional(),
+  depth: z.enum(["quick", "standard", "deep", "advanced"]).optional(),
   numSubQueries: z.number().int().min(2).max(12).optional(),
   maxLinksPerQuery: z.number().int().min(3).max(25).optional(),
   reportMaxTokens: z.number().int().min(1000).max(32000).optional(),

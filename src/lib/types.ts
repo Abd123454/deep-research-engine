@@ -31,7 +31,16 @@ export type SubQueryStatus =
 
 export type SubQueryRound = 1 | 2;
 
-export type SearchDepth = "standard" | "deep" | "advanced";
+// SearchDepth — the four research-depth presets exposed to the user via
+// the DepthIndicator UI (Quick / Standard / Deep / Advanced).
+//   - quick     — 1 sub-query, 3 links, no multi-round. Fastest.
+//   - standard  — 3 sub-queries, 4 links, no multi-round.
+//   - deep      — 5 sub-queries, 8 links, 2 gap queries, multi-round.
+//   - advanced  — 7+ sub-queries, 15 links, 3 gap queries, multi-round.
+// "quick" was added to fix the UI↔API type mismatch (the UI offered
+// "quick" but the API rejected it with a 400). All four values are now
+// valid everywhere — DepthIndicator, zod schemas, resolveConfig presets.
+export type SearchDepth = "quick" | "standard" | "deep" | "advanced";
 
 export type RetrieverType = "duckduckgo";
 

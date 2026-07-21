@@ -89,6 +89,12 @@ export function resolveConfig(
       enableMultiRound: boolean;
     }
   > = {
+    quick: {
+      numSubQueries: 1,
+      maxLinksPerQuery: 3,
+      numGapQueries: 0,
+      enableMultiRound: false,
+    },
     standard: {
       numSubQueries: 3,
       maxLinksPerQuery: 4,

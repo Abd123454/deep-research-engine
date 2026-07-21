@@ -1,5 +1,45 @@
 # Changelog
 
+## [Unreleased] — 2026-07-21 (runtime fixes post-v9 audit)
+
+### Fixed — critical runtime bugs discovered in neutral verification
+
+- **CRITICAL: next-auth route handler crashed on every request (HTTP 500).**
+  `src/app/api/auth/[...nextauth]/route.ts` exported `rateLimitedHandler`
+  with signature `(req: NextRequest)` but Next.js 16 App Router catch-all
+  routes receive a second `params` context argument. Without forwarding
+  it, NextAuth v4 internally failed with:
+  `TypeError: Cannot destructure property 'nextauth' of 'req.query' as it is undefined`.
+  This broke `/api/auth/session`, `/csrf`, `/signin`, `/signout`, and
+  `/callback/credentials` — i.e., ALL auth endpoints. Fixed by adding the
+  `ctx: { params: { nextauth: string[] } }` argument and forwarding it
+  to the underlying NextAuth handler on both the POST and GET branches.
+- **Depth type mismatch between UI and API (HTTP 400).** The
+  `DepthIndicator` component offered `"quick" | "standard" | "deep"` but
+  the `/api/research/plan` and `/api/research/start` zod schemas only
+  accepted `"standard" | "deep" | "advanced"`. Submitting a "quick"
+  research request returned `400: depth: Invalid option`. Fixed by adding
+  `"quick"` to the `SearchDepth` type, the zod schemas, the MCP tool
+  enum, and a new `quick` preset in `resolveConfig` (1 sub-query, 3
+  links, no multi-round — the fastest/cheapest research tier).
+- **Misleading "(empty response)" placeholder.** When `/api/chat`
+  returned a 503 (no LLM provider configured) or any error, `ChatCard`
+  displayed `(empty response)` to the user — hiding the real error
+  message. Fixed by reading the captured `error` state (via a ref to
+  avoid stale-closure in the `finally` block) and surfacing it as the
+  assistant message when no tokens were streamed. The fallback now reads:
+  "No response received. The LLM provider may not be configured — set
+  NVIDIA_API_KEY, OPENAI_API_KEY, ANTHROPIC_API_KEY, or OLLAMA_URL."
+- **`.env` was missing `NEXTAUTH_SECRET`** — every auth request logged
+  `using insecure dev fallback`. Generated a real 32-byte secret and
+  added `AUTH_DEV_BYPASS=1` + `NEXTAUTH_URL` so the UI works locally.
+- **`RELEASE_NOTES.md` still said v4.0.0** at the top while
+  `package.json` was already 4.1.0. Bumped the header to v4.1.0 with a
+  cross-link to this changelog.
+- **`bun run db:push` script was missing** from `package.json` despite
+  being referenced in the setup instructions. Added `db:push` and
+  `db:generate` scripts.
+
 ## [4.1.0] — 2026-07-20 (final push to 10/10)
 
 ### Changed — v4.1.0 final push to 10/10

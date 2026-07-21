@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
                 type: "object",
                 properties: {
                   query: { type: "string", description: "The research question or topic" },
-                  depth: { type: "string", enum: ["standard", "deep", "advanced"], description: "Research depth (default: standard)" },
+                  depth: { type: "string", enum: ["quick", "standard", "deep", "advanced"], description: "Research depth (default: standard)" },
                 },
                 required: ["query"],
               },

@@ -291,7 +291,25 @@ const handler = NextAuth(authOptions);
 // `checkStartRateLimit` enforces max 5/min + 3 concurrent + 50/day
 // per IP. The concurrent slot is released in the finally block so
 // short-lived auth requests don't pin the bucket.
-const rateLimitedHandler = async (req: NextRequest) => {
+//
+// CRITICAL (App Router): catch-all dynamic route handlers receive a
+// second `params` context argument. NextAuth v4 internally destructures
+// `req.query.nextauth` which Next.js populates from the `params` arg.
+// If we don't forward it, EVERY /api/auth/* request crashes with:
+//   TypeError: Cannot destructure property 'nextauth' of 'req.query' as it is undefined
+// Forwarding the context is mandatory for NextAuth to route csrf/session/signin/etc.
+//
+// Next.js 16 note: `params` is now a Promise (async params). NextAuth v4's
+// handler expects the resolved value, so we `await` it before passing the
+// context onward. The type matches Next's RouteHandlerConfig constraint.
+type NextAuthContext = {
+  params: Promise<{ nextauth: string[] }>;
+};
+
+const rateLimitedHandler = async (
+  req: NextRequest,
+  ctx: NextAuthContext
+) => {
   if (req.method === "POST") {
     const ip = getClientIP(req);
     const rl = await checkStartRateLimit(ip);
@@ -307,17 +325,29 @@ const rateLimitedHandler = async (req: NextRequest) => {
       );
     }
     try {
-      // NextAuth's handler accepts a NextRequest in App Router and
-      // returns a NextResponse. The runtime signature is loose — we
-      // cast through `unknown` because the @types package types it
-      // for the Pages Router (NextApiRequest/NextApiResponse) and the
-      // App Router signature is inferred at the route-module boundary.
-      return (await (handler as unknown as (req: NextRequest) => Promise<NextResponse>)(req)) as NextResponse;
+      // NextAuth's handler accepts (req, ctx) in App Router and returns
+      // a NextResponse. The @types package types it for the Pages Router
+      // (NextApiRequest/NextApiResponse), so we cast through `unknown`.
+      // We resolve the params Promise before forwarding so NextAuth v4
+      // (which expects the sync shape) receives `{ nextauth: string[] }`.
+      const resolvedCtx = {
+        params: { nextauth: (await ctx.params).nextauth },
+      };
+      return (await (handler as unknown as (
+        req: NextRequest,
+        ctx: { params: { nextauth: string[] } }
+      ) => Promise<NextResponse>)(req, resolvedCtx)) as NextResponse;
     } finally {
       releaseConcurrency(ip);
     }
   }
-  return (handler as unknown as (req: NextRequest) => Promise<NextResponse>)(req);
+  const resolvedCtx = {
+    params: { nextauth: (await ctx.params).nextauth },
+  };
+  return (handler as unknown as (
+    req: NextRequest,
+    ctx: { params: { nextauth: string[] } }
+  ) => Promise<NextResponse>)(req, resolvedCtx);
 };
 
 export { rateLimitedHandler as GET, rateLimitedHandler as POST };
