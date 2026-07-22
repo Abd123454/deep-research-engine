@@ -4,21 +4,17 @@ import * as Sentry from "@sentry/nextjs";
 // ChatCard — multi-turn conversational chat with Claude-exact message structure.
 // User messages: right-aligned warm gray bubble, serif font.
 // Assistant messages: NO bubble, full-width serif prose on cream bg.
+//
+// FC-3 (UI God-object split): the markdown component map, the
+// AssistantMessage render block, and the StreamingMessage render block
+// were extracted into ./chat/ sub-components. ChatCard now focuses on
+// the conversation state machine (SSE streaming, token accumulation,
+// artifact detection, follow-up send/stop) and delegates presentation
+// to <AssistantMessage> / <StreamingMessage> + useChatMarkdown().
 
 import * as React from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Square, Copy, Check, Leaf, Lightbulb, PanelRight } from "lucide-react";
-// v5 audit fix #8: ReactMarkdown is statically imported (not lazy-loaded)
-// because it renders the streaming assistant response — `streamingResponse`
-// is updated on every SSE token. Lazy-loading via React.lazy + Suspense
-// would show a fallback on the FIRST token of every stream (the chunk
-// is fetched on-demand after the first render), causing visible flicker
-// at the start of every assistant turn. The static import is ~14KB
-// gzipped and shared across all chat-bearing routes (UnifiedInterface,
-// ResearchCard, DocumentCard), so the per-route cost is amortized by
-// Next.js's automatic chunk sharing. `optimizePackageImports` in
-// next.config.ts tree-shakes the named exports.
-import ReactMarkdown from "react-markdown";
+import { ArrowRight, Square, Leaf, Lightbulb } from "lucide-react";
 import {
   estimateChatCarbon,
   formatCarbon,
@@ -29,33 +25,14 @@ import {
   getCriticalThinkingPrompt,
   shouldShowCriticalThinkingPrompt,
 } from "@/lib/critical-thinking";
-// P0-5: streaming artifact detection. During the stream we run
-// `detectArtifactStream` (throttled to 200ms) on the partial response.
-// If an opening marker is detected, an "Artifact detected →" button
-// appears in the assistant message footer; clicking it calls
-// `onArtifact` with the partial artifact so the parent can open the
-// ArtifactsPanel. On stream completion, the canonical `detectArtifact`
-// pass runs and `onArtifact` is called with the final version.
 import {
   detectArtifact as detectArtifactFinal,
   detectArtifactStream,
   type Artifact,
 } from "@/lib/artifact-detector";
-// P0-8: inline citation hover cards. The parseCitations helper splits a
-// text node into strings + <CitationHoverCard> elements based on [N]
-// patterns. When no `sources` array is provided (chat transcripts don't
-// currently carry source metadata), CitationHoverCard renders the plain
-// `[N]` text — visually identical to the pre-existing behavior.
-import {
-  parseCitations,
-  type CitationSource,
-} from "@/components/CitationHoverCard";
-// P0-104: per-message thumbs up/down feedback. Renders inline below
-// each assistant message. Posts to /api/feedback with the message
-// index as `context.messageId` and the conversation ID as
-// `context.conversationId` so admin stats can correlate ratings to
-// specific responses.
-import { FeedbackButtons } from "@/components/FeedbackButtons";
+import type { CitationSource } from "@/components/CitationHoverCard";
+// FC-3: extracted sub-components (pure presentational).
+import { useChatMarkdown, AssistantMessage, StreamingMessage } from "./chat";
 
 interface ChatMessage {
   role: "user" | "assistant";
@@ -507,57 +484,11 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
   const fullConversation = messages.map((m) => `${m.role}: ${m.content}`).join("\n\n");
   void fullConversation;
 
-  // P0-8: walk markdown children, replacing [N] patterns in string
-  // children with <CitationHoverCard> elements. When `sources` is
-  // absent (chat API doesn't currently send source metadata), the
-  // function returns children unchanged — preserving the pre-existing
-  // rendering. Non-string children (elements like <strong>, <em>) are
-  // passed through; only direct string children are split, which is
-  // what react-markdown produces for inline text.
-  //
-  // The function is stable across renders: it closes over `sources`
-  // (which only changes when the parent passes a new array — typically
-  // never for ChatCard, since chat doesn't stream sources).
-  const renderWithCitations = React.useCallback(
-    (children: React.ReactNode): React.ReactNode => {
-      if (!sources || sources.length === 0) return children;
-      if (typeof children === "string") {
-        return parseCitations(children, sources);
-      }
-      if (Array.isArray(children)) {
-        return children.map((child, i) => {
-          if (typeof child === "string") {
-            return (
-              <React.Fragment key={i}>
-                {parseCitations(child, sources)}
-              </React.Fragment>
-            );
-          }
-          return child;
-        });
-      }
-      return children;
-    },
-    [sources]
-  );
-
-  // Quaesitor markdown components — serif body, warm colors, persistent underlines
-  const quaesitorMarkdownComponents: Record<string, React.ComponentType<any>> = {
-    p: ({ children }: any) => <p className="mb-4">{renderWithCitations(children)}</p>,
-    code: ({ inline, children }: any) =>
-      inline
-        ? <code className="font-mono text-[14px] bg-[#d9d4c7] dark:bg-[#322e28] px-1 py-0.5 rounded">{children}</code>
-        : <pre className="font-mono text-[14px] bg-[#f4f1ea] dark:bg-[#1c1a17] p-4 rounded-lg overflow-x-auto my-4 border border-[#d9d4c7] dark:border-[#3d3830]"><code>{children}</code></pre>,
-    a: ({ href, children }: any) => <a href={href} className="text-[#8b4513] underline underline-offset-2 hover:text-[#6b3410]">{children}</a>,
-    h1: ({ children }: any) => <h1 className="font-body text-2xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h1>,
-    h2: ({ children }: any) => <h2 className="font-body text-xl font-semibold mt-6 mb-3 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h2>,
-    h3: ({ children }: any) => <h3 className="font-body text-lg font-semibold mt-4 mb-2 text-[#2a2620] dark:text-[#e8e3d8]">{renderWithCitations(children)}</h3>,
-    ul: ({ children }: any) => <ul className="list-disc pl-6 my-4 space-y-1">{children}</ul>,
-    ol: ({ children }: any) => <ol className="list-decimal pl-6 my-4 space-y-1">{children}</ol>,
-    li: ({ children }: any) => <li className="font-body text-[16px] leading-[1.7]">{renderWithCitations(children)}</li>,
-    blockquote: ({ children }: any) => <blockquote className="border-l-2 border-[#d9d4c7] dark:border-[#3d3830] pl-4 italic my-4 text-[#6b6358] dark:text-[#9a9080]">{children}</blockquote>,
-    strong: ({ children }: any) => <strong className="font-semibold text-[#2a2620] dark:text-[#e8e3d8]">{children}</strong>,
-  };
+  // FC-3: markdown components + citation rendering extracted to useChatMarkdown.
+  // The hook returns a memoized { renderWithCitations, components } pair so
+  // the markdown component map is stable across renders (important — a new
+  // object on every render would defeat ReactMarkdown's memoization).
+  const { components: quaesitorMarkdownComponents } = useChatMarkdown(sources);
 
   return (
     <motion.div
@@ -575,130 +506,29 @@ export const ChatCard = React.memo(function ChatCard({ initialMessage, conversat
               </div>
             </div>
           ) : (
-            <div key={i} className="mb-6 group/msg">
-              {/* Assistant label — "Quaesitor" + provider attribution for the latest assistant message */}
-              <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
-                {/* Provider transparency: only the most recent assistant
-                    message gets the attribution subtitle (older history
-                    isn't retroactively annotated). */}
-                {i === messages.length - 1 && providerSubtitle && (
-                  <span
-                    className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
-                    title={providerSubtitle}
-                  >
-                    · {providerSubtitle}
-                  </span>
-                )}
-              </div>
-              <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
-                <ReactMarkdown components={quaesitorMarkdownComponents}>{msg.content}</ReactMarkdown>
-              </div>
-              {/* Action bar — appears on hover (Quaesitor pattern).
-                  On touch devices there's no hover, so the bar is
-                  always visible below sm; on sm+ it fades in on hover. */}
-              <div className="flex items-center gap-1 mt-2 opacity-100 sm:opacity-0 sm:group-hover/msg:opacity-100 transition-opacity">
-                <button
-                  onClick={() => copyMessage(i, msg.content)}
-                  className="flex size-7 items-center justify-center rounded-md text-[#6b6358] hover:bg-[#2a2620]/5 dark:text-[#9a9080] dark:hover:bg-[#e8e3d8]/5 transition-colors"
-                  aria-label="Copy"
-                >
-                  {copiedIndex === i ? <Check className="h-3.5 w-3.5 text-[#8b4513]" aria-hidden="true" /> : <Copy className="h-3.5 w-3.5" aria-hidden="true" />}
-                </button>
-              </div>
-              {/* P0-104: per-message feedback. Always visible (not part
-                  of the hover-only action bar) so the user can rate
-                  without first hovering. `messageId` uses the array
-                  index as a stable identifier — ChatCard only ever
-                  appends messages (never reorders or deletes), so the
-                  index is a safe correlation key for the /api/feedback
-                  endpoint's `context.messageId` field. */}
-              {!streaming && (
-                <FeedbackButtons
-                  messageId={`${conversationId || "init"}-${i}`}
-                  conversationId={conversationId}
-                />
-              )}
-            </div>
+            <AssistantMessage
+              key={i}
+              content={msg.content}
+              providerSubtitle={providerSubtitle}
+              markdownComponents={quaesitorMarkdownComponents}
+              isLatest={i === messages.length - 1}
+              streaming={streaming}
+              conversationId={conversationId}
+              index={i}
+              copied={copiedIndex === i}
+              onCopy={copyMessage}
+            />
           )
         ))}
 
-        {streaming && streamingResponse && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-              <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
-              {providerSubtitle && (
-                <span
-                  className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
-                  title={providerSubtitle}
-                >
-                  · {providerSubtitle}
-                </span>
-              )}
-            </div>
-            <div className="prose prose-quaesitor font-body break-words text-[#2a2620] dark:text-[#e8e3d8] max-w-none">
-              {/* P0-24: Streaming token animation. Wraps the streaming
-                  block in a motion.span that fades opacity from 0.6 → 1
-                  on mount (when the first token arrives). The fade
-                  re-triggers subtly as `streamingResponse` updates
-                  because motion re-evaluates `animate` on each render,
-                  but the duration is short (80ms) and the prop stays
-                  `opacity: 1` so there's no visible flicker — just a
-                  gentle "settling" feel as the block grows. We do NOT
-                  key the span by response length (that would remount
-                  the ReactMarkdown tree on every token — too expensive). */}
-              <motion.span
-                initial={{ opacity: 0.6 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.08, ease: "easeOut" }}
-              >
-                <ReactMarkdown components={quaesitorMarkdownComponents}>{streamingResponse}</ReactMarkdown>
-              </motion.span>
-              <span className="inline-block h-4 w-1.5 bg-[#8b4513] animate-pulse ml-0.5" />
-            </div>
-            {/* P0-5: streaming artifact affordance. While `detectArtifactStream`
-                has fired (an opening marker is in the buffer), show a small
-                "Artifact detected →" button. Clicking it calls `onArtifact`
-                with the PARTIAL artifact so the parent can open the
-                ArtifactsPanel and render a live preview as the body streams in. */}
-            {streamArtifact && (
-              <div className="mt-2">
-                <button
-                  type="button"
-                  onClick={() => onArtifact?.(streamArtifact, true)}
-                  className="inline-flex items-center gap-1.5 rounded-md border border-[#8b4513]/30 dark:border-[#b5673a]/30 bg-[#8b4513]/5 dark:bg-[#b5673a]/10 px-2 py-1 font-ui text-[11px] font-medium text-[#8b4513] dark:text-[#b5673a] hover:border-[#8b4513]/50 dark:hover:border-[#b5673a]/50 hover:bg-[#8b4513]/10 dark:hover:bg-[#b5673a]/15 transition-colors"
-                  aria-label={`Open ${streamArtifact.type} artifact in side panel`}
-                  title={`Open ${streamArtifact.type} artifact in side panel (partial — full content will arrive when streaming completes)`}
-                >
-                  <PanelRight className="h-3.5 w-3.5" aria-hidden="true" />
-                  Artifact detected
-                  <span className="text-[#6b6358] dark:text-[#9a9080] font-normal">→</span>
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {streaming && !streamingResponse && (
-          <div className="mb-6">
-            {/* Even before the first token, show the provider attribution if the meta event has arrived. */}
-            {providerSubtitle && (
-              <div className="flex items-center gap-2 mb-1.5">
-                <span className="font-ui text-xs font-medium text-[#6b6358] dark:text-[#9a9080]">Quaesitor</span>
-                <span
-                  className="font-ui text-[11px] text-[#8b6f47] dark:text-[#b8946a] truncate max-w-full"
-                  title={providerSubtitle}
-                >
-                  · {providerSubtitle}
-                </span>
-              </div>
-            )}
-            <div className={`space-y-2 animate-pulse ${providerSubtitle ? "" : "mt-0"}`}>
-              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-3/4" />
-              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-full" />
-              <div className="h-4 bg-[#d9d4c7] dark:bg-[#322e28] rounded w-5/6" />
-            </div>
-          </div>
+        {streaming && (
+          <StreamingMessage
+            streamingResponse={streamingResponse}
+            providerSubtitle={providerSubtitle}
+            markdownComponents={quaesitorMarkdownComponents}
+            streamArtifact={streamArtifact}
+            onArtifact={onArtifact}
+          />
         )}
       </div>
 
