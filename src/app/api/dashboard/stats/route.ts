@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     researchCountThisMonth = researchRow?.count ?? 0;
     chatCountThisMonth = chatRow?.count ?? 0;
     tokensUsedThisMonth = (researchRow?.tokens_used ?? 0) + (chatRow?.tokens_used ?? 0) + (tokenRow?.tokens_used ?? 0);
-  // eslint-disable-next-line no-empty
+   
   } catch { /* ignore — stats are best-effort; missing tables return 0s */ }
 
   // ---------- Carbon estimate for the month (Commercial #3) ----------

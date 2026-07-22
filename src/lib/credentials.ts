@@ -168,7 +168,7 @@ export function decryptCredentials<T = unknown>(
   if (raw == null) return null;
   try {
     return JSON.parse(raw) as T;
-  // eslint-disable-next-line no-empty
+   
   } catch {
     // Plaintext token (not JSON) — wrap as `{ token: ... }` for callers
     // that expect an object.

@@ -267,7 +267,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
     // client-only, but defensive).
     try {
       window.location.href = "/settings";
-    // eslint-disable-next-line no-empty
+     
     } catch {
       // no-op — window.location.href never throws in practice; defensive.
     }
@@ -276,7 +276,7 @@ export function UnifiedInterface({ onArtifact: _onArtifact }: { onArtifact?: (a:
   const handlePaletteOpenPricing = React.useCallback(() => {
     try {
       window.location.href = "/pricing";
-    // eslint-disable-next-line no-empty
+     
     } catch {
       // no-op — window.location.href never throws in practice; defensive.
     }

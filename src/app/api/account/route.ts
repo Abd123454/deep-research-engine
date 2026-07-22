@@ -125,14 +125,14 @@ export async function DELETE(req: NextRequest) {
           "UPDATE audit_logs SET user_id = 'deleted:' || substr(hex(randomblob(8)), 1, 16), metadata = '{}' WHERE user_id = ?"
         ).run(userId);
         auditLogs = r.changes;
-      // eslint-disable-next-line no-empty
+       
       } catch { /* table may not exist */ }
       try {
         const r = db.prepare("DELETE FROM artifact_storage WHERE user_id = ?").run(userId);
         artifactStorage = r.changes;
-      // eslint-disable-next-line no-empty
+       
       } catch { /* table may not exist */ }
-    // eslint-disable-next-line no-empty
+     
     } catch { /* SQLite not available */ }
 
     logger.info(

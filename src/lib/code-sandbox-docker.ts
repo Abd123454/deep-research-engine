@@ -98,7 +98,7 @@ export async function runCodeDocker(
       await execAsync(`docker rm -f ${containerName} 2>/dev/null`, {
         timeout: 5_000,
       });
-    // eslint-disable-next-line no-empty
+     
     } catch {
       // Ignore — container doesn't exist (the common case) or docker
       // is unreachable (the subsequent `docker run` will surface a

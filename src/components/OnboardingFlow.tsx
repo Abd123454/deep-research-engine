@@ -59,7 +59,7 @@ export function OnboardingFlow({ onComplete }: OnboardingFlowProps) {
         STORAGE_KEY,
         JSON.stringify({ version: ONBOARDED_VERSION, completedAt: new Date().toISOString() })
       );
-    // eslint-disable-next-line no-empty
+     
     } catch {
       // localStorage unavailable (private mode, etc.) — non-fatal.
     }
